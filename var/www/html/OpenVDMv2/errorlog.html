@@ -1,0 +1,1360 @@
+<p>Error on Aug 06, 2015 13:09PM - Missing argument 1 for Models\Config\CollectionSystemTransfers::getCollectionSystemTransfersConfig(), called in /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php on line 127 and defined in /var/www/html/OpenVDMv2/app/Models/Config/CollectionSystemTransfers.php on line 86</p><p>Error on Aug 04, 2015 17:36PM - Creating default object from empty value in /var/www/html/OpenVDMv2/app/Models/DataDashboard.php on line 210</p><p>Error on Aug 04, 2015 16:41PM - json_decode() expects parameter 1 to be string, object given in /var/www/html/OpenVDMv2/app/Models/DataDashboard.php on line 123</p><p>Error on Aug 04, 2015 16:41PM - json_decode() expects parameter 1 to be string, object given in /var/www/html/OpenVDMv2/app/Models/DataDashboard.php on line 123</p><p>Error on Aug 04, 2015 16:40PM - json_decode() expects parameter 1 to be string, array given in /var/www/html/OpenVDMv2/app/Models/DataDashboard.php on line 123</p><p>Error on Aug 04, 2015 16:40PM - json_decode() expects parameter 1 to be string, object given in /var/www/html/OpenVDMv2/app/Models/DataDashboard.php on line 123</p><p>Error on Aug 01, 2015 17:06PM - explode() expects at least 2 parameters, 1 given in /var/www/html/OpenVDMv2/app/Controllers/DataDashboard/DataDashboard.php on line 126</p><p>Error on Aug 01, 2015 17:04PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\DataDashboard\DataDashboard' does not have a method 'qualityControlShowStats' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Aug 01, 2015 17:03PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\DataDashboard\DataDashboard' does not have a method 'qualityControlShowStats' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 30, 2015 14:21PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 30, 2015 14:02PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 27, 2015 12:14PM - Cannot use a scalar value as an array in /var/www/html/OpenVDMv2/app/Controllers/DataDashboard/DataDashboard.php on line 93</p><p>Error on Jul 26, 2015 17:12PM - GearmanClient::jobStatus(): send_packet(GEARMAN_COULD_NOT_CONNECT) Failed to send server-options packet -&gt; libgearman/connection.cc:433 in /var/www/html/OpenVDMv2/app/Models/Api/Gearman.php on line 19</p><p>Error on Jul 26, 2015 14:53PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 26, 2015 14:53PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 26, 2015 13:55PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 26, 2015 13:55PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 26, 2015 13:55PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 26, 2015 13:55PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Tasks.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Tasks->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('Controllers\Api...', Array)
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('Controllers\Api...', Array)
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Tasks.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Tasks->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Tasks.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Tasks->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Tasks.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Tasks->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Gearman.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Gearman->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('Controllers\Api...', Array)
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Tasks.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Tasks->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('Controllers\Api...', Array)
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('Controllers\Api...', Array)
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 26, 2015 13:52PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<p>Error on Jul 14, 2015 14:05PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:56PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:51PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:49PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:49PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:49PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:49PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:48PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:48PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:45PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:43PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:43PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:43PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:43PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:41PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:41PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:37PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:37PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:37PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:37PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:36PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:35PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:34PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:29PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:25PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:25PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:25PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:25PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:20PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:20PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:20PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:20PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 14, 2015 13:19PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 04, 2015 14:23PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[28000] [1045] Access denied for user 'root'@'localhost' (using password: YES)</p>
+
+           <p><strong>Code:</strong> 1045</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('Controllers\Api...', Array)
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 04, 2015 14:23PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[28000] [1045] Access denied for user 'root'@'localhost' (using password: YES)</p>
+
+           <p><strong>Code:</strong> 1045</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Welcome.php(15): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Welcome->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Wel...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<p>Error on Jul 03, 2015 22:35PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:34PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:34PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:34PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:33PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:33PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:33PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:33PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:32PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:32PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:32PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 22:32PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:46PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:46PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:46PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:46PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:46PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:45PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:45PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:42PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:42PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:41PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:41PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:40PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:40PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:35PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:35PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:35PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:35PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:34PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:34PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:31PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:29PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:29PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 21:29PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><p>Error on Jul 03, 2015 19:53PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Gearman.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Gearman->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Gearman.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Gearman->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 18:57PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<p>Error on Jul 03, 2015 17:24PM - call_user_func_array() expects parameter 1 to be a valid callback, class 'Controllers\Api\Tasks' does not have a method 'setErrorTask' in /var/www/html/OpenVDMv2/app/Core/Router.php on line 95</p><h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 15:11PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:37AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Tasks.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Tasks->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CollectionSystemTransfers.php(46): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CollectionSystemTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Gearman.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Gearman->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:36AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:16AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[42S22]: Column not found: 1054 Unknown column 'includeList' in 'field list'</p>
+
+           <p><strong>Code:</strong> 42S22</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 169</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(169): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Config/ShipToShoreTransfers.php(25): Helpers\Database->update('OVDM_ShipToShor...', Array, Array)
+#2 /var/www/html/OpenVDMv2/app/Controllers/Config/System.php(260): Models\Config\ShipToShoreTransfers->updateShipToShoreTransfer(Array, Array)
+#3 [internal function]: controllers\config\System->editShipToShoreTransfers('2')
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(95): call_user_func_array(Array, Array)
+#5 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('\Controllers\Co...', Array)
+#6 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#7 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 1:08AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[42S22]: Column not found: 1054 Unknown column 'includeList' in 'field list'</p>
+
+           <p><strong>Code:</strong> 42S22</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 169</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(169): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Config/ShipToShoreTransfers.php(25): Helpers\Database->update('OVDM_ShipToShor...', Array, Array)
+#2 /var/www/html/OpenVDMv2/app/Controllers/Config/System.php(260): Models\Config\ShipToShoreTransfers->updateShipToShoreTransfer(Array, Array)
+#3 [internal function]: controllers\config\System->editShipToShoreTransfers('2')
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(95): call_user_func_array(Array, Array)
+#5 /var/www/html/OpenVDMv2/app/Core/Router.php(219): Core\Router::invokeObject('\Controllers\Co...', Array)
+#6 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#7 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 0:42AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[28000] [1045] Access denied for user 'root'@'localhost' (using password: YES)</p>
+
+           <p><strong>Code:</strong> 1045</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Welcome.php(15): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Welcome->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Wel...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Jul 03, 2015 0:42AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[28000] [1045] Access denied for user 'root'@'localhost' (using password: YES)</p>
+
+           <p><strong>Code:</strong> 1045</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'Mechan1c')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Welcome.php(15): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Welcome->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Wel...')
+#5 /var/www/html/OpenVDMv2/index.php(228): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<p>Error on Jun 09, 2015 18:54PM - require(app/views/config/main.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p><p>Error on Jun 09, 2015 18:15PM - require(app/views/config/collectionSystemTransfers.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p><p>Error on Jun 09, 2015 18:15PM - require(app/views/config/collectionSystemTransfers.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p><p>Error on Jun 09, 2015 17:50PM - require(app/views/config/main.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p><p>Error on Jun 09, 2015 17:44PM - require(app/templates/default/loginheader.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 66</p><p>Error on Jun 09, 2015 17:39PM - require(app/templates/default/loginheader.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 66</p><p>Error on Jun 09, 2015 15:34PM - require(app/views/welcome/index.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p><p>Error on Jun 09, 2015 15:33PM - require(app/Views/welcome/index.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p><p>Error on Jun 09, 2015 15:31PM - require(app/views/welcome/index.php): failed to open stream: No such file or directory in /var/www/html/OpenVDMv2/app/Core/View.php on line 32</p>
