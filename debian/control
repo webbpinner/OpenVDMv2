@@ -1,0 +1,12 @@
+Source: openvdm
+Maintainer: Webb Pinner <oceandatarat@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.5
+Homepage: http://www.oceandatarat.org
+Build-Depends: debhelper (>= 9)
+
+Package: openvdm
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, apache2, git, curl, php-cli, gdal-bin, python-gdal, npm, nodejs-legacy, mysql-server, php5-mysql, python-gearman, sshpass, php5-gearman, supervisor, php-pear, php5-dev, software-properties-common
+Description: Open Vessel Data Management suite.
