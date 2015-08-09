@@ -42,7 +42,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                 <div class="panel-body">
                     <div class="list-group">
                         <div class="list-group-item">
-                            Current Cruise ID: <strong><?php echo $data['cruiseID']; ?></strong><a href="<?php echo DIR ?>config/editCruiseID" class="pull-right btn btn-default btn-xs">Edit</a>
+                            Cruise: <strong><?php echo $data['cruiseID']; ?></strong>, Start Date: <strong><?php echo $data['cruiseStartDate']; ?></strong><a href="<?php echo DIR ?>config/editCruiseID" class="pull-right btn btn-default btn-xs">Edit</a>
                         </div>
                         <div class="list-group-item">
 <?php
@@ -227,7 +227,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
 <?php
     for($i=0; $i<(sizeof($data['jobResults']->parts)); $i++){
 ?>
-                    <li><i class="fa fa-<?php echo (strcmp($data['jobResults']->parts[$i]->result, "Success") ? "times text-danger" : "check text-success"); ?>"></i> <?php echo $data['jobResults']->parts[$i]->partName; ?></li>
+                    <li><i class="fa fa-<?php echo (strcmp($data['jobResults']->parts[$i]->result, "Pass") ? "times text-danger" : "check text-success"); ?>"></i> <?php echo $data['jobResults']->parts[$i]->partName; ?></li>
 <?php
     }
 ?>

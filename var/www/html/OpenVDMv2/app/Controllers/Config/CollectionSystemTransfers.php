@@ -38,6 +38,12 @@ class CollectionSystemTransfers extends Controller {
         return $trueFalse;
     }
     
+    private function _buildUseStartDateOptions() {
+        
+        $trueFalse = array(array('id'=>'useStartDate0', 'name'=>'useStartDate', 'value'=>'0', 'label'=>'No'), array('id'=>'useStartDate1', 'name'=>'useStartDate', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
+    
     private function updateCruiseDirectory() {
         $_warehouseModel = new \Models\Warehouse();
         $warehouseConfig = $_warehouseModel->getShipboardDataWarehouseConfig();
@@ -83,6 +89,7 @@ class CollectionSystemTransfers extends Controller {
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['rsyncUseSSHOptions'] = $this->_buildSSHOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
+        $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -91,6 +98,7 @@ class CollectionSystemTransfers extends Controller {
             $sourceDir = $_POST['sourceDir'];
             $destDir = $_POST['destDir'];
             $staleness = $_POST['staleness'];
+            $useStartDate = $_POST['useStartDate'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUseSSH = $_POST['rsyncUseSSH'];
             $rsyncUser = $_POST['rsyncUser'];
@@ -201,6 +209,7 @@ class CollectionSystemTransfers extends Controller {
                     'sourceDir' => $sourceDir,
                     'destDir' => $destDir,
                     'staleness' => $staleness,
+                    'useStartDate' => $useStartDate,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUseSSH' => $rsyncUseSSH,
                     'rsyncUser' => $rsyncUser,
@@ -241,6 +250,7 @@ class CollectionSystemTransfers extends Controller {
             $sourceDir = $_POST['sourceDir'];
             $destDir = $_POST['destDir'];
             $staleness = $_POST['staleness'];
+            $useStartDate = $_POST['useStartDate'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUseSSH = $_POST['rsyncUseSSH'];
             $rsyncUser = $_POST['rsyncUser'];
@@ -352,6 +362,7 @@ class CollectionSystemTransfers extends Controller {
                     'sourceDir' => $sourceDir,
                     'destDir' => $destDir,
                     'staleness' => $staleness,
+                    'useStartDate' => $useStartDate,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUseSSH' => $rsyncUseSSH,
                     'rsyncUser' => $rsyncUser,
@@ -385,6 +396,7 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->sourceDir = $sourceDir;
                 $data['row'][0]->destDir = $destDir;
                 $data['row'][0]->staleness = $staleness;
+                $data['row'][0]->useStartDate = $useStartDate;
                 $data['row'][0]->rsyncServer = $rsyncServer;
                 $data['row'][0]->rsyncUseSSH = $rsyncUseSSH;
                 $data['row'][0]->rsyncUser = $rsyncUser;
@@ -410,6 +422,7 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->sourceDir = $_POST['sourceDir'];
             $gmData['collectionSystemTransfer']->destDir = $_POST['destDir'];
             $gmData['collectionSystemTransfer']->staleness = $_POST['staleness'];
+            $gmData['collectionSystemTransfer']->useStartDate = $_POST['useStartDate'];
             $gmData['collectionSystemTransfer']->rsyncServer = $_POST['rsyncServer'];
             $gmData['collectionSystemTransfer']->rsyncUseSSH = $_POST['rsyncUseSSH'];
             $gmData['collectionSystemTransfer']->rsyncUser = $_POST['rsyncUser'];
@@ -442,6 +455,7 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->sourceDir = $_POST['sourceDir'];
             $data['row'][0]->destDir = $_POST['destDir'];
             $data['row'][0]->staleness = $_POST['staleness'];
+            $data['row'][0]->useStartDate = $_POST['useStartDate'];
             $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
             $data['row'][0]->rsyncUseSSH = $_POST['rsyncUseSSH'];
             $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
@@ -460,6 +474,7 @@ class CollectionSystemTransfers extends Controller {
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['rsyncUseSSHOptions'] = $this->_buildSSHOptions();
+        $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
 
         View::rendertemplate('header',$data);
         View::render('Config/editCollectionSystemTransfers',$data,$error);
@@ -522,6 +537,7 @@ class CollectionSystemTransfers extends Controller {
         $gmData['siteRoot'] = DIR;
         $gmData['shipboardDataWarehouse'] = $_warehouseModel->getshipboardDataWarehouseConfig();
         $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+        $gmData['cruiseStartDate'] = $_warehouseModel->getCruiseStartDate();
         $gmData['collectionSystemTransfer'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
         $gmData['collectionSystemTransfer']->enable = "1";
         $gmData['systemStatus'] = "On";

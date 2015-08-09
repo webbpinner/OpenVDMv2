@@ -228,7 +228,7 @@ def transfer_rsyncDestDir(data, worker, job):
     #print "Proc Filters:"
     #print json.dumps(filters, indent=2)
 
-    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']
+    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']#+'/'+data['cruiseID']
     
     bwLimit = get_shipToShoreBWLimit(job)
     bwLimitStatus = get_shipToShoreBWLimitStatus(job)
@@ -241,41 +241,53 @@ def transfer_rsyncDestDir(data, worker, job):
     #print "Build file list"
     files = build_filelist(sourceDir, filters)
     
+    #print json.dumps(files)
+    
     createdDirs = []
 
     count = 1
     fileCount = len(files['include'])
+    #print '\n'.join(files['include'])
     
-    for filename in files['include']:
-        #print filename
-        #print data['cruiseDataTransfer']['destDir'] + '/' + data['cruiseID'] + os.path.dirname(filename)
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
         
-        if os.path.dirname(filename) not in createdDirs:
-            #print 'Creating directory: ' + data['cruiseDataTransfer']['destDir'] + '/' + data['cruiseID'] + os.path.dirname(filename)
-            proc = subprocess.Popen(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', '-c', 'arcfour', data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'], 'mkdir', '-p', data['cruiseDataTransfer']['destDir'] + '/' + data['cruiseID'] + os.path.dirname(filename)], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            out, err = proc.communicate()
-            #if out:
-            #    print "OUT: " + out
-            if err:
-                print "ERR: " + err
-            else:
-                createdDirs.append(os.path.dirname(filename))
-            #    os.chown(destDir + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
-        
-        proc = subprocess.Popen(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'rsync', '-ai', '-e', 'ssh -c arcfour', sourceDir + filename, data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + ':' + data['cruiseDataTransfer']['destDir'] + '/' + data['cruiseID'] + filename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        out, err = proc.communicate()
-        #if out:
-        #    print "OUT: " + out.rstrip()
-        if err:
-            print "ERR: " + err.rstrip()
-            print "Filename: " + filename
-        #else:
-        #    os.chown(destDir + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
+    try:
+        #print "Open rsync password file"
+        rsyncFileListFile = open(rsyncFileListPath, 'w')
+
+        #print "Saving rsync password file"
+        #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
+        rsyncFileListFile.write('\n'.join(files['include']))
+
+    except IOError:
+        print "Error Saving temporary rsync filelist file"
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncFileListFile.close()
             
-        if out.startswith( '<f+++++++++' ):
-            files['new'].append(filename)
-        elif out.startswith( '<f.' ):
-            files['updated'].append(filename)
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
+
+    finally:
+        #print "Closing rsync filelist file"
+        rsyncFileListFile.close()
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+    
+    
+    command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'rsync', '-ai', bwLimitStr, '-e', 'ssh -c arcfour', '--files-from=' + rsyncFileListPath, sourceDir, data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + ':' + data['cruiseDataTransfer']['destDir']]
+    #print command
+    
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        #print(line) # yield line
+        if line.startswith( '<f+++++++++' ):
+            files['new'].append(line.split(' ')[1])
+        elif line.startswith( '<f.' ):
+            files['updated'].append(line.split(' ')[1])
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
         
@@ -287,8 +299,10 @@ def transfer_rsyncDestDir(data, worker, job):
         if worker.stop:
             print "Stopping"
             break
-
-    #print 'DECODED Files:', json.dumps(files, indent=2)
+    
+    # Cleanup
+    shutil.rmtree(tmpdir)
+        
     return files
 
 
@@ -411,11 +425,11 @@ def task_callback(gearman_worker, job):
 
     if dataObj['cruiseDataTransfer']['enable'] == "1" and dataObj['systemStatus'] == "On":
         #print "Transfer Enabled"
-        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
         #print "Transfer Disabled"
         #print "Stopping"
-        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
         return json.dumps(job_results)
     
     transfer = get_cruiseDataTransfer(job, dataObj['cruiseDataTransfer']['cruiseDataTransferID'])
@@ -423,11 +437,11 @@ def task_callback(gearman_worker, job):
 
     if transfer['status'] == "1": #running
         print "Transfer already in-progress... Stopping"
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
         return json.dumps(job_results)
     else:
         #print "Transfer not already in-progress"
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     
     print "Beginning Transfer"
     # Set transfer status to "Running"
@@ -442,9 +456,9 @@ def task_callback(gearman_worker, job):
     resultsObj = json.loads(completed_job_request.result)
     #print 'DECODED Results:', json.dumps(resultsObj, indent=2)
 
-    if resultsObj[-1]['result'] == "Success": # Final Verdict
+    if resultsObj[-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
-        job_results['parts'].append({'partName': 'Connection Test', 'result': 'Success'})
+        job_results['parts'].append({'partName': 'Connection Test', 'result': 'Pass'})
     else:
         #print "Connection Test: Failed... Stopping"
         job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail'})
@@ -454,7 +468,7 @@ def task_callback(gearman_worker, job):
     #print "Transfering Data"
     if  dataObj['cruiseDataTransfer']['transferType'] == "2": # Rsync Server
         job_results['files'] = transfer_rsyncDestDir(dataObj, gearman_worker, job)
-        job_results['parts'].append({"partName": "Transfer Files", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
     else:
         print "Error: Unknown Transfer Type"
         job_results['parts'].append({"partName": "Transfer Files", "result": "Fail"})
@@ -479,7 +493,7 @@ def task_callback(gearman_worker, job):
             logOutput['files']['new'] = job_results['files']['new']
             logOutput['files']['updated'] = job_results['files']['updated']
             if writeLogFile(logfileName, dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername'], logOutput['files']):
-                job_results['parts'].append({"partName": "Write logfile", "result": "Success"})
+                job_results['parts'].append({"partName": "Write logfile", "result": "Pass"})
             else:
                 job_results['parts'].append({"partName": "Write logfile", "result": "Fail"})
         else:

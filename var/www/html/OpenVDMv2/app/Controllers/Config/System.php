@@ -387,11 +387,11 @@ class System extends Controller {
         $finalVerdict = (object) array();
         
         $finalVerdict->testName = 'FinalVerdict';
-        $finalVerdict->result = 'Success';
+        $finalVerdict->result = 'Pass';
                 
         $baseDirectoryTest->testName = 'Base Directory';
         if(is_dir( $shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] )) {
-            $baseDirectoryTest->result = 'Success';
+            $baseDirectoryTest->result = 'Pass';
         } else {
             $baseDirectoryTest->result = 'Fail';
             $finalVerdict->result = 'Fail';
@@ -401,7 +401,7 @@ class System extends Controller {
 
         $publicDataDirectoryTest->testName = 'Public Data Directory';
         if(is_dir( $shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir'] )) {
-            $publicDataDirectoryTest->result = 'Success';
+            $publicDataDirectoryTest->result = 'Pass';
         } else {
             $publicDataDirectoryTest->result = 'Fail';
             $finalVerdict->result = 'Fail';
@@ -414,7 +414,7 @@ class System extends Controller {
         
         $usernameTest->testName = 'Username';
         if(isset($op[0])) {
-            $usernameTest->result = 'Success';
+            $usernameTest->result = 'Pass';
         } else {
             $usernameTest->result = 'Fail';
             $finalVerdict->result = 'Fail';
@@ -423,7 +423,7 @@ class System extends Controller {
         array_push($data['testResults'], $usernameTest);
         array_push($data['testResults'], $finalVerdict);
         
-        if (strcmp($finalVerdict->result, "Success") === 0 ) {
+        if (strcmp($finalVerdict->result, "Pass") === 0 ) {
             $_warehouseModel->clearErrorShipboardDataWarehouseStatus();
         } else {
             $_warehouseModel->setErrorShipboardDataWarehouseStatus();

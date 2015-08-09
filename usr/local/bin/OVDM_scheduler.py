@@ -98,6 +98,16 @@ def getCruiseID(siteRoot):
         print "Error retrieving warehouse data, check URL"
         sys.exit(1)
         
+def getCruiseStartDate(siteRoot):
+    url = siteRoot + 'api/warehouse/getCruiseStartDate'
+    try:
+        r = requests.get(url)
+        return r.json()
+
+    except requests.exceptions.RequestException as e: 
+        print "Error retrieving warehouse data, check URL"
+        sys.exit(1)
+        
 def getSystemStatus(siteRoot):
     url = siteRoot + 'api/warehouse/getSystemStatus'
     try:
@@ -142,6 +152,7 @@ def main(argv):
             gmData = {}
             gmData['siteRoot'] = args.siteRoot
             gmData['cruiseID'] = getCruiseID(args.siteRoot)['cruiseID']
+            gmData['cruiseStartDate'] = getCruiseStartDate(args.siteRoot)['cruiseStartDate']
             gmData['systemStatus'] = getSystemStatus(args.siteRoot)['systemStatus']
             gmData['collectionSystemTransfer'] = collectionSystemTransfer
             gmData['shipboardDataWarehouse'] = getWarehouseConfig(args.siteRoot)

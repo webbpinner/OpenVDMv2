@@ -153,6 +153,7 @@ Router::any('dataDashboard/qualityControlShowDataTypeStats/(:any)', '\Controller
 Router::any('api/warehouse/getCruiseConfig', 'Controllers\Api\Warehouse@getCruiseConfig');
 Router::any('api/warehouse/getCruiseID', 'Controllers\Api\Warehouse@getCruiseID');
 Router::any('api/warehouse/getCruiseSize', 'Controllers\Api\Warehouse@getCruiseSize');
+Router::any('api/warehouse/getCruiseStartDate', 'Controllers\Api\Warehouse@getCruiseStartDate');
 Router::any('api/warehouse/getFreeSpace', 'Controllers\Api\Warehouse@getFreeSpace');
 Router::any('api/warehouse/getMD5FilesizeLimit', 'Controllers\Api\Warehouse@getMD5FilesizeLimit');
 Router::any('api/warehouse/getMD5FilesizeLimitStatus', 'Controllers\Api\Warehouse@getMD5FilesizeLimitStatus');

@@ -98,7 +98,7 @@ EASTBOUNDS = 1
 SOUTHBOUNDS = 2
 WESTBOUNDS = 3    
 
-DEBUG = True
+DEBUG = False
 
 # -------------------------------------------------------------------------------------
 # Function used to translate the raw date/time strings in a floating point number

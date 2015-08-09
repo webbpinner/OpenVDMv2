@@ -219,7 +219,7 @@ def task_callback(gearman_worker, job):
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
     
     if not os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Success"})
+        job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Fail"})
         return json.dumps(job_results)
@@ -229,19 +229,19 @@ def task_callback(gearman_worker, job):
     directoryList = build_directorylist(dataObj)
     #print 'DECODED:', json.dumps(directoryList, indent=2)
     
-    job_results['parts'].append({"partName": "Build Directory List", "result": "Success"})
+    job_results['parts'].append({"partName": "Build Directory List", "result": "Pass"})
     
     gearman_worker.send_job_status(job, 5, 10)
     
     if create_directories(gearman_worker, directoryList):
-        job_results['parts'].append({"partName": "Create Directories", "result": "Success"})
+        job_results['parts'].append({"partName": "Create Directories", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Create Directories", "result": "Fail"})
 
     gearman_worker.send_job_status(job, 7, 10)
         
     if setDirectoryOwnerGroupPermissions(cruiseDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid):
-        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Success"})
+        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail"})
         
@@ -262,7 +262,7 @@ def task_callback2(gearman_worker, job):
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
     
     if os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Success"})
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
         return json.dumps(job_results)
@@ -272,19 +272,19 @@ def task_callback2(gearman_worker, job):
     directoryList = build_directorylist(dataObj)
     #print 'DECODED:', json.dumps(directoryList, indent=2)
     
-    job_results['parts'].append({"partName": "Build Directory List", "result": "Success"})
+    job_results['parts'].append({"partName": "Build Directory List", "result": "Pass"})
     
     gearman_worker.send_job_status(job, 5, 10)
 
     if create_directories(gearman_worker, directoryList):
-        job_results['parts'].append({"partName": "Create Missing Directories", "result": "Success"})
+        job_results['parts'].append({"partName": "Create Missing Directories", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Create Missing Directories", "result": "Fail"})
 
     gearman_worker.send_job_status(job, 7, 10)
 
     if setDirectoryOwnerGroupPermissions(cruiseDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid):
-        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Success"})
+        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail"})
         
