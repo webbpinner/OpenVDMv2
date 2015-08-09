@@ -38,6 +38,7 @@ import shutil
 import json
 import requests
 import time
+import calendar
 import datetime
 import fnmatch
 import subprocess
@@ -46,15 +47,14 @@ import pwd
 import grp
 from random import randint
 
-def build_filelist(sourceDir, filters, stalness):
+def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
 
     #print "Build file list"
     #find . -path ./archive -prune -o -type f -mmin +5 -print
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-    #print "Calculate now"
     threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
-    #print threshold_time
+    cruiseStart_time = calendar.timegm(time.strptime(cruiseStartDate, "%m/%d/%Y"))
     
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
@@ -77,7 +77,7 @@ def build_filelist(sourceDir, filters, stalness):
                         if fnmatch.fnmatch(filename, filt):
                             #print 'Filename: ' + os.path.join(root, filename)
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
-                            if (file_mod_time < threshold_time):
+                            if file_mod_time > cruiseStart_time and file_mod_time < threshold_time:
                                 returnFiles['include'].append(os.path.join(root, filename))
                                 include = True
                                 break
@@ -91,13 +91,15 @@ def build_filelist(sourceDir, filters, stalness):
     
     return returnFiles
 
-def build_rsyncFilelist(data, filters, stalness):
+def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
 
     #print "Build file list"
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
     #print "Calculate now"
     threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
+    cruiseStart_time = calendar.timegm(time.strptime(cruiseStartDate, "%m/%d/%Y"))
+
     #print threshold_time
     rsyncFileList = ''
     
@@ -127,7 +129,7 @@ def build_rsyncFilelist(data, filters, stalness):
             #print "Closing rsync password file"
             rsyncPasswordFile.close()
             os.chmod(rsyncPasswordFilePath, 0600)
-            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Success"})
+            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
         
         # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
         proc = subprocess.Popen(['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir']],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -175,7 +177,7 @@ def build_rsyncFilelist(data, filters, stalness):
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
                             #print "file_mod_time_SECS: " + str(file_mod_time_SECS)
-                            if (file_mod_time_SECS < threshold_time):
+                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
                                 returnFiles['include'].append(filename)
                                 include = True
                                 break
@@ -290,6 +292,7 @@ def transfer_localSourceDir(data, worker, job):
     rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
     
     staleness = data['collectionSystemTransfer']['staleness']
+    cruiseStartDate = data['cruiseStartDate']
     
     filters = build_filters(rawFilters, data)
     
@@ -297,7 +300,7 @@ def transfer_localSourceDir(data, worker, job):
     sourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
     
     #print "Build file list"
-    files = build_filelist(sourceDir, filters, staleness)
+    files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
 
     #print "Build destination directories"
     build_destDirectories(destDir, files['include'])
@@ -334,7 +337,8 @@ def transfer_smbSourceDir(data, worker, job):
 
 #    print 'DECODED Data:', json.dumps(data, indent=2)
     staleness = data['collectionSystemTransfer']['staleness']
-    
+    cruiseStartDate = data['cruiseStartDate']
+
     #print "Transfer from SMB Server"
     rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
 
@@ -360,7 +364,7 @@ def transfer_smbSourceDir(data, worker, job):
     sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir'].rstrip('/')
 
     #print "Build file list"
-    files = build_filelist(sourceDir, filters, staleness)
+    files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
     
     #print "Build destination directories"
     build_destDirectories(destDir, files['include'])
@@ -404,7 +408,8 @@ def transfer_rsyncSourceDir(data, worker, job):
     #print "Transfer from RSYNC Server"
 #    print 'DECODED Data:', json.dumps(data, indent=2)
     staleness = data['collectionSystemTransfer']['staleness']
-    
+    cruiseStartDate = data['cruiseStartDate']
+
     #print "Build Raw Filters"
     rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
 
@@ -415,7 +420,7 @@ def transfer_rsyncSourceDir(data, worker, job):
     sourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
     #print "destDir: " + destDir
         
-    files = build_rsyncFilelist(data, filters, staleness)
+    files = build_rsyncFilelist(data, filters, staleness, cruiseStartDate)
     #print json.dumps(files, indent=1)
     
     #print "Build destination directories"
@@ -451,7 +456,7 @@ def transfer_rsyncSourceDir(data, worker, job):
             #print "Closing temporary rsync password file"
             rsyncPasswordFile.close()
             os.chmod(rsyncPasswordFilePath, 0600)
-            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Success"})
+            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
 
     for filename in files['include']:
         if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
@@ -629,7 +634,7 @@ def task_callback(gearman_worker, job):
     
     if dataObj['collectionSystemTransfer']['enable'] == "1" and dataObj['systemStatus'] == "On":
         #print "Transfer Enabled"
-        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
         #print "Transfer Disabled"
         #print "Stopping"
@@ -645,7 +650,7 @@ def task_callback(gearman_worker, job):
         return json.dumps(job_results)
     else:
         #print "Transfer not already in-progress"
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Success"})
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
         
     # Set transfer status to "Running"
     setRunning_collectionSystemTransfer(job)
@@ -661,9 +666,9 @@ def task_callback(gearman_worker, job):
     resultsObj = json.loads(completed_job_request.result)
 #    print 'DECODED Results:', json.dumps(resultsObj, indent=2)
 
-    if resultsObj[-1]['result'] == "Success": # Final Verdict
+    if resultsObj[-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
-        job_results['parts'].append({"partName": "Connection Test", "result": "Success"})
+        job_results['parts'].append({"partName": "Connection Test", "result": "Pass"})
     else:
         #print "Connection Test: Failed"
         #print "Stopping"
@@ -672,6 +677,10 @@ def task_callback(gearman_worker, job):
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(job, 2, 10)
+    
+    if dataObj['collectionSystemTransfer']['useStartDate'] == "0":
+        dataObj['cruiseStartDate'] = "01/01/1970"    
+    
     #print "Transfer Data"
     if dataObj['collectionSystemTransfer']['transferType'] == "1": # Local Directory
         job_results['files'] = transfer_localSourceDir(dataObj, gearman_worker, job)
@@ -684,7 +693,7 @@ def task_callback(gearman_worker, job):
     gearman_worker.send_job_status(job, 9, 10)
     
     if(setDirectoryOwnerGroupPermissions(baseDir + '/' + cruiseID + '/' +  collectionSystemDestDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
-        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Success"})
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:
         print "Error Setting file/directory ownership"
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
@@ -702,7 +711,7 @@ def task_callback(gearman_worker, job):
             logOutput['files']['new'] = job_results['files']['new']
             logOutput['files']['updated'] = job_results['files']['updated']
             if writeLogFile(logfileName, warehouseUser, logOutput['files']):
-                job_results['parts'].append({"partName": "Write logfile", "result": "Success"})
+                job_results['parts'].append({"partName": "Write logfile", "result": "Pass"})
             else:
                 job_results['parts'].append({"partName": "Write logfile", "result": "Fail"})
                 
@@ -721,7 +730,7 @@ def task_callback(gearman_worker, job):
         filenameErrorlogOutput = {'files':{'exclude':[]}}
         filenameErrorlogOutput['files']['exclude'] = job_results['files']['exclude']
         if writeLogFile(filenameErrorLogfileName, warehouseUser, filenameErrorlogOutput['files']):
-            job_results['parts'].append({"partName": "Write filename error logfile", "result": "Success"})
+            job_results['parts'].append({"partName": "Write filename error logfile", "result": "Pass"})
         else:
             job_results['parts'].append({"partName": "Write filename error logfile", "result": "Fail"})
                 

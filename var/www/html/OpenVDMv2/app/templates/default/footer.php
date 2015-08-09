@@ -38,6 +38,9 @@ if (isset($data['javascript'])){
             array_push($jsFileArray, Url::templatePath() . 'bower_components/leaflet/plugins/leaflet-fullscreen/Leaflet.fullscreen.min.js');
         } else if ($jsFile === 'highcharts') {
             array_push($jsFileArray, Url::templatePath() . 'bower_components/highcharts/js/highcharts.js');
+        } else if ($jsFile === 'bootstrap-datepicker') {
+            array_push($jsFileArray, Url::templatePath() . 'bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js');   
+            array_push($jsFileArray, Url::templatePath() . "js/datepicker.js");
         } else {
             array_push($jsFileArray, Url::templatePath() . "js/" . $jsFile . ".js");
         }

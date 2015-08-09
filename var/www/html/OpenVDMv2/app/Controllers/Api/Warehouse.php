@@ -58,6 +58,13 @@ class Warehouse extends Controller {
         echo json_encode($response);
     }
     
+    // getCruisestartDate - return the current cruise start date.
+	public function getCruiseStartDate() {
+
+        $response['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        echo json_encode($response);
+    }
+    
     // getShipboardDataWarehouseStatus - return the status of the data warehouse.
 	public function getShipboardDataWarehouseStatus() {
 
@@ -123,6 +130,9 @@ class Warehouse extends Controller {
         $cruiseDataTransfersModel = new \Models\Config\CruiseDataTransfers();
         $shipToShoreTransfersModel = new \Models\Config\ShipToShoreTransfers();
         
+        
+        $response['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $response['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $response['warehouseConfig'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
         $response['collectionSystemTransfersConfig'] = $collectionSystemsTransfersModel->getCollectionSystemTransfersConfig();
         $response['extraDirectoriesConfig'] = $extraDirectoriesModel->getExtraDirectoriesConfig();

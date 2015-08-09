@@ -250,10 +250,10 @@ def task_callback(gearman_worker, job):
     if dataObj['files']['new'] or dataObj['files']['updated']:
         fileList = dataObj['files']['new']
         fileList += dataObj['files']['updated']
-        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Success"})
+        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
 
     else:
-        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Success"})
+        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
         #print "No new or updated files to process"
         return json.dumps(job_results)
     
@@ -269,7 +269,7 @@ def task_callback(gearman_worker, job):
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Fail"})
         return json.dumps(job_results)
     else:
-        job_results['parts'].append({"partName": "Calculate Hashes", "result": "Success"})
+        job_results['parts'].append({"partName": "Calculate Hashes", "result": "Pass"})
     
     existingHashes = []
     
@@ -290,7 +290,7 @@ def task_callback(gearman_worker, job):
     finally:
         #print "Closing MD5 Summary file"
         MD5SummaryFile.close()
-        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Pass"})
 
     #gearman_worker.send_job_status(job, 8, 10)
     #print 'DECODED existingHashes:', json.dumps(existingHashes, indent=2)
@@ -330,13 +330,13 @@ def task_callback(gearman_worker, job):
         #print "Closing MD5 Summary file"
         MD5SummaryFile.close()
         os.chown(md5SummaryFilename, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
         
     gearman_worker.send_job_status(job, 9, 10)
 
     #print "Building MD5 Summary MD5 file"
     if build_MD5Summary_MD5(cruiseDir, warehouseUser):
-        job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail"})
 
@@ -359,7 +359,7 @@ def task_callback2(gearman_worker, job):
     fileList = build_filelist(cruiseDir)
     #print 'DECODED:', json.dumps(fileList, indent=2)
     
-    job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Success"})
+    job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
     
     gearman_worker.send_job_status(job, 2, 10)
 
@@ -371,7 +371,7 @@ def task_callback2(gearman_worker, job):
     if gearman_worker.stop:
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Fail"})
     else:
-        job_results['parts'].append({"partName": "Calculate Hashes", "result": "Success"})
+        job_results['parts'].append({"partName": "Calculate Hashes", "result": "Pass"})
                 
         try:
             #print "Open MD5 Summary file"
@@ -391,13 +391,13 @@ def task_callback2(gearman_worker, job):
             #print "Closing MD5 Summary file"
             MD5SummaryFile.close()
             os.chown(md5SummaryFilename, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-            job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Success"})
+            job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
             
         gearman_worker.send_job_status(job, 9, 10)
     
         #print "Building MD5 Summary MD5 file"
         if build_MD5Summary_MD5(cruiseDir, warehouseUser):
-            job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Success"})
+            job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Pass"})
         else:
             job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail"})
 

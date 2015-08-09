@@ -219,9 +219,9 @@ def task_callback(gearman_worker, job):
     resultObj = json.loads(completed_job_request.result)
     #print 'DECODED Results:', json.dumps(resultObj, indent=2)
 
-    if resultObj['parts'][-1]['result'] == "Success": # Final Verdict
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
-        job_results['parts'].append({"partName": "Create Cruise Directory", "result": "Success"})
+        job_results['parts'].append({"partName": "Create Cruise Directory", "result": "Pass"})
     else:
         print "Create Cruise Directory: Failed"
         #print "Quitting"
@@ -239,9 +239,9 @@ def task_callback(gearman_worker, job):
     resultObj = json.loads(completed_job_request.result)
     #print 'DECODED Results:', json.dumps(resultObj, indent=2)
 
-    if resultObj['parts'][-1]['result'] == "Success": # Final Verdict
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
-        job_results['parts'].append({"partName": "Create Transfer Log Summary", "result": "Success"})
+        job_results['parts'].append({"partName": "Create Transfer Log Summary", "result": "Pass"})
     else:
         print "Create Transfer Log Summary File: Failed"
         #print "Quitting"
@@ -257,9 +257,9 @@ def task_callback(gearman_worker, job):
     resultObj = json.loads(completed_job_request.result)
     #print 'DECODED Results:', json.dumps(resultObj, indent=2)
 
-    if resultObj['parts'][-1]['result'] == "Success": # Final Verdict
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
-        job_results['parts'].append({"partName": "Create Data Dashboard Manifest", "result": "Success"})
+        job_results['parts'].append({"partName": "Create Data Dashboard Manifest", "result": "Pass"})
     else:
         print "Create Data Dashboard Manifest File: Failed"
         #print "Quitting"
@@ -275,9 +275,9 @@ def task_callback(gearman_worker, job):
     resultObj = json.loads(completed_job_request.result)
     #print 'DECODED Results:', json.dumps(resultObj, indent=2)
 
-    if resultObj['parts'][-1]['result'] == "Success": # Final Verdict
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
-        job_results['parts'].append({"partName": "Create MD5 Summary", "result": "Success"})
+        job_results['parts'].append({"partName": "Create MD5 Summary", "result": "Pass"})
     else:
         print "Create MD5 Summary File: Failed"
         #print "Quitting"
@@ -306,13 +306,13 @@ def task_callback2(gearman_worker, job):
     gearman_worker.send_job_status(job, 1, 10)
 
     if os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Success"})
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
     if os.path.exists(publicDataDir):
-        job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Success"})
+        job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Fail"})
         return json.dumps(job_results)

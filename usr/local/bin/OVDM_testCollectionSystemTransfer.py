@@ -58,7 +58,7 @@ def build_sourceDir(raw_sourceDir, data):
 
 def test_localSourceDir(data):
     if os.path.isdir(data['collectionSystemTransfer']['sourceDir']):
-        return [{"testName": "Source Directory", "result": "Success"}]
+        return [{"testName": "Source Directory", "result": "Pass"}]
     else:
         return [{"testName": "Source Directory", "result": "Fail"}]
 
@@ -80,12 +80,12 @@ def test_smbSourceDir(data):
     
     if retVal == 0:
         #sudo mount -t cifs $collectionSystemTransfer->{'smbServer'} $tempMountPoint -o username=$collectionSystemTransfer->{'smbUser'},password=$collectionSystemTransfer->{'smbPass'},domain='+data['collectionSystemTransfer']['smbDomain'] 2> /dev/null
-        returnVal.append({"testName": "SMB Mount", "result": "Success"})
+        returnVal.append({"testName": "SMB Mount", "result": "Pass"})
 
         # If mount is successful, test source directory
         sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir']
         if os.path.isdir(mntPoint+data['collectionSystemTransfer']['sourceDir']):
-            returnVal.append({"testName": "Source Directory", "result": "Success"})
+            returnVal.append({"testName": "Source Directory", "result": "Pass"})
         else:
             returnVal.append({"testName": "Source Directory", "result": "Fail"})
 
@@ -134,15 +134,15 @@ def test_rsyncSourceDir(data):
             #print "Closing Transfer Log Summary file"
             rsyncPasswordFile.close()
             os.chmod(rsyncPasswordFilePath, 0600)
-            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Success"})
+            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
         
     # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
     if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
         if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'], '> /dev/null']) == 0:
-            returnVal.append({"testName": "Rsync Connection", "result": "Success"})
+            returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
             if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
-                returnVal.append({"testName": "Source Directory", "result": "Success"})
+                returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
                 returnVal.append({"testName": "Source Directory", "result": "Fail"})
         else:
@@ -155,10 +155,10 @@ def test_rsyncSourceDir(data):
     else:
         # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
         if call(['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'ssh', data['collectionSystemTransfer']['rsyncServer'], '-l', data['collectionSystemTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
-            returnVal.append({"testName": "Rsync Connection", "result": "Success"})
+            returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
             if call(['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'ssh', data['collectionSystemTransfer']['rsyncServer'], '-l', data['collectionSystemTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
-                returnVal.append({"testName": "Source Directory", "result": "Success"})
+                returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
                 returnVal.append({"testName": "Source Directory", "result": "Fail"})
         else:
@@ -173,7 +173,7 @@ def test_destDir(data):
     destDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir']
         
     if os.path.isdir(destDir):
-        return [{"testName": "Destination Directory", "result": "Success"}]
+        return [{"testName": "Destination Directory", "result": "Pass"}]
     else:
         return [{"testName": "Destination Directory", "result": "Fail"}]
     
@@ -242,13 +242,13 @@ def task_callback(gearman_worker, job):
     job_results += test_destDir(dataObj)
     gearman_worker.send_job_status(job, 3, 4)
         
-    verdict = "Success"
+    verdict = "Pass"
     for test in job_results:
         if test['result'] == "Fail":
             verdict = "Fail"
             setError_collectionSystemTransfer(job)
 
-    if verdict == "Success":
+    if verdict == "Pass":
         clearError_collectionSystemTransfer(job)
 
     job_results.append({"testName": "Final Verdict", "result": verdict})

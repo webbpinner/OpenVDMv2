@@ -292,7 +292,7 @@ def task_callback(gearman_worker, job):
     processingScriptFilename = processingScriptDir + '/' + collectionSystem['name'].replace(' ','') + processingScriptSuffix
     
     if os.path.isfile(processingScriptFilename):
-        job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Success"})
+        job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Fail"})
         return json.dumps(job_results)
@@ -306,11 +306,11 @@ def task_callback(gearman_worker, job):
     if dataObj['files']['new'] or dataObj['files']['updated']:
         fileList = dataObj['files']['new']
         fileList += dataObj['files']['updated']
-        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Success"})
+        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
         #print 'DECODED fileList:', json.dumps(fileList, indent=2)
 
     else:
-        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Success"})
+        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
         #print "No new or updated files to process"
         return json.dumps(job_results)
 
@@ -377,7 +377,7 @@ def task_callback(gearman_worker, job):
         finally:
             #print "Closing Dashboard Manifest file"
             DashboardManifestFile.close()
-            job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Success"})
+            job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Pass"})
 
         #print "DECODED - existing dashboard manifest: " + json.dumps(existingManifestEntries)
 
@@ -397,10 +397,10 @@ def task_callback(gearman_worker, job):
         
         #print 'DECODED  - Updated Manifest Entries:', json.dumps(existingManifestEntries)
         if output_JSONDataToFile(dataDashboardManifestFilePath, existingManifestEntries, warehouseUser):
-            job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Success"})
+            job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
 
             if updateDB(dataObj['siteRoot'], cruiseID):
-                job_results['parts'].append({"partName": "Updating Database", "result": "Success"})
+                job_results['parts'].append({"partName": "Updating Database", "result": "Pass"})
             else:
                 job_results['parts'].append({"partName": "Updating Database", "result": "Fail"})
                 return json.dumps(job_results)
@@ -411,7 +411,7 @@ def task_callback(gearman_worker, job):
     gearman_worker.send_job_status(job, 9, 10)
 
     if(setDirectoryOwnerGroupPermissions(baseDir + '/' + cruiseID + '/' +  dataDashboardDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
-        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Success"})
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:
         print "Error Setting file/directory ownership"
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
@@ -520,7 +520,7 @@ def task_callback2(gearman_worker, job):
     gearman_worker.send_job_status(job, 8, 10)
     
     if(setDirectoryOwnerGroupPermissions(baseDir + '/' + cruiseID + '/' +  dataDashboardDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
-        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Success"})
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:
         print "Error Setting file/directory ownership"
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
@@ -542,7 +542,7 @@ def task_callback2(gearman_worker, job):
         #print "Closing Data Dashboard Manifest file"
         DataDashboardManifest.close()
         os.chown(dataDashboardManifestFilePath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-        job_results['parts'].append({"partName": "Writing Data Dashboard Manifest file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing Data Dashboard Manifest file", "result": "Pass"})
         gearman_worker.send_job_status(job, 95, 100)
 
     #print 'Updating DB'  

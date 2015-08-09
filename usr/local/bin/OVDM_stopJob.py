@@ -148,7 +148,7 @@ def task_callback(gearman_worker, job):
     jobInfo = getJobInfo(dataObj)
     print 'DECODED jobInfo:', json.dumps(jobInfo, indent=2)
     
-    job_results['parts'].append({"partName": "Retrieve Job Info", "result": "Success"})
+    job_results['parts'].append({"partName": "Retrieve Job Info", "result": "Pass"})
     
     if jobInfo['type'] != "unknown":
         print "Quitting job: " + jobInfo['pid']
@@ -169,7 +169,7 @@ def task_callback(gearman_worker, job):
         elif jobInfo['type'] == 'task':
             sendKillMsg(dataObj, "Manual Stop of " + jobInfo['name'])
             
-        job_results['parts'].append({"partName": "Stopped Job", "result": "Success"})
+        job_results['parts'].append({"partName": "Stopped Job", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Stopped Job", "result": "Fail"})
 

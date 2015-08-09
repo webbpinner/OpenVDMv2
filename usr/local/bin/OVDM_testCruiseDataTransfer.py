@@ -44,15 +44,30 @@ from subprocess import call
 def test_sourceDir(data):
     sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']
     if os.path.isdir(sourceDir):
-        return [{"testName": "Cruise Data Directory", "result": "Success"}]
+        return [{"testName": "Cruise Data Directory", "result": "Pass"}]
     else:
         return [{"testName": "Cruise Data Directory", "result": "Fail"}]
 
 def test_localDestDir(data):
-    if os.path.isdir(data['cruiseDataTransfer']['destDir']):
-        return [{"testName": "Destination Directory", "result": "Success"}]
+
+    returnVal = []
+    sourceDir = data['cruiseDataTransfer']['destDir']
+    
+    if os.path.isdir(sourceDir):
+        returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+        try:
+            filepath = sourceDir + '/' + 'writeTest.txt'
+            filehandle = open( filepath, 'w' )
+            filehandle.close()
+            os.remove(filepath)
+            returnVal.append({"testName": "Write Test", "result": "Pass"})
+        except IOError:
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
     else:
-        return [{"testName": "Destination Directory", "result": "Fail"}]
+        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+    return returnVal
 
 def test_smbDestDir(data):
     returnVal = []
@@ -66,20 +81,33 @@ def test_smbDestDir(data):
 
     # Mount SMB Share
     if call(['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'username='+data['cruiseDataTransfer']['smbUser']+',password='+data['cruiseDataTransfer']['smbPass']+',domain='+data['cruiseDataTransfer']['smbDomain']]) == 0:
-        returnVal.append({"testName": "SMB Mount", "result": "Success"})
+        returnVal.append({"testName": "SMB Mount", "result": "Pass"})
 
         # If mount is successful, test source directory
         sourceDir = mntPoint+data['cruiseDataTransfer']['destDir']
         if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
-            returnVal.append({"testName": "Destination Directory", "result": "Success"})
+            returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+            try:
+                filepath = sourceDir + '/' + 'writeTest.txt'
+                filehandle = open(filepath, 'w')
+                filehandle.close()
+                os.remove(filepath)
+                returnVal.append({"testName": "Write Test", "result": "Pass"})
+            except Exception as e:
+                print e
+                print "{}".format(e)
+                print "IOError"
+                returnVal.append({"testName": "Write Test", "result": "Fail"})
         else:
             returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
 
         # Unmount SMB Share
         call(['sudo', 'umount', mntPoint])
     else:
         returnVal.append({"testName": "SMB Mount", "result": "Fail"})
         returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
 
     # Cleanup
     shutil.rmtree(tmpdir)
@@ -91,17 +119,26 @@ def test_rsyncDestDir(data):
     returnVal = []
     
     # Connect to RSYNC Server
-    if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls']) == 0:
-        returnVal.append({"testName": "Rsync Connection", "result": "Success"})
+    if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
+        returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
         #sshpass -p Tethys337813 ssh 192.168.1.4 -l survey -o StrictHostKeyChecking=no ls /mnt/vault/FTPRoot/CruiseData
         if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['cruiseDataTransfer']['destDir'], '> /dev/null']) == 0:
-            returnVal.append({"testName": "Destination Directory", "result": "Success"})
+            returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+            if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null']) == 0:
+                returnVal.append({"testName": "Write Test", "result": "Pass"})
+                call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null'])
+            else:
+                returnVal.append({"testName": "Write Test", "result": "Fail"})
+
         else:
             returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
+
     else:
         returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
         returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
 
     #print json.dumps(returnVal, indent=2)
     return returnVal
@@ -137,6 +174,7 @@ class CustomGearmanWorker(gearman.GearmanWorker):
         print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
         self.send_job_data(current_job, json.dumps([{"testName": "Unknown Testing Process", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
         setError_cruiseDataTransfer(current_job)
+        print exc_info
         return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
@@ -163,7 +201,6 @@ def task_callback(gearman_worker, job):
     if dataObj['cruiseDataTransfer']['transferType'] == "1": # Local Directory
         job_results += test_localDestDir(dataObj)
     elif  dataObj['cruiseDataTransfer']['transferType'] == "2": # Rsync Server
-        #print 'sshpass ' + '-p ' + dataObj['cruiseDataTransfer']['rsyncPass'] + ' ssh ' + dataObj['cruiseDataTransfer']['rsyncServer'] + ' -l ' + dataObj['cruiseDataTransfer']['rsyncUser'] + ' -o ' + 'StrictHostKeyChecking=no ' + 'ls ' + ' > /dev/null'
         job_results += test_rsyncDestDir(dataObj)
     elif  dataObj['cruiseDataTransfer']['transferType'] == "3": # SMB Server
         job_results += test_smbDestDir(dataObj)
@@ -172,13 +209,13 @@ def task_callback(gearman_worker, job):
     
     gearman_worker.send_job_status(job, 3, 4)
 
-    verdict = "Success"
+    verdict = "Pass"
     for test in job_results:
         if test['result'] == "Fail":
             verdict = "Fail"
             setError_cruiseDataTransfer(job)
 
-    if verdict == "Success":
+    if verdict == "Pass":
         clearError_cruiseDataTransfer(job)
 
     job_results.append({"testName": "Final Verdict", "result": verdict})

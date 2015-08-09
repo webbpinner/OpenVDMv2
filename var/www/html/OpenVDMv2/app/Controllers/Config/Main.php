@@ -32,6 +32,7 @@ class Main extends Controller {
         $data['title'] = 'Configuration';
         $data['javascript'] = array('main_config', 'tabs_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['shipToShoreTransfersStatus'] = $this->_warehouseModel->getShipToShoreTransferStatus();
         $data['tasks'] = $this->_tasksModel->getTasks();
@@ -47,15 +48,20 @@ class Main extends Controller {
     public function editCruiseID(){
 
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('tabs_config');
+        $data['css'] = array('bootstrap-datepicker');
+        $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
 
         
         if(isset($_POST['submit'])) {
             $cruiseID = $_POST['cruiseID'];
+            $cruiseStartDate = $_POST['cruiseStartDate'];
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';
+            } elseif(!preg_match('/([0-9]{2})\/([0-9]{2})\/([0-9]{4})/', $cruiseStartDate)){
+                $error[] = 'Valid Cruise Start Date is required';                
             } else {
                 $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();
                 
@@ -65,15 +71,13 @@ class Main extends Controller {
             }
             
             if(!$error){
-                $postdata = array(
-                    'value' => $cruiseID,
-                );
-                
-                $this->_warehouseModel->setCruiseID($postdata);
+                $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
+                $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
                 Session::set('message','Cruise ID Updated');
                 Url::redirect('config');
             } else {
                 $data['cruiseID'] = $cruiseID;
+                $data['cruiseStartDate'] = $cruiseStartDate;
             }
         }
         
@@ -219,29 +223,31 @@ class Main extends Controller {
     public function setupNewCruise() {
 
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('tabs_config');
+        $data['css'] = array('bootstrap-datepicker');
+        $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
         $data['cruiseID'] = '';
+        $data['cruiseStartDate'] = '';
 //        $error = array();
 
         if(isset($_POST['submit'])){
             $cruiseID = $_POST['cruiseID'];
+            $cruiseStartDate = $_POST['cruiseStartDate'];
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';
+            } elseif(!preg_match('/([0-9]{2})\/([0-9]{2})\/([0-9]{4})/', $cruiseStartDate)){
+                $error[] = 'Valid Cruise Start Date is required';
             } else {
-                $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();
-                
+                $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();  
                 if (is_dir($warehouseData['shipboardDataWarehouseBaseDir'] . '/' . $cruiseID)) {
                     $error[] = 'A Cruise Data Directory for that Cruise ID already exists';
                 }
             }
                 
             if(!$error){
-                $postdata = array(
-                    'value' => $cruiseID,
-                );
                 
-                $this->_warehouseModel->setCruiseID($postdata);
+                $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
+                $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
                 $gmData['siteRoot'] = DIR;
                 $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
                 $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
@@ -260,7 +266,7 @@ class Main extends Controller {
                 #additional data needed for view
                 $data['title'] = 'Configuration';
                 $data['javascript'] = array('main_config', 'tabs_config');
-                $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+                $data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
                 $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
                 $data['shipToShoreTransfersStatus'] = $this->_warehouseModel->getShipToShoreTransferStatus();
                 $data['tasks'] = $this->_tasksModel->getTasks();
@@ -275,6 +281,7 @@ class Main extends Controller {
                 View::rendertemplate('footer',$data);
             } else {
                 $data['cruiseID'] = $cruiseID;
+                $data['cruiseStartDate'] = $cruiseStartDate;
             }
         }
         
@@ -288,6 +295,7 @@ class Main extends Controller {
         $gmData['siteRoot'] = DIR;
         $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
         $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $gmData['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $gmData['systemStatus'] = "On";
         $gmData['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
         $extraDirectories = $this->_extraDirectoriesModel->getRequiredExtraDirectories();

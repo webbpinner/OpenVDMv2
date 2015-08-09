@@ -119,6 +119,8 @@ use Helpers\Hooks;
             if ($cssFile === 'leaflet') {
                 array_push($cssFileArray, Url::templatePath() . 'bower_components/leaflet/leaflet.css');
                 array_push($cssFileArray, Url::templatePath() . 'bower_components/leaflet/plugins/leaflet-fullscreen/leaflet.fullscreen.css');
+            } else if ($cssFile === 'bootstrap-datepicker') {
+                array_push($cssFileArray, Url::templatePath() . 'bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css');   
             } else {
                 array_push($cssFileArray, Url::templatePath() . "css/" . $cssFile . ".css");
             }

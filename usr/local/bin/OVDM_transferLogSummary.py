@@ -244,7 +244,7 @@ def task_callback(gearman_worker, job):
         return json.dumps(job_results)
 
     finally:
-        job_results['parts'].append({"partName": "Reading pre-existing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Reading pre-existing Transfer Log Summary file", "result": "Pass"})
         gearman_worker.send_job_status(job, 7, 10)
 
     shipboardTransfers = {'collectionSystemName':dataObj['collectionSystemName'], 'date':dataObj['transferDate'], 'newFiles':dataObj['files']['new'], 'updatedFiles':dataObj['files']['updated'] }
@@ -275,7 +275,7 @@ def task_callback(gearman_worker, job):
         #print "Closing Transfer Log Summary file"
         TransferSummaryFile.close()
         os.chown(transferLogSummaryFilename, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Pass"})
 
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
@@ -312,7 +312,7 @@ def task_callback2(gearman_worker, job):
         return json.dumps(job_results)
 
     finally:
-        job_results['parts'].append({"partName": "Reading pre-existing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Reading pre-existing Transfer Log Summary file", "result": "Pass"})
         gearman_worker.send_job_status(job, 7, 10)
 
     
@@ -355,7 +355,7 @@ def task_callback2(gearman_worker, job):
         #print "Closing Transfer Log Summary file"
         TransferSummaryFile.close()
         os.chown(transferLogSummaryFilename, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Pass"})
 
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
@@ -391,7 +391,7 @@ def task_callback3(gearman_worker, job):
         return json.dumps(job_results)
 
     finally:
-        job_results['parts'].append({"partName": "Reading pre-existing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Reading pre-existing Transfer Log Summary file", "result": "Pass"})
         gearman_worker.send_job_status(job, 7, 10)
 
     
@@ -419,7 +419,7 @@ def task_callback3(gearman_worker, job):
         #print "Closing Transfer Log Summary file"
         TransferSummaryFile.close()
         os.chown(transferLogSummaryFilename, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Pass"})
 
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)    
