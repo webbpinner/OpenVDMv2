@@ -192,8 +192,8 @@ def procGGA(filePath):
     VELOCITYVALIDITY_STAT = 5    
     LATITUDEVALIDITY_STAT = 6
     LONGITUDEVALIDITY_STAT = 7
-    CHECKSUMVALIDITY_STAT = 8
-    ROWVALIDITY_STAT = 9
+    #CHECKSUMVALIDITY_STAT = 8
+    ROWVALIDITY_STAT = 8
     
     # List of column names for the raw csv-formatted datafile
     fieldNames = ('SCS Date',
@@ -253,7 +253,7 @@ def procGGA(filePath):
         {'statName':'Velocity Validity','statType':'valueValidity','statData':[0,0]},                           #Number of valid and invalid velocity readings        
         {'statName':'Latitude Validity','statType':'valueValidity','statData':[0,0]},                           #Number of valid and invalid latitude readings
         {'statName':'Longitude Validity','statType':'valueValidity','statData':[0,0]},                          #Number of valid and invalid longitude readings
-        {'statName':'Checksum Validity','statType':'rowValidity','statData':[0,0]},                          #Number of valid and invalid longitude readings
+        #{'statName':'Checksum Validity','statType':'rowValidity','statData':[0,0]},                          #Number of valid and invalid longitude readings
         {'statName':'Row Validity','statType':'rowValidity','statData':[0,0]}                                   #Number of valid and invalid rows
         
     ]

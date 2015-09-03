@@ -35,7 +35,7 @@ class CruiseDataTransfers extends Model {
     
     public function deleteCruiseDataTransfer($where){
         $cruiseDataTransfer = $this->db->select("SELECT * FROM ".PREFIX."CruiseDataTransfers WHERE cruiseDataTransferID = :id",array(':id' => $where['cruiseDataTransferID']))[0];
-        if(! $cruiseDataTransfer['required'] === 0 ){
+        if(strcmp($cruiseDataTransfer->required,'0') === 0 ){
             $this->db->delete(PREFIX."CruiseDataTransfers", $where);
         } 
     }

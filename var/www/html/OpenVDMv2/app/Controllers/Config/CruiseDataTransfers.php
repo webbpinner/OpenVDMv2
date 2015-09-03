@@ -146,6 +146,120 @@ class CruiseDataTransfers extends Controller {
                 Session::set('message','Cruise Data Transfer Added');
                 Url::redirect('config/cruiseDataTransfers');
             }
+        } elseif(isset($_POST['inlineTest'])){
+            $name = $_POST['name'];
+            $longName = $_POST['longName'];
+            $transferType = $_POST['transferType'];
+            $destDir = $_POST['destDir'];
+            $rsyncServer = $_POST['rsyncServer'];
+            $rsyncUser = $_POST['rsyncUser'];
+            $rsyncPass = $_POST['rsyncPass'];
+            $smbServer = $_POST['smbServer'];
+            $smbUser = $_POST['smbUser'];
+            $smbPass = $_POST['smbPass'];
+            $smbDomain = $_POST['smbDomain'];
+            $status = 3;
+            $enable = 0;
+
+            if($name == ''){
+                $error[] = 'Name is required';
+            } 
+
+            if($longName == ''){
+                $error[] = 'Long name is required';
+            } 
+
+            if($transferType == ''){
+                $error[] = 'Transfer type is required';
+            } 
+
+            if($destDir == ''){
+                $error[] = 'Destination Directory is required';
+            } 
+
+            if ($transferType == 2) { // Rsync Server
+                if($rsyncServer == ''){
+                    $error[] = 'Rsync Server is required';
+                } 
+
+                if($rsyncUser == ''){
+                    $error[] = 'Rsync Username is required';
+                } 
+
+                if($rsyncPass == ''){
+                    $error[] = 'Rsync Password is required';
+                } 
+
+            } elseif ($transferType == 3) { // SMB Share
+                if($smbServer == ''){
+                    $error[] = 'SMB Server is required';
+                } 
+
+                if($smbUser == ''){
+                    $error[] = 'SMB Username is required';
+                } 
+
+                if($smbPass == ''){
+                    $error[] = 'SMB Password is required';
+                } 
+            
+                if($smbDomain == ''){
+                    $smbDomain = 'WORKGROUP';
+                } 
+            
+//            } elseif ($transferType == 4) { //push
+            
+            }
+
+            if(!$error){
+                $_warehouseModel = new \Models\Warehouse();
+                $gmData['siteRoot'] = DIR;
+                $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
+                $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+                $gmData['cruiseDataTransfer'] = (object)array(
+                    'name' => $name,
+                    'longName' => $longName,
+                    'transferType' => $transferType,
+                    'destDir' => $destDir,
+                    'rsyncServer' => $rsyncServer,
+                    'rsyncUser' => $rsyncUser,
+                    'rsyncPass' => $rsyncPass,
+                    'smbServer' => $smbServer,
+                    'smbUser' => $smbUser,
+                    'smbPass' => $smbPass,
+                    'smbDomain' => $smbDomain,
+                    'status' => '4',
+                    'enable' => '0'
+                    );
+            
+                # create the gearman client
+                $gmc= new \GearmanClient();
+
+                # add the default server (localhost)
+                $gmc->addServer();
+
+                #submit job to Gearman, wait for results
+                $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
+
+                #$data['title'] = 'Configuration';
+                #$data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+                #$data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
+
+                #additional data needed for view
+                #$data['row'][0]->name = $_POST['name'];
+                #$data['row'][0]->longName = $_POST['longName'];
+                #$data['row'][0]->transferType = $_POST['transferType'];
+                #$data['row'][0]->destDir = $_POST['destDir'];
+                #$data['row'][0]->rsyncServer = $_POST['rsyncServer'];
+                #$data['row'][0]->rsyncUser = $_POST['rsyncUser'];
+                #$data['row'][0]->rsyncPass = $_POST['rsyncPass'];
+                #$data['row'][0]->smbServer = $_POST['smbServer'];
+                #$data['row'][0]->smbUser = $_POST['smbUser'];
+                #$data['row'][0]->smbPass = $_POST['smbPass'];
+                #$data['row'][0]->smbDomain = $_POST['smbDomain'];
+            
+                $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;     
+            }
         }
 
         View::rendertemplate('header',$data);

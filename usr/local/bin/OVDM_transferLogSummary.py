@@ -469,7 +469,7 @@ def task_callback4(gearman_worker, job):
         finally:
             #print "Closing Transfer Log file"
             transferLogFile.close()
-            job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Success"})
+            job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Pass"})
             gearman_worker.send_job_status(job, 7, 10)
 
     #print "Process Filename Error Logs"
@@ -503,7 +503,7 @@ def task_callback4(gearman_worker, job):
         finally:
             #print "Closing Transfer Log file"
             transferLogFile.close()
-            job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Success"})
+            job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Pass"})
             gearman_worker.send_job_status(job, 7, 10)
 
     #print "Process Ship-to-shore Transfer Logs"
@@ -528,7 +528,7 @@ def task_callback4(gearman_worker, job):
         finally:
             #print "Closing Transfer Log file"
             transferLogFile.close()
-            job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Success"})
+            job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Pass"})
             gearman_worker.send_job_status(job, 7, 10)
     
     try:
@@ -546,7 +546,7 @@ def task_callback4(gearman_worker, job):
         #print "Closing Transfer Log Summary file"
         transferLogSummaryFile.close()
         os.chown(transferLogSummaryFilename, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Success"})
+        job_results['parts'].append({"partName": "Writing Transfer Log Summary file", "result": "Pass"})
         gearman_worker.send_job_status(job, 7, 10)
 
     gearman_worker.send_job_status(job, 10, 10)

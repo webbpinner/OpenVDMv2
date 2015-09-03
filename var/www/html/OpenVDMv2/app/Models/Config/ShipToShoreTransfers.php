@@ -6,11 +6,11 @@ use Core\Model;
 class ShipToShoreTransfers extends Model {
 
     public function getShipToShoreTransfers(){
-        return $this->db->select("SELECT * FROM ".PREFIX."ShipToShoreTransfers WHERE requried = :requried ORDER BY name", array(':requried' => '0'));
+        return $this->db->select("SELECT * FROM ".PREFIX."ShipToShoreTransfers WHERE required = :requried ORDER BY name", array(':requried' => '0'));
     }
 
     public function getRequiredShipToShoreTransfers(){
-        return $this->db->select("SELECT * FROM ".PREFIX."ShipToShoreTransfers WHERE requried = :requried ORDER BY name", array(':requried' => '1'));
+        return $this->db->select("SELECT * FROM ".PREFIX."ShipToShoreTransfers WHERE required = :requried ORDER BY name", array(':requried' => '1'));
     }
 
     public function getShipToShoreTransfer($id){
@@ -27,7 +27,7 @@ class ShipToShoreTransfers extends Model {
     
     public function deleteShipToShoreTransfer($where){
         $shipToShoreTransfer = $this->db->select("SELECT * FROM ".PREFIX."ShipToShoreTransfers WHERE shipToShoreTransferID = :id",array(':id' => $where['shipToShoreTransferID']))[0];
-        if(! $shipToShoreTransfer['required'] === 0 ){
+        if(strcmp($shipToShoreTransfer->required, '0') === 0 ){
             $this->db->delete(PREFIX."ShipToShoreTransfers", $where);
         }
     }

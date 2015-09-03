@@ -42,11 +42,23 @@ import urlparse
 import json
 import gearman
 
+def clearGearmanJobsFromDB(siteRoot):
+    url = siteRoot + 'api/gearman/clearAllJobsFromDB'
+    try:
+        r = requests.get(url)
+	#print json.dumps(r.json(), indent=2)
+        return r.text
+
+    except requests.exceptions.RequestException as e: 
+        print "Error retrieving warehouse data, check URL"
+        sys.exit(1)
+
+
 def getWarehouseConfig(siteRoot):
     url = siteRoot + 'api/warehouse/getShipboardDataWarehouseConfig'
     try:
         r = requests.get(url)
-	#print json.dumps(r.json(), indent=2)
+        #print r.text
         return r.json()
 
     except requests.exceptions.RequestException as e: 
@@ -170,6 +182,8 @@ def main(argv):
     for requiredCruiseDataTransfer in requiredCruiseDataTransfers:
         if not requiredCruiseDataTransfer['status'] == '3':
             setIdle_cruiseDataTransfer(args.siteRoot, requiredCruiseDataTransfer['cruiseDataTransferID'])
+
+    clearGearmanJobsFromDB(args.siteRoot)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

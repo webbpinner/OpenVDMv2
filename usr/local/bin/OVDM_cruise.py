@@ -46,7 +46,8 @@ import shutil
 
 tasks = {
     "setupNewCruise": "Initializing Cruise",
-    "finalizeCurrentCruise": "Finalizing Cruise"
+    "finalizeCurrentCruise": "Finalizing Cruise",
+    "exportOVDMConfig": "Export OpenVDM Configuration"
 }
 
 cruiseConfigFN = 'ovdmConfig.json'
@@ -85,7 +86,9 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
 def build_cruiseConfig(dataObj):
     url = dataObj['siteRoot'] + 'api/warehouse/getCruiseConfig'
     r = requests.get(url)
-    return r.text
+    ovdmConfig = json.loads(r.text)
+    ovdmConfig['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
+    return ovdmConfig
 
 
 def move_files(sourceDir, destDir, warehouseUser):
@@ -211,6 +214,9 @@ def task_callback(gearman_worker, job):
     dataObj = json.loads(job.data)
     #print 'DECODED:', json.dumps(dataObj, indent=2)
     
+    cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
+    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
+    
     gearman_worker.send_job_status(job, 1, 10)
     
     gm_client = gearman.GearmanClient(['localhost:4730'])
@@ -286,6 +292,12 @@ def task_callback(gearman_worker, job):
         #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
     
+    gearman_worker.send_job_status(job, 9, 10)
+
+    #build OpenVDM Config file
+    ovdmConfig = build_cruiseConfig(dataObj)
+    output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
+    
     gearman_worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)
@@ -353,14 +365,41 @@ def task_callback2(gearman_worker, job):
     gearman_worker.send_job_status(job, 8, 10)
     
     #build OpenVDM Config file
-    ovdmConfig = json.loads(build_cruiseConfig(dataObj))
-    ovdmConfig['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
+    ovdmConfig = build_cruiseConfig(dataObj)
     output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
     gearman_worker.send_job_status(job, 9, 10)
     
     completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
     
     # need to add code for cruise data transfers
+    gearman_worker.send_job_status(job, 10, 10)
+    return json.dumps(job_results)
+
+def task_callback3(gearman_worker, job):
+
+    job_results = {'parts':[]}
+    gmData = {}
+
+    dataObj = json.loads(job.data)
+    #print 'DECODED:', json.dumps(dataObj, indent=2)
+
+    cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
+    publicDataDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehousePublicDataDir']
+    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
+    scienceDir = cruiseDir + '/' + dataObj['scienceDir']
+    
+    gearman_worker.send_job_status(job, 1, 10)
+
+    if os.path.exists(cruiseDir):
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
+    else:
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        return json.dumps(job_results)
+    
+    #build OpenVDM Config file
+    ovdmConfig = build_cruiseConfig(dataObj)
+    output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
+    
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
@@ -381,4 +420,5 @@ signal.signal(signal.SIGINT, sigint_handler)
 new_worker.set_client_id('cruise.py')
 new_worker.register_task("setupNewCruise", task_callback)
 new_worker.register_task("finalizeCurrentCruise", task_callback2)
+new_worker.register_task("exportOVDMConfig", task_callback3)
 new_worker.work()

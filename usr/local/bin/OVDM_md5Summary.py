@@ -59,6 +59,8 @@ def build_filelist(sourceDir):
     return returnFiles
 
 def build_hashes(sourceDir, worker, job, fileList):
+    #print "sourceDir: " + sourceDir
+    #print "fileList: " + json.dumps(fileList, indent=2)
     filesizeLimit = get_md5FilesizeLimit(job)
     filesizeLimitStatus = get_md5FilesizeLimitStatus(job) 
 
@@ -210,7 +212,9 @@ class CustomGearmanWorker(gearman.GearmanWorker):
         print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Tasks", "result": "Fail"}]))
         setError_task(current_job, self.taskID)
-        print exc_info
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
         return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
@@ -243,7 +247,8 @@ def task_callback(gearman_worker, job):
 
     gearman_worker.send_job_status(job, 1, 10)
 
-    cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
+    baseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']
+    cruiseDir = baseDir + '/' + dataObj['cruiseID']
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
     md5SummaryFilename = cruiseDir + '/' + 'MD5_Summary.txt'
     
@@ -278,9 +283,10 @@ def task_callback(gearman_worker, job):
         MD5SummaryFile = open(md5SummaryFilename, 'r')
 
         for line in MD5SummaryFile:
+            #print line.rstrip('\n')
             (md5Hash, filename) = line.split(' ', 1)
-            existingHashes.append({'hash': md5Hash, 'filename': filename.replace('\n', '', 1)})
-        
+            #print md5Hash + ', ' + filename
+            existingHashes.append({'hash': md5Hash, 'filename': filename.rstrip('\n')})
 
     except IOError:
         print "Error Reading MD5 Summary file"
@@ -291,10 +297,11 @@ def task_callback(gearman_worker, job):
         #print "Closing MD5 Summary file"
         MD5SummaryFile.close()
         job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Pass"})
+        #print 'DECODED existingHashes:', json.dumps(existingHashes, indent=2)
 
     #gearman_worker.send_job_status(job, 8, 10)
     #print 'DECODED existingHashes:', json.dumps(existingHashes, indent=2)
-
+    
     for newRow in newHashes:
         updated = False
         for existingRow in existingHashes:
@@ -317,7 +324,7 @@ def task_callback(gearman_worker, job):
 
         #print "Saving MD5 Summary file"
         #sorted(student_tuples, key=itemgetter(2))
-        for filehash in existingHashes:
+        for filehash in sorted(existingHashes, key=lambda hashes: hashes['filename']):
             MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
 
     except IOError:

@@ -1,4 +1,306 @@
-<p>Error on Aug 09, 2015 9:33AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 3:23AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 3:22AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 3:21AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><h3>Exception information:</h3>
+<p>Error on Aug 24, 2015 22:14PM - GearmanClient::jobStatus(): send_packet(GEARMAN_COULD_NOT_CONNECT) Failed to send server-options packet -&gt; libgearman/connection.cc:433 in /var/www/html/OpenVDMv2/app/Models/Api/Gearman.php on line 19</p><h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 15, 2015 12:00PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[42S22]: Column not found: 1054 Unknown column 'required' in 'where clause'</p>
+
+           <p><strong>Code:</strong> 42S22</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 100</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(100): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Config/ShipToShoreTransfers.php(9): Helpers\Database->select('SELECT * FROM O...', Array)
+#2 /var/www/html/OpenVDMv2/app/Controllers/Config/ShipToShoreTransfers.php(97): Models\Config\ShipToShoreTransfers->getShipToShoreTransfers()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(92): Controllers\Config\shipToShoreTransfers->index()
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('\Controllers\Co...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 15, 2015 11:57AM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[42S22]: Column not found: 1054 Unknown column 'required' in 'where clause'</p>
+
+           <p><strong>Code:</strong> 42S22</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 100</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(100): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Config/ShipToShoreTransfers.php(9): Helpers\Database->select('SELECT * FROM O...', Array)
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/ShipToShoreTransfers.php(16): Models\Config\ShipToShoreTransfers->getShipToShoreTransfers()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(92): Controllers\Api\ShipToShoreTransfers->getShipToShoreTransfers()
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 18:32PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[42S22]: Column not found: 1054 Unknown column 'requried' in 'where clause'</p>
+
+           <p><strong>Code:</strong> 42S22</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 100</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(100): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Config/ShipToShoreTransfers.php(9): Helpers\Database->select('SELECT * FROM O...', Array)
+#2 /var/www/html/OpenVDMv2/app/Controllers/Config/ShipToShoreTransfers.php(97): Models\Config\ShipToShoreTransfers->getShipToShoreTransfers()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(92): Controllers\Config\shipToShoreTransfers->index()
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('\Controllers\Co...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Gearman.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Gearman->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Messages.php(12): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Messages->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Warehouse.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\Warehouse->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 15:01PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/CruiseDataTransfers.php(11): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Api\CruiseDataTransfers->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 13:04PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000] [2002] Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)</p>
+
+           <p><strong>Code:</strong> 2002</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 57</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(57): PDO->__construct('mysql:host=loca...', 'root', 'eris.2003')
+#1 /var/www/html/OpenVDMv2/app/Core/Model.php(29): Helpers\Database::get()
+#2 /var/www/html/OpenVDMv2/app/Controllers/Welcome.php(15): Core\Model->__construct()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(88): Controllers\Welcome->__construct(NULL)
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Wel...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 13:04PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[HY000]: General error: 2006 MySQL server has gone away</p>
+
+           <p><strong>Code:</strong> HY000</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 100</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(100): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Api/Gearman.php(18): Helpers\Database->select('SELECT * FROM O...')
+#2 /var/www/html/OpenVDMv2/app/Models/Api/Gearman.php(39): Models\Api\Gearman->updateJobs()
+#3 /var/www/html/OpenVDMv2/app/templates/default/header.php(90): Models\Api\Gearman->getJobs()
+#4 /var/www/html/OpenVDMv2/app/Core/View.php(66): require('/var/www/html/O...')
+#5 /var/www/html/OpenVDMv2/app/Controllers/Welcome.php(81): Core\View::renderTemplate('header', Array)
+#6 /var/www/html/OpenVDMv2/app/Core/Router.php(92): Controllers\Welcome->index()
+#7 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Wel...')
+#8 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#9 {main}</pre>
+
+           <hr />
+<h3>Exception information:</h3>
+
+           <p><strong>Date:</strong> Aug 14, 2015 12:27PM</p>
+
+           <p><strong>Message:</strong> SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'LIMIT 1' at line 1</p>
+
+           <p><strong>Code:</strong> 42000</p>
+
+           <p><strong>File:</strong> /var/www/html/OpenVDMv2/app/Helpers/Database.php</p>
+
+           <p><strong>Line:</strong> 207</p>
+
+           <h3>Stack trace:</h3>
+
+           <pre>#0 /var/www/html/OpenVDMv2/app/Helpers/Database.php(207): PDOStatement->execute()
+#1 /var/www/html/OpenVDMv2/app/Models/Api/Gearman.php(74): Helpers\Database->delete('OVDM_Gearman', Array)
+#2 /var/www/html/OpenVDMv2/app/Controllers/Api/Gearman.php(44): Models\Api\Gearman->clearAllJobsFromDB()
+#3 /var/www/html/OpenVDMv2/app/Core/Router.php(92): Controllers\Api\Gearman->clearAllJobsFromDB()
+#4 /var/www/html/OpenVDMv2/app/Core/Router.php(182): Core\Router::invokeObject('Controllers\Api...')
+#5 /var/www/html/OpenVDMv2/index.php(238): Core\Router::dispatch()
+#6 {main}</pre>
+
+           <hr />
+<p>Error on Aug 12, 2015 16:38PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:38PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:38PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:38PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:37PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:36PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:35PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:35PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:34PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:30PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:30PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:30PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:30PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 12, 2015 16:29PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 11, 2015 17:29PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 11, 2015 13:50PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 11, 2015 13:00PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 10, 2015 13:49PM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 10, 2015 9:35AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 10, 2015 8:44AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 13:49PM - Creating default object from empty value in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 389</p><p>Error on Aug 09, 2015 13:47PM - Creating default object from empty value in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 389</p><p>Error on Aug 09, 2015 13:35PM - Creating default object from empty value in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 297</p><p>Error on Aug 09, 2015 13:35PM - Creating default object from empty value in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 296</p><p>Error on Aug 09, 2015 13:24PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:24PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:24PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:23PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:23PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:22PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:22PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 263</p><p>Error on Aug 09, 2015 13:20PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 262</p><p>Error on Aug 09, 2015 13:19PM - Attempt to assign property of non-object in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 241</p><p>Error on Aug 09, 2015 13:16PM - Creating default object from empty value in /var/www/html/OpenVDMv2/app/Controllers/Config/CollectionSystemTransfers.php on line 240</p><p>Error on Aug 09, 2015 9:33AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 3:23AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 3:22AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><p>Error on Aug 09, 2015 3:21AM - Division by zero in /var/www/html/OpenVDMv2/app/views/DataDashboard/qualityControl.php on line 156</p><h3>Exception information:</h3>
 
            <p><strong>Date:</strong> Aug 08, 2015 18:45PM</p>
 
