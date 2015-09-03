@@ -371,7 +371,9 @@ class CustomGearmanWorker(gearman.GearmanWorker):
         print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
         setError_cruiseDataTransfer(current_job, "Unknown Part")
-        print exc_info
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
         return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):

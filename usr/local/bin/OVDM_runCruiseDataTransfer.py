@@ -91,7 +91,7 @@ def transfer_localDestDir(data, worker, job):
     #print "Build file list"
     files = build_filelist(sourceDir, filters)
     
-    count = 1
+    count = 0
     fileCount = len(files['include'])
     
     # Create temp directory
@@ -129,12 +129,14 @@ def transfer_localDestDir(data, worker, job):
     lines_iterator = iter(popen.stdout.readline, b"")
     for line in lines_iterator:
         #print(line) # yield line
-        if line.startswith( '<f+++++++++' ):
+        if line.startswith( '>f+++++++++' ):
             files['new'].append(line.split(' ')[1])
-        elif line.startswith( '<f.' ):
+            count += 1
+        elif line.startswith( '>f.' ):
             files['updated'].append(line.split(' ')[1])
+            count += 1
+
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-        count += 1
             
         if worker.stop:
             print "Stopping"
@@ -173,7 +175,7 @@ def transfer_smbDestDir(data, worker, job):
     #print "Build destination directories"
     build_destDirectories(destDir, files['include'])
 
-    count = 1
+    count = 0
     fileCount = len(files['include'])
     
     # Create temp directory
@@ -211,47 +213,27 @@ def transfer_smbDestDir(data, worker, job):
     lines_iterator = iter(popen.stdout.readline, b"")
     for line in lines_iterator:
         #print(line) # yield line
-        if line.startswith( '<f+++++++++' ):
+        if line.startswith( '>f+++++++++' ):
             files['new'].append(line.split(' ')[1])
-        elif line.startswith( '<f.' ):
+            count += 1
+        elif line.startswith( '>f.' ):
             files['updated'].append(line.split(' ')[1])
+            count += 1
+
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-        count += 1
             
         if worker.stop:
             print "Stopping"
             break
     
-    # Cleanup
-    shutil.rmtree(tmpdir)    
-    return files
+    #print "Unmount SMB Share"
+    subprocess.call(['sudo', 'umount', mntPoint])
     
-#    for filename in files['include']:
-#        proc = subprocess.Popen(['rsync', '-rlptDi', sourceDir + filename, destDir + filename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-#        out, err = proc.communicate()
-        #print "OUT: " + out
-#        if err:
-#            print "ERR: " + err
-#        if out.startswith( '>f+++++++++' ):
-#            files['new'].append(filename)
-#        elif out.startswith( '>f.' ):
-#            files['updated'].append(filename)
-#        worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-#        count += 1
-#        if worker.stop:
-#            print "Stopping"
-#            break
-#        #else:
-#        #    print "Next File"
-#        
-#    #print "Unmount SMB Share"
-#    subprocess.call(['sudo', 'umount', mntPoint])
-#    
-#    #print "Cleanup"
-#    shutil.rmtree(tmpdir)
-#
-#    #print 'DECODED Files:', json.dumps(files, indent=2)
-#    return files
+    #print "Cleanup"
+    shutil.rmtree(tmpdir)
+
+    #print 'DECODED Files:', json.dumps(files, indent=2)
+    return files
 
 def transfer_rsyncDestDir(data, worker, job):
 
@@ -267,11 +249,11 @@ def transfer_rsyncDestDir(data, worker, job):
     
     createdDirs = []
 
-    count = 1
+    count = 0
     fileCount = len(files['include'])
     
     
-        # Create temp directory
+    # Create temp directory
     tmpdir = tempfile.mkdtemp()
     rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
         
@@ -306,12 +288,13 @@ def transfer_rsyncDestDir(data, worker, job):
     lines_iterator = iter(popen.stdout.readline, b"")
     for line in lines_iterator:
         #print(line) # yield line
-        if line.startswith( '<f+++++++++' ):
+        if line.startswith( '>f+++++++++' ):
             files['new'].append(line.split(' ')[1])
-        elif line.startswith( '<f.' ):
+            count += 1
+        elif line.startswith( '>f.' ):
             files['updated'].append(line.split(' ')[1])
+            count += 1
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-        count += 1
             
         if worker.stop:
             print "Stopping"
@@ -347,7 +330,7 @@ def setRunning_cruiseDataTransfer(job):
     url = dataObj['siteRoot'] + 'api/gearman/newJob/' + job.handle
     payload = {'jobName': 'Run Transfer for ' + dataObj['cruiseDataTransfer']['name'],'jobPid': jobPID}
     r = requests.post(url, data=payload)
-
+    
 def setIdle_cruiseDataTransfer(job):
     dataObj = json.loads(job.data)
 

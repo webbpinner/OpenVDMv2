@@ -127,7 +127,6 @@ class DataDashboard extends Model {
                     for ($j=0; $j < sizeof($dataFileStatsObj); $j++) {
                         switch ($dataFileStatsObj[$j]->statType){
                             case "timeBounds":
-                                echo "timeBounds";
                                 #Start Time
                                 if($dataFileStatsObj[$j]->statData[0] < $dataTypeStatsObj[$j]->statData[0]){
                                     $dataTypeStatsObj[$j]->statData[0] = $dataFileStatsObj[$j]->statData[0];
@@ -141,7 +140,6 @@ class DataDashboard extends Model {
                                 break;
                                 
                             case "geoBounds":
-                                echo "geoBounds";
                                 #North
                                 if($dataFileStatsObj[$j]->statData[0] > $dataTypeStatsObj[$j]->statData[0]){
                                     $dataTypeStatsObj[$j]->statData[0] = $dataFileStatsObj[$j]->statData[0];
@@ -165,7 +163,6 @@ class DataDashboard extends Model {
                                 break;
                                 
                             case "bounds":
-                                echo "bounds";
                                 #Min
                                 if($dataFileStatsObj[$j]->statData[0] < $dataTypeStatsObj[$j]->statData[0]){
                                     $dataTypeStatsObj[$j]->statData[0] = $dataFileStatsObj[$j]->statData[0];
@@ -185,7 +182,6 @@ class DataDashboard extends Model {
                                 break;
                             
                             case "valueValidity":
-                                echo "valueValidity";
                                 #Sum values
                                 $dataTypeStatsObj[$j]->statData[0] += $dataFileStatsObj[$j]->statData[0];
 
@@ -193,7 +189,6 @@ class DataDashboard extends Model {
                                 
                                 break;
                             case "rowValidity":
-                                echo "rowValidity";
                                 #Sum values
                                 $dataTypeStatsObj[$j]->statData[0] += $dataFileStatsObj[$j]->statData[0];
 

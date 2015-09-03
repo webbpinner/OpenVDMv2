@@ -49,6 +49,7 @@ from random import randint
 
 def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
 
+    #print "Filter sourceDir: " + sourceDir
     #print "Build file list"
     #find . -path ./archive -prune -o -type f -mmin +5 -print
 
@@ -67,27 +68,27 @@ def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
                     ignore = True
                     break
             if not ignore:
-                for filt in filters['excludeFilter'].split(','): 
+                for filt in filters['includeFilter'].split(','): 
                     if fnmatch.fnmatch(filename, filt):
-                        returnFiles['exclude'].append(os.path.join(root, filename))
-                        exclude = True
-                        break
-                if not exclude:
-                    for filt in filters['includeFilter'].split(','): 
-                        if fnmatch.fnmatch(filename, filt):
+                        for filt in filters['excludeFilter'].split(','): 
+                            if fnmatch.fnmatch(filename, filt):
+                                returnFiles['exclude'].append(os.path.join(root, filename))
+                                exclude = True
+                                break
+                        if not exclude:
                             #print 'Filename: ' + os.path.join(root, filename)
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             if file_mod_time > cruiseStart_time and file_mod_time < threshold_time:
                                 returnFiles['include'].append(os.path.join(root, filename))
-                                include = True
-                                break
-                    if not include:
-                        returnFiles['exclude'].append(os.path.join(root, filename))
+                            include = True
+                            break
+                if not include:
+                    returnFiles['exclude'].append(os.path.join(root, filename))
             
-    returnFiles['include'] = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles['include']]
-    returnFiles['exclude'] = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles['exclude']]
+    returnFiles['include'] = [filename.replace(sourceDir+'/', '', 1) for filename in returnFiles['include']]
+    returnFiles['exclude'] = [filename.replace(sourceDir+'/', '', 1) for filename in returnFiles['exclude']]
     
-    #print 'DECODED Filters:', json.dumps(returnFiles, indent=2)  
+    #print 'DECODED fileList:', json.dumps(returnFiles, indent=2)  
     
     return returnFiles
 
@@ -99,6 +100,10 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
     #print "Calculate now"
     threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
     cruiseStart_time = calendar.timegm(time.strptime(cruiseStartDate, "%m/%d/%Y"))
+    
+    rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
+    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
+    #print "sourceDir: " + sourceDir
 
     #print threshold_time
     rsyncFileList = ''
@@ -132,7 +137,7 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
             #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
         
         # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
-        proc = subprocess.Popen(['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir']],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/'],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         out, err = proc.communicate()
         rsyncFileList = out
         
@@ -140,11 +145,11 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
         shutil.rmtree(tmpdir)
 
     else:
-        proc = subprocess.Popen(['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + ':' + data['collectionSystemTransfer']['sourceDir'] + '/'],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + ':' + sourceDir + '/'],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         out, err = proc.communicate()
         rsyncFileList = out
         
-    #print rsyncFileList
+    #print "rsyncFileListOut: " + rsyncFileList
     
 #    root = data['collectionSystemTransfer']['sourceDir']
 #    baseDir = os.path.basename(data['collectionSystemTransfer']['sourceDir'])
@@ -166,26 +171,27 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
                     ignore = True
                     break
             if not ignore:
-                for filt in filters['excludeFilter'].split(','): 
+                for filt in filters['includeFilter'].split(','): 
                     if fnmatch.fnmatch(filename, filt):
-                        returnFiles['exclude'].append(filename)
-                        exclude = True
-                        break
-                if not exclude:
-                    for filt in filters['includeFilter'].split(','): 
-                        if fnmatch.fnmatch(filename, filt):
+                        for filt in filters['excludeFilter'].split(','): 
+                            if fnmatch.fnmatch(filename, filt):
+                                returnFiles['exclude'].append(filename)
+                                exclude = True
+                                break
+                        if not exclude:
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
                             #print "file_mod_time_SECS: " + str(file_mod_time_SECS)
                             if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
+                                #print filename
                                 returnFiles['include'].append(filename)
-                                include = True
-                                break
-                    if not include:
-                        returnFiles['exclude'].append(filename)        
+                            include = True
+                            break
+                if not include:
+                    returnFiles['exclude'].append(filename)        
 
-    #returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
-    #returnFiles['exclude'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['exclude']]
+    returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
+    returnFiles['exclude'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['exclude']]
     
     #print 'DECODED returnFiles:', json.dumps(returnFiles, indent=2)  
     
@@ -297,41 +303,66 @@ def transfer_localSourceDir(data, worker, job):
     filters = build_filters(rawFilters, data)
     
     destDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    sourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
+    sourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')+'/'
     
     #print "Build file list"
     files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
 
     #print "Build destination directories"
-    build_destDirectories(destDir, files['include'])
+    #build_destDirectories(destDir, files['include'])
     
     count = 1
     fileCount = len(files['include'])
     
-    for filename in files['include']:
-        proc = subprocess.Popen(['rsync', '-ti', sourceDir + '/' + filename, destDir + '/' + filename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        out, err = proc.communicate()
-        #print "OUT: " + out
-        if err:
-            print "ERR: " + err
-        else:
-            os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
+        
+    try:
+        #print "Open rsync password file"
+        rsyncFileListFile = open(rsyncFileListPath, 'w')
+
+        #print "Saving rsync password file"
+        #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
+        rsyncFileListFile.write('\n'.join([data['cruiseID'] + str(x) for x in files['include']]))
+
+    except IOError:
+        print "Error Saving temporary rsync filelist file"
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncFileListFile.close()
             
-        if out.startswith( '>f+++++++++' ):
-            files['new'].append(data['collectionSystemTransfer']['destDir'].rstrip('/') + '/' + filename)
-        elif out.startswith( '>f.' ):
-            files['updated'].append(data['collectionSystemTransfer']['destDir'].rstrip('/') + '/' + filename)
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
+
+    finally:
+        #print "Closing rsync filelist file"
+        rsyncFileListFile.close()
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+    
+    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    #print command
+    
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        print(line) # yield line
+        if line.startswith( '>f+++++++++' ):
+            files['new'].append(line.split(' ')[1].rstrip('\n'))
+        elif line.startswith( '>f.' ):
+            files['updated'].append(line.split(' ')[1].rstrip('\n'))
+        os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
+            
         if worker.stop:
             print "Stopping"
             break
-        #else:
-            #print "Next File"
-
-    #print 'DECODED Files:', json.dumps(files, indent=2)
+    
+    # Cleanup
+    shutil.rmtree(tmpdir)    
     return files
-
 
 def transfer_smbSourceDir(data, worker, job):
 
@@ -341,7 +372,6 @@ def transfer_smbSourceDir(data, worker, job):
 
     #print "Transfer from SMB Server"
     rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
-
     filters = build_filters(rawFilters, data)
 
     # Create temp directory
@@ -360,39 +390,66 @@ def transfer_smbSourceDir(data, worker, job):
     else:
         subprocess.call(['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']])
 
-    destDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-
+    rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
+    destDir = build_destDir(rawDestDir, data)
+    rawSourceDir = mntPoint+'/'+data['collectionSystemTransfer']['sourceDir'].rstrip('/')
+    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
+    
+    #print "Source Dir: " + sourceDir
+    #print "Destinstation Dir: " + destDir
+    
     #print "Build file list"
     files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
     
-    #print "Build destination directories"
-    build_destDirectories(destDir, files['include'])
-
+    #print "File List:"
+    #print json.dumps(files['include'])
+    
     count = 1
     fileCount = len(files['include'])
     
-    for filename in files['include']:
-        proc = subprocess.Popen(['rsync', '-ti', sourceDir + '/' + filename, destDir + '/' + filename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        out, err = proc.communicate()
-        #print "OUT: " + out
-        if err:
-            print "ERR: " + err
-        else:
-            os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
+    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
+        
+    try:
+        #print "Open rsync filelist file"
+        rsyncFileListFile = open(rsyncFileListPath, 'w')
+
+        #print "Saving rsync filelist file"
+        #print '\n'.join(files['include'])
+        rsyncFileListFile.write('\n'.join(files['include']))
+
+    except IOError:
+        print "Error Saving temporary rsync filelist file"
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncFileListFile.close()
             
-        if out.startswith( '>f+++++++++' ):
-            files['new'].append(data['collectionSystemTransfer']['destDir'].rstrip('/') + '/' + filename)
-        elif out.startswith( '>f.' ):
-            files['updated'].append(data['collectionSystemTransfer']['destDir'].rstrip('/') + '/' + filename)
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
+
+    finally:
+        #print "Closing rsync filelist file"
+        rsyncFileListFile.close()
+        #returnVal.append({"testName": "Writing rsync filelist file", "result": "Pass"})
+    
+    command = ['rsync', '-trim', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    #print command
+    
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        #print(line) # yield line
+        if line.startswith( '>f+++++++++' ):
+            files['new'].append(line.split(' ')[1].rstrip('\n'))
+        elif line.startswith( '>f.' ):
+            files['updated'].append(line.split(' ')[1].rstrip('\n'))
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
+            
         if worker.stop:
             print "Stopping"
             break
-        #else:
-            #print "Next File"
-        
+    
     #print "Unmount SMB Share"
     subprocess.call(['sudo', 'umount', mntPoint])
     
@@ -416,23 +473,28 @@ def transfer_rsyncSourceDir(data, worker, job):
     #print "Build Processed Filters"
     filters = build_filters(rawFilters, data)
 
-    destDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    sourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
+    rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
+    destDir = build_destDir(rawDestDir, data).rstrip('/')
+    rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
+    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
+    
     #print "destDir: " + destDir
+    #print "sourceDir: " + sourceDir
         
     files = build_rsyncFilelist(data, filters, staleness, cruiseStartDate)
     #print json.dumps(files, indent=1)
     
     #print "Build destination directories"
     #print files['include']
-    build_destDirectories(destDir, files['include'])
+    #build_destDirectories(destDir, files['include'])
+    
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
 
     count = 1
     fileCount = len(files['include'])
     
     if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
-        # Create temp directory
-        tmpdir = tempfile.mkdtemp()
         rsyncPasswordFilePath = tmpdir + '/passwordFile'
         
         try:
@@ -457,42 +519,59 @@ def transfer_rsyncSourceDir(data, worker, job):
             rsyncPasswordFile.close()
             os.chmod(rsyncPasswordFilePath, 0600)
             #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
-
-    for filename in files['include']:
-        if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
-            #print 'rsync -ti --no-motd --password-file=' + rsyncPasswordFilePath + ' rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/' + filename + ' ' + destDir + '/' + filename
-            rsyncCMD = ['rsync', '-ti', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/' + filename, destDir + '/' + filename]
-        else:
-            #print 'sshpass -p ' + data['collectionSystemTransfer']['rsyncPass'] + ' rsync -ti -e ssh -c arcfour' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + ':' + sourceDir + '/' + filename + ' ' + destDir + '/' + filename
-            rsyncCMD = ['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'rsync', '-ti', '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + ':' + sourceDir + '/' + filename, destDir + '/' + filename]
-
-        proc = subprocess.Popen(rsyncCMD, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        out, err = proc.communicate()
-
-        #print "OUT: " + out
-        if err:
-            print "ERR: " + err
-        else:
-            os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
             
-        if out.startswith( '>f+++++++++' ):
-            files['new'].append(data['collectionSystemTransfer']['destDir'] + '/' + filename)
-        elif out.startswith( '>f.' ):
-            files['updated'].append(data['collectionSystemTransfer']['destDir'] + '/' + filename)
+    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
+        
+    try:
+        #print "Open rsync password file"
+        rsyncFileListFile = open(rsyncFileListPath, 'w')
+
+        #print "Saving rsync password file"
+        #print '\n'.join(files['include'])
+        rsyncFileListFile.write('\n'.join(files['include']))
+
+    except IOError:
+        print "Error Saving temporary rsync filelist file"
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncFileListFile.close()
+            
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
+
+    finally:
+        #print "Closing rsync filelist file"
+        rsyncFileListFile.close()
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+    
+    
+    if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
+        #print 'rsync -ti --no-motd --password-file=' + rsyncPasswordFilePath + ' rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/' + filename + ' ' + destDir + '/' + filename
+        command = ['rsync', '-ti', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir, destDir]
+    else:
+        #print 'sshpass -p ' + data['collectionSystemTransfer']['rsyncPass'] + ' rsync -ti -e ssh -c arcfour' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + ':' + sourceDir + '/' + filename + ' ' + destDir + '/' + filename
+        command = ['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'rsync', '-ti', '--files-from=' + rsyncFileListPath, '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + ':' + sourceDir, destDir]
+        
+    #print command
+    
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        #print(line) # yield line
+        if line.startswith( '>f+++++++++' ):
+            files['new'].append(line.split(' ')[1].rstrip('\n'))
+        elif line.startswith( '>f.' ):
+            files['updated'].append(line.split(' ')[1].rstrip('\n'))
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
+            
         if worker.stop:
             print "Stopping"
             break
-        #else:
-            #print "Next File"
-
-    #print 'DECODED Files:', json.dumps(files, indent=2)
     
-    if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
-        # Cleanup
-        shutil.rmtree(tmpdir)
-    
+    # Cleanup
+    shutil.rmtree(tmpdir)    
     return files
 
 def setError_collectionSystemTransfer(job, reason=''):
@@ -582,6 +661,9 @@ class CustomGearmanWorker(gearman.GearmanWorker):
                 jobData['shipboardDataWarehouse'] = dataObj['shipboardDataWarehouse']
                 jobData['cruiseID'] = dataObj['cruiseID']
                 jobData['files'] = resultObj['files']
+                jobData['files']['new'] = [dataObj['collectionSystemTransfer']['destDir'] + '/' + filename for filename in jobData['files']['new']]
+                jobData['files']['updated'] = [dataObj['collectionSystemTransfer']['destDir'] + '/' + filename for filename in jobData['files']['updated']]
+                #jobData['files']['exclude'] = [dataObj['collectionSystemTransfer']['destDir'] + filename for filename in jobData['files']['exclude']]
 
                 if resultObj['files']['new'] or resultObj['files']['updated']:
                     #print "Sending transfer results to MD5 Updater worker"

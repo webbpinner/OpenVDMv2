@@ -146,16 +146,18 @@ def test_rsyncDestDir(data):
 def setError_cruiseDataTransfer(job):
     dataObj = json.loads(job.data)
 
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setErrorCruiseDataTransfer/' + dataObj['cruiseDataTransfer']['cruiseDataTransferID']
-    r = requests.get(url)
+    if 'cruiseDataTransferID' in dataObj['cruiseDataTransfer']:
+        # Set Error for current tranfer in DB via API
+        url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setErrorCruiseDataTransfer/' + dataObj['cruiseDataTransfer']['cruiseDataTransferID']
+        r = requests.get(url)
     
 def clearError_cruiseDataTransfer(job):
     dataObj = json.loads(job.data)
     if dataObj['cruiseDataTransfer']['status'] == "3":
-        # Clear Error for current tranfer in DB via API
-        url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setIdleCruiseDataTransfer/' + dataObj['cruiseDataTransfer']['cruiseDataTransferID']
-        r = requests.get(url)
+        if 'cruiseDataTransferID' in dataObj['cruiseDataTransfer']:
+            # Clear Error for current tranfer in DB via API
+            url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setIdleCruiseDataTransfer/' + dataObj['cruiseDataTransfer']['cruiseDataTransferID']
+            r = requests.get(url)
 
 class CustomGearmanWorker(gearman.GearmanWorker):
 

@@ -67,7 +67,6 @@ use Helpers\Form;
                                 <?php echo Form::submit( array( 'name'=>'submit', 'class'=>'btn btn-primary', 'value'=>'Update')); ?>
                                 <a href="<?php echo DIR; ?>config/collectionSystemTransfers" class="btn btn-danger">Cancel</a>
                                 <?php echo Form::submit( array( 'name'=>'inlineTest', 'class'=>'btn btn-primary pull-right', 'value'=>'Test Setup')); ?>
-                                
                             </div>
                         </div>    
                     <?php echo Form::close();?>

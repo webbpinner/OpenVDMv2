@@ -160,9 +160,6 @@ $(function () {
                 if ('error' in data) {
                     $('#tsg_placeholder').html('<strong>Error: ' + data.error + '</strong>');
                 } else {
-                    //Drop int. temp to simplify chart
-                    data.visualizerData.shift();
-
                     var seriesData = [];
                     var yAxes = [];
                     var xAxes = [];

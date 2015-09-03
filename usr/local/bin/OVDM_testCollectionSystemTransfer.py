@@ -180,16 +180,18 @@ def test_destDir(data):
 def setError_collectionSystemTransfer(job):
     dataObj = json.loads(job.data)
 
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setErrorCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-    r = requests.get(url)
-    
+    if 'collectionSystemTransferID' in dataObj['collectionSystemTransfer']: 
+        # Set Error for current tranfer in DB via API
+        url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setErrorCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
+        r = requests.get(url)
+
 def clearError_collectionSystemTransfer(job):
     dataObj = json.loads(job.data)
     if dataObj['collectionSystemTransfer']['status'] == "3":
-        # Clear Error for current tranfer in DB via API
-        url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-        r = requests.get(url)
+        if 'collectionSystemTransferID' in dataObj['collectionSystemTransfer']:
+            # Clear Error for current tranfer in DB via API
+            url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
+            r = requests.get(url)
 
 class CustomGearmanWorker(gearman.GearmanWorker):
 

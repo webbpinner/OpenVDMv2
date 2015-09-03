@@ -7,14 +7,14 @@ class Gearman extends Model {
     
     
     private function updateJobs() {
- 
-        $jobs = $this->db->select("SELECT * FROM ".PREFIX."Gearman ORDER BY jobID DESC");
         
         $gmclient= new \GearmanClient();
 
         /* add the default server */
         $gmclient->addServer();
-        
+
+        $jobs = $this->db->select("SELECT jobID, jobHandle FROM ".PREFIX."Gearman ORDER BY jobID DESC LIMIT 100");
+
         foreach($jobs as $row) {
             $stat = $gmclient->jobStatus($row->jobHandle);
             if (!$stat[0]) {
@@ -31,7 +31,7 @@ class Gearman extends Model {
         
         $this->updateJobs();
         
-        return $this->db->select("SELECT * FROM ".PREFIX."Gearman ORDER BY jobID DESC");
+        return $this->db->select("SELECT * FROM ".PREFIX."Gearman ORDER BY jobID DESC LIMIT 10");
     }
     
     public function getJob($id){
@@ -42,6 +42,8 @@ class Gearman extends Model {
     }
     
     public function insertJob($data){
+        
+        $this->updateJobs();
         
         # create the gearman client
         $gmclient= new \GearmanClient();
@@ -65,5 +67,24 @@ class Gearman extends Model {
     public function deleteJob($where){
         $this->db->delete(PREFIX."Gearman", $where);
     }
+    
+    public function clearAllJobsFromDB(){
+        
+        $clearingJobs = true;
+        while($clearingJobs){
+            $jobs = $this->db->select("SELECT jobID FROM ".PREFIX."Gearman ORDER BY jobID DESC LIMIT 25");
 
+            if(sizeof($jobs) > 0){
+                foreach($jobs as $row) {
+                    $where = array("jobID" => $row->jobID);
+                    $this->deleteJob($where);
+                }
+            } else {
+                $clearingJobs = false;
+                break;
+            }
+        }
+        
+        return array("Success");
+    }
 }

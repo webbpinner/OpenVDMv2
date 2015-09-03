@@ -66,6 +66,7 @@ use Helpers\Form;
                             <div class="col-lg-12">
                                 <?php echo Form::submit( array('name'=>'submit', 'class'=>'btn btn-primary', 'value'=>'Add')); ?>
                                 <a href="<?php echo DIR; ?>config/collectionSystemTransfers" class="btn btn-danger">Cancel</a>
+                                <?php echo Form::submit( array( 'name'=>'inlineTest', 'class'=>'btn btn-primary pull-right', 'value'=>'Test Setup')); ?>
                             </div>
                         </div>    
                     <?php echo Form::close();?>
@@ -95,6 +96,37 @@ use Helpers\Form;
         </div>
     </div>
 
+<?php
+    if($data['testResults']) {
+?>
+<div class="modal fade" id="testResultsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">Test Results for <?php echo $data['testCollectionSystemTransferName'] ?></h4>
+            </div>
+            <div class="modal-body">
+                <ui class="list-unstyled">
+<?php
+    for($i=0; $i<(sizeof($data['testResults']))-1; $i++){
+?>
+                    <li><i class="fa fa-<?php echo (strcmp($data['testResults'][$i]->result, "Pass") ? "times text-danger" : "check text-success"); ?>"></i> <?php echo $data['testResults'][$i]->testName; ?></li>
+<?php
+    }
+?>
+                    <li><strong><i class="fa fa-<?php echo (strcmp($data['testResults'][sizeof($data['testResults'])-1]->result, "Pass") ? "times text-danger" : "check text-success"); ?>"></i> <?php echo $data['testResults'][sizeof($data['testResults'])-1]->testName; ?></strong></li>
+                </ui>
+            </div>
+            <div class="modal-footer">
+                <a href='' class="btn btn-primary" data-dismiss="modal">Close</a>
+            </div>
+        </div> <!-- /.modal-content -->
+    </div> <!-- /.modal-dialog -->
+</div> <!-- /.modal -->
+<?php
+    }
+?>
 <!--
 **** NOTES ****
  - role attribute in opening form tag not appearing.  Possibly need to edit simpleMVC "form" helper to recognize role attribute.

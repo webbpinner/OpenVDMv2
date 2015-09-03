@@ -143,6 +143,7 @@ class Main extends Controller {
         $data['title'] = 'Configuration';
         $data['javascript'] = array('main_config', 'tabs_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['shipToShoreTransfersStatus'] = $this->_warehouseModel->getShipToShoreTransferStatus();
         $data['tasks'] = $this->_tasksModel->getTasks();
@@ -316,6 +317,39 @@ class Main extends Controller {
         #submit job to Gearman
         #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
         $data['jobResults'] = json_decode($gmc->doBackground("finalizeCurrentCruise", json_encode($gmData)));
+        
+        sleep(1);
+
+        Url::redirect('config');
+    
+    }
+    
+    public function exportOVDMConfig() {
+
+        $gmData['siteRoot'] = DIR;
+        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
+        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $gmData['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        $gmData['systemStatus'] = "On";
+        $gmData['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $extraDirectories = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
+                    
+        foreach($extraDirectories as $row) {
+            if(strcmp($row->name, 'Science') === 0 ) {
+                $gmData['scienceDir'] = $row->destDir;
+                break;
+            }
+        }
+        
+        # create the gearman client
+        $gmc= new \GearmanClient();
+
+        # add the default server (localhost)
+        $gmc->addServer();
+
+        #submit job to Gearman
+        #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
+        $data['jobResults'] = json_decode($gmc->doBackground("exportOVDMConfig", json_encode($gmData)));
         
         sleep(1);
 

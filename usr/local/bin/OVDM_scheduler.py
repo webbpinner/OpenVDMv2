@@ -51,7 +51,8 @@ def getWarehouseConfig(siteRoot):
     url = siteRoot + 'api/warehouse/getShipboardDataWarehouseConfig'
     try:
         r = requests.get(url)
-	#print json.dumps(r.json(), indent=2)
+        #print r.text
+        #print json.dumps(r.json(), indent=2)
         return r.json()
 
     except requests.exceptions.RequestException as e: 

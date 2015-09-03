@@ -176,6 +176,6 @@ def task_callback(gearman_worker, job):
     return json.dumps(job_results)
 
 new_worker = CustomGearmanWorker(['localhost:4730'])
-new_worker.set_client_id('so_much_more_fun_with_Python')
+new_worker.set_client_id('stopJob.py')
 new_worker.register_task("stopJob", task_callback)
 new_worker.work()

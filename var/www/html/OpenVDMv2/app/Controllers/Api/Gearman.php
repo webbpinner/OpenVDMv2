@@ -38,5 +38,10 @@ class Gearman extends Controller {
 
         echo json_encode($this->_model->getJobs());
     }
+    
+    public function clearAllJobsFromDB(){
+
+        echo json_encode($this->_model->clearAllJobsFromDB());
+    }
 
 }

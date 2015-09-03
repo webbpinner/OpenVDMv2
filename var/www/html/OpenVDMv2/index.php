@@ -69,6 +69,7 @@ Router::any('config/enableShipToShoreTransfers', '\Controllers\Config\Main@enabl
 Router::any('config/disableShipToShoreTransfers', '\Controllers\Config\Main@disableShipToShoreTransfers');
 Router::any('config/setupNewCruise', '\Controllers\Config\Main@setupNewCruise');
 Router::any('config/finalizeCurrentCruise', '\Controllers\Config\Main@finalizeCurrentCruise');
+Router::any('config/exportOVDMConfig', '\Controllers\Config\Main@exportOVDMConfig');
 Router::any('config/rebuildMD5Summary', '\Controllers\Config\Main@rebuildMD5Summary');
 Router::any('config/rebuildTransferLogSummary', '\Controllers\Config\Main@rebuildTransferLogSummary');
 Router::any('config/rebuildCruiseDirectory', '\Controllers\Config\Main@rebuildCruiseDirectory');
@@ -217,6 +218,8 @@ Router::any('api/messages/newMessage',    'Controllers\Api\Messages@newMessage')
 Router::any('api/gearman/newJob/(:any)', 'Controllers\Api\Gearman@newJob');
 Router::any('api/gearman/getJobs', 'Controllers\Api\Gearman@getJobs');
 Router::any('api/gearman/getJob/(:num)', 'Controllers\Api\Gearman@getJob');
+Router::any('api/gearman/clearAllJobsFromDB', 'Controllers\Api\Gearman@clearAllJobsFromDB');
+
 
 
 Router::any('', 'Controllers\Welcome@index');
