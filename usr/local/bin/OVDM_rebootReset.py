@@ -161,6 +161,8 @@ def main(argv):
         print args.siteRoot + " is not a valid URL" 
         sys.exit(1)
     
+    time.sleep(5)
+    
     warehouseConfig = getWarehouseConfig(args.siteRoot)
     #print json.dumps(warehouseConfig, indent=2)
     

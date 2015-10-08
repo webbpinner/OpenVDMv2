@@ -109,8 +109,8 @@ def build_filenameErrorFilelist(sourceDir):
     returnFiles.sort(key=lambda x: os.stat(os.path.join(sourceDir, x)).st_mtime)
     #print returnFiles
     return returnFiles
-
-def setError_task(job, taskID):
+    
+def setError_task(job, taskID, message=None):
     dataObj = json.loads(job.data)
 
     # Set Error for current tranfer in DB via API
@@ -119,6 +119,8 @@ def setError_task(job, taskID):
     
     url = dataObj['siteRoot'] + 'api/messages/newMessage'
     payload = {'message': 'Error: ' + job.task}
+    if message:
+        payload['message'] += ': ' + message
     r = requests.post(url, data=payload)
 
 def setRunning_task(job, taskID):
@@ -187,8 +189,10 @@ class CustomGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
-        setError_task(current_job, self.taskID)
-        print exc_info
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        setError_task(current_job, self.taskID, "Unknown Part: " + str(exc_tb.tb_lineno))
+        print(exc_type, fname, exc_tb.tb_lineno)
         return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
@@ -450,18 +454,21 @@ def task_callback4(gearman_worker, job):
     #print shipboardTransferLogfileList
     for filename in shipboardTransferLogfileList:
         try:
-            #print "Open Transfer Log Summary file"
+            #print "Processing Shipboard Transfer Logfile: " + filename
             transferLogFile = open(filename, 'r')
             transferLogFileObj =  json.load(transferLogFile)
             
-            collectionSystemName, date = os.path.basename(filename).replace('.log','').split('_')
+            #collectionSystemName, date = os.path.basename(filename).replace('.log','').split('_')
+            nameArray = os.path.basename(filename).replace('.log','').split('_')
+            date = nameArray.pop();
+            collectionSystemName = '_'.join(nameArray)
             
             if transferLogFileObj['new'] or transferLogFileObj['updated']:
                 shipboardTransfer = {'collectionSystemName':collectionSystemName, 'date':date, 'newFiles':transferLogFileObj['new'], 'updatedFiles':transferLogFileObj['updated']}
                 newSummary['shipboardTransfers'].append(shipboardTransfer)
 
         except IOError:
-            #print "Error Opening Transfer Log file"
+            print "Error Opening Shipboard Transfer Logfile"
             job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Fail"})
             transferLogSummaryFile.close()
             return json.dumps(job_results)
@@ -470,17 +477,20 @@ def task_callback4(gearman_worker, job):
             #print "Closing Transfer Log file"
             transferLogFile.close()
             job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Pass"})
-            gearman_worker.send_job_status(job, 7, 10)
+    
+    gearman_worker.send_job_status(job, 3, 10)
 
     #print "Process Filename Error Logs"
     for filename in shipboardFilenameErrorLogfileList:
         try:
-            #print "Open Transfer Log Summary file"
+            #print "Processing Error Logfile: " + filename
             transferLogFile = open(filename, 'r')
             transferLogFileObj =  json.load(transferLogFile)
             
-            collectionSystemName, excludeStr = os.path.basename(filename).replace('.log','').split('_')
-            
+            #collectionSystemName, excludeStr = os.path.basename(filename).replace('.log','').split('_')
+            nameArray = os.path.basename(filename).replace('.log','').split('_')
+            excludeStr = nameArray.pop();
+            collectionSystemName = '_'.join(nameArray)
             index = 0
             for fileErrors in newSummary['filenameErrors']:
                 if fileErrors['collectionSystemName'] == collectionSystemName:
@@ -495,7 +505,7 @@ def task_callback4(gearman_worker, job):
                 #print "Add Errors from: " + collectionSystemName
 
         except IOError:
-            print "Error Opening Transfer Log file"
+            print "Error Opening Error Logfile"
             job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Fail"})
             transferLogSummaryFile.close()
             return json.dumps(job_results)
@@ -509,7 +519,7 @@ def task_callback4(gearman_worker, job):
     #print "Process Ship-to-shore Transfer Logs"
     for filename in shipToShoreTransferLogfileList:
         try:
-            #print "Open Transfer Log Summary file"
+            #print "Processing Ship-to-Shore Transfer Logfile: " + filename
             transferLogFile = open(filename, 'r')
             transferLogFileObj =  json.load(transferLogFile)
             
@@ -520,7 +530,7 @@ def task_callback4(gearman_worker, job):
                 newSummary['shipToShoreTransfers'].append(shipToShoreTransfer)
 
         except IOError:
-            print "Error Opening Transfer Log file"
+            print "Error Opening Ship-to-Shore Transfer Logfile"
             job_results['parts'].append({"partName": "Reading Transfer Log file", "result": "Fail"})
             transferLogSummaryFile.close()
             return json.dumps(job_results)

@@ -1,0 +1,9 @@
+<IfModule mod_rewrite.c>
+    Options -MultiViews
+
+    RewriteBase /gearman-ui
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    #RewriteRule ^ index.php [L]
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

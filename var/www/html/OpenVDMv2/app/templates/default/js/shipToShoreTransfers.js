@@ -18,10 +18,6 @@ $(function () {
                             output = 'Stop Ship-to-Shore Transfer';
                             classes = 'btn btn-sm btn-danger';
                             href = siteRoot + 'config/shipToShoreTransfers/stop';
-                        } else if (data[i].status === "3") {
-                            output = 'Run Ship-to-Shore Transfer';
-                            classes = 'btn btn-sm btn-default disabled';
-                            href = siteRoot + 'config/shipToShoreTransfers/run';
                         } else {
                             output = 'Run Ship-to-Shore Transfer';
                             classes = 'btn btn-sm btn-success';

@@ -56,6 +56,26 @@ $(function () {
         });
     }
     
+    function updateCruiseIDPanel(cruiseIDPanel, cruiseID) {
+        var transferStatusURL = siteRoot + 'api/warehouse/getCruiseID';
+        $.getJSON(transferStatusURL, function (data, status) {
+            if (status === 'success' && data !== null) {
+                if (data.error) {
+                    $(cruiseID).html('Error');
+                    $(cruiseIDPanel).removeClass('panel-primary');
+                    $(cruiseIDPanel).addClass('panel-red');
+                } else {
+                    $(cruiseID).html(data.cruiseID);
+                    $(cruiseIDPanel).removeClass('panel-red');
+                    $(cruiseIDPanel).addClass('panel-primary');
+                }
+            }
+            setTimeout(function () {
+                updateCruiseIDPanel(cruiseIDPanel, cruiseID);
+            }, 5000);
+        });
+    }
+    
     function updateCruiseSizePanel(cruiseSizePanel, cruiseSize) {
         var transferStatusURL = siteRoot + 'api/warehouse/getCruiseSize';
         $.getJSON(transferStatusURL, function (data, status) {
@@ -281,6 +301,7 @@ $(function () {
     });
     
     updateSystemStatusPanel('#systemStatusPanel', '#systemStatus');
+    updateCruiseIDPanel('#cruiseIDPanel', '#cruiseID');
     updateCruiseSizePanel('#cruiseSizePanel', '#cruiseSize');
     updateFreeSpacePanel('#freeSpacePanel', '#freeSpace');
     updateRecentMessages('#OVDM_messages','#OVDM_messageCount');

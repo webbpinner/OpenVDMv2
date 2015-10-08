@@ -65,8 +65,6 @@ use Helpers\Hooks;
 Router::any('config', '\Controllers\Config\Main@index');
 Router::any('config/enableSystem', '\Controllers\Config\Main@enableSystem');
 Router::any('config/disableSystem', '\Controllers\Config\Main@disableSystem');
-Router::any('config/enableShipToShoreTransfers', '\Controllers\Config\Main@enableShipToShoreTransfers');
-Router::any('config/disableShipToShoreTransfers', '\Controllers\Config\Main@disableShipToShoreTransfers');
 Router::any('config/setupNewCruise', '\Controllers\Config\Main@setupNewCruise');
 Router::any('config/finalizeCurrentCruise', '\Controllers\Config\Main@finalizeCurrentCruise');
 Router::any('config/exportOVDMConfig', '\Controllers\Config\Main@exportOVDMConfig');
@@ -133,6 +131,8 @@ Router::any('config/shipToShoreTransfers/enable/(:num)', '\Controllers\Config\Sh
 Router::any('config/shipToShoreTransfers/disable/(:num)', '\Controllers\Config\ShipToShoreTransfers@disable');
 Router::any('config/shipToShoreTransfers/run', '\Controllers\Config\ShipToShoreTransfers@run');
 Router::any('config/shipToShoreTransfers/stop', '\Controllers\Config\ShipToShoreTransfers@stop');
+Router::any('config/shipToShoreTransfers/enableShipToShoreTransfers', '\Controllers\Config\ShipToShoreTransfers@enableShipToShoreTransfers');
+Router::any('config/shipToShoreTransfers/disableShipToShoreTransfers', '\Controllers\Config\ShipToShoreTransfers@disableShipToShoreTransfers');
 
 Router::any('config/messages', '\Controllers\Config\Messages@index');
 Router::any('config/messages/delete/(:num)', '\Controllers\Config\Messages@delete');
@@ -219,7 +219,6 @@ Router::any('api/gearman/newJob/(:any)', 'Controllers\Api\Gearman@newJob');
 Router::any('api/gearman/getJobs', 'Controllers\Api\Gearman@getJobs');
 Router::any('api/gearman/getJob/(:num)', 'Controllers\Api\Gearman@getJob');
 Router::any('api/gearman/clearAllJobsFromDB', 'Controllers\Api\Gearman@clearAllJobsFromDB');
-
 
 
 Router::any('', 'Controllers\Welcome@index');

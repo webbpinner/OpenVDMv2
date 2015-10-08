@@ -335,6 +335,7 @@ def task_callback2(gearman_worker, job):
     gmData['siteRoot'] = dataObj['siteRoot']
     gmData['shipboardDataWarehouse'] = dataObj['shipboardDataWarehouse']
     gmData['cruiseID'] = dataObj['cruiseID']
+    gmData['cruiseStartDate'] = dataObj['cruiseStartDate']
     gmData['systemStatus'] = "On";
     
     collectionSystemTransferJobs = []

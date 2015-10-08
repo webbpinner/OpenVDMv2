@@ -36,6 +36,7 @@ if (isset($data['javascript'])){
             array_push($jsFileArray, Url::templatePath() . 'bower_components/leaflet/leaflet.js');
             array_push($jsFileArray, Url::templatePath() . 'bower_components/esri-leaflet/esri-leaflet.js');
             array_push($jsFileArray, Url::templatePath() . 'bower_components/leaflet/plugins/leaflet-fullscreen/Leaflet.fullscreen.min.js');
+            //array_push($jsFileArray, Url::templatePath() . "js/esriCredit.js");
         } else if ($jsFile === 'highcharts') {
             array_push($jsFileArray, Url::templatePath() . 'bower_components/highcharts/js/highcharts.js');
         } else if ($jsFile === 'bootstrap-datepicker') {

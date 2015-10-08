@@ -3,15 +3,6 @@
 use Core\Error;
 use Helpers\Session;
 
-$enableSSDW = false;
-foreach($data['requiredCruiseDataTransfers'] as $row){
-    if (strcmp($row->name, "SSDW") == 0) {
-        if (strcmp($row->enable, "1") == 0) {
-            $enableSSDW = true;
-        }
-        break;
-    }
-}
 ?>
 
     <div class="row">
@@ -38,64 +29,38 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
     <div class="row">
         <div class="col-lg-6 col-md-6">
             <div class="panel panel-default">
-                <div class="panel-heading">Cruise Status</div>
+                <div class="panel-heading">Cruise Control</div>
                 <div class="panel-body">
-                    <div class="list-group">
-                        <div class="list-group-item">
-                            Cruise: <strong><?php echo $data['cruiseID']; ?></strong>, Start Date: <strong><?php echo $data['cruiseStartDate']; ?></strong><a href="<?php echo DIR ?>config/editCruiseID" class="pull-right btn btn-default btn-xs">Edit</a>
-                        </div>
-                        <div class="list-group-item">
-<?php
-    if($data['systemStatus']) {
-?>
-                            System Status<a href="<?php echo DIR; ?>config/disableSystem" class="pull-right btn btn-xs btn-success">On</a>
-<?php
-    } else {
-?>
-                            System Status<a href="<?php echo DIR; ?>config/enableSystem" class="pull-right btn btn-xs btn-danger">Off</a>
-<?php
-    }
-?>
-                        </div>
-                        <div class="list-group-item">
-<?php
-    if($enableSSDW) {
-?>
-                            Ship-to-Shore Transfers<a href="<?php echo DIR; ?>config/disableShipToShoreTransfers" class="pull-right btn btn-xs btn-success">On</a>
-<?php
-    } else {
-?>
-                            Ship-to-Shore Transfers<a href="<?php echo DIR; ?>config/enableShipToShoreTransfers" class="pull-right btn btn-xs btn-danger">Off</a>
-<?php
-    }
-?>
-                        </div>
-                    </div>
+                    <a href="<?php echo DIR ?>config/setupNewCruise" class="btn-lg btn btn-primary btn-block">Setup New Cruise</a>
+                    <a id="finalizeCurrentCruise" href="<?php echo DIR ?>config/finalizeCurrentCruise" class="btn-lg btn btn-primary btn-block">Run End-of-Cruise Tasks</a>
+                    <a href="<?php echo DIR ?>config/editCruiseID" class="btn-lg btn btn-primary btn-block">Edit Current CruiseID/Start Date</a>
                 </div>
             </div>
             <div class="panel panel-default">
-                <div class="panel-heading">Tasks</div>
+                <div class="panel-heading">Maintenance Tasks</div>
                 <div class="panel-body">
                     <div class="list-group" id="taskStatusList">
 <?php
     if($data['tasks']){
         foreach($data['tasks'] as $row){
-            switch($row->status) {
-                case 1:
+            if((strcmp($row->name, "setupNewCruise") != 0) && (strcmp($row->name, "finalizeCurrentCruise") != 0)) {
+                switch($row->status) {
+                    case 1:
 ?>
-                        <div class="list-group-item"><?php echo $row->longName; ?><span class="pull-right btn btn-xs btn-default disabled">Wait</span></div>
+                        <div class="list-group-item"><?php echo $row->longName; ?><span class="pull-right btn btn-xs btn-primary btn-outline disabled">Wait</span></div>
  <?php
-                break;
-                case 2:
+                        break;
+                    case 2:
 ?>
-                        <div class="list-group-item"><?php echo $row->longName; ?><a href="<?php echo DIR . 'config/' . $row->name; ?>" class="pull-right btn btn-xs btn-default">Run</a></div>
+                        <div class="list-group-item"><?php echo $row->longName; ?><a href="<?php echo DIR . 'config/' . $row->name; ?>" class="pull-right btn btn-xs btn-primary btn-outline">Run</a></div>
  <?php
-                    break;
-                case 3:
+                        break;
+                    case 3:
 ?>
-                        <div class="list-group-item"><?php echo $row->longName; ?><span class="pull-right"><i class="fa fa-warning text-danger"></i>&nbsp;&nbsp;<a href="<?php echo DIR . 'config/' . $row->name; ?>" class="btn btn-xs btn-default">Run</a></span></div>
+                        <div class="list-group-item"><?php echo $row->longName; ?><span class="pull-right"><i class="fa fa-warning text-danger"></i>&nbsp;&nbsp;<a href="<?php echo DIR . 'config/' . $row->name; ?>" class="btn btn-xs btn-primary btn-outline">Run</a></span></div>
  <?php
-                    break;
+                        break;
+                }
             }
         }
     }

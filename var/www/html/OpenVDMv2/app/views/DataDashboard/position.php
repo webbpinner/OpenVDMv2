@@ -30,11 +30,19 @@ use Helpers\Session;
             <div class="panel panel-default">
                 <div class="panel-heading">Position</div>
                 <div class="panel-body">
-                    <div id="gga_placeholder" style="min-height:494px;">Loading...</div>
+                    <div id="map_placeholder" style="min-height:494px;">Loading...</div>
                 </div>
                 <div class="panel-footer">
                     <div id="gga_objectList">Loading...</div>
                     <div id="geotiff_objectList">Loading...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">Heading</div>
+                <div class="panel-body">
+                    <div id="hdt_placeholder"  style="min-height:200px;">Loading...</div>
                 </div>
             </div>
         </div>

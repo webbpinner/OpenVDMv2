@@ -64,7 +64,7 @@ def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
             include = False
             for filt in filters['ignoreFilter'].split(','):
                 #print filt
-                if fnmatch.fnmatch(filename, filt):
+                if fnmatch.fnmatch(os.path.join(root, filename), filt):
                     ignore = True
                     break
             if not ignore:

@@ -43,15 +43,6 @@ class Warehouse extends Model {
         return $row[0]->value;
     }
     
-    public function getShipToShoreTransferStatus(){
-        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipToShoreTransfersStatus'");
-        if(strcmp($row[0]->value, "On") == 0 ){
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
     public function getCruiseID(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'cruiseID'");
         return $row[0]->value;

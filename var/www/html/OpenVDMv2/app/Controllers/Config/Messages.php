@@ -28,7 +28,8 @@ class Messages extends Controller {
         $data['page_links'] = $pages->pageLinks();
         
         
-//        $data['javascript'] = array('');
+        $data['javascript'] = array('tabs_config');
+
         View::rendertemplate('header',$data);
         View::render('Config/messages',$data);
         View::rendertemplate('footer',$data);

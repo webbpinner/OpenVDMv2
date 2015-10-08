@@ -34,7 +34,6 @@ class Main extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['shipToShoreTransfersStatus'] = $this->_warehouseModel->getShipToShoreTransferStatus();
         $data['tasks'] = $this->_tasksModel->getTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
@@ -89,45 +88,23 @@ class Main extends Controller {
     public function enableSystem() {
 
         $this->_warehouseModel->enableSystem();
-        Url::redirect('config');
+        Url::redirect($_SERVER['HTTP_REFERER'], true);
+        //Url::redirect('config');
     }
     
     public function disableSystem() {
 
         $this->_warehouseModel->disableSystem();
-        Url::redirect('config');
-    }
-    
-    public function enableShipToShoreTransfers() {
-
-        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
-        foreach($requiredCruiseDataTransfers as $row) {
-            if(strcmp($row->name, 'SSDW') === 0 ) {
-                $this->_cruiseDataTransfersModel->enableCruiseDataTransfer($row->cruiseDataTransferID);
-                break;
-            }
-        }
-        Url::redirect('config');
-    }
-    
-    public function disableShipToShoreTransfers() {
-
-        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
-        foreach($requiredCruiseDataTransfers as $row) {
-            if(strcmp($row->name, 'SSDW') === 0 ) {
-                $this->_cruiseDataTransfersModel->disableCruiseDataTransfer($row->cruiseDataTransferID);
-                break;
-            }
-        }
-        Url::redirect('config');
+        Url::redirect($_SERVER['HTTP_REFERER'], true);
+        //Url::redirect('config');
     }
     
     public function rebuildCruiseDirectory() {
 
-        $_warehouseModel = new \models\warehouse();
+        //$_warehouseModel = new \models\warehouse();
         $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
+        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -145,7 +122,6 @@ class Main extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['shipToShoreTransfersStatus'] = $this->_warehouseModel->getShipToShoreTransferStatus();
         $data['tasks'] = $this->_tasksModel->getTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
@@ -160,10 +136,10 @@ class Main extends Controller {
     
     public function rebuildMD5Summary() {
 
-        $_warehouseModel = new \Models\Warehouse();
+        //$_warehouseModel = new \Models\Warehouse();
         $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
+        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -181,10 +157,10 @@ class Main extends Controller {
 
     public function rebuildTransferLogSummary() {
 
-        $_warehouseModel = new \Models\Warehouse();
+        //$_warehouseModel = new \Models\Warehouse();
         $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
+        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -202,10 +178,10 @@ class Main extends Controller {
     
     public function rebuildDataDashboard() {
 
-        $_warehouseModel = new \Models\Warehouse();
+        //$_warehouseModel = new \Models\Warehouse();
         $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
+        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -223,6 +199,21 @@ class Main extends Controller {
     
     public function setupNewCruise() {
 
+        //$collectionSystemTransfersModel;
+        //$collectionSystemTransfersModel = new \Models\Config\CollectionSystemTransfers();
+        $SSDW = null;
+            
+        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+        foreach($requiredCruiseDataTransfers as $requiredCruiseDataTransfer) {
+            if(strcmp($requiredCruiseDataTransfer->name, 'SSDW') === 0) {
+                $SSDW = $requiredCruiseDataTransfer;
+                $data['shipToShoreTransfersEnable'] = $SSDW->enable;
+                break;
+            }
+        }
+
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        
         $data['title'] = 'Configuration';
         $data['css'] = array('bootstrap-datepicker');
         $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
@@ -269,7 +260,6 @@ class Main extends Controller {
                 $data['javascript'] = array('main_config', 'tabs_config');
                 $data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
                 $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-                $data['shipToShoreTransfersStatus'] = $this->_warehouseModel->getShipToShoreTransferStatus();
                 $data['tasks'] = $this->_tasksModel->getTasks();
                 $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
                 $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
@@ -284,6 +274,31 @@ class Main extends Controller {
                 $data['cruiseID'] = $cruiseID;
                 $data['cruiseStartDate'] = $cruiseStartDate;
             }
+        } elseif(isset($_POST)) {
+            $data['cruiseID'] = $_POST['cruiseID'];
+            $data['cruiseStartDate'] = $_POST['cruiseStartDate'];
+            if(isset($_POST['disableSSDW'])) {
+                $this->_cruiseDataTransfersModel->disableCruiseDataTransfer($SSDW->cruiseDataTransferID);
+            }
+            
+            if(isset($_POST['enableSSDW'])) {
+                $this->_cruiseDataTransfersModel->enableCruiseDataTransfer($SSDW->cruiseDataTransferID);
+            }
+            
+            foreach($data['collectionSystemTransfers'] as $row) {
+                if(isset($_POST['enableCS' . $row->collectionSystemTransferID])) {
+                    $this->_collectionSystemTransfersModel->enableCollectionSystemTransfer($row->collectionSystemTransferID);
+                    break;
+                }
+                if(isset($_POST['disableCS' . $row->collectionSystemTransferID])) {
+                    $this->_collectionSystemTransfersModel->disableCollectionSystemTransfer($row->collectionSystemTransferID);
+                    break;
+                }
+            }
+            
+            $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+            $data['shipToShoreTransfersEnable'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($SSDW->cruiseDataTransferID)[0]->enable;
+
         }
         
         View::rendertemplate('header',$data);
