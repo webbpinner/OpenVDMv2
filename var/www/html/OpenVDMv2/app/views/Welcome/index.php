@@ -32,7 +32,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
 <?php
         foreach($data['filenameErrors'] as $row) {
 ?>
-                    <h5><?php echo $row->collectionSystemName; ?> Filename Errors:</h5>
+                    <h5><?php echo $row->collectionSystemName; ?></h5>
                     <ul>
 <?php
             foreach($row->errorFiles as $file) {

@@ -48,6 +48,7 @@ class CollectionSystemTransfers extends Controller {
         $_warehouseModel = new \Models\Warehouse();
         $warehouseConfig = $_warehouseModel->getShipboardDataWarehouseConfig();
         $cruiseID = $_warehouseModel->getCruiseID();
+        
         if(is_dir($warehouseConfig['shipboardDataWarehouseBaseDir'] . '/' . $cruiseID)) {
             $gmData['siteRoot'] = DIR;
             $gmData['shipboardDataWarehouse'] = $warehouseConfig;

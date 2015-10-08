@@ -131,6 +131,8 @@ def main(argv):
     if not bool(parsed_url.scheme) or not bool(parsed_url.netloc):
         print args.siteRoot + " is not a valid URL" 
         sys.exit(1)
+        
+    time.sleep(10)
     
     warehouseConfig = getWarehouseConfig(args.siteRoot)
     #print json.dumps(warehouseConfig, indent=2)

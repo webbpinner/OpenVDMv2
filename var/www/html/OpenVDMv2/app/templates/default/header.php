@@ -139,6 +139,7 @@ use Helpers\Hooks;
 <?php
     //hook for running code after body tag
     $hooks->run('afterBody');
+    //var_dump($_SERVER);
 ?>
     
 <div id="wrapper">
@@ -224,7 +225,7 @@ use Helpers\Hooks;
                 </a>
                 <ul class="dropdown-menu dropdown-user">
 <?php
-    if(helpers\session::get('loggedin')){
+    if(Session::get('loggedin')){
 ?>
                     <li><a href="<?php echo DIR; ?>config/users/edit/<?php echo Session::get('userID') ?>"><i class="fa fa-user fa-fw"></i>User Settings</a></li>
                     <li><a href="<?php echo DIR; ?>config/logout"><i class="fa fa-sign-out fa-fw"></i>Logout</a></li>
@@ -294,17 +295,31 @@ use Helpers\Hooks;
 
         <div class="row">
             <div class="col-lg-3 col-md-6 col-xs-6">
+<?php
+    if(Session::get('loggedin')){
+?>
+                    <a href="<?php echo DIR; echo $data['systemStatus'] === 'On'? "config/disableSystem" : "config/enableSystem";?>">
+<?php
+    }
+?>
                 <div id="systemStatusPanel" class="panel <?php echo $data['systemStatus'] === 'On'? "panel-green" : "panel-red"; ?>">
                     <div class="panel-heading">
                         <div id="systemStatus" class="huge"><?php echo $data['systemStatus']; ?></div>
                         <div class="text-right">System Status</div>
-                    </div> <!-- .panel-heading -->
+                    </div><!-- .panel-heading -->
                 </div> <!-- #systemStatusPanel .panel .panel-primary -->
+<?php
+    if(Session::get('loggedin')){
+?>
+                    </a>
+<?php
+    }
+?>
             </div> <!-- .col-lg-3 .col-md-6 -->
             <div class="col-lg-3 col-md-6  col-xs-6">
-                <div class="panel panel-primary">
+                <div id="cruiseIDPanel" class="panel panel-primary">
                     <div class="panel-heading">
-                        <div class="huge"><?php echo $data['cruiseID']; ?></div>
+                        <div id="cruiseID" class="huge"><?php echo $data['cruiseID']; ?></div>
                         <div class="text-right">Cruise ID</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->

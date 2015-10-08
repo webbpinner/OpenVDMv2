@@ -9,6 +9,7 @@ use Helpers\Session;
 class shipToShoreTransfers extends Controller {
 
     private $_shipToShoreTransfersModel;
+    private $_cruiseDataTransfersModel;
     private $_collectionSystemTransfersModel;
     private $_extraDirectoriesModel;
     private $_ssdwConfig;
@@ -77,11 +78,11 @@ class shipToShoreTransfers extends Controller {
         }
 
         $this->_shipToShoreTransfersModel = new \Models\Config\ShipToShoreTransfers();
+        $this->_cruiseDataTransferModel = new \Models\Config\CruiseDataTransfers();
         $this->_collectionSystemTransfersModel = new \Models\Config\CollectionSystemTransfers();
         $this->_extraDirectoriesModel = new \Models\Config\ExtraDirectories();
         
-        $cruiseDataTransfersModel = new \Models\Config\CruiseDataTransfers();
-        $requiredCruiseDataTransfers = $cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+        $requiredCruiseDataTransfers = $this->_cruiseDataTransferModel->getRequiredCruiseDataTransfers();
         
         foreach($requiredCruiseDataTransfers as $requiredCruiseDataTransfer) {
             if(strcmp($requiredCruiseDataTransfer->name, 'SSDW') === 0) {
@@ -96,7 +97,9 @@ class shipToShoreTransfers extends Controller {
         $data['javascript'] = array('tabs_config', 'shipToShoreTransfers');
         $data['shipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getShipToShoreTransfers();
         $data['ssdwID'] = $this->_ssdwConfig->cruiseDataTransferID;
+        $data['ssdwEnable'] = $this->_ssdwConfig->enable;
         $data['ssdwStatus'] = $this->_ssdwConfig->status;
+
         View::rendertemplate('header',$data);
         View::render('Config/shipToShoreTransfers',$data);
         View::rendertemplate('footer',$data);
@@ -308,4 +311,19 @@ class shipToShoreTransfers extends Controller {
         
         Url::redirect('config/shipToShoreTransfers');
     }
+    
+    public function enableShipToShoreTransfers() {
+
+        //$this->_cruiseDataTransfersModel->enableCruiseDataTransfer($id);
+        $this->_cruiseDataTransferModel->enableCruiseDataTransfer($this->_ssdwConfig->cruiseDataTransferID);
+        //Url::redirect('config/cruiseDataTransfers');
+        Url::redirect('config/shipToShoreTransfers');
+    }
+    
+    public function disableShipToShoreTransfers() {
+
+        $this->_cruiseDataTransferModel->disableCruiseDataTransfer($this->_ssdwConfig->cruiseDataTransferID);
+        Url::redirect('config/shipToShoreTransfers');
+    }
+    
 }

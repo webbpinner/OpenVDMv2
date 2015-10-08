@@ -27,7 +27,7 @@ class ExtraDirectories extends Model {
     
     public function deleteExtraDirectory($where){
         $extraDirectory = $this->db->select("SELECT * FROM ".PREFIX."ExtraDirectories WHERE extraDirectoryID = :id",array(':id' => $where['extraDirectoryID']))[0];
-        if(! $extraDirectory['required'] === 0 ){
+        if(strcmp($extraDirectory->required, '0') === 0 ){
             $this->db->delete(PREFIX."ExtraDirectories", $where);
         } 
     }

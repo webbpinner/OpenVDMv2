@@ -18,20 +18,19 @@ $(function () {
         $.getJSON(getLastestCruiseURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 var latestCruise = data.cruiseID;
-                buildTSGDataObjectList(latestCruise, 'tsg_objectList');
-                buildSVPDataObjectList(latestCruise, 'svp_objectList');
+                buildTSGDataObjectList(latestCruise, 'tsg');
+                buildSVPDataObjectList(latestCruise, 'svp');
             }
         });
     }
 
-    
-    function buildTSGDataObjectList(latestCruise, dataObjectListDivBlockID) {
-        var getTSGDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/tsg';
+    function buildTSGDataObjectList(latestCruise, dataType) {
+        var getTSGDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/' + dataType;
         $.getJSON(getTSGDataObjectListURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 if (data.length > 0) {
                     var f = document.createElement("form");
-                    f.setAttribute("id", dataObjectListDivBlockID);
+                    f.setAttribute("id", dataType + '_objectList');
                     
                     var fg = document.createElement("div");
                     fg.setAttribute("class", "form-group");
@@ -51,8 +50,8 @@ $(function () {
                         var l = document.createElement("label");
                         var cb = document.createElement("input");
                         cb.setAttribute("type", "radio");
-                        cb.setAttribute("name", "tsgRadioOptions");
-                        cb.setAttribute("id", "tsgRadio_" + data[i].dataDashboardObjectID);
+                        cb.setAttribute("name", dataType + "RadioOptions");
+                        cb.setAttribute("id", dataType + "Radio_" + data[i].dataDashboardObjectID);
                         cb.setAttribute("value", data[i].dataDashboardObjectID);
                         l.appendChild(cb);
                         l.innerHTML = l.innerHTML + '<small>' + data[i].dataDashboardRawFile.split(/[\\/]/).pop() + '</small>';
@@ -72,25 +71,25 @@ $(function () {
                     fg.appendChild(r);
                     f.appendChild(fg);
                     
-                    $('#' + dataObjectListDivBlockID).replaceWith(f);
+                    $('#' + dataType + '_objectList').replaceWith(f);
                     
-                    $('#' + dataObjectListDivBlockID + ' input[type=radio]').click(function(){
-                            updateTSGChart($(this).val());
+                    $('#' + dataType + '_objectList' + ' input[type=radio]').click(function(){
+                            updateTSGChart($(this).val(), dataType);
                     });
                     
                     // Check latest position and most recent dataset
-                    $('#tsgRadio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
+                    $('#' + dataType + 'Radio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
                     
                     //buildGGAMap(data[data.length - 1]);
                 } else {
-                    $('#' + dataObjectListDivBlockID).html('<strong>No tsg Data Found</strong>');
-                    $('#tsg_placeholder').html('<strong>No Data Found</strong>');
+                    $('#' + dataType + '_objectList').html('<strong>No tsg Data Found</strong>');
+                    $('#' + dataType + '_placeholder').html('<strong>No Data Found</strong>');
                 }
             }
         });
     }
     
-    function updateTSGChart(dataDashboardObjectID) {
+    function updateTSGChart(dataDashboardObjectID, dataType) {
         var getDataObjectFileURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectFile/' + dataDashboardObjectID;
         $.getJSON(getDataObjectFileURL, function (data, status) {
             if (status === 'success' && data !== null) {
@@ -148,19 +147,19 @@ $(function () {
                         series: seriesData
                     };
 
-                    $('#tsg_placeholder').highcharts(chartOptions);
+                    $('#' + dataType + '_placeholder').highcharts(chartOptions);
                 }
             }
         });
     }
     
-    function buildSVPDataObjectList(latestCruise, dataObjectListDivBlockID) {
-        var getSVPDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/svp';
+    function buildSVPDataObjectList(latestCruise, dataType) {
+        var getSVPDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/' + dataType;
         $.getJSON(getSVPDataObjectListURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 if (data.length > 0) {
                     var f = document.createElement("form");
-                    f.setAttribute("id", dataObjectListDivBlockID);
+                    f.setAttribute("id", dataType + '_objectList');
                     
                     var fg = document.createElement("div");
                     fg.setAttribute("class", "form-group");
@@ -201,30 +200,30 @@ $(function () {
                     fg.appendChild(r);
                     f.appendChild(fg);
                     
-                    $('#' + dataObjectListDivBlockID).replaceWith(f);
+                    $('#' + dataType + '_objectList').replaceWith(f);
                     
-                    $('#' + dataObjectListDivBlockID + ' input[type=radio]').click(function(){
-                            updateSVPChart($(this).val());
+                    $('#' + dataType + '_objectList' + ' input[type=radio]').click(function(){
+                            updateSVPChart($(this).val(), dataType);
                     });
                     
                     // Check latest position and most recent dataset
-                    $('#svpRadio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
+                    $('#' + dataType + 'Radio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
                     
                 } else {
-                    $('#' + dataObjectListDivBlockID).html('<strong>No svp Data Found</strong>');
-                    $('#svp_placeholder').html('<strong>No Data Found</strong>');
+                    $('#' + dataType + '_objectList').html('<strong>No ' + dataType + ' Data Found</strong>');
+                    $('#' + dataType + '_placeholder').html('<strong>No Data Found</strong>');
                 }
             }
         });
     }
     
-    function updateSVPChart(dataDashboardObjectID) {
+    function updateSVPChart(dataDashboardObjectID, dataType) {
         var getDataObjectFileURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectFile/' + dataDashboardObjectID;
         $.getJSON(getDataObjectFileURL, function (data, status) {
             if (status === 'success' && data !== null) {
 
                 if ('error' in data){
-                    $('#' + dataDashboardObjectID).html('<strong>Error: ' + data.error + '</strong>');
+                    $('#' + dataType + '_objectList').html('<strong>Error: ' + data.error + '</strong>');
                 } else {
                     var seriesData = [];
                     var yAxes = [];
@@ -271,7 +270,7 @@ $(function () {
                         series: seriesData
                     };
 
-                    $('#svp_placeholder').highcharts(chartOptions);
+                    $('#' + dataType + '_placeholder').highcharts(chartOptions);
                 }
             }
         });

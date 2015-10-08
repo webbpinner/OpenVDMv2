@@ -25,7 +25,7 @@ use Helpers\Session;
         </div>
     </div>
     <div class="row">
-        
+
 <?php
     for ($i = 0; $i < sizeof($data['dataObjectTypes']); $i++) {
 ?>
@@ -34,7 +34,7 @@ use Helpers\Session;
                 <div class="panel-heading"><?php echo $data['dataObjectTypes'][$i]->dataDashboardObjectType;?></div>
                 <div class="panel-body">
                     <div id="<?php echo $data['dataObjectTypes'][$i]->dataDashboardObjectType;?>_placeholder"  style="min-height:200px;">Loading...</div>
-                </div>    
+                </div>
             </div>
         </div>
 <?php

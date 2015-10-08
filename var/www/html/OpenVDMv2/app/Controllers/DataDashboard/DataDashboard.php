@@ -39,7 +39,7 @@ class DataDashboard extends Controller {
             
         $data['title'] = 'Position';
         $data['css'] = array('leaflet');
-        $data['javascript'] = array('tabs_dataDashboard', 'position', 'leaflet');
+        $data['javascript'] = array('tabs_dataDashboard', 'position', 'leaflet', 'highcharts');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         

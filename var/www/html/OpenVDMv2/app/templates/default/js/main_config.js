@@ -46,14 +46,22 @@ $(function () {
                 var output = '';
                 var i = 0;
                 for (i = 0; i < data.length; i++) {
-                    output += '<div class="list-group-item">';
-                    output += data[i].longName;
-                    if (data[i].status === "1") {
-                        output += '<span class="pull-right btn btn-default btn-xs disabled">Wait</span></div>';
-                    } else if (data[i].status === "2") {
-                        output += '<a href="' + siteRoot + 'config/' + data[i].name + '" class="pull-right btn btn-default btn-xs">Run</a>';
-                    } else if (data[i].status === "3") {
-                        output += '<span class="pull-right"><i class="fa fa-warning text-danger"></i>&nbsp;&nbsp;<a href="' + siteRoot + 'config/' + data[i].name + '" class="btn btn-default btn-xs">Run</a></span>';
+                    if((data[i].name != 'setupNewCruise') && (data[i].name != 'finalizeCurrentCruise')) {
+                        output += '<div class="list-group-item">';
+                        output += data[i].longName;
+                        if (data[i].status === "1") {
+                            output += '<span class="pull-right btn btn-outline btn-default btn-xs disabled">Wait</span></div>';
+                        } else if (data[i].status === "2") {
+                            output += '<a href="' + siteRoot + 'config/' + data[i].name + '" class="pull-right btn btn-outline btn-primary btn-xs">Run</a>';
+                        } else if (data[i].status === "3") {
+                            output += '<span class="pull-right"><i class="fa fa-warning text-danger"></i>&nbsp;&nbsp;<a href="' + siteRoot + 'config/' + data[i].name + '" class="btn btn-outline btn-primary btn-xs">Run</a></span>';
+                        }
+                    } else if (data[i].name === 'finalizeCurrentCruise') {
+                        if (data[i].status === "1") {
+                            $('#finalizeCurrentCruise').addClass('disabled');
+                        } else {
+                            $('#finalizeCurrentCruise').removeClass('disabled');
+                        }
                     }
                     output += '</div>';
                 }

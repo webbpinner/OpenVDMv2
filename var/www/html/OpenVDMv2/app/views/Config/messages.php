@@ -7,11 +7,27 @@ use Helpers\Session;
 
 
    <div class="row">
+       <div class="col-lg-12">
+           <?php echo Error::display(Session::pull('message'), 'alert alert-success'); ?>
+       </div>
+    </div>
+    <div class="row">
         <div class="col-lg-12">
-            <?php echo Error::display(Session::pull('message'), 'alert alert-success'); ?>
+            <div class="tabbable" style="margin-bottom: 18px;">
+                <ul class="nav nav-tabs">
+                    <li class=""><a id="main" href="#main" data-toggle="tab">Main</a></li>
+                    <li class=""><a id="collectionSystemTransfers" href="#collectionSystemTransfers" data-toggle="tab">Collection System Transfers</a></li>
+                    <li class=""><a id="extraDirectories" href="#extraDirectories" data-toggle="tab">Extra Directories</a></li>
+                    <li class=""><a id="cruiseDataTransfers" href="#cruiseDataTransfers" data-toggle="tab">Cruise Data Transfers</a></li>
+                    <li class=""><a id="shipToShoreTransfers" href="#shipToShoreTransfers" data-toggle="tab">Ship-to-Shore Transfers</a></li>
+                    <li class=""><a id="system" href="#system" data-toggle="tab">System</a></li>
+                    <li class="active"><a id="messages" href="#messages" data-toggle="tab">Messages</a></li>
+
+                </ul>
+            </div>
         </div>
     </div>
-   <div class="row">
+    <div class="row">
         <div class="col-lg-8">
             <div class="panel panel-default">
                 <div class="panel-heading">Manage Messages</div>

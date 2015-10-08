@@ -18,20 +18,21 @@ $(function () {
         $.getJSON(getLastestCruiseURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 var latestCruise = data.cruiseID;
-                buildMETDataObjectList(latestCruise, 'met_objectList');
-                buildTWINDDataObjectList(latestCruise, 'twind_objectList');
+                buildMETDataObjectList(latestCruise, 'met');
+                buildTWINDDataObjectList(latestCruise, 'twind');
+
             }
         });
     }
 
     
-    function buildMETDataObjectList(latestCruise, dataObjectListDivBlockID) {
-        var getMETDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/met';
+    function buildMETDataObjectList(latestCruise, dataType) {
+        var getMETDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/' + dataType;
         $.getJSON(getMETDataObjectListURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 if (data.length > 0) {
                     var f = document.createElement("form");
-                    f.setAttribute("id", dataObjectListDivBlockID);
+                    f.setAttribute("id", dataType + '_objectList');
                     
                     var fg = document.createElement("div");
                     fg.setAttribute("class", "form-group");
@@ -51,8 +52,8 @@ $(function () {
                         var l = document.createElement("label");
                         var cb = document.createElement("input");
                         cb.setAttribute("type", "radio");
-                        cb.setAttribute("name", "metRadioOptions");
-                        cb.setAttribute("id", "metRadio_" + data[i].dataDashboardObjectID);
+                        cb.setAttribute("name", dataType + "RadioOptions");
+                        cb.setAttribute("id", dataType + "Radio_" + data[i].dataDashboardObjectID);
                         cb.setAttribute("value", data[i].dataDashboardObjectID);
                         l.appendChild(cb);
                         l.innerHTML = l.innerHTML + '<small>' + data[i].dataDashboardRawFile.split(/[\\/]/).pop() + '</small>';
@@ -72,25 +73,24 @@ $(function () {
                     fg.appendChild(r);
                     f.appendChild(fg);
                     
-                    $('#' + dataObjectListDivBlockID).replaceWith(f);
+                    $('#' + dataType + '_objectList').replaceWith(f);
                     
-                    $('#' + dataObjectListDivBlockID + ' input[type=radio]').click(function(){
-                            updateMETChart($(this).val());
+                    $('#' + dataType + '_objectList' + ' input[type=radio]').click(function(){
+                            updateMETChart($(this).val(), dataType);
                     });
                     
                     // Check latest position and most recent dataset
-                    $('#metRadio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
+                    $('#' + dataType + 'Radio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
                     
-                    //buildGGAMap(data[data.length - 1]);
                 } else {
-                    $('#' + dataObjectListDivBlockID).html('<strong>No met Data Found</strong>');
-                    $('#met_placeholder').html('<strong>No Data Found</strong>');
+                    $('#' + dataType + '_objectList').html('<strong>No met Data Found</strong>');
+                    $('#' + dataType + '_placeholder').html('<strong>No Data Found</strong>');
                 }
             }
         });
     }
     
-    function updateMETChart(dataDashboardObjectID) {
+    function updateMETChart(dataDashboardObjectID, dataType) {
         var getDataObjectFileURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectFile/' + dataDashboardObjectID;
         $.getJSON(getDataObjectFileURL, function (data, status) {
             if (status === 'success' && data !== null) {
@@ -148,19 +148,19 @@ $(function () {
                         series: seriesData
                     };
 
-                    $('#met_placeholder').highcharts(chartOptions);
+                    $('#' + dataType + '_placeholder').highcharts(chartOptions);
                 }
             }
         });
     }
     
-    function buildTWINDDataObjectList(latestCruise, dataObjectListDivBlockID) {
-        var getTWINDDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/twind';
+    function buildTWINDDataObjectList(latestCruise, dataType) {
+        var getTWINDDataObjectListURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectsByType/' + latestCruise + '/' + dataType;
         $.getJSON(getTWINDDataObjectListURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 if (data.length > 0) {
                     var f = document.createElement("form");
-                    f.setAttribute("id", dataObjectListDivBlockID);
+                    f.setAttribute("id", dataType + "_objectList");
                     
                     var fg = document.createElement("div");
                     fg.setAttribute("class", "form-group");
@@ -180,8 +180,8 @@ $(function () {
                         var l = document.createElement("label");
                         var cb = document.createElement("input");
                         cb.setAttribute("type", "radio");
-                        cb.setAttribute("name", "twindRadioOptions");
-                        cb.setAttribute("id", "twindRadio_" + data[i].dataDashboardObjectID);
+                        cb.setAttribute("name", dataType + "RadioOptions");
+                        cb.setAttribute("id", dataType + "Radio_" + data[i].dataDashboardObjectID);
                         cb.setAttribute("value", data[i].dataDashboardObjectID);
                         l.appendChild(cb);
                         l.innerHTML = l.innerHTML + '<small>' + data[i].dataDashboardRawFile.split(/[\\/]/).pop() + '</small>';
@@ -201,24 +201,24 @@ $(function () {
                     fg.appendChild(r);
                     f.appendChild(fg);
                     
-                    $('#' + dataObjectListDivBlockID).replaceWith(f);
+                    $('#' + dataType + '_objectList').replaceWith(f);
                     
-                    $('#' + dataObjectListDivBlockID + ' input[type=radio]').click(function(){
-                            updateTWINDChart($(this).val());
+                    $('#' + dataType + '_objectList' + ' input[type=radio]').click(function(){
+                            updateTWINDChart($(this).val(), dataType);
                     });
                     
                     // Check latest position and most recent dataset
-                    $('#twindRadio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
+                    $('#' + dataType + 'Radio_' + data[data.length-1].dataDashboardObjectID).trigger('click');
                     
                 } else {
-                    $('#' + dataObjectListDivBlockID).html('<strong>No twind Data Found</strong>');
-                    $('#twind_placeholder').html('<strong>No Data Found</strong>');
+                    $('#' + dataType + '_objectList').html('<strong>No twind Data Found</strong>');
+                    $('#' + dataType + '_placeholder').html('<strong>No Data Found</strong>');
                 }
             }
         });
     }
     
-    function updateTWINDChart(dataDashboardObjectID) {
+    function updateTWINDChart(dataDashboardObjectID, dataType) {
         var getDataObjectFileURL = window.location.origin + OVDM_DIR + '/api/dataDashboard/getDataObjectFile/' + dataDashboardObjectID;
         $.getJSON(getDataObjectFileURL, function (data, status) {
             if (status === 'success' && data !== null) {
@@ -271,7 +271,7 @@ $(function () {
                         series: seriesData
                     };
 
-                    $('#twind_placeholder').highcharts(chartOptions);
+                    $('#' + dataType + '_placeholder').highcharts(chartOptions);
                 }
             }
         });

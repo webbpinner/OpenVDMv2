@@ -12,11 +12,13 @@ class ExtraDirectories extends Controller {
     
     private function updateCruiseDirectory() {
         $_warehouseModel = new \Models\Warehouse();
-        if($_warehouseModel->getSystemStatus()) {
+        $warehouseConfig = $_warehouseModel->getShipboardDataWarehouseConfig();
+        $cruiseID = $_warehouseModel->getCruiseID();
 
+        if(is_dir($warehouseConfig['shipboardDataWarehouseBaseDir'] . '/' . $cruiseID)) {
             $gmData['siteRoot'] = DIR;
-            $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-            $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+            $gmData['shipboardDataWarehouse'] = $warehouseConfig;
+            $gmData['cruiseID'] = $cruiseID;
         
             # create the gearman client
             $gmc= new \GearmanClient();

@@ -26,6 +26,18 @@ use Helpers\Session;
     </div>
     <div class="row">
         <div class="col-lg-7 col-md-12">
+            <?php
+    if(strcmp($data['ssdwEnable'],"1") === 0) {
+?>
+            <a href="<?php echo DIR; ?>config/shipToShoreTransfers/disableShipToShoreTransfers" class="btn-lg btn btn-danger btn-block">Disable Ship-to-Shore Transfers</a>
+<?php
+    } else {
+?>
+            <a href="<?php echo DIR; ?>config/shipToShoreTransfers/enableShipToShoreTransfers" class="btn-lg btn btn-success btn-block">Enable Ship-to-Shore Transfers</a>
+<?php
+    }
+?>
+            <br><br>
             <table class='table table-striped table-hover table-bordered responsive'>
                 <tr>
                     <th>Transfer Name</th>
@@ -67,10 +79,6 @@ use Helpers\Session;
     if(strcmp($data[ssdwStatus], "1") === 0) {
 ?>
             <a id="runStop" class="btn btn-sm btn-danger" href="<?php echo DIR; ?>config/shipToShoreTransfers/stop">Stop Ship-to-Shore Transfer</a>
-<?php
-    } elseif(strcmp($data[ssdwStatus], "3") === 0 ) {
-?>
-            <a id="runStop" class="btn btn-sm btn-default disabled" href="<?php echo DIR; ?>config/shipToShoreTransfers/run">Run Ship-to-Shore Transfer</a>
 <?php
     } else {
 ?>   

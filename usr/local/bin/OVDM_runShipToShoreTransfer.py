@@ -116,16 +116,19 @@ def get_shipToShoreBWLimitStatus(job):
 
 def build_filelist(sourceDir, filters):
 
-    #print 'DECODED Filters:', json.dumps(filters, indent=2)  
+    print 'Filters:', json.dumps(filters, indent=2)
+    print 'sourceDir:', sourceDir    
     returnFiles = {'include':[], 'new':[], 'updated':[]}
     for includeFilter in filters['includeFilter']:
         for root, dirnames, filenames in os.walk(sourceDir):
             for filename in filenames:
+                #print includeFilter, os.path.join(root, filename)
                 if fnmatch.fnmatch(os.path.join(root, filename), includeFilter):
+                    print os.path.join(root, filename), "matched!"
                     returnFiles['include'].append(os.path.join(root, filename))
 
     returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
-    #print json.dumps(returnFiles, indent=2)
+    print json.dumps(returnFiles, indent=2)
     return returnFiles
 
 def build_destDirectories(destDir, files):
@@ -196,52 +199,52 @@ def transfer_rsyncDestDir(data, worker, job):
     #print json.dumps(shipToShoreTransfers, indent=2)
     
     for x in range(1, 6):
-        #print "Processing priority " + str(x) + " transfers"
+        print "Processing priority " + str(x) + " transfers"
         for shipToShoreTransfer in shipToShoreTransfers:
             if shipToShoreTransfer['priority'] == str(x):
                 if shipToShoreTransfer['enable'] == '1':
-                    #print shipToShoreTransfer['collectionSystem']
+                    print json.dumps(shipToShoreTransfer, indent=2)
                     if not shipToShoreTransfer['collectionSystem'] == "0":
-                        #print "Retrieving Collection System information"
+                        print "Retrieving Collection System information"
                         collectionSystem = get_collectionSystemTransfer(job, shipToShoreTransfer['collectionSystem'])
-                        #print json.dumps(collectionSystem, indent=2)
+                        print json.dumps(collectionSystem, indent=2)
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + data['cruiseID'] + '/' + collectionSystem['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
-                    #print shipToShoreTransfer['extraDirectory']
                     elif not shipToShoreTransfer['extraDirectory'] == "0":
-                        #print "Retrieving Extra Directory information"
+                        print "Retrieving Extra Directory information"
                         extraDirectory = get_extraDirectory(job, shipToShoreTransfer['extraDirectory'])
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + data['cruiseID'] + '/' + extraDirectory['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
-                        #print json.dumps(extraDirectory, indent=2)
+                        print json.dumps(extraDirectory, indent=2)
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
                     else:
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + data['cruiseID'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
 
-    #print "Raw Filters:"
-    #print json.dumps(rawFilters, indent=2)
+    print "Raw Filters:"
+    print json.dumps(rawFilters, indent=2)
     
     filters = build_filters(rawFilters, data)
-    #print "Proc Filters:"
-    #print json.dumps(filters, indent=2)
+    print "Proc Filters:"
+    print json.dumps(filters, indent=2)
 
-    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']#+'/'+data['cruiseID']
+    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir'] + '/' + data['cruiseID']
     
     bwLimit = get_shipToShoreBWLimit(job)
     bwLimitStatus = get_shipToShoreBWLimitStatus(job)
     bwLimitStr = '--bwlimit=10000'
     
     if bwLimitStatus and not bwLimit == "0":
-        #print "Setting bandwidth limit"
+        print "Setting bandwidth limit"
         bwLimitStr = '--bwlimit=' + bwLimit
             
-    #print "Build file list"
+    print "Build file list"
     files = build_filelist(sourceDir, filters)
+    files['include'] = [ '/' + data['cruiseID'] + filepath for filepath in files['include']]
     
-    #print json.dumps(files)
+    print json.dumps(files)
     
     createdDirs = []
 
@@ -254,10 +257,10 @@ def transfer_rsyncDestDir(data, worker, job):
     rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
         
     try:
-        #print "Open rsync password file"
+        print "Open rsync password file"
         rsyncFileListFile = open(rsyncFileListPath, 'w')
 
-        #print "Saving rsync password file"
+        print "Saving rsync password file"
         #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
         rsyncFileListFile.write('\n'.join(files['include']))
 
@@ -272,12 +275,12 @@ def transfer_rsyncDestDir(data, worker, job):
         return files    
 
     finally:
-        #print "Closing rsync filelist file"
+        print "Closing rsync filelist file"
         rsyncFileListFile.close()
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
     
-    command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'rsync', '-ai', bwLimitStr, '-e', 'ssh -c arcfour', '--files-from=' + rsyncFileListPath, sourceDir, data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + ':' + data['cruiseDataTransfer']['destDir']]
+    command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'rsync', '-ti', '--partial', bwLimitStr, '-e', 'ssh -c arcfour', '--files-from=' + rsyncFileListPath, data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir'], data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + ':' + data['cruiseDataTransfer']['destDir']]
     #print command
     
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -370,9 +373,9 @@ class CustomGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
-        setError_cruiseDataTransfer(current_job, "Unknown Part")
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        setError_cruiseDataTransfer(current_job, "Unknown Part: " + str(exc_tb.tb_lineno))
         print(exc_type, fname, exc_tb.tb_lineno)
         return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
 
@@ -445,7 +448,7 @@ def task_callback(gearman_worker, job):
         #print "Transfer not already in-progress"
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     
-    print "Beginning Transfer"
+    print "Testing Connection"
     # Set transfer status to "Running"
     setRunning_cruiseDataTransfer(job)
     
@@ -467,7 +470,7 @@ def task_callback(gearman_worker, job):
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(job, 2, 10)
-    #print "Transfering Data"
+    print "Transfering Data"
     if  dataObj['cruiseDataTransfer']['transferType'] == "2": # Rsync Server
         job_results['files'] = transfer_rsyncDestDir(dataObj, gearman_worker, job)
         job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
@@ -477,12 +480,12 @@ def task_callback(gearman_worker, job):
         print "Stopping"
         return json.dumps(job_results)
 
-    #print "Transfer Complete"
+    print "Transfer Complete"
     gearman_worker.send_job_status(job, 9, 10)
 
     if job_results['files']['new'] or job_results['files']['updated']:
     
-        #print "Create transfer log"
+        print "Create transfer log"
         warehouseTransferLogDir = build_logfileDirPath(dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir'] + '/' + dataObj['cruiseID'] , dataObj['siteRoot'])
         #print warehouseTransferLogDir   
     
