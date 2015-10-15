@@ -56,6 +56,8 @@ Add `extension=gearman.so` to `/etc/php5/apache2/php`
 Restart Apache
 `service apache2 restart`
 
+###MapProxy
+`apt-get install mapproxy`
 
 
 gearman
