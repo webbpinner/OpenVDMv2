@@ -8,9 +8,14 @@ Goto http://xubuntu.org/getxubuntu/
 
 Download Xubuntu for your hardware.  At the time of this writing we are using 14.04.3 (32-bit)
 
-After base install add the following packages:
+Perform the default Xubuntu install.  For these instructions the default account that is created is "Survey" and the computer name is "Warehouse".
 
-###SSH
+A few minutes after the install completes and the computer restarts, Xubuntu will ask to install any updates that have arrived since the install image was created.  Perform these now and do not continue with these instructions until the update has completed.
+
+###Install the SSH client/server
+SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations abouard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
+
+To install SSH open a terminal window and type:
 `apt-get install ssh sshpass`
 
 ###MySQL Database
