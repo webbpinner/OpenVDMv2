@@ -89,7 +89,7 @@ To install Gearman open and terminal window and type the following commands:
 `sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman`
 `sudo apt-get upgrade`
 
-###Supervisor
+To install Supervisor open and terminal window and type the following command:
 `sudo apt-get install supervisor`
 
 Add the following lines to `/etc/supervisor/supervisor.conf`:
