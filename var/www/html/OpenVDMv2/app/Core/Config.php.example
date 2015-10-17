@@ -21,7 +21,7 @@ class Config
         ob_start();
 
         //site address
-        define('DIR', 'http://capablesolutions.dyndns.org:8180/OpenVDMv2/');
+        define('DIR', 'http://127.0.0.1/OpenVDMv2/');
 
         //set default controller and method for legacy calls
         define('DEFAULT_CONTROLLER', 'welcome');
@@ -37,8 +37,8 @@ class Config
         define('DB_TYPE', 'mysql');
         define('DB_HOST', 'localhost');
         define('DB_NAME', 'OpenVDMv2');
-        define('DB_USER', 'root');
-        define('DB_PASS', 'Mechan1c');
+        define('DB_USER', 'openvdmDBUser');
+        define('DB_PASS', 'oxhzbeY8WzgBL3');
         define('PREFIX', 'OVDM_');
 
         //set prefix for sessions
