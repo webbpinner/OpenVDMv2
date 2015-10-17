@@ -4,7 +4,7 @@
 #Open Vessel Data Management v2
 
 ##Installation
-Goto http://xubuntu.org/getxubuntu/
+Goto <http://xubuntu.org/getxubuntu/>
 
 Download Xubuntu for your hardware.  At the time of this writing we are using 14.04.3 (32-bit)
 
@@ -16,7 +16,7 @@ A few minutes after the install completes and the computer restarts, Xubuntu wil
 
 All of the files needed to run OpenVDMv2 including the example configuration files are avaiable for download from GitHub as a single compressed archive (zip file).
 
-To download the zip file from GitHub, goto the OpenVDM GitHub page: https://github.com/webbpinner/OpenVDMv2 and click the "Download Zip" button.  This should place the zip file in the Downloads folder for the default account.
+To download the zip file from GitHub, goto the OpenVDM GitHub page: <https://github.com/webbpinner/OpenVDMv2> and click the "Download Zip" button.  This should place the zip file in the Downloads folder for the default account.
 
 Double-click on the zip file to uncompress the file.
 
@@ -32,33 +32,46 @@ To install SSH open a terminal window and type:
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
 
 To install MySQL open a terminal window and type:
-`sudo apt-get install mysql-server`
+```
+sudo apt-get install mysql-server
+```
 
 ####Create OpenVDMv2 Database
 To create a new database first connect to MySQL by typing:
-`mysql -h localhost -u root -p`
+```
+mysql -h localhost -u root -p
+```
 
 Once connected to MySQL, create the database by typing:
-`CREATE DATABASE OpenVDMv2;`
+```
+CREATE DATABASE OpenVDMv2;
+```
 
 Now create a new MySQL user specifically for interacting with only the OpenVDM database.  In the example provided below the name of the user is `openvdmDBUser` and the password for that new user is `oxhzbeY8WzgBL3`.
-
-`GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';`
+```
+GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';
+```
 
 It is not important what the name and passwork are for this new user however it is important to remember the designated username/password as it will be reference later in the installation.
 
 To build the database schema and perform the initial import type:
-`USE OpenVDMv2;`
-`source /home/survey/Downloads/OpenVDMv2-master/OpenVDMv2_db.sql;`
+```
+USE OpenVDMv2;
+source /home/survey/Downloads/OpenVDMv2-master/OpenVDMv2_db.sql;
+```
 
 Exit the MySQL console:
-`exit`
+```
+exit
+```
   
 ###PHP5
 The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
-`sudo apt-get install php5 php5-cli php5-mysql`
+```
+sudo apt-get install php5 php5-cli php5-mysql
+```
 
 maybe --> php-pear php5-dev
 
@@ -66,10 +79,14 @@ maybe --> php-pear php5-dev
 The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
 
 Apache2 is installed by Xubuntu by default but an Apache2 module must be enabled.  To enable the additional module open a terminal window and type:
-`sudo a2enmod rewrite`
+```
+sudo a2enmod rewrite
+```
 
 After enabling the module the webserver must be restarted:
-`sudo service apache2 restart`
+```
+sudo service apache2 restart
+```
 
 ####Install OpenVDMv2 Web-Application
 
@@ -80,27 +97,30 @@ By default the github zip file does not include these file but rather 2 example 
 The two requried configuration files are `.htaccess` and `./app/Core/Config.php` (relative to the ./var/www/html/OpenVDMv2 folder).  The example files provided are in the same locations as where the actual configuration files need to be located and simply include a `.example` suffix.
 
 Create the actual configuration files by either copy/paste/rename the files in the file manager window or from a terminal window:
-`cd /home/survey/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2`
-`cp ./.htaccess.example ./.htaccess`
-`cp ./app/Core/Config.php.example ./app/Core/Config.php`
+```
+cd /home/survey/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2
+cp ./.htaccess.example ./.htaccess
+cp ./app/Core/Config.php.example ./app/Core/Config.php
+```
 
 Changes that must be made to `.htaccess`
  - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to http://<hostname or IP>/OpenVDMv2/.
 
 Changes that must be made to `./app/Core/Config.php`
  - Set the file URL of the OpenVDMv2 installation.  Look for the following lines and change the URL to the actual URL of the installation:
- 
-` //site address`
-`  define('DIR', 'http://127.0.0.1/OpenVDMv2/');`
+```
+//site address
+define('DIR', 'http://127.0.0.1/OpenVDMv2/');
+```
 
-* A word of caution.  The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
+A word of caution. The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
 
  - Set the access creditials for the MySQL database.  Look for the following lines and modify them to fit the actual database name (`DB_NAME`), database username (`DB_USER`), and database user password (`DB_PASS`).
 
 Once the configuration files have been modified, copy the ./var/www/html/OpenVDMv2 directory from the GitHub zipfile extract to the /var/www/html folder on the Ware house.  Because of file/folder permissions, this must be done from a terminal window.  Within a terminal window open, type:
-`sudo cp -r ~/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2 /var/www/html/`
-
-
+```
+sudo cp -r ~/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2 /var/www/html/
+```
 
 
 ###Samba
