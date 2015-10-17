@@ -83,14 +83,18 @@ The job broker listens for requests to perform a specific task.  Once a request 
 Making sure the right type and number of worker processes are available to Gearman is the role of the process manager.  OpenVDM uses Supervisor as it's process manager.
 
 To install Gearman open and terminal window and type the following commands:
-`sudo apt-get install software-properties-common`
-`sudo add-apt-repository ppa:gearman-developers/ppa`
-`sudo apt-get update`
-`sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman`
-`sudo apt-get upgrade`
+```
+sudo apt-get install software-properties-common
+sudo add-apt-repository ppa:gearman-developers/ppa
+sudo apt-get update
+sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman
+sudo apt-get upgrade
+```
 
 To install Supervisor open and terminal window and type the following command:
-`sudo apt-get install supervisor`
+```
+sudo apt-get install supervisor
+```
 
 Add the following lines to `/etc/supervisor/supervisor.conf`:
 
