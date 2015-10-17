@@ -91,6 +91,11 @@ sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearm
 sudo apt-get upgrade
 ```
 
+Restart the Gearman Job Broker
+```
+sudo service gearman-job-server restart
+```
+
 To install Supervisor open and terminal window and type the following command:
 ```
 sudo apt-get install supervisor
