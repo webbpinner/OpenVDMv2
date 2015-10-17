@@ -110,7 +110,7 @@ port = 9001
 
 Editing this file will require root privledges.
 ```
-nano /etc/supervisor/supervisor.conf
+sudo nano /etc/supervisor/supervisor.conf
 ```
 
 Restart Supervisor:
@@ -136,7 +136,18 @@ sudo service apache2 restart
 ####Install Gearman-UI
 Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
 
+Add `extension=gearman.so` to `/etc/php5/cli/php`.  This will require root privledges:
 
+`sudo nano /etc/php5/cli/php.ini`
+
+Add `extension=gearman.so` to `/etc/php5/apache2/php`.  This will require root privledges:
+
+`sudo nano /etc/php5/apache2/php.ini`
+
+Restart Apache
+`service apache2 restart`
+
+Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui>
 
 ####Install OpenVDMv2 Web-Application
 
@@ -186,29 +197,11 @@ sudo chmod 777 /var/www/html/OpenVDMv2/errorlog.html
 One of the ways OpenVDM communicates with data collection system is through Windows Shares configured on the collection system workstation.  Windows shares are also configured on the data warehouse to allow scientists and crew to easily access data stored on the Warehouse from their Windows or Mac Laptops.  Windows shares on a non-windows machine are made possible thanks to the Samba project.  
 
 To install Samba open a terminal window and type:
-`apt-get install samba smbclient`
+`sudo apt-get install samba smbclient`
 
 ###Miscellaneous Packages
-`apt-get install rsync curl git gdal-bin python-gdal`
+`sudo apt-get install rsync curl git gdal-bin python-gdal`
 maybe --> npm nodejs-legacy
-
-###Gearman
-`apt-get install software-properties-common`
-`add-apt-repository ppa:gearman-developers/ppa`
-`apt-get update`
-`apt-get install gearm-job-server libgearman-dev php5-gearman python-gearman`
-`apt-get upgrade`
-
-Add `extension=gearman.so` to `/etc/php5/cli/php`
-
-`nano /etc/php5/cli/php.ini`
-
-Add `extension=gearman.so` to `/etc/php5/apache2/php`
-
-`nano /etc/php5/apache2/php.ini`
-
-Restart Apache
-`service apache2 restart`
 
 ###MapProxy
 `apt-get install mapproxy`
