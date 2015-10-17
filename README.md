@@ -22,7 +22,7 @@ Double-click on the zip file to uncompress the file.
 
 As the services required by OpenVDM are installed the files contained within this directory structure will be used to configure those services to work with OpenVDM.
 
-###Install the SSH client/server
+###SSH Client/Server
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
 To install SSH open a terminal window and type:
