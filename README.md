@@ -75,6 +75,42 @@ sudo apt-get install php5 php5-cli php5-mysql
 
 maybe --> php-pear php5-dev
 
+###Gearman and Supervisor
+Behind the OpenVDM web-application are several background processes that perform the various data transfers and other tasks.  Managing these background processes is a job broker and processes manager.
+
+The job broker listens for requests to perform a specific task.  Once a request has arrived, the job broker farms the task out to the next available process that can perform that specific task.  OpenVDM uses Gearman as it's job broker.
+
+Making sure the right type and number of worker processes are available to Gearman is the role of the process manager.  OpenVDM uses Supervisor as it's process manager.
+
+To install Gearman open and terminal window and type the following commands:
+`sudo apt-get install software-properties-common`
+`sudo add-apt-repository ppa:gearman-developers/ppa`
+`sudo apt-get update`
+`sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman`
+`sudo apt-get upgrade`
+
+###Supervisor
+`sudo apt-get install supervisor`
+
+Add the following lines to `/etc/supervisor/supervisor.conf`:
+
+```
+[inet_http_server]
+port = 9001
+```
+
+Editing this file will require root privledges.
+```
+nano /etc/supervisor/supervisor.conf
+```
+
+Restart Supervisor:
+```
+sudo service supervisor restart
+```
+
+Verify the istallation was successful by going to <http://127.0.0.1:9001>.
+
 ###Apache2 Web-server
 The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
 
@@ -87,6 +123,11 @@ After enabling the module the webserver must be restarted:
 ```
 sudo service apache2 restart
 ```
+
+####Install Gearman-UI
+Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
+
+
 
 ####Install OpenVDMv2 Web-Application
 
@@ -116,26 +157,27 @@ define('DIR', 'http://127.0.0.1/OpenVDMv2/');
 A word of caution. The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
 
  - Set the access creditials for the MySQL database.  Look for the following lines and modify them to fit the actual database name (`DB_NAME`), database username (`DB_USER`), and database user password (`DB_PASS`).
+```
+//database details ONLY NEEDED IF USING A DATABASE
+define('DB_TYPE', 'mysql');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'OpenVDMv2');
+define('DB_USER', 'openvdmDBUser');
+define('DB_PASS', 'oxhzbeY8WzgBL3');
+define('PREFIX', 'OVDM_');
+```
 
 Once the configuration files have been modified, copy the ./var/www/html/OpenVDMv2 directory from the GitHub zipfile extract to the /var/www/html folder on the Ware house.  Because of file/folder permissions, this must be done from a terminal window.  Within a terminal window open, type:
 ```
 sudo cp -r ~/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2 /var/www/html/
+sudo chmod 777 /var/www/html/OpenVDMv2/errorlog.html
 ```
-
 
 ###Samba
 One of the ways OpenVDM communicates with data collection system is through Windows Shares configured on the collection system workstation.  Windows shares are also configured on the data warehouse to allow scientists and crew to easily access data stored on the Warehouse from their Windows or Mac Laptops.  Windows shares on a non-windows machine are made possible thanks to the Samba project.  
 
 To install Samba open a terminal window and type:
 `apt-get install samba smbclient`
-
-
-###Supervisor
-`apt-get install supervisor`
-
-Add `[inet_http_server]` to `/etc/supervisor/supervisor.conf`
-
-`nano /etc/supervisor/supervisor.conf`
 
 ###Miscellaneous Packages
 `apt-get install rsync curl git gdal-bin python-gdal`
