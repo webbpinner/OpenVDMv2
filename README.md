@@ -28,34 +28,7 @@ To install MySQL open a terminal window and type:
 sudo apt-get install mysql-server
 ```
 
-####Create OpenVDMv2 Database
-To create a new database first connect to MySQL by typing:
-```
-mysql -h localhost -u root -p
-```
 
-Once connected to MySQL, create the database by typing:
-```
-CREATE DATABASE OpenVDMv2;
-```
-
-Now create a new MySQL user specifically for interacting with only the OpenVDM database.  In the example provided below the name of the user is `openvdmDBUser` and the password for that new user is `oxhzbeY8WzgBL3`.
-```
-GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';
-```
-
-It is not important what the name and passwork are for this new user however it is important to remember the designated username/password as it will be reference later in the installation.
-
-To build the database schema and perform the initial import type:
-```
-USE OpenVDMv2;
-source /home/survey/Downloads/OpenVDMv2-master/OpenVDMv2_db.sql;
-```
-
-Exit the MySQL console:
-```
-exit
-```
   
 ###PHP5
 The language used to write the OpenVDMv2 web-interface is PHP.
@@ -202,6 +175,35 @@ As the services required by OpenVDM are installed the files contained within thi
 From a terminal window:
 ```
 curl https://github.com/webbpinner/OpenVDMv2/archive/master.zip
+```
+
+####Create OpenVDMv2 Database
+To create a new database first connect to MySQL by typing:
+```
+mysql -h localhost -u root -p
+```
+
+Once connected to MySQL, create the database by typing:
+```
+CREATE DATABASE OpenVDMv2;
+```
+
+Now create a new MySQL user specifically for interacting with only the OpenVDM database.  In the example provided below the name of the user is `openvdmDBUser` and the password for that new user is `oxhzbeY8WzgBL3`.
+```
+GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';
+```
+
+It is not important what the name and passwork are for this new user however it is important to remember the designated username/password as it will be reference later in the installation.
+
+To build the database schema and perform the initial import type:
+```
+USE OpenVDMv2;
+source /home/survey/Downloads/OpenVDMv2-master/OpenVDMv2_db.sql;
+```
+
+Exit the MySQL console:
+```
+exit
 ```
 
 ####Install OpenVDMv2 Web-Application
