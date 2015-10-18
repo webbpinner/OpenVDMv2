@@ -229,23 +229,31 @@ sudo chown -R root:root /var/www/OpenVDMv2
 Create the two required configuration files from the example files provided.
 ```
 cd /var/www/OpenVDMv2
-cp ./.htaccess.dist ./.htaccess
-cp ./app/Core/Config.php.dist ./app/Core/Config.php
+sudo cp ./.htaccess.dist ./.htaccess
+sudo cp ./app/Core/Config.php.dist ./app/Core/Config.php
 ```
 
 Modify the two configuration files.
 
-Changes that must be made to `.htaccess`
+Edit the `.htaccess` file:
+```
+sudo nano /var/www/OpenVDMv2/.htaccess
+```
+
  - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to http://<hostname or IP>/OpenVDMv2/.
 
-Changes that must be made to `./app/Core/Config.php`
+Edit the `./app/Core/Config.php` file:
+```
+sudo nano /var/www/OpenVDMv2/app/Core/Config.php
+```
+
  - Set the file URL of the OpenVDMv2 installation.  Look for the following lines and change the URL to the actual URL of the installation:
 ```
 //site address
 define('DIR', 'http://127.0.0.1/OpenVDMv2/');
 ```
 
-A word of caution. The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
+**A word of caution.** The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
 
  - Set the access creditials for the MySQL database.  Look for the following lines and modify them to fit the actual database name (`DB_NAME`), database username (`DB_USER`), and database user password (`DB_PASS`).
 ```
