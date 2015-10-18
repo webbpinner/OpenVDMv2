@@ -12,20 +12,7 @@ Perform the default Xubuntu install.  For these instructions the default account
 
 A few minutes after the install completes and the computer restarts, Xubuntu will ask to install any updates that have arrived since the install image was created.  Perform these now and do not continue with these instructions until the update has completed.
 
-###Download the OpenVDM Files from Github
-
-All of the files needed to run OpenVDMv2 including the example configuration files are avaiable for download from GitHub as a single compressed archive (zip file).
-
-To download the zip file from GitHub, goto the OpenVDM GitHub page: <https://github.com/webbpinner/OpenVDMv2> and click the "Download Zip" button.  This should place the zip file in the Downloads folder for the default account.
-
-Double-click on the zip file to uncompress the file.
-
-As the services required by OpenVDM are installed the files contained within this directory structure will be used to configure those services to work with OpenVDM.
-
-From a terminal window:
-```
-curl https://github.com/webbpinner/OpenVDMv2/archive/master.zip
-```
+Before OpenVDMv2 can be installed serveral other services and software packaged must be installed and configured.
 
 ###SSH Client/Server
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
@@ -156,6 +143,7 @@ Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it 
 
 From a terminal window type:
 ```
+sudo apt-get install curl
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 ```
@@ -199,7 +187,24 @@ sudo service apache2 reload
 
 Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui>
 
-###Install OpenVDMv2 Web-Application
+###OpenVDMv2
+
+####Download the OpenVDM Files from Github
+
+All of the files needed to run OpenVDMv2 including the example configuration files are avaiable for download from GitHub as a single compressed archive (zip file).
+
+To download the zip file from GitHub, goto the OpenVDM GitHub page: <https://github.com/webbpinner/OpenVDMv2> and click the "Download Zip" button.  This should place the zip file in the Downloads folder for the default account.
+
+Double-click on the zip file to uncompress the file.
+
+As the services required by OpenVDM are installed the files contained within this directory structure will be used to configure those services to work with OpenVDM.
+
+From a terminal window:
+```
+curl https://github.com/webbpinner/OpenVDMv2/archive/master.zip
+```
+
+####Install OpenVDMv2 Web-Application
 
 Before the OpenVDMv2 web-application will work, two configuration files must be modified to match the configuration of the Warehouse.  This includes setting the URL from where users will access the OpenVDM web-application and database access credentials.  
 
