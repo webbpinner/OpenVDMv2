@@ -35,6 +35,14 @@ To install SSH open a terminal window and type:
 sudo apt-get install ssh
 ```
 
+###Rsync
+Rsync is used thoughout OpenVDM for providing efficient data transfers to/from the Warehouse.
+
+To install rsync open a terminal window and type:
+```
+sudo apt-get install rsync
+```
+
 ###MySQL Database
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
 
@@ -194,6 +202,24 @@ Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui
 
 ###OpenVDMv2
 
+####Create the Required Directories
+In order for OpenVDMv2 to properly store data serveral directories must be created on the Warehouse
+-**FTPRoot** - This will become the document root for the ProFTP server. 
+-**CruiseData** - This is the location where the Cruise Data directories will be located.  This directory needs to live within the **FTPRoot**
+-**PublicData** - This is the location where the Public Data share will be located.  This directory needs to live within the **FTPRoot**
+-**VisitorInformation** - This is the location where ship-specific information will be located.  This directory needs to live within the **FTPRoot**
+
+The Location of the **FTPRoot** needs to be large enough to hold multiple cruises worth of data.  In typical installation of OpenVDMv2, the location of the **FTPRoot** is on dedicated hardware (internal RAID array).  In these cases the volume is mounted at boot by the OS to a specific location (i.e. `/mnt/vault`).  Instructions on mounting volumes at boot is beyond the scope of these installation procedures however.
+
+For the purposes of these installation instructions the parent folder for **FTPRoot** will be a large RAID array located at: `/mnt/vault` and the user that will retain ownership of these folders will be "survey"
+
+```
+sudo mkdir -p /mnt/vault/FTPRoot/CruiseData
+sudo mkdir -p /mnt/vault/FTPRoot/PublicData
+sudo mkdir -p /mnt/vault/FTPRoot/VistorInformation
+sudo chown -R survey:survey /mnt/vault/FTPRoot/*
+```
+
 ####Download the OpenVDM Files from Github
 
 From a terminal window type:
@@ -222,7 +248,7 @@ It is not important what the name and passwork are for this new user however it 
 To build the database schema and perform the initial import type:
 ```
 USE OpenVDMv2;
-source /home/survey/Downloads/OpenVDMv2-master/OpenVDMv2_db.sql;
+source ~/OpenVDMv2/OpenVDMv2_db.sql;
 ```
 
 Exit the MySQL console:
@@ -295,6 +321,38 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
 Reload Apache2
 ```
 sudo service apache2 reload
+```
+
+Additionally a log directory must be created for the OpenVDMv2 web-application
+```
+sudo mkdir /var/log/OpenVDM
+```
+
+####Install OpenVDMv2 Processes
+Copy the OpenVDMv2 processes to the `/usr/local/bin` folder
+```
+sudo cp -r ~/OpenVDMv2/usr/local/bin/* /usr/local/bin/
+```
+
+####Install the Supervisor configuration files
+```
+sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
+```
+
+####Modify the configuation file for the OpenVDMv2 scheduler
+```
+sudo nano /etc/supervisor/conf.d/OVDM
+```
+Look for the following line:
+```
+command=/usr/bin/python /usr/local/bin/OVDM_scheduler.py --interval 5 http://127.0.0.1/OpenVDMv2/
+```
+
+Change the URL to the URL for the OpenVDMv2 installation.
+
+Restart Supervisor
+```
+sudo service supervisor
 ```
 
 ###Samba
