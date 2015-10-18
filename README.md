@@ -13,10 +13,8 @@ For more information on OpenVDMv2 please checkout <http://oceandatarat.org>.
 
 ####Demo Site
 <http://capablesolutions.dyndns.org:8180/OpenVDMv2/>
-
-Username: ***admin***
-
-Password: ***demo***
+- Username: ***admin***
+- Password: ***demo***
 
 ##Installation
 Goto <http://xubuntu.org/getxubuntu/>
