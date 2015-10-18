@@ -60,6 +60,7 @@ The job broker listens for requests to perform a specific task.  Once a request 
 
 Making sure the right type and number of worker processes are available to Gearman is the role of the process manager.  OpenVDM uses Supervisor as it's process manager.
 
+#### Installing Gearman
 To install Gearman open and terminal window and type the following commands:
 ```
 sudo apt-get install software-properties-common
@@ -74,7 +75,7 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-OpenVDM requires that php5 be integrated with Gearman. To do that add `extension=gearman.so` must be added to `/etc/php5/cli/php` and `/etc/php5/apache2/php`.
+OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php` and `/etc/php5/apache2/php`.
 
 Modifying these files requires root privledges:
 ```
@@ -87,6 +88,7 @@ Within each of these files is a section called `Dynamic Extensions`.  Most of th
 Restart Apache
 `sudo service apache2 restart`
 
+#### Installing Supervisor
 To install Supervisor open and terminal window and type the following command:
 ```
 sudo apt-get install supervisor
@@ -126,37 +128,52 @@ sudo mv composer.phar /usr/local/bin/composer
 ####Install bower
 ```
 sudo apt-get install npm nodejs-legacy
-npm install -g bower
+sudo npm install -g bower
 ```
+
 ####Install Gearman-UI
+Download the code from GitHub
 ```
-curl https://github.com/gaspaio/gearmanui/archive/master.zip
-unzip master.zip
-cd gearman-ui
+sudo apt-get install git
+git clone git://github.com/gaspaio/gearmanui.git ~/gearman-ui
+```
+
+Configure the site using the default configuration file
+```
+cd ~/gearman-ui
 composer install --no-dev
 bower install
 cp config.yml.dist config.yml
-cd ..
-sudo mv gearman-ui /usr/local/share/
 ```
 
-Create a new Apache VHost file.
+Move the site to where Apache2 can access it.
 ```
-sudo nano /etc/apache2/sites-available/gearman.conf
-```
-
-Copy text below into the new configuration file.
-```
-<VirtualHost *:80>
-  DocumentRoot /usr/local/gearman-ui
-  #ServerName www.example.com
-  ServerPath /gearman-ui/
-</VirtualHost>
+cd
+sudo mv gearman-ui /var/www/
+sudo chown -R root:root /var/www/gearman-ui
 ```
 
-Enable the site and reload Apache2
+Edit the default Apache2 VHost file.
 ```
-sudo a2ensite gearman-ui
+sudo nano /etc/apache2/sites-available/000-default.conf
+```
+
+Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
+```
+  Alias /gearman-ui /var/www/gearman-ui/web
+  <Directory "/var/www/gearman-ui/web">
+    <IfModule mod_rewrite.c>
+      Options -MultiViews
+      RewriteEngine On
+      RewriteBase /gearman-ui/
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteRule ^ index.php [QSA,L]
+    </IfModule>
+  </Directory>
+```
+
+Reload Apache2
+```
 sudo service apache2 reload
 ```
 
@@ -210,7 +227,12 @@ exit
 
 ####Install OpenVDMv2 Web-Application
 
-Before the OpenVDMv2 web-application will work, two configuration files must be modified to match the configuration of the Warehouse.  This includes setting the URL from where users will access the OpenVDM web-application and database access credentials.  
+Before the OpenVDMv2 web-application will work, two configuration files must be modified to match the configuration of the Warehouse.  This includes setting the URL from where users will access the OpenVDM web-application and database access credentials.
+
+```
+curl -LksS -o ~/gearman-ui.zip https://github.com/gaspaio/gearmanui/archive/master.zip
+unzip ~/gearman-ui.zip
+```
 
 By default the github zip file does not include these file but rather 2 example files that must be copied, renamed and modified.  This approach is used to simplify future upgrade.
 
