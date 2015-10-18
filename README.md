@@ -18,7 +18,9 @@ Before OpenVDMv2 can be installed serveral other services and software packaged 
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
 To install SSH open a terminal window and type:
-`sudo apt-get install ssh`
+```
+sudo apt-get install ssh
+```
 
 ###MySQL Database
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
@@ -28,8 +30,6 @@ To install MySQL open a terminal window and type:
 sudo apt-get install mysql-server
 ```
 
-
-  
 ###PHP5
 The language used to write the OpenVDMv2 web-interface is PHP.
 
@@ -39,6 +39,19 @@ sudo apt-get install php5 php5-cli php5-mysql
 ```
 
 maybe --> php-pear php5-dev
+
+###Apache2 Web-server
+The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
+
+Apache2 is installed by Xubuntu by default but an Apache2 module must be enabled.  To enable the additional module open a terminal window and type:
+```
+sudo a2enmod rewrite
+```
+
+After enabling the module the webserver must be restarted:
+```
+sudo service apache2 restart
+```
 
 ###Gearman and Supervisor
 Behind the OpenVDM web-application are several background processes that perform the various data transfers and other tasks.  Managing these background processes is a job broker and processes manager.
@@ -95,19 +108,6 @@ sudo service supervisor restart
 ```
 
 Verify the istallation was successful by going to <http://127.0.0.1:9001>.
-
-###Apache2 Web-server
-The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
-
-Apache2 is installed by Xubuntu by default but an Apache2 module must be enabled.  To enable the additional module open a terminal window and type:
-```
-sudo a2enmod rewrite
-```
-
-After enabling the module the webserver must be restarted:
-```
-sudo service apache2 restart
-```
 
 ###Gearman-UI
 Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
