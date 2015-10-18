@@ -74,16 +74,18 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-OpenVDM requires that php5 be integrated with Gearman. To do that add `extension=gearman.so` to `/etc/php5/cli/php`.  This will require root privledges:
+OpenVDM requires that php5 be integrated with Gearman. To do that add `extension=gearman.so` must be added to `/etc/php5/cli/php` and `/etc/php5/apache2/php`.
 
-`sudo nano /etc/php5/cli/php.ini`
+Modifying these files requires root privledges:
+```
+sudo nano /etc/php5/cli/php.ini
+sudo nano /etc/php5/apache2/php.ini
+```
 
-Also add `extension=gearman.so` to `/etc/php5/apache2/php`.  This will also require root privledges:
-
-`sudo nano /etc/php5/apache2/php.ini`
+Within each of these files is a section called `Dynamic Extensions`.  Most of these section is probably commented out.  Simple add `extension=gearman.so` to the end of the section.
 
 Restart Apache
-`service apache2 restart`
+`sudo service apache2 restart`
 
 To install Supervisor open and terminal window and type the following command:
 ```
