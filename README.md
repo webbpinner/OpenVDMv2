@@ -183,17 +183,9 @@ Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui
 
 ####Download the OpenVDM Files from Github
 
-All of the files needed to run OpenVDMv2 including the example configuration files are avaiable for download from GitHub as a single compressed archive (zip file).
-
-To download the zip file from GitHub, goto the OpenVDM GitHub page: <https://github.com/webbpinner/OpenVDMv2> and click the "Download Zip" button.  This should place the zip file in the Downloads folder for the default account.
-
-Double-click on the zip file to uncompress the file.
-
-As the services required by OpenVDM are installed the files contained within this directory structure will be used to configure those services to work with OpenVDM.
-
-From a terminal window:
+From a terminal window type:
 ```
-curl https://github.com/webbpinner/OpenVDMv2/archive/master.zip
+git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
 ####Create OpenVDMv2 Database
@@ -227,23 +219,21 @@ exit
 
 ####Install OpenVDMv2 Web-Application
 
-Before the OpenVDMv2 web-application will work, two configuration files must be modified to match the configuration of the Warehouse.  This includes setting the URL from where users will access the OpenVDM web-application and database access credentials.
+Copy the web-application code to a directory that can be accessed by Apache
 
 ```
-curl -LksS -o ~/gearman-ui.zip https://github.com/gaspaio/gearmanui/archive/master.zip
-unzip ~/gearman-ui.zip
+sudo cp -r ~/OpenVDMv2/var/www/OpenVDMv2 /var/www/
+sudo chown -R root:root /var/www/OpenVDMv2
 ```
 
-By default the github zip file does not include these file but rather 2 example files that must be copied, renamed and modified.  This approach is used to simplify future upgrade.
-
-The two requried configuration files are `.htaccess` and `./app/Core/Config.php` (relative to the ./var/www/html/OpenVDMv2 folder).  The example files provided are in the same locations as where the actual configuration files need to be located and simply include a `.example` suffix.
-
-Create the actual configuration files by either copy/paste/rename the files in the file manager window or from a terminal window:
+Create the two required configuration files from the example files provided.
 ```
-cd /home/survey/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2
-cp ./.htaccess.example ./.htaccess
-cp ./app/Core/Config.php.example ./app/Core/Config.php
+cd /var/www/OpenVDMv2
+cp ./.htaccess.dist ./.htaccess
+cp ./app/Core/Config.php.dist ./app/Core/Config.php
 ```
+
+Modify the two configuration files.
 
 Changes that must be made to `.htaccess`
  - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to http://<hostname or IP>/OpenVDMv2/.
@@ -268,10 +258,22 @@ define('DB_PASS', 'oxhzbeY8WzgBL3');
 define('PREFIX', 'OVDM_');
 ```
 
-Once the configuration files have been modified, copy the ./var/www/html/OpenVDMv2 directory from the GitHub zipfile extract to the /var/www/html folder on the Ware house.  Because of file/folder permissions, this must be done from a terminal window.  Within a terminal window open, type:
+Edit the default Apache2 VHost file.
 ```
-sudo cp -r ~/Downloads/OpenVDMv2-master/var/www/html/OpenVDMv2 /var/www/html/
-sudo chmod 777 /var/www/html/OpenVDMv2/errorlog.html
+sudo nano /etc/apache2/sites-available/000-default.conf
+```
+
+Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
+```
+  Alias /OpenVDMv2 /var/www/OpenVDMv2
+  <Directory "/var/www/OpenVDMv2">
+    AllowOverride all
+  </Directory>
+```
+
+Reload Apache2
+```
+sudo service apache2 reload
 ```
 
 ###Samba
