@@ -22,6 +22,11 @@ Double-click on the zip file to uncompress the file.
 
 As the services required by OpenVDM are installed the files contained within this directory structure will be used to configure those services to work with OpenVDM.
 
+From a terminal window:
+```
+curl https://github.com/webbpinner/OpenVDMv2/archive/master.zip
+```
+
 ###SSH Client/Server
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
@@ -96,6 +101,17 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
+OpenVDM requires that php5 be integrated with Gearman. To do that add `extension=gearman.so` to `/etc/php5/cli/php`.  This will require root privledges:
+
+`sudo nano /etc/php5/cli/php.ini`
+
+Also add `extension=gearman.so` to `/etc/php5/apache2/php`.  This will also require root privledges:
+
+`sudo nano /etc/php5/apache2/php.ini`
+
+Restart Apache
+`service apache2 restart`
+
 To install Supervisor open and terminal window and type the following command:
 ```
 sudo apt-get install supervisor
@@ -133,23 +149,57 @@ After enabling the module the webserver must be restarted:
 sudo service apache2 restart
 ```
 
-####Install Gearman-UI
+###Gearman-UI
 Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
 
-Add `extension=gearman.so` to `/etc/php5/cli/php`.  This will require root privledges:
+####Installing composer
 
-`sudo nano /etc/php5/cli/php.ini`
+From a terminal window type:
+```
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
-Add `extension=gearman.so` to `/etc/php5/apache2/php`.  This will require root privledges:
+####Install bower
+```
+sudo apt-get install npm nodejs-legacy
+npm install -g bower
+```
+####Install Gearman-UI
+```
+curl https://github.com/gaspaio/gearmanui/archive/master.zip
+unzip master.zip
+cd gearman-ui
+composer install --no-dev
+bower install
+cp config.yml.dist config.yml
+cd ..
+sudo mv gearman-ui /usr/local/share/
+```
 
-`sudo nano /etc/php5/apache2/php.ini`
+Create a new Apache VHost file.
+```
+sudo nano /etc/apache2/sites-available/gearman.conf
+```
 
-Restart Apache
-`service apache2 restart`
+Copy text below into the new configuration file.
+```
+<VirtualHost *:80>
+  DocumentRoot /usr/local/gearman-ui
+  #ServerName www.example.com
+  ServerPath /gearman-ui/
+</VirtualHost>
+```
+
+Enable the site and reload Apache2
+```
+sudo a2ensite gearman-ui
+sudo service apache2 reload
+```
 
 Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui>
 
-####Install OpenVDMv2 Web-Application
+###Install OpenVDMv2 Web-Application
 
 Before the OpenVDMv2 web-application will work, two configuration files must be modified to match the configuration of the Warehouse.  This includes setting the URL from where users will access the OpenVDM web-application and database access credentials.  
 
