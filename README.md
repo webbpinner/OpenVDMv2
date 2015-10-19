@@ -47,7 +47,10 @@ sudo apt-get install rsync
 One of the ways OpenVDM communicates with data collection system is through Windows Shares configured on the collection system workstation.  Windows shares are also configured on the data warehouse to allow scientists and crew to easily access data stored on the Warehouse from their Windows or Mac Laptops.  Windows shares on a non-windows machine are made possible thanks to the Samba project.  
 
 To install Samba open a terminal window and type:
-`sudo apt-get install samba smbclient`
+`sudo apt-get install samba smbclient cifs-utils`
+
+Initialize the username creating during the OS installation for samba.  Change the username in the command below to the appropriate username for the current installation.  When prompted, set the password to the same password set of the user during the OS installation.
+`sudo smbpasswd -a survey`
 
 ###MySQL Database
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
@@ -385,6 +388,61 @@ Change the URL to match the URL specified in the Config.php file during the Open
 Restart Supervisor
 ```
 sudo service supervisor
+```
+
+####Setup the Samba shares
+
+
+```
+obey pam restrictions = no
+```
+
+Add to end of the `smb.conf` file.  Set the user in `write list` to the username created during the OS the installation:
+```
+[CruiseData]
+  comment=Cruise Data, read-only access to guest
+  path=/mnt/vault/FTPRoot/CruiseData
+  browsable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  write list = survey
+  create mask = 0644
+  directory mask = 0755
+  veto files = /._*/.DS_Store/
+  delete veto files = yes
+
+[VisitorInformation]
+  comment=Visitor Information, read-only access to guest
+  path=/mnt/vault/FTPRoot/VisitorInformation
+  browsable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  write list = survey
+  create mask = 0644
+  directory mask = 0755
+  veto files = /._*/.DS_Store/
+  delete veto files = yes
+
+[PublicData]
+  comment=Public Data, read/write access to all
+  path=/mnt/vault/FTPRoot/PublicData
+  browseable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  create mask = 0000
+  directory mask = 0000
+  veto files = /._*/.DS_Store/
+  delete veto files = yes
+  force create mode = 666
+  force directory mode = 777
+```
+
+Restart the Samba service
+```
+sudo service samba restart
 ```
 
 ###Miscellaneous Packages
