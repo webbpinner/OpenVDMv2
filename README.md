@@ -204,10 +204,11 @@ Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui
 
 ####Create the Required Directories
 In order for OpenVDMv2 to properly store data serveral directories must be created on the Warehouse
--**FTPRoot** - This will become the document root for the ProFTP server. 
--**CruiseData** - This is the location where the Cruise Data directories will be located.  This directory needs to live within the **FTPRoot**
--**PublicData** - This is the location where the Public Data share will be located.  This directory needs to live within the **FTPRoot**
--**VisitorInformation** - This is the location where ship-specific information will be located.  This directory needs to live within the **FTPRoot**
+
+ - **FTPRoot** - This will become the document root for the ProFTP server. 
+ - **CruiseData** - This is the location where the Cruise Data directories will be located.  This directory needs to live within the **FTPRoot**
+ - **PublicData** - This is the location where the Public Data share will be located.  This directory needs to live within the **FTPRoot**
+ - **VisitorInformation** - This is the location where ship-specific information will be located.  This directory needs to live within the **FTPRoot**
 
 The Location of the **FTPRoot** needs to be large enough to hold multiple cruises worth of data.  In typical installation of OpenVDMv2, the location of the **FTPRoot** is on dedicated hardware (internal RAID array).  In these cases the volume is mounted at boot by the OS to a specific location (i.e. `/mnt/vault`).  Instructions on mounting volumes at boot is beyond the scope of these installation procedures however.
 
@@ -310,11 +311,38 @@ Edit the default Apache2 VHost file.
 sudo nano /etc/apache2/sites-available/000-default.conf
 ```
 
-Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
+Copy text below into the Apache2 configuration file just above `</VirtualHost>`.  You will need to alter the directory locations to match the locations selected for the **CruiseData**, **PublicData** and **VisitorInformation** directories:
 ```
   Alias /OpenVDMv2 /var/www/OpenVDMv2
   <Directory "/var/www/OpenVDMv2">
     AllowOverride all
+  </Directory>
+  
+  Alias /CruiseData/ /mnt/vault/FTPRoot/CruiseData/
+  <Directory "/mnt/vault/FTPRoot/CruiseData">
+    AllowOverride None
+    Options +Indexes +FollowSymLinks +MultiViews
+    Order allow,deny
+    Allow from all
+    Require all granted
+  </Directory>
+
+  Alias /PublicData/ /mnt/vault/FTPRoot/PublicData/
+  <Directory "/mnt/vault/FTPRoot/PublicData">
+    AllowOverride None
+    Options +Indexes +FollowSymLinks +MultiViews
+    Order allow,deny
+    Allow from all
+    Require all granted
+  </Directory>
+
+  Alias /VisitorInformation/ /mnt/vault/FTPRoot/VisitorInformation/
+  <Directory "/mnt/vault/FTPRoot/VisitorInformation">
+    AllowOverride None
+    Options +Indexes +FollowSymLinks +MultiViews
+    Order allow,deny
+    Allow from all
+    Require all granted
   </Directory>
 ```
 
