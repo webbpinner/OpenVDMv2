@@ -85,16 +85,16 @@ LOCK TABLES `OVDM_CollectionSystemTransfers` WRITE;
 
 INSERT INTO `OVDM_CollectionSystemTransfers` (`collectionSystemTransferID`, `name`, `longName`, `sourceDir`, `destDir`, `staleness`, `useStartDate`, `transferType`, `rsyncServer`, `rsyncUseSSH`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `includeFilter`, `excludeFilter`, `ignoreFilter`, `status`, `enable`, `pid`)
 VALUES
-	(9,'SCS','SCS Underway Data Logger','/','SCS',0,0,3,'',0,'','','//192.168.1.15/SCS','survey','password4Survey','WORKGROUP','*','','',2,1,0),
-	(13,'EK60','EK60 Single-beam echo sounder','/','EK60/RAW/{cruiseID}',0,0,3,'',0,'','','//192.168.1.15/EK60','survey','password4Survey','WORKGROUP','*.raw','','test.txt',2,1,0),
-	(14,'EM302','EM302 Multibeam Mapping System','/','EM302',5,0,3,'',0,'','','//192.168.1.15/EM302','survey','password4Survey','WORKGROUP','*.tif','','',2,1,0),
-	(15,'OS75','Ocean Surveyer 75kHz ADCP','/','OS75',0,0,3,'',0,'','','//192.168.1.12/OS75','survey','password4Survey','WORKGROUP','*','','',3,0,0),
-	(16,'WH300','Workhorse 300kHz ADCP','/mnt/sensors/WH300','WH300',0,0,1,'',0,'','','','','','','*','','',3,0,0),
-	(17,'CTD','SBE 911+ CTD','/mnt/sensors/ctd','CTD',5,0,3,'',0,'','','//192.168.1.15/CTD','survey','password4Survey','WORKGROUP','*','','',3,0,0),
-	(19,'XBT','Sippican MK21 XBT (via rsync daemon)','/','XBT',0,0,2,'192.168.1.15/XBT',0,'survey','password4Survey','','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0),
-	(20,'TSAL','Thermo-salinigraph','/mnt/sensors/TSAL','tsal',5,0,1,'',0,'','','','','','','*','','',3,0,0),
-	(22,'XBT2','Sippican MK21 XBT (via rsync w/ ssh auth)','/home/survey/data/XBT','XBT_sshAuthentication',0,0,2,'192.168.1.15',1,'survey','password4Survey','','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0),
-	(23,'XBT3','Sippican MK21 XBT (via anonymous rsync)','/','XBT_anonymousRsync',0,0,2,'192.168.1.15/XBT_PUB',0,'anonymous','','','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0);
+	(9,'SCS','SCS Underway Data Logger','/','SCS',0,0,3,'',0,'','','//192.168.1.15/SCS','survey','password4Survey','WORKGROUP','*','','',2,0,0),
+	(13,'EK60','EK60 Single-beam echo sounder','/','EK60/RAW/{cruiseID}',0,0,3,'',0,'','','//192.168.1.15/EK60','survey','password4Survey','WORKGROUP','*.raw','','test.txt',2,0,0),
+	(14,'EM302','EM302 Multibeam Mapping System','/','EM302',5,0,3,'',0,'','','//192.168.1.15/EM302','survey','password4Survey','WORKGROUP','*.tif','','',2,0,0),
+	(15,'OS75','Ocean Surveyer 75kHz ADCP','/','OS75',0,0,3,'',0,'','','//192.168.1.12/OS75','survey','password4Survey','WORKGROUP','*','','',2,0,0),
+	(16,'WH300','Workhorse 300kHz ADCP','/mnt/sensors/WH300','WH300',0,0,1,'',0,'','','','','','','*','','',2,0,0),
+	(17,'CTD','SBE 911+ CTD','/mnt/sensors/ctd','CTD',5,0,3,'',0,'','','//192.168.1.15/CTD','survey','password4Survey','WORKGROUP','*','','',2,0,0),
+	(19,'XBT','Sippican MK21 XBT (via rsync daemon)','/','XBT',0,0,2,'192.168.1.15/XBT',0,'survey','password4Survey','','','','','*XBT[0-9][0-9][0-9]*','','',2,0,0),
+	(20,'TSAL','Thermo-salinigraph','/mnt/sensors/TSAL','tsal',5,0,1,'',0,'','','','','','','*','','',2,0,0),
+	(22,'XBT2','Sippican MK21 XBT (via rsync w/ ssh auth)','/home/survey/data/XBT','XBT_sshAuthentication',0,0,2,'192.168.1.15',1,'survey','password4Survey','','','','','*XBT[0-9][0-9][0-9]*','','',2,0,0),
+	(23,'XBT3','Sippican MK21 XBT (via anonymous rsync)','/','XBT_anonymousRsync',0,0,2,'192.168.1.15/XBT_PUB',0,'anonymous','','','','','','*XBT[0-9][0-9][0-9]*','','',2,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -117,7 +117,7 @@ LOCK TABLES `OVDM_CoreVars` WRITE;
 
 INSERT INTO `OVDM_CoreVars` (`coreVarID`, `name`, `value`)
 VALUES
-	(1,'shipboardDataWarehouseIP','192.168.1.6'),
+	(1,'shipboardDataWarehouseIP','127.0.0.1'),
 	(2,'shipboardDataWarehouseBaseDir','/mnt/vault/FTPRoot/CruiseData'),
 	(3,'shipboardDataWarehouseUsername','survey'),
 	(4,'shipboardDataWarehousePublicDataDir','/mnt/vault/FTPRoot/PublicData'),
@@ -168,9 +168,9 @@ LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 
 INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `status`, `enable`, `required`, `pid`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',2,'/mnt/vault/shoreside','192.168.1.6','survey','password4survey','','','','',2,1,1,0),
-	(2,'SBDA','Shipboard Data Archive (SMB Share)',3,'/','192.168.1.5','survey','password4survey','//192.168.1.5/ShipArchive','survey','password4survey','WORKGROUP',2,1,0,0),
-	(3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/media/survey/MyBackupHDD','','','','','','','',2,1,0,0),
+	(1,'SSDW','Shoreside Data Warehouse',2,'/mnt/vault/shoreside','192.168.1.6','survey','password4survey','','','','',4,0,1,0),
+	(2,'SBDA','Shipboard Data Archive (SMB Share)',3,'/','192.168.1.5','survey','password4survey','//192.168.1.5/ShipArchive','survey','password4survey','WORKGROUP',4,0,0,0),
+	(3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/media/survey/MyBackupHDD','','','','','','','',4,0,0,0),
 	(4,'RemoteBackup','Remote Backup (Rsync Server)',2,'/mnt/vault/archive','192.168.1.4','survey','password4survey','','','','',4,0,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
@@ -214,8 +214,8 @@ VALUES
 	(1,'Transfer Logs','Transfer Logs','OpenVDM/TransferLogs',1,1),
 	(2,'Dashboard Data','Dashboard Data','OpenVDM/DashboardData',1,1),
 	(3,'Science','Misc. cruise docs, pictures and data. ','Science',1,1),
-	(4,'Products','Cruise Products','Products',1,0),
-	(5,'r2r','Rolling Deck to Repository','r2r',1,0);
+	(4,'Products','Cruise Products','Products',0,0),
+	(5,'r2r','Rolling Deck to Repository','r2r',0,0);
 
 /*!40000 ALTER TABLE `OVDM_ExtraDirectories` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -296,10 +296,10 @@ LOCK TABLES `OVDM_ShipToShoreTransfers` WRITE;
 
 INSERT INTO `OVDM_ShipToShoreTransfers` (`shipToShoreTransferID`, `name`, `longName`, `priority`, `collectionSystem`, `extraDirectory`, `includeFilter`, `enable`, `required`)
 VALUES
-	(1,'DashboardData','Dashboard Data',1,0,2,'*',1,1),
+	(1,'DashboardData','Dashboard Data',1,0,2,'*',0,1),
 	(2,'TransferLogs','Transfer Logs',1,0,1,'*',0,1),
-	(3,'MD5Summary','MD5 Summary',1,0,0,'MD5_Summary.txt MD5_Summary.md5 ',1,1),
-	(4,'OVDM_Config','OpenVDM Configuration',1,0,0,'ovdmConfig.json',1,1),
+	(3,'MD5Summary','MD5 Summary',1,0,0,'MD5_Summary.txt MD5_Summary.md5 ',0,1),
+	(4,'OVDM_Config','OpenVDM Configuration',1,0,0,'ovdmConfig.json',0,1),
 	(5,'KML_Files','KML Files from Cruise Products',2,0,4,'*.kml',0,0),
 	(6,'SCS_Met','SCS Met Data',2,9,0,'METOC/*.Raw NAV/*.Raw',0,0),
 	(7,'All_GGA_Files','All GGA Files',1,9,0,'*GGA*.raw',0,0);
