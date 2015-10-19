@@ -1,6 +1,0 @@
-.idea
-composer.lock
-composer.phar
-app/logs/gearmanui.log
-app/config/gearmanui.yml
-vendor/
