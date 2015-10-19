@@ -32,7 +32,7 @@ SSH is used thoughout OpenVDM for providing secure communication between the War
 
 To install SSH open a terminal window and type:
 ```
-sudo apt-get install ssh
+sudo apt-get install ssh sshpass
 ```
 
 ###Rsync
@@ -42,6 +42,12 @@ To install rsync open a terminal window and type:
 ```
 sudo apt-get install rsync
 ```
+
+###Samba
+One of the ways OpenVDM communicates with data collection system is through Windows Shares configured on the collection system workstation.  Windows shares are also configured on the data warehouse to allow scientists and crew to easily access data stored on the Warehouse from their Windows or Mac Laptops.  Windows shares on a non-windows machine are made possible thanks to the Samba project.  
+
+To install Samba open a terminal window and type:
+`sudo apt-get install samba smbclient`
 
 ###MySQL Database
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
@@ -58,8 +64,6 @@ To install PHP open a terminal window and type:
 ```
 sudo apt-get install php5 php5-cli php5-mysql
 ```
-
-maybe --> php-pear php5-dev
 
 ###Apache2 Web-server
 The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
@@ -287,7 +291,7 @@ Edit the `./app/Core/Config.php` file:
 sudo nano /var/www/OpenVDMv2/app/Core/Config.php
 ```
 
- - Set the file URL of the OpenVDMv2 installation.  Look for the following lines and change the URL to the actual URL of the installation:
+ - Set the file URL of the OpenVDMv2 installation.  Look for the following lines and change the IP address in the URL to the actual IP address or hostname of the warehouse:
 ```
 //site address
 define('DIR', 'http://127.0.0.1/OpenVDMv2/');
@@ -376,35 +380,15 @@ Look for the following line:
 command=/usr/bin/python /usr/local/bin/OVDM_scheduler.py --interval 5 http://127.0.0.1/OpenVDMv2/
 ```
 
-Change the URL to the URL for the OpenVDMv2 installation.
+Change the URL to match the URL specified in the Config.php file during the OpenVDMv2 web-application installation.
 
 Restart Supervisor
 ```
 sudo service supervisor
 ```
 
-###Samba
-One of the ways OpenVDM communicates with data collection system is through Windows Shares configured on the collection system workstation.  Windows shares are also configured on the data warehouse to allow scientists and crew to easily access data stored on the Warehouse from their Windows or Mac Laptops.  Windows shares on a non-windows machine are made possible thanks to the Samba project.  
-
-To install Samba open a terminal window and type:
-`sudo apt-get install samba smbclient`
-
 ###Miscellaneous Packages
-`sudo apt-get install rsync curl git gdal-bin python-gdal`
-maybe --> npm nodejs-legacy
+`sudo apt-get install gdal-bin python-gdal`
 
 ###MapProxy
 `apt-get install mapproxy`
-
-
-gearman
-
-sudo pecl install gearman
-
-###Install Composer
-curl-sS https://getcomposer.org/installer | php
-mv Composer.phar /usr/local/bin
-
-gdal-bin python-gdal
-npm nodejs-legacy
-sshpass
