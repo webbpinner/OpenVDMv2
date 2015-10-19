@@ -86,7 +86,7 @@ def getRequiredCruiseDataTransfers(siteRoot):
         return r.json()
 
     except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruiseDataTransfer data, check URL"
+        print "Error retrieving requriedCruiseDataTransfer data, check URL"
         sys.exit(1)
 
 def getCruiseID(siteRoot):
@@ -96,7 +96,7 @@ def getCruiseID(siteRoot):
         return r.json()
 
     except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
+        print "Error retrieving cruise ID, check URL"
         sys.exit(1)
         
 def getCruiseStartDate(siteRoot):
@@ -106,7 +106,7 @@ def getCruiseStartDate(siteRoot):
         return r.json()
 
     except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
+        print "Error retrieving cruise start date data, check URL"
         sys.exit(1)
         
 def getSystemStatus(siteRoot):
@@ -116,7 +116,7 @@ def getSystemStatus(siteRoot):
         return r.json()
 
     except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
+        print "Error retrieving system status data, check URL"
         sys.exit(1)
     
 def main(argv):
@@ -150,7 +150,7 @@ def main(argv):
 
         collectionSystemTransfers = getCollectionSystemTransfers(args.siteRoot)
         for collectionSystemTransfer in collectionSystemTransfers:
-            #print 'Submitting data transfer job for: ' + collectionSystemTransfer['name']
+            print 'Submitting data transfer job for: ' + collectionSystemTransfer['name']
 
             gmData = {}
             gmData['siteRoot'] = args.siteRoot
@@ -169,7 +169,7 @@ def main(argv):
         cruiseDataTransfers = getCruiseDataTransfers(args.siteRoot)
                          
         for cruiseDataTransfer in cruiseDataTransfers:
-            #print 'Submitting data transfer job for: ' + cruiseDataTransfer['name']
+            print 'Submitting data transfer job for: ' + cruiseDataTransfer['name']
 
             gmData = {}
             gmData['siteRoot'] = args.siteRoot
@@ -189,7 +189,7 @@ def main(argv):
         
         for requiredCruiseDataTransfer in requiredCruiseDataTransfers:
             if requiredCruiseDataTransfer['name'] == 'SSDW':
-                #print 'Submitting data transfer job for: ' + requiredCruiseDataTransfer['name']
+                print 'Submitting data transfer job for: ' + requiredCruiseDataTransfer['name']
 
                 gmData = {}
                 gmData['siteRoot'] = args.siteRoot

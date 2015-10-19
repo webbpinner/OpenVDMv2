@@ -50,32 +50,22 @@ class Welcome extends Controller {
             }
         }
         
-        $filename = $warehouseBaseDir . '/' . $data['cruiseID'] . '/' . $dashboardDataDir . '/' . 'TransferLogSummary.json';
+        $transferLogDir ='';
+        foreach($requiredExtraDirectories as $row) {
+            if(strcmp($row->name, "Transfer Logs") === 0){
+                $transferLogDir = $row->destDir;
+                break;
+            }
+        }
+        
+        $filename = $warehouseBaseDir . '/' . $data['cruiseID'] . '/' . $transferLogDir . '/' . 'TransferLogSummary.json';
         if (file_exists($filename) && is_readable($filename)) {
             $transferLogSummary = json_decode(file_get_contents($filename));
             $data['filenameErrors'] = $transferLogSummary->filenameErrors;
             $data['shipboardTransfers'] = $transferLogSummary->shipboardTransfers;
             $data['shipToShoreTransfers'] = $transferLogSummary->shipToShoreTransfers;
         }
-        
-#        $cruiseSize = $this->_warehouseModel->getCruiseSize();
-#        if(isset($cruiseSize['error'])){
-#            $data['cruiseSize'] = "Error";
-#        } else {
-#            $data['cruiseSize'] = $this->formatFilesize($cruiseSize['cruiseSize']);
-            //$data['cruiseSize'] = $cruiseSize['cruiseSize'];
-#        }
-
-#        $freeSpace = $this->_warehouseModel->getFreeSpace();
-#        if(isset($freeSpace['error'])){
-#            $data['freeSpace'] = "Error";
-#        } else {
-#            $data['freeSpace'] = $this->formatFilesize($freeSpace['freeSpace']);
-            //$data['freeSpace'] = $freeSpace['freeSpace'];
-#        }
-        
-        //$data['cruiseSize'] = $this->_model->getCruiseSize();
-        //$data['freeSpace'] = $this->_model->getFreeSpace();        
+       
         $data['javascript'] = array('welcome');
         
         View::rendertemplate('header',$data);

@@ -78,15 +78,15 @@ class Warehouse extends Controller {
         $cruiseID = $this->_warehouseModel->getCruiseID();
         $extraDirectoriesModel = new \Models\Config\ExtraDirectories();
         $requiredExtraDirectories = $extraDirectoriesModel->getRequiredExtraDirectories();
-        $dashboardDataDir ='';
+        $transferLogDir ='';
         foreach($requiredExtraDirectories as $row) {
-            if(strcmp($row->name, "Dashboard Data") === 0) {
-                $dashboardDataDir = $row->destDir;
+            if(strcmp($row->name, "Transfer Logs") === 0) {
+                $transferLogDir = $row->destDir;
                 break;
             }
         }
         
-        $filename = $warehouseBaseDir . '/' . $cruiseID . '/' . $dashboardDataDir . '/' . 'TransferLogSummary.json';
+        $filename = $warehouseBaseDir . '/' . $cruiseID . '/' . $transferLogDir . '/' . 'TransferLogSummary.json';
         if (file_exists($filename) && is_readable($filename)) {
             echo file_get_contents($filename);
         } else {

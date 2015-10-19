@@ -227,8 +227,8 @@ def task_callback(gearman_worker, job):
 
     cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    dashboardDataDir = build_DashboardDataDirPath(cruiseDir, dataObj['siteRoot'])
-    transferLogSummaryFilename = dashboardDataDir + '/' + 'TransferLogSummary.json'
+    transferLogDir = build_logfileDirPath(cruiseDir, dataObj['siteRoot'])
+    transferLogSummaryFilename = transferLogDir + '/' + 'TransferLogSummary.json'
     
     gearman_worker.send_job_status(job, 3, 10)
     #print 'DECODED:', json.dumps(fileList, indent=2)
@@ -295,8 +295,8 @@ def task_callback2(gearman_worker, job):
 
     cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    dashboardDataDir = build_DashboardDataDirPath(cruiseDir, dataObj['siteRoot'])
-    transferLogSummaryFilename = dashboardDataDir + '/' + 'TransferLogSummary.json'
+    transferLogDir = build_logfileDirPath(cruiseDir, dataObj['siteRoot'])
+    transferLogSummaryFilename = transferLogDir + '/' + 'TransferLogSummary.json'
     
     gearman_worker.send_job_status(job, 3, 10)
     #print 'DECODED:', json.dumps(dataObj['files']['exclude'], indent=2)
@@ -375,8 +375,8 @@ def task_callback3(gearman_worker, job):
 
     cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    dashboardDataDir = build_DashboardDataDirPath(cruiseDir, dataObj['siteRoot'])
-    transferLogSummaryFilename = dashboardDataDir + '/' + 'TransferLogSummary.json'
+    transferLogDir = build_logfileDirPath(cruiseDir, dataObj['siteRoot'])
+    transferLogSummaryFilename = transferLogDir + '/' + 'TransferLogSummary.json'
     
     gearman_worker.send_job_status(job, 3, 10)
         
@@ -441,7 +441,7 @@ def task_callback4(gearman_worker, job):
     warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
     dashboardDataDir = build_DashboardDataDirPath(cruiseDir, dataObj['siteRoot'])
     transferLogDir = build_logfileDirPath(cruiseDir, dataObj['siteRoot'])
-    transferLogSummaryFilename = dashboardDataDir + '/' + 'TransferLogSummary.json'
+    transferLogSummaryFilename = transferLogDir + '/' + 'TransferLogSummary.json'
     
     shipboardTransferLogfileList = build_filelist(transferLogDir)
     shipboardFilenameErrorLogfileList = build_filenameErrorFilelist(transferLogDir)

@@ -305,7 +305,7 @@ def task_callback(gearman_worker, job):
     for newRow in newHashes:
         updated = False
         for existingRow in existingHashes:
-            if newRow['filename'] == existingRow['filename']:
+            if dataObj['cruiseID'] + '/' + newRow['filename'] == existingRow['filename']:
                 #print "Row Updated"
                 existingRow['hash'] = newRow['hash']
                 updated = True
