@@ -436,8 +436,4 @@ Restart the Samba service
 sudo service samba restart
 ```
 
-###Miscellaneous Packages
-`sudo apt-get install gdal-bin python-gdal`
-
-###MapProxy
-`apt-get install mapproxy`
+At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure collection system transfers, cruise data transfers and the shoreside data warehouse.
