@@ -27,6 +27,13 @@ A few minutes after the install completes and the computer restarts, Xubuntu wil
 
 Before OpenVDMv2 can be installed serveral other services and software packaged must be installed and configured.
 
+###Set the Timezone
+While not required it is strongly recommended that the timezone for the Warehouse be set to UTC.  From a terminal window type the following command and select 'None of the above' then the 'UTC' option.
+
+```
+sudo dpkg-reconfigure tzdata
+```
+
 ###SSH Client/Server
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
@@ -232,7 +239,7 @@ sudo mkdir -p /mnt/vault/FTPRoot/VistorInformation
 sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 ```
 
-####Download the OpenVDM Files from Github
+####Download the OpenVDMv2 Files from Github
 
 From a terminal window type:
 ```
@@ -396,12 +403,12 @@ sudo service supervisor
 
 ####Setup the Samba shares
 
-
 ```
 obey pam restrictions = no
 ```
 
-Add to end of the `smb.conf` file.  Set the user in `write list` to the username created during the OS the installation:
+Add to end of the `smb.conf` file.  Set the user in `write list` to the username created during the OS the installation and the `apth` to the corresponding folders created above:
+
 ```
 [CruiseData]
   comment=Cruise Data, read-only access to guest
@@ -449,8 +456,3 @@ Restart the Samba service
 sudo service samba restart
 ```
 
-###Miscellaneous Packages
-`sudo apt-get install gdal-bin python-gdal`
-
-###MapProxy
-`apt-get install mapproxy`
