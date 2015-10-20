@@ -128,7 +128,7 @@ def build_filelist(sourceDir, filters):
                     returnFiles['include'].append(os.path.join(root, filename))
 
     returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
-    print json.dumps(returnFiles, indent=2)
+    #print json.dumps(returnFiles, indent=2)
     return returnFiles
 
 def build_destDirectories(destDir, files):
@@ -203,11 +203,11 @@ def transfer_rsyncDestDir(data, worker, job):
         for shipToShoreTransfer in shipToShoreTransfers:
             if shipToShoreTransfer['priority'] == str(x):
                 if shipToShoreTransfer['enable'] == '1':
-                    print json.dumps(shipToShoreTransfer, indent=2)
+                    #print json.dumps(shipToShoreTransfer, indent=2)
                     if not shipToShoreTransfer['collectionSystem'] == "0":
                         print "Retrieving Collection System information"
                         collectionSystem = get_collectionSystemTransfer(job, shipToShoreTransfer['collectionSystem'])
-                        print json.dumps(collectionSystem, indent=2)
+                        #print json.dumps(collectionSystem, indent=2)
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + data['cruiseID'] + '/' + collectionSystem['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
@@ -216,7 +216,7 @@ def transfer_rsyncDestDir(data, worker, job):
                         extraDirectory = get_extraDirectory(job, shipToShoreTransfer['extraDirectory'])
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + data['cruiseID'] + '/' + extraDirectory['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
-                        print json.dumps(extraDirectory, indent=2)
+                        #print json.dumps(extraDirectory, indent=2)
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
                     else:
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')

@@ -161,13 +161,14 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
         fileOrDir, size, mdate, mtime, name = line.split()
         if fileOrDir.startswith('-'):
             filename = name
+            #print name
             exclude = False
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
                 #print filt
                 if fnmatch.fnmatch(filename, filt):
-                    #print "match"
+                    #print "ignore"
                     ignore = True
                     break
             if not ignore:
@@ -175,6 +176,7 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
+                                #print "exclude"
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
@@ -183,11 +185,12 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
                             #print "file_mod_time_SECS: " + str(file_mod_time_SECS)
                             if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
-                                #print filename
+                                #print "include"
                                 returnFiles['include'].append(filename)
                             include = True
                             break
                 if not include:
+                    #print "exclude"
                     returnFiles['exclude'].append(filename)        
 
     returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
@@ -347,7 +350,7 @@ def transfer_localSourceDir(data, worker, job):
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
     lines_iterator = iter(popen.stdout.readline, b"")
     for line in lines_iterator:
-        print(line) # yield line
+        #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
             files['new'].append(line.split(' ')[1].rstrip('\n'))
         elif line.startswith( '>f.' ):
@@ -746,7 +749,7 @@ def task_callback(gearman_worker, job):
     gmData['collectionSystemTransfer']['status'] = "1"
     completed_job_request = gm_client.submit_job("testCollectionSystemTransfer", json.dumps(gmData))
     resultsObj = json.loads(completed_job_request.result)
-#    print 'DECODED Results:', json.dumps(resultsObj, indent=2)
+    #print 'DECODED Results:', json.dumps(resultsObj, indent=2)
 
     if resultsObj[-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"

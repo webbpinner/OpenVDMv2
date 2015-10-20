@@ -215,6 +215,7 @@ class CustomGearmanWorker(gearman.GearmanWorker):
 
     def on_job_complete(self, current_job, job_result):
         print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
+        print json.dumps(job_result)
         dataObj = json.loads(current_job.data)
         return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
 
