@@ -6,6 +6,7 @@
 ##Installation Guide
 Goto <http://xubuntu.org/getxubuntu/>
 
+###Operating System
 Download Xubuntu for your hardware.  At the time of this writing we are using 14.04.3 (32-bit)
 
 Perform the default Xubuntu install.  For these instructions the default account that is created is "Survey" and the computer name is "Warehouse".
