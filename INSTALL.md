@@ -4,9 +4,11 @@
 #Open Vessel Data Management v2
 
 ##Installation Guide
-Goto <http://xubuntu.org/getxubuntu/>
+At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 14.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 14.04 LTS is used.
 
 ###Operating System
+Goto <http://xubuntu.org/getxubuntu/>
+
 Download Xubuntu for your hardware.  At the time of this writing we are using 14.04.3 (32-bit)
 
 Perform the default Xubuntu install.  For these instructions the default account that is created is "Survey" and the computer name is "Warehouse".
