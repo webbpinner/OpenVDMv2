@@ -46,7 +46,7 @@ Initialize the username creating during the OS installation for samba.  Change t
 sudo smbpasswd -a survey
 ```
 
-###MySQL Database
+###MySQL Database Server
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
 
 To install MySQL open a terminal window and type:
