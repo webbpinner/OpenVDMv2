@@ -12,9 +12,12 @@ $hooks = Hooks::get();
     <span class="text-muted pull-right" style="padding: 15px"><a href="http://www.oceandatarat.org/?page_id=1123">OpenVDMv2</a> is licensed under the <a href="http://www.gnu.org/licenses/gpl-3.0.html">GPLv3</a> public license</span>
 </div> <!-- wrapper -->
 
+
 <!-- JS -->    
 <script type="text/javascript">
-    var siteRoot = "<?php echo DIR ?>";
+    var siteRoot = "<?php echo DIR; ?>";
+    var cruiseID = "<?php echo $data['cruiseID']; ?>";
+    var cruiseDataDir = "<?php echo $data['dataWarehouseApacheDir']; ?>";
     
 </script>
 

@@ -19,105 +19,113 @@ use Helpers\Session;
                     <li class=""><a id="position" href="#position" data-toggle="tab">Position</a></li>
                     <li class=""><a id="weather" href="#weather" data-toggle="tab">Weather</a></li>
                     <li class=""><a id="soundVelocity" href="#soundVelocity" data-toggle="tab">Sound Velocity</a></li>
-                    <li class="active"><a id="qualityControl" href="#qualityControl" data-toggle="tab">QA/QC</a></li>                    
+                    <li class="active"><a id="dataQuality" href="#dataQuality" data-toggle="tab">Data Quality</a></li>                    
                 </ul>
             </div>
         </div>
     </div>
     <div class="row">
         <div class="col-lg-12">
-<?php
-    for ($i = 0; $i < sizeof($data['dataDashboardObjectsByTypes']); $i++) {
-?>
-            <div class="panel panel-default">
-                <div class="panel-heading"><?php echo $data['dataDashboardObjectsByTypes'][$i][0]->dataDashboardObjectType;?></div>
+            <div class="panel">
                 <div class="panel-body">
-                    <table class='table table-striped table-bordered responsive'>
-                        <tr>
-                            <th>Filename</th>
+                    <div class="row">
 <?php
-        for ($j = 0; $j < sizeof($data['dataDashboardObjectsQualityTestsByTypes'][$i][0]); $j++) {
+    for ($i = 0; $i < sizeof($data['dataTypes']); $i++) {
 ?>
-                            <th width=20px><?php echo $data['dataDashboardObjectsQualityTestsByTypes'][$i][0][$j]->testName;?></th>
+                        <div class="col-lg-12">
+                            <div class="panel panel-default">
+                                <div class="panel-heading"><?php echo $data['dataTypes'][$i];?></div>
+                                <div class="panel-body">
+                                    <table class='table table-striped table-bordered responsive'>
+                                        <tr>
+                                            <th>Filename</th>
+<?php
+        for ($k = 0; $k < sizeof($data['dataObjectsQualityTests'][$i][0]); $k++) {
+?>
+                                            <th width=20px><?php echo $data['dataObjectsQualityTests'][$i][0][$k]->testName;?></th>
 <?php
         }
 ?>
-                            <th class="text-center" width=20px>Stats</th>
-                        </tr>
+                                            <th class="text-center" width=20px>Stats</th>
+                                        </tr>
 <?php
-        for ($j = 0; $j < sizeof($data['dataDashboardObjectsByTypes'][$i]); $j++) {
+        for ($j = 0; $j < sizeof($data['dataObjectsQualityTests'][$i]); $j++) {
 ?>
-                        <tr>
-                            <td><?php echo $data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardRawFile; ?></td>
+                                        <tr>
+                                            <td><?php echo $data['dataObjects'][$i][$j]['raw_data']; ?></td>
 <?php
-            for ($k = 0; $k < sizeof($data['dataDashboardObjectsQualityTestsByTypes'][$i][$j]); $k++) {
+            for ($k = 0; $k < sizeof($data['dataObjectsQualityTests'][$i][$j]); $k++) {
 ?>
-                            <td>
+                                            <td>
 <?php
-                if ($data['dataDashboardObjectsQualityTestsByTypes'][$i][$j][$k]->results === "Passed"){
+                if ($data['dataObjectsQualityTests'][$i][$j][$k]->results === "Passed"){
 ?>                                
-                                <div class="text-center"><i class="fa fa-check text-success"></i></div>
+                                                <div class="text-center"><i class="fa fa-check text-success"></i></div>
 <?php
-                } elseif ($data['dataDashboardObjectsQualityTestsByTypes'][$i][$j][$k]->results === "Warning"){
+                } elseif ($data['dataObjectsQualityTests'][$i][$j][$k]->results === "Warning"){
 ?>
-                                <div class="text-center"><i class="fa fa-warning text-warning"></i></div>
+                                                <div class="text-center"><i class="fa fa-warning text-warning"></i></div>
 <?php
-                } elseif ($data['dataDashboardObjectsQualityTestsByTypes'][$i][$j][$k]->results === "Failed"){
+                } elseif ($data['dataObjectsQualityTests'][$i][$j][$k]->results === "Failed"){
 ?>
-                                <div class="text-center"><i class="fa fa-times text-danger"></i></div>
+                                                <div class="text-center"><i class="fa fa-times text-danger"></i></div>
 <?php
                 }
 ?>                                                                                                         
-                            </td>
+                                            </td>
 <?php
             }
 ?>
-                            <td>
+                                            <td>
 <?php
-                if($data['dataDashboardObjectsStatsByTypes'][$i][$j]){
+                if($data['dataObjectsStats'][$i][$j]){
 ?>
-                                <a href='<?php echo DIR; ?>dataDashboard/qualityControlShowDataFileStats/<?php echo $data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID; ?>' class='btn btn-xs btn-default'>Show</a>
+                                                <a href='<?php echo DIR; ?>dataDashboard/dataQualityShowFileStats/<?php echo $data['dataObjects'][$i][$j]['raw_data']; ?>' class='btn btn-xs btn-default'>Show</a>
 <?php
             } else {
 ?>
-                                <a href='<?php echo DIR; ?>dataDashboard/qualityControlShowDataFileStats/<?php echo $data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID; ?>' class='btn btn-xs btn-default disabled'>Show</a>
+                                                <a href='<?php echo DIR; ?>dataDashboard/dataQualityShowFileStats/<?php echo $data['dataObjects'][$i][$j]['raw_data']; ?>' class='btn btn-xs btn-default disabled'>Show</a>
 <?php
             }
 ?>
-                            </td>
-                        </tr>
+                                            </td>
+                                        </tr>
 <?php
         }
                                                                            
 ?>
-                        <tr>
-                            <td class="text-right" colspan=<?php echo sizeof($data['dataDashboardObjectsQualityTestsByTypes'][$i][0])+2;?>>
+                                        <tr>
+                                            <td class="text-right" colspan=<?php echo sizeof($data['dataObjectsQualityTests'][$i][0])+2;?>>
 <?php
         $statsAvailable = false;
-        for ($k = 0; $k < sizeof($data['dataDashboardObjectsStatsByTypes'][$i]); $k++) {
-            if($data['dataDashboardObjectsStatsByTypes'][$i][$k]){
+        for ($k = 0; $k < sizeof($data['dataObjectsStats'][$i]); $k++) {
+            if($data['dataObjectsStats'][$i][$k]){
                 $statsAvailable = true;
                 break;
             }
         }
         if($statsAvailable) {
 ?>
-                                <a href='<?php echo DIR; ?>dataDashboard/qualityControlShowDataTypeStats/<?php echo $data['dataDashboardObjectsByTypes'][$i][0]->dataDashboardObjectType; ?>' class='btn btn-xs btn-default'>Show Totals</a>
+                                                <a href='<?php echo DIR; ?>dataDashboard/dataQualityShowDataTypeStats/<?php echo $data['dataTypes'][$i]; ?>' class='btn btn-xs btn-default'>Show Totals</a>
 <?php
         } else {
 ?>
-                                <a href='<?php echo DIR; ?>dataDashboard/qualityControlShowDataTypeStats/<?php echo $data['dataDashboardObjectsByTypes'][$i][0]->dataDashboardObjectType; ?>' class='btn btn-xs btn-default disabled'>Show Totals</a>
+                                                <a href='<?php echo DIR; ?>dataDashboard/dataQualityShowDataTypeStats/<?php echo $data['dataTypes'][$i]; ?>' class='btn btn-xs btn-default disabled'>Show Totals</a>
 <?php
         }
 ?>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 <?php
     }
 ?>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 <?php

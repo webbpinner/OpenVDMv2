@@ -6,177 +6,289 @@ use Core\View;
 use Helpers\Session;
 use Helpers\Url;
 
+class Placeholder
+{
+    public $plotType;
+    public $dataType;
+    public $id;
+    public $heading;
+    public $dataTypes;
+    public $dataFiles;
+}
+
 class DataDashboard extends Controller {
     
     private $_warehouseModel;
-    private $_dataDashboardModel;
+    private $_dashboardDataModel;
 
     public function __construct(){
         
         $this->_warehouseModel = new \Models\Warehouse();
-        $this->_dataDashboardModel = new \Models\DataDashboard();
+        $this->_dashboardDataModel = new \Models\DashboardData();
     }
 
     public function index(){
             
         $data['title'] = 'Data Dashboard';
-        $data['css'] = array('leaflet');
-        $data['javascript'] = array('main_dataDashboard', 'tabs_dataDashboard', 'dataDashboard', 'leaflet');
+        $data['page'] = 'main';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataObjectTypes'] = $this->_dataDashboardModel->getDataTypes($data['cruiseID']);
-        if (sizeof($data['dataObjectTypes']) > 0) {
-            array_push($data['javascript'], 'highcharts');
-            array_push($data['javascript'], 'leaflet');
-        }
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['css'] = array('leaflet');
+        $data['javascript'] = array('main_dataDashboard', 'tabs_dataDashboard', 'leaflet', 'highcharts');
+        $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/main',$data);
-        View::rendertemplate('footer',$data);
+        View::renderTemplate('header', $data);
+        if( sizeof($data['dataTypes'])>0){
+            View::render('DataDashboard/main', $data);
+        } else {
+            View::render('DataDashboard/noData', $data);
+        }
+        View::renderTemplate('footer', $data);
     }
     
     public function position(){
             
         $data['title'] = 'Position';
-        $data['css'] = array('leaflet');
-        $data['javascript'] = array('tabs_dataDashboard', 'position', 'leaflet', 'highcharts');
+        $data['page'] = 'position';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['css'] = array('leaflet');
+        $data['javascript'] = array('tabs_dataDashboard', 'dataDashboard', 'leaflet', 'highcharts');
         
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/position',$data);
-        View::rendertemplate('footer',$data);
+        $position = new Placeholder();
+        $position->plotType = 'map';
+        $position->id = 'map';
+        $position->heading = 'Position';
+        $position->dataTypes = array('geoJSON', 'tms');
+        $position->dataFiles = array(
+            $this->_dashboardDataModel->getDashboardObjectsByTypes('gga'),
+            $this->_dashboardDataModel->getDashboardObjectsByTypes('geotiff'),
+        );
+
+        $data['placeholders'] = array($position);
+        
+        $noDataFiles = true;
+        for($i = 0; $i < sizeof($data['placeholders']); $i++) {
+            for($j = 0; $j < sizeof($data['placeholders'][$i]->dataFiles); $j++) {
+                if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0) {
+                    $noDataFiles = false;
+                    break;
+                }
+            }
+            
+            if(!$noDataFiles) {
+                break;
+            }
+        }
+        
+        View::renderTemplate('header', $data);
+        if ($noDataFiles) {
+            View::render('DataDashboard/noData', $data);
+        } else {
+            View::render('DataDashboard/dataDashboard', $data);
+        }
+        View::renderTemplate('footer', $data);
     }
     
     public function soundVelocity(){
             
         $data['title'] = 'Sound Velocity';
-        $data['javascript'] = array('tabs_dataDashboard', 'soundVelocity', 'highcharts');
+        $data['page'] = 'soundVelocity';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['javascript'] = array('tabs_dataDashboard', 'dataDashboard', 'highcharts');
         
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/soundVelocity',$data);
-        View::rendertemplate('footer',$data);
+        $tsg = new Placeholder();
+        $tsg->plotType = 'chart';
+        $tsg->id = 'tsg';
+        $tsg->heading = 'Thermosalinograph Sensor';
+        $tsg->dataTypes = array('json');
+        $tsg->dataFiles = array(
+            $this->_dashboardDataModel->getDashboardObjectsByTypes('tsg')
+        );
+        
+        $svp = new Placeholder();
+        $svp->plotType = 'chart';
+        $svp->id = 'svp';
+        $svp->heading = 'Sound Velocity Probe';
+        $svp->dataTypes = array('json');
+        $svp->dataFiles = array(
+            $this->_dashboardDataModel->getDashboardObjectsByTypes('svp')
+        );
+        
+        $data['placeholders'] = array($tsg, $svp);
+        
+        $noDataFiles = true;
+        for($i = 0; $i < sizeof($data['placeholders']); $i++) {
+            for($j = 0; $j < sizeof($data['placeholders'][$i]->dataFiles); $j++) {
+                if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0) {
+                    $noDataFiles = false;
+                    break;
+                }
+            }
+            
+            if(!$noDataFiles) {
+                break;
+            }
+        }
+        
+        View::renderTemplate('header', $data);
+        if ($noDataFiles) {
+            View::render('DataDashboard/noData', $data);
+        } else {
+            View::render('DataDashboard/dataDashboard', $data);
+        }
+        View::renderTemplate('footer', $data);
     }
 
     public function weather(){
             
         $data['title'] = 'Weather';
-        $data['javascript'] = array('tabs_dataDashboard','weather', 'highcharts');
+        $data['page'] = 'weather';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['javascript'] = array('tabs_dataDashboard','dataDashboard', 'highcharts');
         
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/weather',$data);
-        View::rendertemplate('footer',$data);
-    }
-    
-    public function qualityControl(){
+        $met = new Placeholder();
+        $met->plotType = 'chart';
+        $met->id = 'met';
+        $met->heading = 'Meterological Sensor';
+        $met->dataTypes = array('json');
+        $met->dataFiles = array(
+            $this->_dashboardDataModel->getDashboardObjectsByTypes('met')
+        );
         
-        $data['title'] = 'QA/QC';
-        $data['javascript'] = array('tabs_dataDashboard','qualityControl');
-        $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataObjectTypes'] = $this->_dataDashboardModel->getDataTypes($data['cruiseID']);
-        #var_dump($data['dataObjectTypes']);
+        $twind = new Placeholder();
+        $twind->plotType = 'chart';
+        $twind->id = 'twind';
+        $twind->heading = 'Wind Sensor';
+        $twind->dataTypes = array('json');
+        $twind->dataFiles = array(
+            $this->_dashboardDataModel->getDashboardObjectsByTypes('twind')
+        );
         
-        $dataTypeNum = sizeof($data['dataObjectTypes']);
-        $data['dataDashboardObjectsByTypes'] = array($dataTypeNum);
-        $data['dataDashboardObjectsQualityTestsByTypes'] = array($dataTypeNum);
-        $data['dataDashboardObjectsStatsByTypes'] = array($dataTypeNum);
+        $data['placeholders'] = array($met, $twind);
         
-        for($i = 0; $i < $dataTypeNum; $i++)
-        {
-            $data['dataDashboardObjectsByTypes'][$i] = $this->_dataDashboardModel->getDataObjectsByType($data['cruiseID'], $data['dataObjectTypes'][$i]->dataDashboardObjectType);
-            $fileNum = sizeof($data['dataDashboardObjectsByTypes'][$i]);
-            $data['dataDashboardObjectsQualityTestsByTypes'][$i] = array($fileNum);
-            $data['dataDashboardObjectsStatsByTypes'][$i] = array($fileNum);
-            for($j = 0; $j < $fileNum; $j++) {
-                $data['dataDashboardObjectsQualityTestsByTypes'][$i][$j] = $this->_dataDashboardModel->getDataObjectFileQualityTests($data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID)[0];
-                if(sizeof($this->_dataDashboardModel->getDataObjectFileStats($data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID)[0])>0 ){
-                    $data['dataDashboardObjectsStatsByTypes'][$i][$j] = true;
-                } else {
-                    $data['dataDashboardObjectsStatsByTypes'][$i][$j] = false;
+        $noDataFiles = true;
+        for($i = 0; $i < sizeof($data['placeholders']); $i++) {
+            for($j = 0; $j < sizeof($data['placeholders'][$i]->dataFiles); $j++) {
+                if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0) {
+                    $noDataFiles = false;
+                    break;
                 }
+            }
+            
+            if(!$noDataFiles) {
+                break;
             }
         }
         
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/qualityControl',$data);
-        View::rendertemplate('footer',$data);
+        View::renderTemplate('header', $data);
+        if ($noDataFiles) {
+            View::render('DataDashboard/noData', $data);
+        } else {
+            View::render('DataDashboard/dataDashboard', $data);
+        }
+        View::renderTemplate('footer', $data);
     }
     
-    public function qualityControlShowDataFileStats($id){
+    public function dataQuality(){
         
-        $data['title'] = 'QA/QC';
-        $data['javascript'] = array('tabs_dataDashboard','qualityControl');
+        $data['title'] = 'Data Quality';
+        $data['page'] = 'dataQuality';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataObjectTypes'] = $this->_dataDashboardModel->getDataTypes($data['cruiseID']);
-        #var_dump($data['dataObjectTypes']);
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['javascript'] = array('tabs_dataDashboard','dataQuality');
+        $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
+        $data['dataObjects'] = array();
+        $data['dataObjectsQualityTests'] = array();
+        $data['dataObjectsStats'] = array();
         
-        $dataTypeNum = sizeof($data['dataObjectTypes']);
-        $data['dataDashboardObjectsByTypes'] = array($dataTypeNum);
-        $data['dataDashboardObjectsQualityTestsByTypes'] = array($dataTypeNum);
-        
-        for($i = 0; $i < $dataTypeNum; $i++)
-        {
-            $data['dataDashboardObjectsByTypes'][$i] = $this->_dataDashboardModel->getDataObjectsByType($data['cruiseID'], $data['dataObjectTypes'][$i]->dataDashboardObjectType);
-            $fileNum = sizeof($data['dataDashboardObjectsByTypes'][$i]);
-            $data['dataDashboardObjectsQualityTestsByTypes'][$i] = array($fileNum);
-            for($j = 0; $j < $fileNum; $j++) {
-                $data['dataDashboardObjectsQualityTestsByTypes'][$i][$j] = $this->_dataDashboardModel->getDataObjectFileQualityTests($data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID)[0];
-                if(sizeof($this->_dataDashboardModel->getDataObjectFileStats($data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID)[0])>0 ){
-                    $data['dataDashboardObjectsStatsByTypes'][$i][$j] = true;
-                } else {
-                    $data['dataDashboardObjectsStatsByTypes'][$i][$j] = false;
-                }
+        for($i = 0; $i < sizeof($data['dataTypes']); $i++) {
+            array_push($data['dataObjects'], $this->_dashboardDataModel->getDashboardObjectsByTypes($data['dataTypes'][$i]));
+            array_push($data['dataObjectsQualityTests'], array());
+            array_push($data['dataObjectsStats'], array());
+            for($j = 0; $j < sizeof($data['dataObjects'][$i]); $j++) {
+                //var_dump($dashboardDataModel->getDashboardObjectQualityTestsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+                array_push($data['dataObjectsQualityTests'][$i], $this->_dashboardDataModel->getDashboardObjectQualityTestsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+                array_push($data['dataObjectsStats'][$i], $this->_dashboardDataModel->getDashboardObjectStatsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
             }
         }
         
-        $data['statsTitle'] = array_pop(explode("/", $this->_dataDashboardModel->getDataObject($id)[0]->dataDashboardRawFile));
-        $data['stats'] = $this->_dataDashboardModel->getDataObjectFileStats($id)[0];
-        
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/qualityControl',$data);
-        View::rendertemplate('footer',$data);
+        View::renderTemplate('header', $data);
+        if( sizeof($data['dataTypes'])>0){
+            View::render('DataDashboard/dataQuality', $data);
+        } else {
+            View::render('DataDashboard/noData', $data);
+        }
+        View::renderTemplate('footer', $data);
     }
     
-    public function qualityControlShowDataTypeStats($datatype){
+    public function dataQualityShowFileStats($raw_data){
         
-        $data['title'] = 'QA/QC';
-        $data['javascript'] = array('tabs_dataDashboard','qualityControl');
+        $data['title'] = 'Data Quality';
+        $data['page'] = 'dataQuality';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataObjectTypes'] = $this->_dataDashboardModel->getDataTypes($data['cruiseID']);
-        #var_dump($data['dataObjectTypes']);
+        $data['javascript'] = array('tabs_dataDashboard', 'dataQuality');
+        $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
+        $data['dataObjects'] = array();
+        $data['dataObjectsQualityTests'] = array();
+        $data['dataObjectsStats'] = array();
         
-        $dataTypeNum = sizeof($data['dataObjectTypes']);
-        $data['dataDashboardObjectsByTypes'] = array($dataTypeNum);
-        $data['dataDashboardObjectsQualityTestsByTypes'] = array($dataTypeNum);
-        
-        for($i = 0; $i < $dataTypeNum; $i++)
-        {
-            $data['dataDashboardObjectsByTypes'][$i] = $this->_dataDashboardModel->getDataObjectsByType($data['cruiseID'], $data['dataObjectTypes'][$i]->dataDashboardObjectType);
-            $fileNum = sizeof($data['dataDashboardObjectsByTypes'][$i]);
-            $data['dataDashboardObjectsQualityTestsByTypes'][$i] = array($fileNum);
-            for($j = 0; $j < $fileNum; $j++) {
-                $data['dataDashboardObjectsQualityTestsByTypes'][$i][$j] = $this->_dataDashboardModel->getDataObjectFileQualityTests($data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID)[0];
-                if(sizeof($this->_dataDashboardModel->getDataObjectFileStats($data['dataDashboardObjectsByTypes'][$i][$j]->dataDashboardObjectID)[0])>0 ){
-                    $data['dataDashboardObjectsStatsByTypes'][$i][$j] = true;
-                } else {
-                    $data['dataDashboardObjectsStatsByTypes'][$i][$j] = false;
-                }
+        for($i = 0; $i < sizeof($data['dataTypes']); $i++) {
+            array_push($data['dataObjects'], $this->_dashboardDataModel->getDashboardObjectsByTypes($data['dataTypes'][$i]));
+            array_push($data['dataObjectsQualityTests'], array());
+            array_push($data['dataObjectsStats'], array());
+            for($j = 0; $j < sizeof($data['dataObjects'][$i]); $j++) {
+                //var_dump($dashboardDataModel->getDashboardObjectQualityTestsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+                array_push($data['dataObjectsQualityTests'][$i], $this->_dashboardDataModel->getDashboardObjectQualityTestsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+                array_push($data['dataObjectsStats'][$i], $this->_dashboardDataModel->getDashboardObjectStatsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
             }
         }
         
-        $data['statsTitle'] = $datatype;
-        $data['stats'] = $this->_dataDashboardModel->getDataTypeStats($this->_warehouseModel->getCruiseID(), $datatype);
+        $data['statsTitle'] = array_pop(explode("/", $raw_data));
+        $data['stats'] = $this->_dashboardDataModel->getDashboardObjectStatsByRawName($raw_data);
         
-        View::rendertemplate('header',$data);
-        View::render('DataDashboard/qualityControl',$data);
-        View::rendertemplate('footer',$data);
+        View::renderTemplate('header', $data);
+        View::render('DataDashboard/dataQuality', $data);
+        View::renderTemplate('footer', $data);
+    }
+    
+    public function dataQualityShowDataTypeStats($dataType){
+        
+        $data['title'] = 'Data Quality';
+        $data['page'] = 'dataQuality';
+        $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
+        $data['javascript'] = array('tabs_dataDashboard', 'dataQuality');
+        $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
+        $data['dataObjects'] = array();
+        $data['dataObjectsQualityTests'] = array();
+        $data['dataObjectsStats'] = array();
+        
+        for($i = 0; $i < sizeof($data['dataTypes']); $i++) {
+            array_push($data['dataObjects'], $this->_dashboardDataModel->getDashboardObjectsByTypes($data['dataTypes'][$i]));
+            array_push($data['dataObjectsQualityTests'], array());
+            array_push($data['dataObjectsStats'], array());
+            for($j = 0; $j < sizeof($data['dataObjects'][$i]); $j++) {
+                //var_dump($dashboardDataModel->getDashboardObjectQualityTestsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+                array_push($data['dataObjectsQualityTests'][$i], $this->_dashboardDataModel->getDashboardObjectQualityTestsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+                array_push($data['dataObjectsStats'][$i], $this->_dashboardDataModel->getDashboardObjectStatsByJsonName($data['dataObjects'][$i][$j]['dd_json']));
+            }
+        }
+        
+        $data['statsTitle'] = $dataType;
+        $data['stats'] = $this->_dashboardDataModel->getDataTypeStats($dataType);
+        
+        View::renderTemplate('header', $data);
+        View::render('DataDashboard/dataQuality', $data);
+        View::renderTemplate('footer', $data);
     }
 
 }
