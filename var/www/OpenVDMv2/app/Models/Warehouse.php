@@ -78,6 +78,10 @@ class Warehouse extends Model {
         return $row[0]->value;
     }
 
+    public function getDataWarehouseApacheDir(){
+        return CRUISEDATADIR;
+    }
+    
      public function getShipboardDataWarehouseConfig(){
          $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehouseIP'");
          $shipboardDataWarehouseIP = $row[0]->value;

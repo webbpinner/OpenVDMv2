@@ -22,6 +22,9 @@ class Config
 
         //site address
         define('DIR', 'http://127.0.0.1/OpenVDMv2/');
+        
+        //directory on webserver that contains cruise data
+        define('CRUISEDATADIR', '/CruiseData');
 
         //set default controller and method for legacy calls
         define('DEFAULT_CONTROLLER', 'welcome');
