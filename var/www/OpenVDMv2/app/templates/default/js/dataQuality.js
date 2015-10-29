@@ -8,6 +8,6 @@ $(function () {
     });
     
     $('#statsModal').on('hidden.bs.modal', function () {
-        window.location.replace(siteRoot + 'dataDashboard/qualityControl');
+        window.location.replace(siteRoot + 'dataDashboard/dataQuality');
     });
 });

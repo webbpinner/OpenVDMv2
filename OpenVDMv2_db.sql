@@ -177,20 +177,6 @@ VALUES
 UNLOCK TABLES;
 
 
-# Dump of table OVDM_DataDashboardObjects
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `OVDM_DataDashboardObjects`;
-
-CREATE TABLE `OVDM_DataDashboardObjects` (
-  `dataDashboardObjectID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `dataDashboardObjectFile` varchar(128) DEFAULT NULL,
-  `dataDashboardObjectType` varchar(24) DEFAULT NULL,
-  `dataDashboardObjectCruise` varchar(24) DEFAULT NULL,
-  `dataDashboardRawFile` varchar(128) DEFAULT NULL,
-  PRIMARY KEY (`dataDashboardObjectID`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-
 # Dump of table OVDM_ExtraDirectories
 # ------------------------------------------------------------
 

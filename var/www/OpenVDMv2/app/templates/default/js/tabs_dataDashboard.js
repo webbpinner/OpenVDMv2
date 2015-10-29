@@ -21,7 +21,7 @@ $(function () {
         window.location.href = siteRoot + 'dataDashboard/weather';
     });
     
-    $('#qualityControl').on("click", function () {
-        window.location.href = siteRoot + 'dataDashboard/qualityControl';
+    $('#dataQuality').on("click", function () {
+        window.location.href = siteRoot + 'dataDashboard/dataQuality';
     });
 });

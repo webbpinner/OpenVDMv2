@@ -249,7 +249,7 @@ use Helpers\Hooks;
                             <li><a href="<?php echo DIR; ?>dataDashboard/position">Position</a></li>
                             <li><a href="<?php echo DIR; ?>dataDashboard/weather">Weather</a></li>
                             <li><a href="<?php echo DIR; ?>dataDashboard/soundVelocity">Sound Velocity</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/qualityControl">QA/QC</a></li>
+                            <li><a href="<?php echo DIR; ?>dataDashboard/dataQuality">Data Quality</a></li>
                         </ul> <!-- /.nav-second-level -->
                     </li>
                     <li><a href="#"><i class="fa fa-wrench fa-fw"></i> Configuration<span class="fa arrow"></span></a>

@@ -138,16 +138,16 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
 
     return True
 
-def updateDB(siteRoot, cruiseID):
+#def updateDB(siteRoot, cruiseID):
     
-    url = siteRoot + 'api/dataDashboard/updateDataDashboardObjectsFromManifest/' + cruiseID
+#    url = siteRoot + 'api/dataDashboard/updateDataDashboardObjectsFromManifest/' + cruiseID
     #print url
-    r = requests.get(url)
+#    r = requests.get(url)
     
-    if r.json()[0].get('error'):
-        print r.json()[0]['error']
-        return False
-    return True
+#    if r.json()[0].get('error'):
+#        print r.json()[0]['error']
+#        return False
+#    return True
 
 def setError_tasks(job, taskID):
     dataObj = json.loads(job.data)
@@ -399,11 +399,11 @@ def task_callback(gearman_worker, job):
         if output_JSONDataToFile(dataDashboardManifestFilePath, existingManifestEntries, warehouseUser):
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
 
-            if updateDB(dataObj['siteRoot'], cruiseID):
-                job_results['parts'].append({"partName": "Updating Database", "result": "Pass"})
-            else:
-                job_results['parts'].append({"partName": "Updating Database", "result": "Fail"})
-                return json.dumps(job_results)
+            #if updateDB(dataObj['siteRoot'], cruiseID):
+            #    job_results['parts'].append({"partName": "Updating Database", "result": "Pass"})
+            #else:
+            #    job_results['parts'].append({"partName": "Updating Database", "result": "Fail"})
+            #    return json.dumps(job_results)
         else:
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail"})
             return json.dumps(job_results)
@@ -546,7 +546,7 @@ def task_callback2(gearman_worker, job):
         gearman_worker.send_job_status(job, 95, 100)
 
     #print 'Updating DB'  
-    updateDB(dataObj['siteRoot'], cruiseID)
+    #updateDB(dataObj['siteRoot'], cruiseID)
     
     gearman_worker.send_job_status(job, 10, 10)
     
