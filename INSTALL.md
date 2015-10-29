@@ -290,8 +290,8 @@ globals:
 Move the installation to it's final location and set the user/group ownership
 ```
 sudo cp ~/mapproxy /var/www/
-sudo mkdir /var/www/cache_data
-sudo chmod 777 /var/www/cache_data
+sudo mkdir /var/www/mapproxy/cache_data
+sudo chmod 777 /var/www/mapproxy/cache_data
 sudo chown -R root:root /var/www/mapproxy
 ```
 
