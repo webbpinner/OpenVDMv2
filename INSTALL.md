@@ -4,6 +4,9 @@
 #Open Vessel Data Management v2
 
 ##Installation Guide
+At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 14.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 14.04 LTS is used.
+
+###Operating System
 Goto <http://xubuntu.org/getxubuntu/>
 
 Download Xubuntu for your hardware.  At the time of this writing we are using 14.04.3 (32-bit)
@@ -43,7 +46,7 @@ Initialize the username creating during the OS installation for samba.  Change t
 sudo smbpasswd -a survey
 ```
 
-###MySQL Database
+###MySQL Database Server
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
 
 To install MySQL open a terminal window and type:
@@ -197,6 +200,136 @@ sudo service apache2 reload
 ```
 
 Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui>
+
+###MapProxy
+In order to add GIS capability to OpenVDMv2 without eccessive requests to the internet for baselayer tiles a map tile proxy needs to be installed.
+
+Install the dependencies
+```
+sudo apt-get install python-imaging python-yaml libproj0 libgeos-dev python-lxml libgdal-dev python-shapely
+```
+
+Install MapProxy
+```
+sudo pip install MapProxy
+```
+
+Build the initial configuration
+```
+cd
+mapproxy-util create -t base-config mapproxy
+```
+
+Copy the following into `~/mapproxy/mapproxy.yaml`
+```
+# -------------------------------
+# MapProxy configuration.
+# -------------------------------
+
+# Start the following services:
+services:
+  demo:
+  tms:
+    use_grid_names: true
+    # origin for /tiles service
+    origin: 'nw'
+  kml:
+    #use_grid_names: true
+  wmts:
+  wms:
+    srs: ['EPSG:900913']
+    image_formats: ['image/png']
+    md:
+      title: MapProxy WMS Proxy
+      abstract: This is a minimal MapProxy installation.
+
+#Make the following layers available
+layers:
+  - name: WorldOceanBase
+    title: ESRI World Ocean Base
+    sources: [esri_worldOceanBase_cache]
+
+  - name: WorldOceanReference
+    title: ESRI World Ocean Reference
+    sources: [esri_worldOceanReference_cache]
+
+caches:
+  esri_worldOceanBase_cache:
+    grids: [esri_online]
+    sources: [esri_worldOceanBase]
+
+  esri_worldOceanReference_cache:
+    grids: [esri_online]
+    sources: [esri_worldOceanReference]
+
+sources:
+  esri_worldOceanBase:
+    type: tile
+    url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer/tile/%(z)s/%(y)s/%(x)s.png
+    grid: esri_online
+
+  esri_worldOceanReference:
+    type: tile
+    transparent: true
+    url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/%(z)s/%(y)s/%(x)s.png
+    grid: esri_online
+
+grids:
+  webmercator:
+    base: GLOBAL_WEBMERCATOR
+
+  esri_online:
+     tile_size: [256, 256]
+     srs: EPSG:900913
+     origin: 'nw'
+     #num_levels: 25
+
+globals:
+```
+
+Move the installation to it's final location and set the user/group ownership
+```
+sudo cp ~/mapproxy /var/www/
+sudo mkdir /var/www/cache_data
+sudo chmod 777 /var/www/cache_data
+sudo chown -R root:root /var/www/mapproxy
+```
+
+Prepare Apache2 to host the MapProxy installation
+```
+sudo apt-get install libapache2-mod-wsgi
+```
+
+Prepare the MapProxy installation for integration with the Apache2 web-server
+```
+cd /var/www/mapproxy
+sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml config.py
+```
+
+Edit the apache conf
+
+```
+sudo pico /etc/apache2/sites-available/000-default
+```
+
+Add the following just above `</VirutalHost>` at the end of the file
+
+```
+WSGIScriptAlias /mapproxy /var/www/mapproxy/config.py
+
+<Directory /var/www/mapproxy/>
+  Order deny,allow
+  Allow from all
+</Directory>
+```
+
+Restart Apache2
+
+```
+sudo service apache2 restart
+```
+
+Verify the installation works by going to `http://<servername or IP>/mapproxy/demo/`
 
 ###OpenVDMv2
 
