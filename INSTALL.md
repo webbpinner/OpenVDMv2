@@ -46,6 +46,15 @@ Initialize the username creating during the OS installation for samba.  Change t
 sudo smbpasswd -a survey
 ```
 
+###ProFTPd
+One of the ways users communicate with OpenVDMv2 is through an FTP server configured on the data warehouse.
+
+To install ProFTPd open a terminal window and type:
+```
+sudo apt-get install proftpd
+```
+
+
 ###MySQL Database Server
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
 
