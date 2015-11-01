@@ -352,7 +352,7 @@ def task_callback(gearman_worker, job):
                 if err:
                     print err
         else:
-            print " *** NO data type returned from processing script ***"
+            print " *** NO data type returned from processing script for file: " + filename + " ***"
             if err:
                 print err
 
@@ -370,7 +370,7 @@ def task_callback(gearman_worker, job):
             existingManifestEntries = json.load(DashboardManifestFile)
 
         except IOError:
-            #print "Error Reading Dashboard Manifest file"
+            print "Error Reading Dashboard Manifest file"
             job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Fail"})
             return json.dumps(job_results)
 

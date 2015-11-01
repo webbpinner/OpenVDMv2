@@ -1,6 +1,8 @@
 $(function () {
     'use strict';
     
+    var MAPPROXY_DIR = '/mapproxy';
+    
     Highcharts.setOptions({
         colors: ['#337ab7', '#5cb85c', '#d9534f', '#f0ad4e', '#606060']
     });
@@ -41,8 +43,26 @@ $(function () {
         }).setView(L.latLng(0, 0), 2);
 
         //Add basemap layer, use ESRI Oceans Base Layer
-        L.esri.basemapLayer("Oceans").addTo(mapObject['map']);
-        L.esri.basemapLayer("OceansLabels").addTo(mapObject['map']);
+        //L.esri.basemapLayer("Oceans").addTo(mapObject['map']);
+        //L.esri.basemapLayer("OceansLabels").addTo(mapObject['map']);
+        var worldOceanBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } ),
+            worldOceanReference = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanReference/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } );
+        
+        L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapObject['map']);
+        
+        worldOceanBase.addTo(mapObject['map']);
+        worldOceanBase.bringToBack();
+        
+        var baseLayers = {
+        //    "World Ocean Base" : worldOceanBase
+        };
+
+        var overlays = {
+            "World Ocean Reference" : worldOceanReference
+        };
+        
+        L.control.layers(baseLayers, overlays).addTo(mapObject['map']);
+        
         
         return mapObject;
     }

@@ -60,7 +60,7 @@ from osgeo import gdal
 #
 # The scriptDir, scriptName variables are not needed in the remainder of the script
 # -------------------------------------------------------------------------------------
-siteRoot = 'http://capablesolutions.dyndns.org:8180/OpenVDMv2/'
+siteRoot = 'http://192.168.1.4/OpenVDMv2/'
 scriptDir, scriptName = os.path.split(inspect.getfile(inspect.currentframe()))
 collectionSystemName = scriptName.split("_")[0]
 
@@ -197,13 +197,14 @@ def procGEOTIFF(filePath):
 
     #print "gdalwarp"
     t_srsOptions = "+proj=latlong +datum=WGS84"
+    #print 'gdalwarp -t_srs ' + t_srsOptions + ' ' + filePath + ' ' + tmpdir + '/' + llFilename
     proc = subprocess.Popen(['gdalwarp', '-t_srs', t_srsOptions, filePath, tmpdir + '/' + llFilename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     #if out:
     #    print "Out: " + out
         
-    if err:
-        print "Err: " + err
+    #if err:
+    #    print "Err: " + err
     
     #print "gdalinfo"
     #proc = subprocess.Popen(['gdalinfo', '-proj4', tmpdir + '/' + llFilename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -229,8 +230,7 @@ def procGEOTIFF(filePath):
     maxx = gt[0] + width*gt[1] + height*gt[2]
     maxy = gt[3] 
 
-    #print "gdal_translate"
-    #proc = subprocess.Popen(['gdalbuildvrt', '-separate', tmpdir + '/temp.vrt', tmpdir + '/' + llFilename], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    #print 'gdal_translate -of vrt ' + tmpdir + '/' + llFilename + ' ' + tmpdir + '/temp.vrt'
     proc = subprocess.Popen(['gdal_translate', '-of', 'vrt', tmpdir + '/' + llFilename, tmpdir + '/temp.vrt'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     #if out:
@@ -239,7 +239,7 @@ def procGEOTIFF(filePath):
     #if err:
     #    print "Err: " + err
     
-    #print "gdal2tiles.py"
+    #print 'gdal2tiles.py -v --profile=mercator --zoom=5-12 --webviewer=none ' + tmpdir + '/' + 'temp.vrt ' + tileDir + '/' + label
     proc = subprocess.Popen(['gdal2tiles.py', '-v', '--profile=mercator', '--zoom=5-12', '--webviewer=none', tmpdir + '/' + 'temp.vrt', tileDir + '/' + label], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     #if out:

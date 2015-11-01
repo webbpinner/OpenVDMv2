@@ -61,6 +61,8 @@ class Welcome extends Controller {
         $filename = $warehouseBaseDir . '/' . $data['cruiseID'] . '/' . $transferLogDir . '/' . 'TransferLogSummary.json';
         if (file_exists($filename) && is_readable($filename)) {
             $transferLogSummary = json_decode(file_get_contents($filename));
+            #var_dump($transferLogSummary);
+
             $data['filenameErrors'] = $transferLogSummary->filenameErrors;
             $data['shipboardTransfers'] = $transferLogSummary->shipboardTransfers;
             $data['shipToShoreTransfers'] = $transferLogSummary->shipToShoreTransfers;

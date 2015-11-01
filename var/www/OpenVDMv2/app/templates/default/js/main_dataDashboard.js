@@ -15,8 +15,8 @@ $(function () {
     
         subPages = [];
     
-    subPages['gga'] = 'navigation';
-    subPages['geotiff'] = 'navigation';
+    subPages['gga'] = 'position';
+    subPages['geotiff'] = 'position';
     subPages['met'] = 'weather';
     subPages['twind'] = 'weather';
     subPages['tsg'] = 'soundVelocity';
@@ -64,7 +64,7 @@ $(function () {
                             type: 'line',
                             events: {
                                 click: function (e) {
-                                    window.location.href = siteRoot + subPages[dataType];
+                                    window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType];
                                 }
                             }
                         },
@@ -132,11 +132,13 @@ $(function () {
                     }).fitBounds(mapBounds).zoomOut(1);
                     
                     mapdb.on('click', function(e) {
-                        window.location.href = siteRoot + subPages[dataType];
+                        window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType];
                     });
 
                     //Add basemap layer, use ESRI Oceans Base Layer
-                    L.esri.basemapLayer("Oceans").addTo(mapdb);
+                    //L.esri.basemapLayer("Oceans").addTo(mapdb);
+                    L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } ).addTo(mapdb);
+                    L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapdb);
 
                     // Add latest trackline (GeoJSON)
                     L.geoJson(data[0]).addTo(mapdb);
@@ -178,11 +180,13 @@ $(function () {
                     });
                     
                     mapdb.on('click', function(e) {
-                        window.location.href = siteRoot + subPages[dataType];
+                        window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType];
                     });
 
                     //Add basemap layer, use ESRI Oceans Base Layer
-                    L.esri.basemapLayer("Oceans").addTo(mapdb);
+                    //L.esri.basemapLayer("Oceans").addTo(mapdb);
+                    L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } ).addTo(mapdb);
+                    L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapdb);
 
                     // Add latest trackline (GeoJSON)
                     L.tileLayer(location.protocol + '//' + location.host + cruiseDataDir + '/' + data[0]['tileDirectory'] + '/{z}/{x}/{y}.png', {

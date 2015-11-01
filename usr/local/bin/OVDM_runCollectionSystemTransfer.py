@@ -327,7 +327,10 @@ def transfer_localSourceDir(data, worker, job):
 
         #print "Saving rsync password file"
         #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
-        rsyncFileListFile.write('\n'.join([data['cruiseID'] + str(x) for x in files['include']]))
+        #rsyncFileListFile.write('\n'.join([data['cruiseID'] + str(x) for x in files['include']]))
+        localTransferFileList = files['include']
+        localTransferFileList = [filename.replace(sourceDir, '', 1) for filename in localTransferFileList]
+        rsyncFileListFile.write('\n'.join([str(x) for x in localTransferFileList]))        
 
     except IOError:
         print "Error Saving temporary rsync filelist file"
@@ -663,10 +666,11 @@ class CustomGearmanWorker(gearman.GearmanWorker):
                 jobData['siteRoot'] = dataObj['siteRoot']
                 jobData['shipboardDataWarehouse'] = dataObj['shipboardDataWarehouse']
                 jobData['cruiseID'] = dataObj['cruiseID']
+                destDir = build_destDir(dataObj['collectionSystemTransfer']['destDir'], dataObj)
                 jobData['files'] = resultObj['files']
-                jobData['files']['new'] = [dataObj['collectionSystemTransfer']['destDir'] + '/' + filename for filename in jobData['files']['new']]
-                jobData['files']['updated'] = [dataObj['collectionSystemTransfer']['destDir'] + '/' + filename for filename in jobData['files']['updated']]
-                #jobData['files']['exclude'] = [dataObj['collectionSystemTransfer']['destDir'] + filename for filename in jobData['files']['exclude']]
+                jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
+                jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
+                #jobData['files']['exclude'] = [destDir + filename for filename in jobData['files']['exclude']]
 
                 if resultObj['files']['new'] or resultObj['files']['updated']:
                     #print "Sending transfer results to MD5 Updater worker"
@@ -795,6 +799,9 @@ def task_callback(gearman_worker, job):
             logOutput = {'files':{'new':[], 'updated':[]}}
             logOutput['files']['new'] = job_results['files']['new']
             logOutput['files']['updated'] = job_results['files']['updated']
+            
+            #print json.dumps(logOutput);
+            
             if writeLogFile(logfileName, warehouseUser, logOutput['files']):
                 job_results['parts'].append({"partName": "Write logfile", "result": "Pass"})
             else:
