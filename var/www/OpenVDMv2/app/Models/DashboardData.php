@@ -7,15 +7,18 @@ use Core\Model;
 class DashboardData extends Model {
 
     private $_cruiseDataDir;
-    private $_manifestObj;
     private $_cruiseID;
-    private $_warehouseModel;
+    private $_dashboardDataDir;
+    private $_manifestObj;
 
     public function __construct(){
-        $this->_warehouseModel = new \Models\Warehouse();
-        $this->_cruiseDataDir = $this->_warehouseModel->getShipboardDataWarehouseBaseDir();
+        $warehouseModel = new \Models\Warehouse();
+        $extraDirectoriesModel = new \Models\Config\ExtraDirectories();
+        $this->_cruiseDataDir = $warehouseModel->getShipboardDataWarehouseBaseDir();
+        $this->_cruiseID = $warehouseModel->getCruiseID();
+        $this->_dashboardDataDir = $extraDirectoriesModel->getExtraDirectoryByName('Dashboard Data')[0]->destDir;
+
         $this->_manifestObj = null;
-        $this->_cruiseID = $this->_warehouseModel->getCruiseID();
     }
     
     public function getDashboardManifest() {
@@ -25,37 +28,12 @@ class DashboardData extends Model {
     private function buildManifestObj(){
 
         $results = array();
+        
+        $manifestFile = $this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $this->_dashboardDataDir . DIRECTORY_SEPARATOR . "manifest.json";
 
-        if($this->_manifestObj === null && $this->_cruiseID != null) {
-
-            //Get the list of directories
-            if (is_dir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID))
-            {
-                //Check each Directory for ovdmConfig.json
-                $cruiseList = scandir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID);
-                foreach ($cruiseList as $cruiseKey => $cruiseValue){
-                    if (in_array($cruiseValue,array("ovdmConfig.json"))){
-                        $ovdmConfigContents = file_get_contents($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . "ovdmConfig.json");
-                        $ovdmConfigJSON = json_decode($ovdmConfigContents,true);
-                        //Get the the directory that holds the DashboardData
-                        for($i = 0; $i < sizeof($ovdmConfigJSON['extraDirectoriesConfig']); $i++){
-                            if(strcmp($ovdmConfigJSON['extraDirectoriesConfig'][$i]['name'], 'Dashboard Data') === 0){
-                                $dataDashboardList = scandir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $ovdmConfigJSON['extraDirectoriesConfig'][$i]['destDir']);
-                                foreach ($dataDashboardList as $dataDashboardKey => $dataDashboardValue){
-                                    //If a manifest file is found, add CruiseID to output
-                                    if (in_array($dataDashboardValue,array("manifest.json"))){
-                                        $manifestContents = file_get_contents($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $ovdmConfigJSON['extraDirectoriesConfig'][$i]['destDir'] . DIRECTORY_SEPARATOR . "manifest.json");
-					$this->_manifestObj = json_decode($manifestContents,true);
-                                        break;
-                                    }
-                                }
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
+        if (file_exists($manifestFile) && is_readable($manifestFile)) {
+            $manifestContents = file_get_contents($manifestFile);
+            $this->_manifestObj = json_decode($manifestContents,true);
         }
     }
 
