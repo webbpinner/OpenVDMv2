@@ -236,26 +236,6 @@ def task_callback(gearman_worker, job):
         #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
     
-    gearman_worker.send_job_status(job, 3, 10)
-    
-    gm_client = gearman.GearmanClient(['localhost:4730'])
-    
-    completed_job_request = gm_client.submit_job("rebuildTransferLogSummary", job.data)
-
-    resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results:', json.dumps(resultObj, indent=2)
-
-    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        #print "Connection Test: Passed"
-        job_results['parts'].append({"partName": "Create Transfer Log Summary", "result": "Pass"})
-    else:
-        print "Create Transfer Log Summary File: Failed"
-        #print "Quitting"
-        job_results += resultObj['parts']
-        job_results['parts'].append({"partName": "Create Transfer Log Summary", "result": "Fail"})
-        #print json.dumps(job_results, indent=2)
-        return json.dumps(job_results)
-    
     gearman_worker.send_job_status(job, 5, 10)
     
     completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)

@@ -163,7 +163,6 @@ Router::any('api/warehouse/getShipboardDataWarehouseStatus', 'Controllers\Api\Wa
 Router::any('api/warehouse/getShipToShoreBWLimit', 'Controllers\Api\Warehouse@getShipToShoreBWLimit');
 Router::any('api/warehouse/getShipToShoreBWLimitStatus', 'Controllers\Api\Warehouse@getShipToShoreBWLimitStatus');
 Router::any('api/warehouse/getSystemStatus', 'Controllers\Api\Warehouse@getSystemStatus');
-Router::any('api/warehouse/getTransferLogSummary', 'Controllers\Api\Warehouse@getTransferLogSummary');
 
 Router::any('api/collectionSystemTransfers/getCollectionSystemTransfers', 'Controllers\Api\CollectionSystemTransfers@getCollectionSystemTransfers');
 Router::any('api/collectionSystemTransfers/getCollectionSystemTransfer/(:num)', 'Controllers\Api\CollectionSystemTransfers@getCollectionSystemTransfer');
@@ -203,6 +202,10 @@ Router::any('api/tasks/getTaskStatuses', 'Controllers\Api\Tasks@getTaskStatuses'
 Router::any('api/tasks/setErrorTask/(:num)', 'Controllers\Api\Tasks@setErrorTask');
 Router::any('api/tasks/setRunningTask/(:num)', 'Controllers\Api\Tasks@setRunningTask');
 Router::any('api/tasks/setIdleTask/(:num)', 'Controllers\Api\Tasks@setIdleTask');
+
+Router::any('api/transferLogs/getExcludeLogsSummary', 'Controllers\Api\TransferLogs@getExcludeLogsSummary');
+Router::any('api/transferLogs/getShipboardLogsSummary/(:num)', 'Controllers\Api\TransferLogs@getShipboardLogsSummary');
+Router::any('api/transferLogs/getShipToShoreLogsSummary/(:num)', 'Controllers\Api\TransferLogs@getShipToShoreLogsSummary');
 
 Router::any('api/shipToShoreTransfers/getShipToShoreTransfers', 'Controllers\Api\ShipToShoreTransfers@getShipToShoreTransfers');
 Router::any('api/shipToShoreTransfers/getRequiredShipToShoreTransfers', 'Controllers\Api\ShipToShoreTransfers@getRequiredShipToShoreTransfers');

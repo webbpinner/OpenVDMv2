@@ -3,8 +3,6 @@
 use Core\Error;
 use Helpers\Session;
 
-$transferLogNum = 5;
-
 $enableSSDW = false;
 foreach($data['requiredCruiseDataTransfers'] as $row){
     if (strcmp($row->name, "SSDW") == 0) {
@@ -31,18 +29,20 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
 ?>
 <?php
         foreach($data['filenameErrors'] as $row) {
+            if( sizeof($row->errorFiles) > 0) {
 ?>
                     <h5><?php echo $row->collectionSystemName; ?></h5>
                     <ul>
 <?php
-            foreach($row->errorFiles as $file) {
+               foreach($row->errorFiles as $file) {
 ?>
                         <li><small><?php echo $file; ?></small></li>
 <?php
-            }
+                }
 ?>
                     </ul>
 <?php
+            }
         }
     } else {
 ?>
@@ -59,10 +59,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
     if($data['shipboardTransfers']) {
         $itemNum = 0;
     
-        for($i = count($data['shipboardTransfers'])-1; $i >= 0; $i-- ) {
-            if($itemNum >= $transferLogNum) {
-                break;
-            }
+        for($i = 0; $i < count($data['shipboardTransfers']); $i++ ) {
 ?>
                     <h5><?php echo $data['shipboardTransfers'][$i]->collectionSystemName; ?> - <?php $timestamp = DateTime::createFromFormat('Ymd\THis\Z', $data['shipboardTransfers'][$i]->date, new DateTimeZone('UTC')); echo $timestamp->format('Y-m-d H:i:s T'); ?></h5>
                     <ul>
@@ -98,9 +95,6 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
         $itemNum = 0;
         
         for($i = count($data['shipToShoreTransfers'])-1; $i >= 0; $i-- ) {
-            if($itemNum >= $transferLogNum) {
-                break;
-            }
 ?>
                     <h5><?php echo $data['shipToShoreTransfers'][$i]->shipToShoreTransferName; ?> - <?php $timestamp = DateTime::createFromFormat('Ymd\THis\Z', $data['shipToShoreTransfers'][$i]->date, new DateTimeZone('UTC')); echo $timestamp->format('Y-m-d H:i:s T'); ?></h5>
                     <ul>

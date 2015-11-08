@@ -17,6 +17,10 @@ class ExtraDirectories extends Model {
         return $this->db->select("SELECT * FROM ".PREFIX."ExtraDirectories WHERE extraDirectoryID = :id",array(':id' => $id));
     }
     
+    public function getExtraDirectoryByName($name){
+        return $this->db->select("SELECT * FROM ".PREFIX."ExtraDirectories WHERE name = :name",array(':name' => $name));
+    }
+    
     public function insertExtraDirectory($data){
         $this->db->insert(PREFIX."ExtraDirectories",$data);
     }

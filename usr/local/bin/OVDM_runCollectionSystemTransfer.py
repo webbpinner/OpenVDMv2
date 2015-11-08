@@ -676,19 +676,10 @@ class CustomGearmanWorker(gearman.GearmanWorker):
                     #print "Sending transfer results to MD5 Updater worker"
                     submitted_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(jobData), background=True)
                 
-                    #print "Sending transfer results to Update Transfer Log Summary worker"
-                    jobData['transferDate'] = resultObj['startDate']
-                    jobData['collectionSystemName'] = dataObj['collectionSystemTransfer']['name']
-                    submitted_job_request = gm_client.submit_job("updateShipboardTransferLogSummary", json.dumps(jobData), background=True)
-
                     #print "Sending transfer results to Update Data Dashboard worker"
                     jobData['collectionSystemID'] = dataObj['collectionSystemTransfer']['collectionSystemTransferID']
                     submitted_job_request = gm_client.submit_job("updateDataDashboard", json.dumps(jobData), background=True)
                     
-                #print "Sending transfer results to Update Filename Error Log Summary worker"
-                jobData['collectionSystemName'] = dataObj['collectionSystemTransfer']['name']
-                submitted_job_request = gm_client.submit_job("updateShipboardFilenameErrorLogSummary", json.dumps(jobData), background=True)
-
         return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
 
     def after_poll(self, any_activity):

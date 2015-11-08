@@ -120,8 +120,8 @@ $(function () {
         });
     }
 
-    function updateTransferLogSummary(errorFilesPanel, shipboardPanel, shipToShorePanel) {
-        var updateTransferLogSummaryURL = siteRoot + 'api/warehouse/getTransferLogSummary';
+    function updateErrorLogSummary(errorFilesPanel) {
+        var updateTransferLogSummaryURL = siteRoot + 'api/transferLogs/getExcludeLogsSummary';
         var options = {
             year: "numeric",
             month: "short",
@@ -134,44 +134,64 @@ $(function () {
             if (status === 'success' && data !== null) {
 
                 var errorFilesOutput = '';
-                if (data.filenameErrors && data.filenameErrors.length > 0) {
+                if (data.length > 0) {
                     
                     var i = 0;
-                    for (i = 0; i < data.filenameErrors.length; i++) {
-                        errorFilesOutput += '                   <h5>' + data.filenameErrors[i].collectionSystemName + '</h5>';
-                        errorFilesOutput += '                   <ul>';
-                        var j = 0;
-                        for (j = 0; j < data.filenameErrors[i].errorFiles.length; j++) {
-                            errorFilesOutput += '                       <li><small>' + data.filenameErrors[i].errorFiles[j] + '</small></li>';
+                    for (i = 0; i < data.length; i++) {
+                        if(data[i].errorFiles.length > 0) {
+                            errorFilesOutput += '                   <h5>' + data[i].collectionSystemName + '</h5>';
+                            errorFilesOutput += '                   <ul>';
+                            var j = 0;
+                            for (j = 0; j < data[i].errorFiles.length; j++) {
+                                errorFilesOutput += '                       <li><small>' + data[i].errorFiles[j] + '</small></li>';
+                            }
+                            errorFilesOutput += '                   </ul>';
                         }
-                        errorFilesOutput += '                   </ul>';
                     }
-                    
                     
                 } else {
                     errorFilesOutput = '                   <h5>No Filename Errors Found</h5>';
                 }
 
                 $(errorFilesPanel).html(errorFilesOutput);
+            } setTimeout(function () {
+                updateErrorLogSummary(errorFilesPanel);
+            }, 5000);
+        });
+    }
+                  
+
+    function updateShipboardLogSummary(shipboardFilesPanel) {
+        var updateTransferLogSummaryURL = siteRoot + 'api/transferLogs/getShipboardLogsSummary/' + transferLogNum;
+        var options = {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        };
+        $.getJSON(updateTransferLogSummaryURL, function (data, status) {
+            if (status === 'success' && data !== null) {
 
                 var shipboardTransfersOutput = '';
-                if (data.shipboardTransfers && data.shipboardTransfers.length > 0) {
+                if ( data.length > 0) {
                     
                     var index = 0;
                     var i = 0;
-                    for (i = data.shipboardTransfers.length - 1; i >= 0; i--) {
+                    for (i = 0; i < data.length; i++) {
                         index++;
                         if (index > transferLogNum) {
                             break;
                         }
-                        shipboardTransfersOutput += '                   <h5>' + data.shipboardTransfers[i].collectionSystemName + ' - ' + formatTime(data.shipboardTransfers[i].date) + '</h5>';
+                        shipboardTransfersOutput += '                   <h5>' + data[i].collectionSystemName + ' - ' + formatTime(data[i].date) + '</h5>';
                         shipboardTransfersOutput += '                   <ul>';
                         var j = 0;
-                        for (j = 0; j < data.shipboardTransfers[i].newFiles.length; j++) {
-                            shipboardTransfersOutput += '                       <li><small>' + data.shipboardTransfers[i].newFiles[j] + '</small></li>';
+                        for (j = 0; j < data[i].newFiles.length; j++) {
+                            shipboardTransfersOutput += '                       <li><small>' + data[i].newFiles[j] + '</small></li>';
                         }
-                        if (data.shipboardTransfers[i].updatedFiles.length > 0) {
-                            shipboardTransfersOutput += '                       <li><small>' + data.shipboardTransfers[i].updatedFiles.length + ' File(s) Updated</small></li>';
+                        if (data[i].updatedFiles.length > 0) {
+                            shipboardTransfersOutput += '                       <li><small>' + data[i].updatedFiles.length + ' File(s) Updated</small></li>';
                         }
                         shipboardTransfersOutput += '                   </ul>';
                     }
@@ -181,42 +201,62 @@ $(function () {
                     shipboardTransfersOutput = '                   <h5>No Recent Shipboard Transfers Have Occured</h5>';
                 }
                 
-                $(shipboardPanel).html(shipboardTransfersOutput);
+                $(shipboardFilesPanel).html(shipboardTransfersOutput);
+            } setTimeout(function () {
+                updateShipboardLogSummary(shipboardFilesPanel);
+            }, 5000);
+        });
+    }
+
+    function updateShipToShoreLogSummary(shipToShoreFilesPanel) {
+        var updateTransferLogSummaryURL = siteRoot + 'api/transferLogs/getShipToShoreLogsSummary/' + transferLogNum;
+        var options = {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+        };
+        
+         $.getJSON(updateTransferLogSummaryURL, function (data, status) {
+            if (status === 'success' && data !== null) {
 
                 var shipToShoreTransfersOutput = '';
-                if (data.shipToShoreTransfers && data.shipToShoreTransfers.length > 0) {
-                    
+                if (data.length > 0) {
+
                     var index = 0;
                     var i = 0;
-                    for (i = data.shipToShoreTransfers.length - 1; i >= 0; i--) {
+                    for (i = 0; i < data.length; i++) {
                         index++;
                         if (index > transferLogNum) {
                             break;
                         }
-                        shipToShoreTransfersOutput += '                   <h5>' + data.shipToShoreTransfers[i].shipToShoreTransferName + ' - ' + formatTime(data.shipToShoreTransfers[i].date) + '</h5>';
+                        shipToShoreTransfersOutput += '                   <h5>' + data[i].shipToShoreTransferName + ' - ' + formatTime(data[i].date) + '</h5>';
                         shipToShoreTransfersOutput += '                   <ul>';
                         var j = 0;
-                        for (j = 0; j < data.shipToShoreTransfers[i].newFiles.length; j++) {
-                            shipToShoreTransfersOutput += '                       <li><small>' + data.shipToShoreTransfers[i].newFiles[j] + '</small></li>';
+                        for (j = 0; j < data[i].newFiles.length; j++) {
+                            shipToShoreTransfersOutput += '                       <li><small>' + data[i].newFiles[j] + '</small></li>';
                         }
-                        if (data.shipToShoreTransfers[i].updatedFiles.length > 0) {
-                            shipToShoreTransfersOutput += '                       <li><small>' + data.shipToShoreTransfers[i].updatedFiles.length + ' File(s) Updated</small></li>';
+                        if (data[i].updatedFiles.length > 0) {
+                            shipToShoreTransfersOutput += '                       <li><small>' + data[i].updatedFiles.length + ' File(s) Updated</small></li>';
                         }
                         shipToShoreTransfersOutput += '                   </ul>';
                     }
                 } else {
                     shipToShoreTransfersOutput = '                   <h5>No Recent Ship-to-Shore Transfers Have Occured</h5>';
                 }
-                
-                $(shipToShorePanel).html(shipToShoreTransfersOutput);
-            }
-            setTimeout(function () {
-                updateTransferLogSummary(errorFilesPanel, shipboardPanel, shipToShorePanel);
+
+                $(shipToShoreFilesPanel).html(shipToShoreTransfersOutput);
+            } setTimeout(function () {
+                updateShipToShoreLogSummary(shipToShoreFilesPanel);
             }, 5000);
         });
     }
     
-    updateTransferLogSummary('#filenameErrors', '#shipboardTransfers', '#shipToShoreTransfers');
+    updateErrorLogSummary('#filenameErrors');
+    updateShipboardLogSummary('#shipboardTransfers');
+    updateShipToShoreLogSummary('#shipToShoreTransfers');
     updateCollectionSystemTransferStatusList('#collectionSystemTransferStatusList');
     updateOptionalCruiseDataTransferStatusList('#optionalCruiseDataTransfers');
     updateRequiredCruiseDataTransferStatusList('#requiredCruiseDataTransfers');

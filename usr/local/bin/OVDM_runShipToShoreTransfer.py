@@ -390,18 +390,6 @@ class CustomGearmanWorker(gearman.GearmanWorker):
                 print "but something prevented the transfer from successfully completing..."
             else:
                 setIdle_cruiseDataTransfer(current_job)
-                
-                #print 'DECODED:', json.dumps(resultObj, indent=2)
-                gm_client = gearman.GearmanClient(['localhost:4730'])
-
-                jobData = {'shipboardDataWarehouse':{}, 'cruiseID':'', 'files':{}}
-                jobData['siteRoot'] = dataObj['siteRoot']
-                jobData['shipboardDataWarehouse'] = dataObj['shipboardDataWarehouse']
-                jobData['cruiseID'] = dataObj['cruiseID']
-                jobData['files'] = resultObj['files']
-                jobData['transferDate'] = resultObj['startDate']
-                jobData['shipToShoreTransferName'] = dataObj['cruiseDataTransfer']['name']
-                submitted_job_request = gm_client.submit_job("updateShipToShoreTransferLogSummary", json.dumps(jobData), background=True)
 
         return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
 

@@ -320,9 +320,8 @@ VALUES
 	(2,'finalizeCurrentCruise','Finalize Current Cruise',2,1,0),
 	(3,'rebuildMD5Summary','Rebuild MD5 Summary',2,1,0),
 	(4,'rebuildDataDashboard','Rebuild Data Dashboard',2,1,0),
-	(5,'rebuildTransferLogSummary','Rebuild Transfer Log Summary',2,1,0),
-	(6,'rebuildCruiseDirectory','Rebuild Cruise Directory',2,1,0),
-	(7,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0);
+	(5,'rebuildCruiseDirectory','Rebuild Cruise Directory',2,1,0),
+	(6,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0);
 
 /*!40000 ALTER TABLE `OVDM_Tasks` ENABLE KEYS */;
 UNLOCK TABLES;
