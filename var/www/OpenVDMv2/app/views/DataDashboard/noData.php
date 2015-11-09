@@ -19,11 +19,11 @@ $loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading
         <div class="col-lg-12">
             <div class="tabbable" style="margin-bottom: 18px;">
                 <ul class="nav nav-tabs">
-                    <li class=""><a id="main" href="#main" data-toggle="tab">Main</a></li>
+                    <li class="<?php echo ($data['page']==='main'? 'active': ''); ?>"><a id="main" href="#main" data-toggle="tab">Main</a></li>
                     <li class="<?php echo ($data['page']==='position'? 'active': ''); ?>"><a id="position" href="#position" data-toggle="tab">Position</a></li>
                     <li class="<?php echo ($data['page']==='weather'? 'active': ''); ?>"><a id="weather" href="#weather" data-toggle="tab">Weather</a></li>
                     <li class="<?php echo ($data['page']==='soundVelocity'? 'active': ''); ?>"><a id="soundVelocity" href="#soundVelocity" data-toggle="tab">Sound Velocity</a></li>
-                    <li class=""><a id="dataQuality" href="#dataQuality" data-toggle="tab">Data Quality</a></li> 
+                    <li class="<?php echo ($data['page']==='dataQuality'? 'active': ''); ?>"><a id="dataQuality" href="#dataQuality" data-toggle="tab">Data Quality</a></li> 
                 </ul>
             </div>
         </div>
