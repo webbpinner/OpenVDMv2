@@ -79,7 +79,7 @@ $(function () {
         var tempArray = chartObject['placeholderID'].split("_");
         tempArray.pop();
         chartObject['dataType'] = tempArray.join('_');
-        chartObject['height'] = chartHeight;
+        chartObject['height'] = false; //chartHeight;
         return chartObject;
     }
 
@@ -263,7 +263,7 @@ $(function () {
                     }
 
                     var chartOptions = {
-                        chart: {type: 'line', height: chartObject['height'] },
+                        chart: {type: 'line' },
                         title: {text: ''},
                         tooltip: {
                             shared: true,
@@ -375,13 +375,10 @@ $(function () {
         
         $( '#' + chartObjects[i]['dataType'] + '_expand-btn').click(function() {
             var chart = $('#' + chartObjects[i]['placeholderID']).highcharts();
-            if ($(chart.container).height() == chartHeight) {
-                chart.setSize($(chart.container).width(), 500);
-                chartObjects[i]['height'] = 500;
-            } else {
-                chart.setSize($(chart.container).width(), chartHeight);
-                chartObjects[i]['height'] = chartHeight;
-            }
+            
+            $('#' + chartObjects[i]['placeholderID']).height(chartObjects[i]['height'] ? 200 : 500);
+            $('#' + chartObjects[i]['placeholderID']).highcharts().reflow();
+            chartObjects[i]['height'] = !chartObjects[i]['height'];
         });
     });
 
