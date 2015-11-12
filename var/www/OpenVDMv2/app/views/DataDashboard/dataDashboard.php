@@ -41,7 +41,7 @@ $loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading
         }
 ?>
                             <div class="panel panel-default">
-                                <div class="panel-heading"><?php echo $data['placeholders'][$i]->heading;?></div>                                
+                                <div class="panel-heading"><?php echo $data['placeholders'][$i]->heading;?><?php echo ($data['placeholders'][$i]->plotType == 'chart'? '<i id="' . $data['placeholders'][$i]->id . '_expand-btn" class="expand-btn pull-right btn btn-sm btn-default fa fa-expand"></i>': ''); ?></div>                  
                                 <div class="panel-body">
                                     <div class="<?php echo $data['placeholders'][$i]->plotType; ?>" id="<?php echo $data['placeholders'][$i]->id;?>_placeholder" style="min-height:<?php echo (strcmp($data['placeholders'][$i]->plotType, 'map') === 0? '493': '200'); ?>px;"><?php echo ($filecount > 0? $loadingImage: 'No Data Found.'); ?></div>
                                 </div>

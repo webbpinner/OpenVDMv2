@@ -6,6 +6,8 @@ $(function () {
     Highcharts.setOptions({
         colors: ['#337ab7', '#5cb85c', '#d9534f', '#f0ad4e', '#606060']
     });
+    
+    var chartHeight = 200;
 
     var mapObjects = [],
         chartObjects = [];
@@ -71,10 +73,13 @@ $(function () {
         
         var chartObject = [];
         
-        //Build mapObject object
+        //Build chartObject object
         chartObject['placeholderID'] = placeholderID;
         chartObject['objectListID'] = objectListID;
-        chartObject['dataType'] = dataType;
+        var tempArray = chartObject['placeholderID'].split("_");
+        tempArray.pop();
+        chartObject['dataType'] = tempArray.join('_');
+        chartObject['height'] = chartHeight;
         return chartObject;
     }
 
@@ -258,7 +263,7 @@ $(function () {
                     }
 
                     var chartOptions = {
-                        chart: {type: 'line' },
+                        chart: {type: 'line', height: chartObject['height'] },
                         title: {text: ''},
                         tooltip: {
                             shared: true,
@@ -278,7 +283,22 @@ $(function () {
                                 dateTimeLabelFormats: {millisecond: '%H', second: '%H:%M:%S', minute: '%H:%M', hour: '%H:%M', day: '%e. %b', week: '%e. %b', month: '%b \'%y', year: '%Y'}
                                },
                         yAxis: yAxes,
-                        series: seriesData
+                        series: seriesData,
+                        //exporting: {
+                        //    buttons: {
+                        //            customButton: {
+                        //            text: 'Test',
+                        //            symbol: 'text:\uf065',
+                        //            symbolFill: '666',
+                        //            symbolStroke: 'none',
+                        //            symbolX: '14',
+                        //            symbolY: '9',
+                        //            onclick: function () {
+                        //                alert('You pressed the button!');
+                        //            }
+                        //        }
+                        //    }
+                        //}
                     };
 
                     $(placeholder).highcharts(chartOptions);
@@ -352,5 +372,17 @@ $(function () {
         $( '#' + chartObjects[i]['objectListID']).find(':radio').change(function() {
             updateChart(chartObjects[i], $(this).val());
         });
+        
+        $( '#' + chartObjects[i]['dataType'] + '_expand-btn').click(function() {
+            var chart = $('#' + chartObjects[i]['placeholderID']).highcharts();
+            if ($(chart.container).height() == chartHeight) {
+                chart.setSize($(chart.container).width(), 500);
+                chartObjects[i]['height'] = 500;
+            } else {
+                chart.setSize($(chart.container).width(), chartHeight);
+                chartObjects[i]['height'] = chartHeight;
+            }
+        });
     });
+
 });
