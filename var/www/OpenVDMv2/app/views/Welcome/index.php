@@ -26,6 +26,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                 <div class="panel-body" id="filenameErrors">
 <?php 
     if($data['filenameErrors']) {
+        $noErrorFiles = true;
 ?>
 <?php
         foreach($data['filenameErrors'] as $row) {
@@ -39,12 +40,16 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                         <li><small><?php echo $file; ?></small></li>
 <?php
                 }
+                
+                $noErrorFiles = false;
 ?>
                     </ul>
 <?php
             }
         }
-    } else {
+    }
+    
+    if ($noErrorFiles) {
 ?>
                     <h5>No Filename Errors Found</h5>               
 <?php
