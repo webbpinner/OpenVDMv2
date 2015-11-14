@@ -133,7 +133,8 @@ $(function () {
         $.getJSON(updateTransferLogSummaryURL, function (data, status) {
             if (status === 'success' && data !== null) {
 
-                var errorFilesOutput = '';
+                var errorFilesOutput = '',
+                    noErrorFiles = true;
                 if (data.length > 0) {
                     
                     var i = 0;
@@ -146,10 +147,13 @@ $(function () {
                                 errorFilesOutput += '                       <li><small>' + data[i].errorFiles[j] + '</small></li>';
                             }
                             errorFilesOutput += '                   </ul>';
+                            noErrorFiles = false;
                         }
                     }
                     
-                } else {
+                }
+                
+                if (noErrorFiles) {
                     errorFilesOutput = '                   <h5>No Filename Errors Found</h5>';
                 }
 
