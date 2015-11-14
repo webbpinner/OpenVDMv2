@@ -236,7 +236,7 @@ $(function () {
                         if (index > transferLogNum) {
                             break;
                         }
-                        shipToShoreTransfersOutput += '                   <h5>' + data[i].shipToShoreTransferName + ' - ' + formatTime(data[i].date) + '</h5>';
+                        shipToShoreTransfersOutput += '                   <h5>SSDW - ' + formatTime(data[i].date) + '</h5>';
                         shipToShoreTransfersOutput += '                   <ul>';
                         var j = 0;
                         for (j = 0; j < data[i].newFiles.length; j++) {
