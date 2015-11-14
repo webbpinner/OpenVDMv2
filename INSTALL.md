@@ -298,7 +298,7 @@ globals:
 
 Move the installation to it's final location and set the user/group ownership
 ```
-sudo cp ~/mapproxy /var/www/
+sudo cp -r ~/mapproxy /var/www/
 sudo mkdir /var/www/mapproxy/cache_data
 sudo chmod 777 /var/www/mapproxy/cache_data
 sudo chown -R root:root /var/www/mapproxy
@@ -318,7 +318,7 @@ sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml config.py
 Edit the apache conf
 
 ```
-sudo pico /etc/apache2/sites-available/000-default
+sudo pico /etc/apache2/sites-available/000-default.conf
 ```
 
 Add the following just above `</VirutalHost>` at the end of the file
@@ -358,6 +358,7 @@ For the purposes of these installation instructions the parent folder for **FTPR
 sudo mkdir -p /mnt/vault/FTPRoot/CruiseData
 sudo mkdir -p /mnt/vault/FTPRoot/PublicData
 sudo mkdir -p /mnt/vault/FTPRoot/VistorInformation
+sudo chmod -R 777 /mnt/vault/FTPRoot/PublicData
 sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 ```
 
@@ -461,7 +462,7 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
   Alias /CruiseData/ /mnt/vault/FTPRoot/CruiseData/
   <Directory "/mnt/vault/FTPRoot/CruiseData">
     AllowOverride None
-    Options +Indexes +FollowSymLinks +MultiViews
+    Options +Indexes -FollowSymLinks +MultiViews
     Order allow,deny
     Allow from all
     Require all granted
@@ -470,7 +471,7 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
   Alias /PublicData/ /mnt/vault/FTPRoot/PublicData/
   <Directory "/mnt/vault/FTPRoot/PublicData">
     AllowOverride None
-    Options +Indexes +FollowSymLinks +MultiViews
+    Options +Indexes -FollowSymLinks +MultiViews
     Order allow,deny
     Allow from all
     Require all granted
@@ -479,7 +480,7 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
   Alias /VisitorInformation/ /mnt/vault/FTPRoot/VisitorInformation/
   <Directory "/mnt/vault/FTPRoot/VisitorInformation">
     AllowOverride None
-    Options +Indexes +FollowSymLinks +MultiViews
+    Options +Indexes -FollowSymLinks +MultiViews
     Order allow,deny
     Allow from all
     Require all granted
@@ -509,7 +510,7 @@ sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
 
 ####Modify the configuation file for the OpenVDMv2 scheduler
 ```
-sudo nano /etc/supervisor/conf.d/OVDM
+sudo nano /etc/supervisor/conf.d/OVDM_scheduler.conf
 ```
 Look for the following line:
 ```
