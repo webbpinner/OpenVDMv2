@@ -42,8 +42,8 @@ class Welcome extends Controller {
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
         
         $data['filenameErrors'] = $this->_transferLogsModel->getExcludeLogsSummary();
-        $data['shipboardTransfers'] = $this->_transferLogsModel->getShipboardLogsSummary();
-        $data['shipToShoreTransfers'] = $this->_transferLogsModel->getShipToShoreLogsSummary();
+        $data['shipboardTransfers'] = $this->_transferLogsModel->getShipboardLogsSummary(5);
+        $data['shipToShoreTransfers'] = $this->_transferLogsModel->getShipToShoreLogsSummary(5);
         
         #var_dump($data['shipboardTransfers']);
                
