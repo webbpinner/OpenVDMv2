@@ -35,7 +35,7 @@ class DataDashboard extends Controller {
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
         $data['css'] = array('leaflet');
-        $data['javascript'] = array('main_dataDashboard', 'tabs_dataDashboard', 'leaflet', 'highcharts');
+        $data['javascript'] = array('dataDashboard', 'tabs_dataDashboard', 'leaflet', 'highcharts');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         
         View::renderTemplate('header', $data);
@@ -55,7 +55,7 @@ class DataDashboard extends Controller {
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
         $data['css'] = array('leaflet');
-        $data['javascript'] = array('tabs_dataDashboard', 'dataDashboard', 'leaflet', 'highcharts');
+        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'leaflet', 'highcharts');
         
         $position = new Placeholder();
         $position->plotType = 'map';
@@ -99,7 +99,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard', 'dataDashboard', 'highcharts');
+        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'highcharts');
         
         $tsg = new Placeholder();
         $tsg->plotType = 'chart';
@@ -151,7 +151,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard','dataDashboard', 'highcharts');
+        $data['javascript'] = array('tabs_dataDashboard','dataTabs', 'highcharts');
         
         $met = new Placeholder();
         $met->plotType = 'chart';

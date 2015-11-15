@@ -26,7 +26,6 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                 <div class="panel-body" id="filenameErrors">
 <?php 
     if($data['filenameErrors']) {
-        $noErrorFiles = true;
 ?>
 <?php
         foreach($data['filenameErrors'] as $row) {
@@ -40,16 +39,12 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                         <li><small><?php echo $file; ?></small></li>
 <?php
                 }
-                
-                $noErrorFiles = false;
 ?>
                     </ul>
 <?php
             }
         }
-    }
-    
-    if ($noErrorFiles) {
+    } else {
 ?>
                     <h5>No Filename Errors Found</h5>               
 <?php
@@ -101,7 +96,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
         
         for($i = count($data['shipToShoreTransfers'])-1; $i >= 0; $i-- ) {
 ?>
-                    <h5>SSDW - <?php $timestamp = DateTime::createFromFormat('Ymd\THis\Z', $data['shipToShoreTransfers'][$i]->date, new DateTimeZone('UTC')); echo $timestamp->format('Y-m-d H:i:s T'); ?></h5>
+                    <h5><?php echo $data['shipToShoreTransfers'][$i]->shipToShoreTransferName; ?> - <?php $timestamp = DateTime::createFromFormat('Ymd\THis\Z', $data['shipToShoreTransfers'][$i]->date, new DateTimeZone('UTC')); echo $timestamp->format('Y-m-d H:i:s T'); ?></h5>
                     <ul>
 <?php
             foreach($data['shipToShoreTransfers'][$i]->newFiles as $file) {
