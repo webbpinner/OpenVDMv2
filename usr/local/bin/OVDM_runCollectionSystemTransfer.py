@@ -326,11 +326,11 @@ def transfer_localSourceDir(data, worker, job):
         rsyncFileListFile = open(rsyncFileListPath, 'w')
 
         #print "Saving rsync password file"
-        #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
-        #rsyncFileListFile.write('\n'.join([data['cruiseID'] + str(x) for x in files['include']]))
         localTransferFileList = files['include']
         localTransferFileList = [filename.replace(sourceDir, '', 1) for filename in localTransferFileList]
-        rsyncFileListFile.write('\n'.join([str(x) for x in localTransferFileList]))        
+
+        #print '\n'.join([str(x) for x in localTransferFileList])
+        rsyncFileListFile.write('\n'.join([str(x) for x in localTransferFileList]))
 
     except IOError:
         print "Error Saving temporary rsync filelist file"
@@ -355,12 +355,17 @@ def transfer_localSourceDir(data, worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            files['new'].append(line.split(' ')[1].rstrip('\n'))
+            filename = line.split(' ')[1].rstrip('\n')
+            files['new'].append(filename)
+            #os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
+            worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
+            count += 1
         elif line.startswith( '>f.' ):
-            files['updated'].append(line.split(' ')[1].rstrip('\n'))
-        os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
-        worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-        count += 1
+            filename = line.split(' ')[1].rstrip('\n')
+            files['updated'].append(filename)
+            #os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
+            worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
+            count += 1
             
         if worker.stop:
             print "Stopping"
