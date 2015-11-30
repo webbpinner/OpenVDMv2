@@ -173,7 +173,7 @@ def transfer_smbDestDir(data, worker, job):
     files = build_filelist(sourceDir, filters)
     
     #print "Build destination directories"
-    build_destDirectories(destDir, files['include'])
+    #build_destDirectories(destDir, files['include'])
 
     count = 0
     fileCount = len(files['include'])
