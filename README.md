@@ -9,7 +9,7 @@ Beyond this core functionally OpenVDMv2 includes a plugin architecture allowing 
 
 OpenVDMv2 also includes full RESTful API, allowing vessel operators to built their own custom web-based and stand-alone applications that leverage information stored within OpenVDMv2 for their own, vessel-specific needs.
 
-For more information on OpenVDMv2 please checkout <http://oceandatarat.org>.
+For more information on OpenVDMv2 please checkout <http://www.oceandatarat.org/?page_id=1123>.
 
 ####Demo Site
 <http://capablesolutions.dyndns.org:8180/OpenVDMv2/>
