@@ -580,3 +580,85 @@ sudo service samba restart
 ```
 
 At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure collection system transfers, cruise data transfers and the shoreside data warehouse.
+
+
+### CentOS 6.7 Install Notes - BETA
+
+- Perform basic CentOS install
+- Hostname set to "Warehouse"
+- Select Minimal Install
+
+#### Setup user
+```
+adduser survey
+passwd survey
+```
+
+#### Install SSH
+```
+yum install openssh-server.i686
+```
+
+#### Install wget
+```
+yum install wget
+```
+
+#### Install sshpass
+```
+mkdir ~/rpms
+cd ~/rpms
+wget http://pkgs.repoforge.org/sshpass/sshpass-1.05-1.el6.rf.i686.rpm
+yum install ./sshpass-1.05-1.el6.rf.i686.rpm
+```
+
+#### Install rsync
+```
+yum install rsync
+```
+
+#### Install Samba
+```
+yum install samba smbclient cifs-utils
+sudo smbpasswd -a survey
+```
+
+#### Install ProFTPd
+```
+cd ~/rpms
+wget http://mirror.sfo12.us.leaseweb.net/epel/6/i386/epel-release-6-8.noarch.rpm
+rpm -i epel-release-6-8.noarch.rpm
+yum install proftpd
+```
+
+#### Install MySQL Server
+```
+yum install mysql-server
+```
+
+###PHP5
+The language used to write the OpenVDMv2 web-interface is PHP.
+
+To install PHP open a terminal window and type:
+```
+wget http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+rpm -Uvh remi-release-6*.rpm
+yum install nano
+```
+
+Edit /etc/yum.repos.d/remi.repo
+```
+nano /etc/yum.repos.d/remi.repo
+```
+
+In the `[remi]` section, set `enable=1`
+In the `[remi-php55]` section, set `enable=1`
+
+```
+yum install php5 php5-cli php5-mysql
+```
+
+#### Install Apache
+```
+yum install httpd
+```
