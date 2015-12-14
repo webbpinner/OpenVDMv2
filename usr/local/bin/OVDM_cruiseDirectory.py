@@ -95,7 +95,12 @@ def create_directories(worker, directoryList):
     return True
 
 def setDirectoryOwnerGroupPermissions(path, uid, gid):
-    os.chown(path, uid, gid)
+    try:
+        os.chown(path, uid, gid)
+        os.chmod(path, 0755)
+    except OSError:
+        return False
+    
     for item in os.listdir(path):
         itempath = os.path.join(path, item)
         if os.path.isdir(itempath):
@@ -106,6 +111,7 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
         elif os.path.isfile(itempath):
             try:
                 os.chown(itempath, uid, gid)
+                os.chmod(path, 0755)
             except OSError:
                 return False
     return True
