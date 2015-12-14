@@ -76,6 +76,8 @@ def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
                                 exclude = True
                                 break
                         if not exclude:
+                            if os.path.islink(os.path.join(root, filename)):
+                                continue
                             #print 'Filename: ' + os.path.join(root, filename)
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             if file_mod_time > cruiseStart_time and file_mod_time < threshold_time:
