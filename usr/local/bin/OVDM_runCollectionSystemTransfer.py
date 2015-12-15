@@ -257,6 +257,7 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
         os.chown(path, uid, gid)
         os.chmod(path, 0755)
     except OSError:
+        print "Unable to set file permissions for " + path
         return False
     
     for item in os.listdir(path):
@@ -269,7 +270,7 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
         elif os.path.isfile(itempath):
             try:
                 os.chown(itempath, uid, gid)
-                os.chmod(path, 0644)
+                os.chmod(itempath, 0644)
             except OSError:
                 return False
     return True

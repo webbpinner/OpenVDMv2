@@ -111,10 +111,11 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
         elif os.path.isfile(itempath):
             try:
                 os.chown(itempath, uid, gid)
-                os.chmod(path, 0755)
+                os.chmod(itempath, 0644)
             except OSError:
                 return False
     return True
+
 
 def setError_task(job, taskID):
     dataObj = json.loads(job.data)
