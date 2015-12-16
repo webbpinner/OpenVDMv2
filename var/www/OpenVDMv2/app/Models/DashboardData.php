@@ -120,7 +120,7 @@ class DashboardData extends Model {
             
             //If the manifest object is still null, something's wrong, quit.
             if($this->_manifestObj === null) {
-                return $dataObjects;
+                return $dataObjectContents;
             }
         }
         
@@ -151,7 +151,7 @@ class DashboardData extends Model {
             
             //If the manifest object is still null, something's wrong, quit.
             if($this->_manifestObj === null) {
-                return $dataObjects;
+                return $dataObjectContents;
             }
         }
         
@@ -173,6 +173,50 @@ class DashboardData extends Model {
         return $dataObjectContents;
     }
         
+    public function getDashboardObjectDataTypeByJsonName($dd_json){
+        $dataType = '';
+        
+        //If the manifest object has not been set, set it.
+        if($this->_manifestObj === null) {
+            $this->buildManifestObj();
+            
+            //If the manifest object is still null, something's wrong, quit.
+            if($this->_manifestObj === null) {
+                return $dataType;
+            }
+        }
+        
+        foreach ($this->_manifestObj as $manifestItem) {
+            if (strcmp($manifestItem['dd_json'], $dd_json) === 0) {
+                $dataType = $manifestItem['type'];
+                break;
+            }
+        }
+        return $dataType;
+    }
+
+  public function getDashboardObjectDataTypeByRawName($raw_data){
+        $dataType = '';
+        
+        //If the manifest object has not been set, set it.
+        if($this->_manifestObj === null) {
+            $this->buildManifestObj();
+            
+            //If the manifest object is still null, something's wrong, quit.
+            if($this->_manifestObj === null) {
+                return $dataType;
+            }
+        }
+        
+        foreach ($this->_manifestObj as $manifestItem) {
+            if (strcmp($manifestItem['raw_data'], $raw_data) === 0) {
+                $dataType = $manifestItem['type'];
+                break;
+            }
+        }
+        return $dataType;
+    }
+    
     public function getDashboardObjectVisualizerDataByJsonName($dd_json){
         $dataObjectContentsOBJ = json_decode($this->getDashboardObjectContentsByJsonName($dd_json));
         return $dataObjectContentsOBJ->visualizerData;

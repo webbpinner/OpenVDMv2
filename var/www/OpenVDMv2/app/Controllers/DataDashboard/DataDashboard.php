@@ -253,6 +253,7 @@ class DataDashboard extends Controller {
         }
         
         $data['statsTitle'] = array_pop(explode("/", $raw_data));
+        $data['statsDataType'] = $this->_dashboardDataModel->getDashboardObjectDataTypeByRawName($raw_data);        
         $data['stats'] = $this->_dashboardDataModel->getDashboardObjectStatsByRawName($raw_data);
         
         View::renderTemplate('header', $data);
@@ -284,6 +285,7 @@ class DataDashboard extends Controller {
         }
         
         $data['statsTitle'] = $dataType;
+        $data['statsDataType'] = $dataType;   
         $data['stats'] = $this->_dashboardDataModel->getDataTypeStats($dataType);
         
         View::renderTemplate('header', $data);

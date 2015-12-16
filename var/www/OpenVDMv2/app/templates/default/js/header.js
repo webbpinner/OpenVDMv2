@@ -281,7 +281,7 @@ $(function () {
     $(document).ready(function () {
 
         // If cookie is set, scroll to the position saved in the cookie.
-        if ($.cookie("scrollDown") !== null) {
+        if (($.cookie("scrollDown") !== null) && (window.location.hash == null)) {
             $(document).scrollTop($.cookie("scrollDown"));
             $.removeCookie("scrollDown");
         }

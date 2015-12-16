@@ -34,6 +34,7 @@ use Helpers\Session;
 ?>
                         <div class="col-lg-12">
                             <div class="panel panel-default">
+                                <a id="<?php echo $data['dataTypes'][$i];?>"></a>
                                 <div class="panel-heading"><?php echo $data['dataTypes'][$i];?></div>
                                 <div class="panel-body">
                                     <table class='table table-striped table-bordered responsive'>
@@ -175,7 +176,7 @@ use Helpers\Session;
                 </table>
             </div>
             <div class="modal-footer">
-                <a href='' class="btn btn-primary" data-dismiss="modal">Close</a>
+                <a id="modal-close-btn" href="#<?php echo $data['statsDataType']; ?>" class="btn btn-primary" data-dismiss="modal">Close</a>
             </div>
         </div> <!-- /.modal-content -->
     </div> <!-- /.modal-dialog -->

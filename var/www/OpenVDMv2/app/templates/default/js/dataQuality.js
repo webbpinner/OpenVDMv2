@@ -8,6 +8,7 @@ $(function () {
     });
     
     $('#statsModal').on('hidden.bs.modal', function () {
-        window.location.replace(siteRoot + 'dataDashboard/dataQuality');
+        var closeURL = $(this).find('#modal-close-btn').attr("href");
+        window.location.replace(closeURL);
     });
 });

@@ -64,7 +64,7 @@ $(function () {
                             type: 'line',
                             events: {
                                 click: function (e) {
-                                    window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType];
+                                    window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType] + '#' + dataType;
                                 }
                             }
                         },
@@ -132,7 +132,7 @@ $(function () {
                     }).fitBounds(mapBounds).zoomOut(1);
                     
                     mapdb.on('click', function(e) {
-                        window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType];
+                        window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType] + '#' + dataType;
                     });
 
                     //Add basemap layer, use ESRI Oceans Base Layer
@@ -180,7 +180,7 @@ $(function () {
                     });
                     
                     mapdb.on('click', function(e) {
-                        window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType];
+                        window.location.href = siteRoot + 'dataDashboard/' + subPages[dataType] + '#' + dataType;
                     });
 
                     //Add basemap layer, use ESRI Oceans Base Layer
