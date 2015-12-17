@@ -37,6 +37,7 @@ import gearman
 import shutil
 import json
 import requests
+import subprocess
 
 from subprocess import call
 
@@ -66,36 +67,71 @@ def test_smbSourceDir(data):
     returnVal = []
 
     # Create temp directory
+    #print "Create Temp Directory"
     tmpdir = tempfile.mkdtemp()
  
-    # Create mountpoint
-    mntPoint = tmpdir + '/mntpoint'
-    os.mkdir(mntPoint, 0755)
-
-    # Mount SMB Share
+    command = []
+    # Verify the server exists
     if data['collectionSystemTransfer']['smbUser'] == 'guest':
-        retVal = call(['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',domain='+data['collectionSystemTransfer']['smbDomain']])
+        command = ['smbclient', '-L', data['collectionSystemTransfer']['smbServer'], '-W', data['collectionSystemTransfer']['smbDomain'], '-g', '-N']
     else:
-        retVal = call(['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']])
+        command = ['smbclient', '-L', data['collectionSystemTransfer']['smbServer'], '-W', data['collectionSystemTransfer']['smbDomain'], '-g', '-U', data['collectionSystemTransfer']['smbUser'] + '%' + data['collectionSystemTransfer']['smbPass']]
     
-    if retVal == 0:
-        #sudo mount -t cifs $collectionSystemTransfer->{'smbServer'} $tempMountPoint -o username=$collectionSystemTransfer->{'smbUser'},password=$collectionSystemTransfer->{'smbPass'},domain='+data['collectionSystemTransfer']['smbDomain'] 2> /dev/null
-        returnVal.append({"testName": "SMB Mount", "result": "Pass"})
-
-        # If mount is successful, test source directory
-        sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir']
-        if os.path.isdir(mntPoint+data['collectionSystemTransfer']['sourceDir']):
-            returnVal.append({"testName": "Source Directory", "result": "Pass"})
-        else:
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
-
-        # Unmount SMB Share
-        call(['sudo', 'umount', mntPoint])
-    else:
-        returnVal.append({"testName": "SMB Mount", "result": "Fail"})
+    #s = ' '
+    #print s.join(command)
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    lines_iterator = iter(proc.stdout.readline, b"")
+    foundServer = False
+    for line in lines_iterator:
+        #print line # yield line
+        if line.startswith( 'Disk' ):
+            foundServer = True
+            #print "Yep"
+    
+    if not foundServer:
+        returnVal.append({"testName": "SMB Server", "result": "Fail"})
+        returnVal.append({"testName": "SMB Share", "result": "Fail"})
         returnVal.append({"testName": "Source Directory", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "SMB Server", "result": "Pass"})
+    
+        # Create mountpoint
+        #print "Create mntPoint"
+        mntPoint = tmpdir + '/mntpoint'
+        os.mkdir(mntPoint, 0755)
+
+        # Mount SMB Share
+        #print "Mount SMB Share"
+
+        if data['collectionSystemTransfer']['smbUser'] == 'guest':
+            command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',domain='+data['collectionSystemTransfer']['smbDomain']]
+        else:
+            command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']]
+
+        #print command
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode != 0:
+            returnVal.append({"testName": "SMB Share", "result": "Fail"})
+            returnVal.append({"testName": "Source Directory", "result": "Fail"})
+        else:
+            #sudo mount -t cifs $collectionSystemTransfer->{'smbServer'} $tempMountPoint -o username=$collectionSystemTransfer->{'smbUser'},password=$collectionSystemTransfer->{'smbPass'},domain='+data['collectionSystemTransfer']['smbDomain'] 2> /dev/null
+            returnVal.append({"testName": "SMB Share", "result": "Pass"})
+
+            # If mount is successful, test source directory
+            sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir']
+            if os.path.isdir(mntPoint+data['collectionSystemTransfer']['sourceDir']):
+                returnVal.append({"testName": "Source Directory", "result": "Pass"})
+            else:
+                returnVal.append({"testName": "Source Directory", "result": "Fail"})
+
+            # Unmount SMB Share
+            call(['sudo', 'umount', mntPoint])
 
     # Cleanup
+    #print "Cleanup"
     shutil.rmtree(tmpdir)
 
     return returnVal
@@ -215,7 +251,7 @@ class CustomGearmanWorker(gearman.GearmanWorker):
 
     def on_job_complete(self, current_job, job_result):
         print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
-        print json.dumps(job_result)
+        #print json.dumps(job_result)
         dataObj = json.loads(current_job.data)
         return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
 
