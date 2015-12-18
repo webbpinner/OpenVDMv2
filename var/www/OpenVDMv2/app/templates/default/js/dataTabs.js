@@ -54,6 +54,7 @@ $(function () {
         
         worldOceanBase.addTo(mapObject['map']);
         worldOceanBase.bringToBack();
+        worldOceanReference.addTo(mapObject['map']);
         
         var baseLayers = {
         //    "World Ocean Base" : worldOceanBase
