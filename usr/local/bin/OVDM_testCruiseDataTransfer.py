@@ -11,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.0
 #      CREATED:  2015-01-01
-#     REVISION:  2015-06-09
+#     REVISION:  2015-12-09
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2015  Webb Pinner
 #
@@ -74,40 +74,103 @@ def test_smbDestDir(data):
 
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
+    
+    command = []
+    # Verify the server exists
+    if data['cruiseDataTransfer']['smbUser'] == 'guest':
+        command = ['smbclient', '-L', data['cruiseDataTransfer']['smbServer'], '-W', data['cruiseDataTransfer']['smbDomain'], '-g', '-N']
+    else:
+        command = ['smbclient', '-L', data['cruiseDataTransfer']['smbServer'], '-W', data['cruiseDataTransfer']['smbDomain'], '-g', '-U', data['cruiseDataTransfer']['smbUser'] + '%' + data['cruiseDataTransfer']['smbPass']]
  
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    lines_iterator = iter(proc.stdout.readline, b"")
+    foundServer = False
+    for line in lines_iterator:
+        #print line # yield line
+        if line.startswith( 'Disk' ):
+            foundServer = True
+            #print "Yep"
+    
+    if not foundServer:
+        returnVal.append({"testName": "SMB Server", "result": "Fail"})
+        returnVal.append({"testName": "SMB Share", "result": "Fail"})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "SMB Server", "result": "Pass"})
+        
     # Create mountpoint
     mntPoint = tmpdir + '/mntpoint'
     os.mkdir(mntPoint, 0755)
 
-    # Mount SMB Share
-    if call(['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'username='+data['cruiseDataTransfer']['smbUser']+',password='+data['cruiseDataTransfer']['smbPass']+',domain='+data['cruiseDataTransfer']['smbDomain']]) == 0:
-        returnVal.append({"testName": "SMB Mount", "result": "Pass"})
+    
+    if data['cruiseDataTransfer']['smbUser'] == 'guest':
+        command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw'+',domain='+data['cruiseDataTransfer']['smbDomain']]
+    else:
+        command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw'+',username='+data['cruiseDataTransfer']['smbUser']+',password='+data['cruiseDataTransfer']['smbPass']+',domain='+data['cruiseDataTransfer']['smbDomain']]
 
-        # If mount is successful, test source directory
-        sourceDir = mntPoint+data['cruiseDataTransfer']['destDir']
-        if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
-            returnVal.append({"testName": "Destination Directory", "result": "Pass"})
-            try:
-                filepath = sourceDir + '/' + 'writeTest.txt'
-                filehandle = open(filepath, 'w')
-                filehandle.close()
-                os.remove(filepath)
-                returnVal.append({"testName": "Write Test", "result": "Pass"})
-            except Exception as e:
-                print e
-                print "{}".format(e)
-                print "IOError"
-                returnVal.append({"testName": "Write Test", "result": "Fail"})
-        else:
+        #print command
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode != 0:
+            returnVal.append({"testName": "SMB Share", "result": "Fail"})
             returnVal.append({"testName": "Destination Directory", "result": "Fail"})
             returnVal.append({"testName": "Write Test", "result": "Fail"})
+        else:
+            returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
-        # Unmount SMB Share
-        call(['sudo', 'umount', mntPoint])
-    else:
-        returnVal.append({"testName": "SMB Mount", "result": "Fail"})
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
+            # If mount is successful, test source directory
+            destDir = mntPoint+data['cruiseDataTransfer']['destDir'].rstrip('/')
+            if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
+                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+                try:
+                    filepath = destDir + '/' + 'writeTest.txt'
+                    filehandle = open(filepath, 'w')
+                    filehandle.close()
+                    os.remove(filepath)
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
+                except Exception as e:
+                    print e
+                    print "{}".format(e)
+                    print "IOError"
+                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+            else:
+                returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+                returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+            # Unmount SMB Share
+            call(['sudo', 'umount', mntPoint])
+            
+#    # Mount SMB Share
+#    if call(['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'username='+data['cruiseDataTransfer']['smbUser']+',password='+data['cruiseDataTransfer']['smbPass']+',domain='+data['cruiseDataTransfer']['smbDomain']]) == 0:
+#        returnVal.append({"testName": "SMB Mount", "result": "Pass"})
+#
+#        # If mount is successful, test source directory
+#        sourceDir = mntPoint+data['cruiseDataTransfer']['destDir']
+#        if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
+#            returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+#            try:
+#                filepath = sourceDir + '/' + 'writeTest.txt'
+#                filehandle = open(filepath, 'w')
+#                filehandle.close()
+#                os.remove(filepath)
+#                returnVal.append({"testName": "Write Test", "result": "Pass"})
+#            except Exception as e:
+#                print e
+#                print "{}".format(e)
+#                print "IOError"
+#                returnVal.append({"testName": "Write Test", "result": "Fail"})
+#        else:
+#            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+#            returnVal.append({"testName": "Write Test", "result": "Fail"})
+#
+#        # Unmount SMB Share
+#        call(['sudo', 'umount', mntPoint])
+#    else:
+#        returnVal.append({"testName": "SMB Mount", "result": "Fail"})
+#        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+#        returnVal.append({"testName": "Write Test", "result": "Fail"})
 
     # Cleanup
     shutil.rmtree(tmpdir)
