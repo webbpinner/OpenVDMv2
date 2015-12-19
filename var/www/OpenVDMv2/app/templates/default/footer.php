@@ -15,9 +15,28 @@ $hooks = Hooks::get();
 
 <!-- JS -->    
 <script type="text/javascript">
-    var siteRoot = "<?php echo DIR; ?>";
-    var cruiseID = "<?php echo $data['cruiseID']; ?>";
-    var cruiseDataDir = "<?php echo $data['dataWarehouseApacheDir']; ?>";
+    var siteRoot = "<?php echo DIR . '";'; ?>
+    
+    <?php echo (isset($data['cruiseID']) ? 'var cruiseID = "' . $data['cruiseID'] . '";' : ''); ?>
+    
+    <?php echo (isset($data['dataWarehouseApacheDir']) ? 'var cruiseDataDir = "' . $data['dataWarehouseApacheDir'] . '";' : ''); ?>
+    
+    <?php echo (isset($data['geoJSONTypes']) ? 'var geoJSONTypes = [\'' . join('\', \'', $data['geoJSONTypes']) . '\'];' : ''); ?>
+    
+    <?php echo (isset($data['tmsTypes']) ? 'var tmsTypes = [\'' . join('\', \'', $data['tmsTypes']) . '\'];' : ''); ?>
+    
+    <?php echo (isset($data['jsonTypes']) ? 'var jsonTypes = [\'' . join('\', \'', $data['jsonTypes']) . '\'];' : ''); ?>
+
+<?php
+    if(isset($data['subPages'])) {
+        echo '    var subPages = [];' . "\n";
+        
+        foreach ($data['subPages'] as $key => $subPage) {
+            echo '    subPages[\'' . $key . '\'] = \'' . $subPage . '\';' . "\n";
+            
+        }
+    }
+?>
     
 </script>
 
@@ -42,7 +61,9 @@ if (isset($data['javascript'])){
             //array_push($jsFileArray, Url::templatePath() . "js/esriCredit.js");
         } else if ($jsFile === 'highcharts') {
             array_push($jsFileArray, Url::templatePath() . 'bower_components/highcharts/js/highcharts.js');
-            array_push($jsFileArray, Url::templatePath() . 'js/highcharts-fa-plugin.js'); 
+            array_push($jsFileArray, Url::templatePath() . 'js/highcharts-fa-plugin.js');
+        } else if ($jsFile === 'highcharts-exporting') {
+            array_push($jsFileArray, Url::templatePath() . 'bower_components/highcharts/js/modules/exporting.js');
         } else if ($jsFile === 'bootstrap-datepicker') {
             array_push($jsFileArray, Url::templatePath() . 'bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js');   
             array_push($jsFileArray, Url::templatePath() . 'js/datepicker.js');

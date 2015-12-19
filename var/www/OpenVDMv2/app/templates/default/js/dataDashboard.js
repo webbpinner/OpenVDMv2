@@ -9,19 +9,6 @@ $(function () {
         colors: ['#337ab7', '#5cb85c', '#d9534f', '#f0ad4e', '#606060']
     });
     
-    var geoJSONTypes = ['gga'],
-        tmsTypes = ['geotiff'],
-        jsonTypes = ['met', 'twind', 'tsg', 'svp'],
-    
-        subPages = [];
-    
-    subPages['gga'] = 'position';
-    subPages['geotiff'] = 'position';
-    subPages['met'] = 'weather';
-    subPages['twind'] = 'weather';
-    subPages['tsg'] = 'soundVelocity';
-    subPages['svp'] = 'soundVelocity';
-    
     function displayLatestJSON(dataType) {
         var getVisualizerDataURL = siteRoot + 'api/dashboardData/getLatestVisualizerDataByType/' + cruiseID + '/' + dataType;
         $.getJSON(getVisualizerDataURL, function (data, status) {

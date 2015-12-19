@@ -6,6 +6,8 @@ use Core\View;
 use Helpers\Session;
 use Helpers\Url;
 
+
+
 class Placeholder
 {
     public $plotType;
@@ -38,6 +40,19 @@ class DataDashboard extends Controller {
         $data['javascript'] = array('dataDashboard', 'tabs_dataDashboard', 'leaflet', 'highcharts');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         
+        $data['geoJSONTypes'] = array('gga');
+        $data['tmsTypes'] = array('geotiff');
+        $data['jsonTypes'] = array('met', 'twind', 'tsg', 'svp');
+        
+        $data['subPages'] = array(
+            'gga' => 'position',
+            'geotiff' => 'position',
+            'met' => 'weather',
+            'twind' => 'weather',
+            'tsg' => 'soundVelocity',
+            'svp' => 'soundVelocity'
+        );
+            
         View::renderTemplate('header', $data);
         if( sizeof($data['dataTypes'])>0){
             View::render('DataDashboard/main', $data);
@@ -55,7 +70,7 @@ class DataDashboard extends Controller {
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
         $data['css'] = array('leaflet');
-        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'leaflet', 'highcharts');
+        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'leaflet', 'highcharts', 'highcharts-exporting');
         
         $position = new Placeholder();
         $position->plotType = 'map';
@@ -99,7 +114,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'highcharts');
+        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'highcharts', 'highcharts-exporting');
         
         $tsg = new Placeholder();
         $tsg->plotType = 'chart';
@@ -151,7 +166,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard','dataTabs', 'highcharts');
+        $data['javascript'] = array('tabs_dataDashboard','dataTabs', 'highcharts', 'highcharts-exporting');
         
         $met = new Placeholder();
         $met->plotType = 'chart';
