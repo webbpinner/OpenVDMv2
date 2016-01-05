@@ -880,4 +880,12 @@ service iptables save
 service iptables restart
 ```
 
+Configure SELinux to allow Apache to serve pages from outside /va/www/html
+```
+yum install -y policycoreutils-python
+yum install -y setroubleshoot
+semanage fcontext -a -t httpd_sys_content_t "/var/www/GearmanMonitor(/.*)?"
+restorecon -Rv /var/www/GearmanMonitor
+```
+
 Verify the installation was successful by going to: `http://<your ip address>/GearmanMonitor`
