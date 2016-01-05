@@ -781,15 +781,6 @@ chkconfig --add supervisord
 chkconfig supervisord on
 ```
 
-Start the service: `service supervisord start`
-
-Open port 9001 on the firewall:
-```
-iptables -I INPUT -p tcp -m tcp --dport 9001 -j ACCEPT
-service iptables save
-service iptables restart
-```
-
 Add the ipaddress(es) for the Warehouse to the  `/etc/hosts` file:
 ```
 nano /etc/hosts
@@ -800,5 +791,14 @@ i.e.
 192.168.1.4 CentOS-WH CentOS-WH.localdomain
 192.168.2.4 CentOS-WH CentOS-WH.localdomain
 ```
-You should now be able to go to: `http://<your ip address>:9001` and see the web-gui for supervisor.
 
+Start the service: `service supervisord start`
+
+Open port 9001 on the firewall:
+```
+iptables -I INPUT -p tcp -m tcp --dport 9001 -j ACCEPT
+service iptables save
+service iptables restart
+```
+
+You should now be able to go to: `http://<your ip address>:9001` and see the web-gui for supervisor.
