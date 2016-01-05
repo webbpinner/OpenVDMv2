@@ -802,3 +802,82 @@ service iptables restart
 ```
 
 You should now be able to go to: `http://<your ip address>:9001` and see the web-gui for supervisor.
+
+###Gearman-UI
+
+Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
+####Installing composer
+
+From a terminal window type:
+```
+yum install curl
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
+
+####Install bower
+```
+yum install nodejs
+yum install npm
+npm install -g bower
+```
+
+####Install GearmanMonitor
+
+Download the code from GitHub
+```
+yum install git
+cd
+git clone https://github.com/ckdarbyinc/GearmanMonitor.git
+```
+Configure the site using the default configuration file
+```
+cd ~/GearmanMonitor
+composer install --no-dev
+cp ./src/GearmanMonitor/Resources/config/config.yml.dist ./src/GearmanMonitor/Resources/config/config.yml
+```
+Move the site to where Apache2 can access it.
+```
+cd
+mv GearmanMonitor /var/www/
+```
+Edit the default Apache2 VHost file.
+```
+nano /etc/httpd/conf/httpd.conf
+```
+Copy text below into the end of the Apache2 configuration file.
+```
+<VirtualHost *:80>
+    #ServerAdmin webmaster@dummy-host.example.com
+    DocumentRoot /var/www/html
+    #ServerName dummy-host.example.com
+    #ErrorLog logs/dummy-host.example.com-error_log
+    #CustomLog logs/dummy-host.example.com-access_log common
+
+    Alias /GearmanMonitor /var/www/GearmanMonitor/web
+    <Directory "/var/www/GearmanMonitor/web">
+      <IfModule mod_rewrite.c>
+        Options -MultiViews
+        RewriteEngine On
+        RewriteBase /GearmanMonitor/
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^ index.php [QSA,L]
+      </IfModule>
+    </Directory>
+
+</VirtualHost>
+
+```
+Reload Apache2
+```
+service http reload
+```
+
+Open port 80 in the firewall
+```
+iptables -I INPUT -p tcp --dport 80 -j ACCEPT
+service iptables save
+service iptables restart
+```
+
+Verify the installation was successful by going to: `http://<your ip address>/GearmanMonitor`
