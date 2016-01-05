@@ -662,3 +662,143 @@ yum install php5 php5-cli php5-mysql
 ```
 yum install httpd
 ```
+
+#### Install Gearman
+```
+yum install gearmand
+```
+Install the gearman-php bindings
+```
+libgearman-devel
+yum install php-devel php-pear
+yum install boost-devel
+yum install gcc
+yum install gperf
+yum install libevent-devel
+yum install uuid-devel
+```
+Add `extension=gearman.so` to `/etc/php.ini` under the `Dynamic Extensions` section.
+
+Install the gearman-python bindings
+```
+yum install python-pip
+pip install gearman
+```
+
+#### Install Supervisor
+```
+pip install supervisor
+echo_supervisord_conf > /etc/supervisord.conf
+mkdir /etc/supervisord.d
+```
+Uncomment the following lines in `/etc/supervisord.conf`
+```
+[inet_http_server]         ; inet (TCP) server disabled by default
+port=127.0.0.1:9001        ; (ip_address:port specifier, *:port for all iface)
+[include]
+files = /relative/directory/*.ini
+```
+Edit the `files` line to `files = /etc/supervisord.d/*.conf`
+
+Create the startup script
+```
+nano /etc/rc.d/init.d/supervisord
+```
+
+Copy/paste the following into `/etc/rc.d/init.d/supervisord`
+
+```
+#!/bin/sh
+#
+# /etc/rc.d/init.d/supervisord
+#
+# Supervisor is a client/server system that
+# allows its users to monitor and control a
+# number of processes on UNIX-like operating
+# systems.
+#
+# chkconfig: - 64 36
+# description: Supervisor Server
+# processname: supervisord
+
+# Source init functions
+. /etc/rc.d/init.d/functions
+
+prog="supervisord"
+
+conf_file="/etc/supervisord.conf"
+
+prefix="/usr/"
+exec_prefix="${prefix}"
+prog_bin="${exec_prefix}/bin/supervisord -c ${conf_file}"
+PIDFILE="/var/run/$prog.pid"
+
+start()
+{
+       echo -n $"Starting $prog: "
+       daemon $prog_bin --pidfile $PIDFILE
+       [ -f $PIDFILE ] && success $"$prog startup" || failure $"$prog startup"
+       echo
+}
+
+stop()
+{
+       echo -n $"Shutting down $prog: "
+       [ -f $PIDFILE ] && killproc $prog || success $"$prog shutdown"
+       echo
+}
+
+case "$1" in
+
+ start)
+   start
+ ;;
+
+ stop)
+   stop
+ ;;
+
+ status)
+       status $prog
+ ;;
+
+ restart)
+   stop
+   start
+ ;;
+
+ *)
+   echo "Usage: $0 {start|stop|restart|status}"
+ ;;
+
+esac
+```
+
+Now tell CentOS about this init script
+```
+chmod +x /etc/rc.d/init.d/supervisord
+chkconfig --add supervisord
+chkconfig supervisord on
+```
+
+Start the service: `service supervisord start`
+
+Open port 9001 on the firewall:
+```
+iptables -I INPUT -p tcp -m tcp --dport 9001 -j ACCEPT
+service iptables save
+service iptables restart
+```
+
+Add the ipaddress(es) for the Warehouse to the  `/etc/hosts` file:
+```
+nano /etc/hosts
+```
+Add `<your ip addres> <your hostname> <your hostname>.localdomain` for each ip address you want to allow users to access the supervisor web-gui from.
+i.e.
+```
+192.168.1.4 CentOS-WH CentOS-WH.localdomain
+192.168.2.4 CentOS-WH CentOS-WH.localdomain
+```
+You should now be able to go to: `http://<your ip address>:9001` and see the web-gui for supervisor.
+
