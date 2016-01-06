@@ -641,6 +641,7 @@ The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
 ```
+cd ~/rpms
 wget http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
 rpm -Uvh remi-release-6*.rpm
 yum install nano
@@ -841,11 +842,11 @@ Move the site to where Apache2 can access it.
 cd
 mv GearmanMonitor /var/www/
 ```
-Edit the default Apache2 VHost file.
+Create the OpenVDM Apache2 VHost file.
 ```
-nano /etc/httpd/conf/httpd.conf
+nano /etc/httpd/conf.d/openvdm.conf
 ```
-Copy text below into the end of the Apache2 configuration file.
+Copy text below into the Apache2 configuration file.
 ```
 <VirtualHost *:80>
     #ServerAdmin webmaster@dummy-host.example.com
@@ -889,3 +890,154 @@ restorecon -Rv /var/www/GearmanMonitor
 ```
 
 Verify the installation was successful by going to: `http://<your ip address>/GearmanMonitor`
+
+###MapProxy
+
+In order to add GIS capability to OpenVDMv2 without eccessive requests to the internet for baselayer tiles a map tile proxy needs to be installed.
+
+Install the dependencies
+```
+yum install python-imaging python-yaml python-lxml geos-devel gdal-devel libjpeg-devel
+yum --enablerepo=epel-testing install python-shapely
+
+cd ~/rpms
+wget ftp://ftp.pbone.net/mirror/ftp5.gwdg.de/pub/opensuse/repositories/Application:/Geo/CentOS_6/i686/libproj0-4.8.0-24.1.i686.rpm
+rpm -i libproj0-4.8.0-24.1.i686.rpm
+
+```
+
+####Install MapProxy
+```
+sudo pip install MapProxy
+```
+
+Build the initial configuration
+```
+cd
+mapproxy-util create -t base-config mapproxy
+```
+
+Copy the following into ~/mapproxy/mapproxy.yaml
+
+```
+# -------------------------------
+# MapProxy configuration.
+# -------------------------------
+
+# Start the following services:
+services:
+  demo:
+  tms:
+    use_grid_names: true
+    # origin for /tiles service
+    origin: 'nw'
+  kml:
+    #use_grid_names: true
+  wmts:
+  wms:
+    srs: ['EPSG:900913']
+    image_formats: ['image/png']
+    md:
+      title: MapProxy WMS Proxy
+      abstract: This is a minimal MapProxy installation.
+
+#Make the following layers available
+layers:
+  - name: WorldOceanBase
+    title: ESRI World Ocean Base
+    sources: [esri_worldOceanBase_cache]
+
+  - name: WorldOceanReference
+    title: ESRI World Ocean Reference
+    sources: [esri_worldOceanReference_cache]
+
+caches:
+  esri_worldOceanBase_cache:
+    grids: [esri_online]
+    sources: [esri_worldOceanBase]
+
+  esri_worldOceanReference_cache:
+    grids: [esri_online]
+    sources: [esri_worldOceanReference]
+
+sources:
+  esri_worldOceanBase:
+    type: tile
+    url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer/tile/%(z)s/%(y)s/%(x)s.png
+    grid: esri_online
+
+  esri_worldOceanReference:
+    type: tile
+    transparent: true
+    url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/%(z)s/%(y)s/%(x)s.png
+    grid: esri_online
+
+grids:
+  webmercator:
+    base: GLOBAL_WEBMERCATOR
+
+  esri_online:
+     tile_size: [256, 256]
+     srs: EPSG:900913
+     origin: 'nw'
+     #num_levels: 25
+
+globals:
+```
+
+Move the installation to it's final location and set the user/group ownership
+```
+sudo mv ~/mapproxy /var/www/
+sudo mkdir /var/www/mapproxy/cache_data
+sudo chmod 775 /var/www/mapproxy/cache_data/*
+sudo chown -R apache:apache /var/www/mapproxy
+```
+
+Install the Apache2 dependecies to host the MapProxy installation
+```
+sudo yum install mod_wsgi
+```
+
+Prepare the MapProxy installation for integration with the Apache2 web-server
+```
+cd /var/www/mapproxy
+sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml config.py
+```
+
+Edit the apache conf
+```
+sudo nano /etc/httpd/conf.d/openvdm.conf
+```
+
+Add the following just above <VirutalHost> at the beginning of the file
+```
+LoadModule wsgi_module modules/mod_wsgi.so
+WSGISocketPrefix run/wsgi
+```
+
+Add the following just above </VirutalHost> at the end of the file
+```
+WSGIScriptAlias /mapproxy /var/www/mapproxy/config.py
+<Directory /var/www/mapproxy/>
+  WSGIApplicationGroup %{GLOBAL}
+  Order deny,allow
+  Allow from all
+</Directory>
+```
+
+Configure SELinux to allow Apache to serve pages from outside /va/www/html
+```
+yum install -y policycoreutils-python
+yum install -y setroubleshoot
+semanage fcontext -a -t httpd_user_content_t "/var/www/mapproxy(/.*)?"
+semanage fcontext -a -t httpd_user_rw_content_t "/var/www/mapproxy/cache_data(/.*)?"
+restorecon -Rv /var/www/mapproxy
+setsebool -P httpd_execmem on
+```
+
+Restart Apache2
+```
+sudo service apache2 restart
+```
+
+Verify the installation works by going to `http://<servername or IP>/mapproxy/demo/`
