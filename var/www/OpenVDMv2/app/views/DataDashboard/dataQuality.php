@@ -53,7 +53,7 @@ use Helpers\Session;
         for ($j = 0; $j < sizeof($data['dataObjectsQualityTests'][$i]); $j++) {
 ?>
                                         <tr>
-                                            <td><?php echo $data['dataObjects'][$i][$j]['raw_data']; ?></td>
+                                            <td><?php echo $data['dataObjects'][$i][$j]['raw_data']; ?> <a href="<?php echo $data['dataWarehouseApacheDir'] . '/' . $data['dataObjects'][$i][$j]['raw_data']; ?>" download target="_blank"><i class="fa fa-download"></i></a></td>
 <?php
             for ($k = 0; $k < sizeof($data['dataObjectsQualityTests'][$i][$j]); $k++) {
 ?>

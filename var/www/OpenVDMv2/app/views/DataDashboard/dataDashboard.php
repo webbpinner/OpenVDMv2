@@ -70,6 +70,7 @@ $loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading
 ?>                              
                                                 <div class='col-lg-4 col-sm-6'>
                                                     <input class='<?php echo $data['placeholders'][$i]->dataTypes[$j]; ?>-checkbox' type="checkbox" value="<?php echo $data['placeholders'][$i]->dataFiles[$j][$k]['dd_json'];?>" checked> <?php echo end(explode('/',$data['placeholders'][$i]->dataFiles[$j][$k]['raw_data']));?>
+                                                    <a href="<?php echo $data['dataWarehouseApacheDir'] . '/' . $data['placeholders'][$i]->dataFiles[$j][$k]['raw_data']; ?>" download target="_blank"><i class="fa fa-download"></i></a>
                                                 </div>
 <?php
                     }
@@ -78,6 +79,7 @@ $loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading
 ?>                              
                                                 <div class='col-lg-4 col-sm-6'>
                                                     <input class='<?php echo $data['placeholders'][$i]->dataTypes[$j]; ?>-checkbox' type="checkbox" value="<?php echo $data['placeholders'][$i]->dataFiles[$j][$k]['dd_json'];?>" checked> <?php echo end(explode('/',$data['placeholders'][$i]->dataFiles[$j][$k]['raw_data']));?>
+                                                    <a href="<?php echo $data['dataWarehouseApacheDir'] . '/' . $data['placeholders'][$i]->dataFiles[$j][$k]['raw_data']; ?>" download target="_blank"><i class="fa fa-download"></i></a>
                                                 </div>
 <?php
                     }
@@ -89,6 +91,7 @@ $loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading
 ?>                              
                                                     <div class='col-lg-4 col-sm-6'>
                                                         <input class='<?php echo $data['placeholders'][$i]->dataTypes[$j]; ?>-radio' name="<?php echo $data['placeholders'][$i]->dataFiles[$j][$k]['type'];?>" type="radio" value="<?php echo $data['placeholders'][$i]->dataFiles[$j][$k]['dd_json'];?>"  <?php echo ($k === sizeof($data['placeholders'][$i]->dataFiles[$j])-1? 'checked' : '');   ?>> <?php echo end(explode('/',$data['placeholders'][$i]->dataFiles[$j][$k]['raw_data']));?>
+                                                        <a href="<?php echo $data['dataWarehouseApacheDir'] . '/' . $data['placeholders'][$i]->dataFiles[$j][$k]['raw_data']; ?>" download target="_blank"><i class="fa fa-download"></i></a>
                                                     </div>
 <?php
                     }
