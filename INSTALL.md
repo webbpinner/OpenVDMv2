@@ -620,7 +620,7 @@ yum install rsync
 
 #### Install Samba
 ```
-yum install samba smbclient cifs-utils
+yum install samba smbclient cifs-utils samba-client
 sudo smbpasswd -a survey
 ```
 
@@ -1207,6 +1207,18 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
   </Directory>
 ```
 
+Set SELinux to properly acknowledge these directories and the files within the directories as accessable
+```
+semanage fcontext -a -t httpd_sys_content_t "/var/www/OpenVDMv2(/.*)?"
+semanage fcontext -a -t httpd_sys_content_t "/mnt/vault/FTPRoot/CruiseData(/.*)?"
+semanage fcontext -a -t httpd_sys_content_t "/mnt/vault/FTPRoot/PublicData(/.*)?"
+semanage fcontext -a -t httpd_sys_content_t "/mnt/vault/FTPRoot/VisitorInformation(/.*)?"
+restorecon -Rv /var/www/OpenVDMv2
+restorecon -Rv /mnt/vault/FTPRoot/CruiseData
+restorecon -Rv /mnt/vault/FTPRoot/PublicData
+restorecon -Rv /mnt/vault/FTPRoot/VisitorInformation
+```
+
 Reload Apache2
 ```
 sudo service httpd restart
@@ -1247,7 +1259,6 @@ sudo service supervisord restart
 ```
 
 ####Setup the Samba shares
-
 
 ```
 obey pam restrictions = no
@@ -1294,6 +1305,27 @@ Add to end of the `smb.conf` file.  Set the user in `write list` to the username
   delete veto files = yes
   force create mode = 666
   force directory mode = 777
+```
+
+Update Firewall rules
+```
+iptables -I INPUT -s 192.168.1.0/24 -m state --state NEW -m tcp -p tcp --dport 445 -j ACCEPT
+iptables -I INPUT -s 192.168.1.0/24 -m state --state NEW -m udp -p udp --dport 445 -j ACCEPT
+iptables -I INPUT -s 192.168.1.0/24 -m state --state NEW -m udp -p udp --dport 137 -j ACCEPT
+iptables -I INPUT -s 192.168.1.0/24 -m state --state NEW -m udp -p udp --dport 138 -j ACCEPT
+iptables -I INPUT -s 192.168.1.0/24 -m state --state NEW -m tcp -p tcp --dport 139 -j ACCEPT
+service iptables save
+service iptables restart
+```
+
+Update SELinux policies
+```
+semanage fcontext -a -t samba_share_t '/mnt/vault/FTPRoot/CruiseData(/.*)?'
+semanage fcontext -a -t samba_share_t '/mnt/vault/FTPRoot/PublicData(/.*)?'
+semanage fcontext -a -t samba_share_t '/mnt/vault/FTPRoot/VisitorInformation(/.*)?'
+restorecon -R /mnt/vault/FTPRoot/CruiseData
+restorecon -R /mnt/vault/FTPRoot/PublicData
+restorecon -R /mnt/vault/FTPRoot/VisitorInformation
 ```
 
 Restart the Samba service
