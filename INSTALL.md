@@ -1260,8 +1260,17 @@ sudo service supervisord restart
 
 ####Setup the Samba shares
 
+Edit the `/etc/samba/smb.conf` file.
+
+In the `[global]` section, edit/add the following:
 ```
-obey pam restrictions = no
+workgroup = WORKGROUP
+
+...
+
+security = user
+passdb backend = tdbsam
+map to guest = bad user
 ```
 
 Add to end of the `smb.conf` file.  Set the user in `write list` to the username created during the OS the installation:
