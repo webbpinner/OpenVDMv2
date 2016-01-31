@@ -88,7 +88,6 @@ class CollectionSystemTransfers extends Controller {
         $data['title'] = 'Collection System Transfers';
         $data['javascript'] = array('collectionSystemTransfersFormHelper', 'tabs_config');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
-        $data['rsyncUseSSHOptions'] = $this->_buildSSHOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
 
@@ -101,13 +100,18 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $rsyncServer = $_POST['rsyncServer'];
-            $rsyncUseSSH = $_POST['rsyncUseSSH'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
             $smbServer = $_POST['smbServer'];
             $smbUser = $_POST['smbUser'];
             $smbPass = $_POST['smbPass'];
             $smbDomain = $_POST['smbDomain'];
+            $sshServer = $_POST['sshServer'];
+            $sshUser = $_POST['sshUser'];
+            $sshPass = $_POST['sshPass'];
+            $nfsServer = $_POST['nfsServer'];
+            $nfsUser = $_POST['nfsUser'];
+            $nfsPass = $_POST['nfsPass'];
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
@@ -142,11 +146,17 @@ class CollectionSystemTransfers extends Controller {
             if ($transferType == 1) { //local directory
                 $smbServer = '';
                 $smbUser = '';
-                $smbDomain = '';
                 $smbPass = '';
+                $smbDomain = '';
                 $rsyncServer = '';
                 $rsyncUser = '';
                 $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshPass = '';
+                $nfsServer = '';
+                $nfsUser = '';
+                $nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -161,7 +171,7 @@ class CollectionSystemTransfers extends Controller {
 
                 } 
 
-                if(($rsyncUseSSH == 1  && $rsyncPass == '') || ($rsyncUser != 'anonymous' && $rsyncPass == '')){
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
                     $error[] = 'Rsync Password is required';
                     $rsyncDataCheck = false;
                 }
@@ -171,6 +181,12 @@ class CollectionSystemTransfers extends Controller {
                     $smbUser = '';
                     $smbDomain = '';
                     $smbPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 }       
 
             } elseif ($transferType == 3) { // SMB Share
@@ -199,8 +215,74 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 }
-            }    
+            } elseif ($transferType == 4) { // SSH Server
+                $sshDataCheck = true;
+                if($sshServer == ''){
+                    $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
+                } 
+
+                if($sshUser == ''){
+                    $error[] = 'Rsync Username is required';
+                    $sshDataCheck = false;
+
+                } 
+
+                if($sshPass == ''){
+                    $error[] = 'SSH Password is required';
+                    $sshDataCheck = false;
+                }
+                
+                if($sshDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
+            } elseif ($transferType == 5) { // NFS Share
+                $nfsDataCheck = true;
+                if($nfsServer == ''){
+                    $error[] = 'NFS Server is required';
+                    $nfsDataCheck = false;
+                } 
+
+                if($nfsUser == ''){
+                    $error[] = 'NFS Username is required';
+                    $nfsDataCheck = false;
+
+                } 
+
+                if($nfsUser != 'anonymous' && $nfsPass == ''){
+                    $error[] = 'NFS Password is required';
+                    $nfsDataCheck = false;
+                }
+                
+                if($nfsDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                }
+            } 
             
             if(!$error){
                 $postdata = array(
@@ -212,13 +294,18 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'rsyncServer' => $rsyncServer,
-                    'rsyncUseSSH' => $rsyncUseSSH,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
                     'smbServer' => $smbServer,
                     'smbUser' => $smbUser,
                     'smbPass' => $smbPass,
                     'smbDomain' => $smbDomain,
+                    'sshServer' => $sshServer,
+                    'sshUser' => $sshUser,
+                    'sshPass' => $sshPass,
+                    'nfsServer' => $nfsServer,
+                    'nfsUser' => $nfsUser,
+                    'nfsPass' => $nfsPass,
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
@@ -240,13 +327,18 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $rsyncServer = $_POST['rsyncServer'];
-            $rsyncUseSSH = $_POST['rsyncUseSSH'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
             $smbServer = $_POST['smbServer'];
             $smbUser = $_POST['smbUser'];
             $smbPass = $_POST['smbPass'];
             $smbDomain = $_POST['smbDomain'];
+            $sshServer = $_POST['sshServer'];
+            $sshUser = $_POST['sshUser'];
+            $sshPass = $_POST['sshPass'];
+            $nfsServer = $_POST['nfsServer'];
+            $nfsUser = $_POST['nfsUser'];
+            $nfsPass = $_POST['nfsPass'];
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
@@ -286,6 +378,12 @@ class CollectionSystemTransfers extends Controller {
                 $rsyncServer = '';
                 $rsyncUser = '';
                 $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshPass = '';
+                $nfsServer = '';
+                $nfsUser = '';
+                $nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -300,7 +398,7 @@ class CollectionSystemTransfers extends Controller {
 
                 } 
 
-                if(($rsyncUseSSH == 1  && $rsyncPass == '') || ($rsyncUser != 'anonymous' && $rsyncPass == '')){
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
                     $error[] = 'Rsync Password is required';
                     $rsyncDataCheck = false;
                 }
@@ -308,8 +406,14 @@ class CollectionSystemTransfers extends Controller {
                 if($rsyncDataCheck) {
                     $smbServer = '';
                     $smbUser = '';
-                    $smbDomain = '';
                     $smbPass = '';
+                    $smbDomain = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 }       
 
             } elseif ($transferType == 3) { // SMB Share
@@ -338,6 +442,72 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
+            } elseif ($transferType == 4) { // SSH Server
+                $sshDataCheck = true;
+                if($sshServer == ''){
+                    $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
+                } 
+
+                if($sshUser == ''){
+                    $error[] = 'Rsync Username is required';
+                    $sshDataCheck = false;
+
+                } 
+
+                if($sshPass == ''){
+                    $error[] = 'SSH Password is required';
+                    $sshDataCheck = false;
+                }
+                
+                if($sshDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
+            } elseif ($transferType == 5) { // NFS Share
+                $nfsDataCheck = true;
+                if($nfsServer == ''){
+                    $error[] = 'NFS Server is required';
+                    $nfsDataCheck = false;
+                } 
+
+                if($nfsUser == ''){
+                    $error[] = 'NFS Username is required';
+                    $nfsDataCheck = false;
+
+                } 
+
+                if($nfsUser != 'anonymous' && $nfsPass == ''){
+                    $error[] = 'NFS Password is required';
+                    $nfsDataCheck = false;
+                }
+                
+                if($nfsDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
                 }
             }    
             
@@ -356,13 +526,18 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'rsyncServer' => $rsyncServer,
-                    'rsyncUseSSH' => $rsyncUseSSH,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
                     'smbServer' => $smbServer,
                     'smbUser' => $smbUser,
                     'smbPass' => $smbPass,
                     'smbDomain' => $smbDomain,
+                    'sshServer' => $sshServer,
+                    'sshUser' => $sshUser,
+                    'sshPass' => $sshPass,
+                    'nfsServer' => $nfsServer,
+                    'nfsUser' => $nfsUser,
+                    'nfsPass' => $nfsPass,
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
@@ -430,13 +605,18 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $rsyncServer = $_POST['rsyncServer'];
-            $rsyncUseSSH = $_POST['rsyncUseSSH'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
             $smbServer = $_POST['smbServer'];
             $smbUser = $_POST['smbUser'];
             $smbPass = $_POST['smbPass'];
             $smbDomain = $_POST['smbDomain'];
+            $sshServer = $_POST['sshServer'];
+            $sshUser = $_POST['sshUser'];
+            $sshPass = $_POST['sshPass'];
+            $nfsServer = $_POST['nfsServer'];
+            $nfsUser = $_POST['nfsUser'];
+            $nfsPass = $_POST['nfsPass'];
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
@@ -475,6 +655,12 @@ class CollectionSystemTransfers extends Controller {
                 $rsyncServer = '';
                 $rsyncUser = '';
                 $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshPass = '';
+                $nfsServer = '';
+                $nfsUser = '';
+                $nfsPass = '';
             
             } elseif ($transferType == 2) { //rsync
                 $rsyncDataCheck = true;
@@ -498,6 +684,12 @@ class CollectionSystemTransfers extends Controller {
                     $smbUser = '';
                     $smbDomain = '';
                     $smbPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 } 
 
             } elseif ($transferType == 3) { //smb
@@ -526,6 +718,12 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 }
             
 //            } elseif ($transferType == 4) { //push
@@ -542,13 +740,18 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'rsyncServer' => $rsyncServer,
-                    'rsyncUseSSH' => $rsyncUseSSH,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
                     'smbServer' => $smbServer,
                     'smbUser' => $smbUser,
                     'smbPass' => $smbPass,
                     'smbDomain' => $smbDomain,
+                    'sshServer' => $sshServer,
+                    'sshUser' => $sshUser,
+                    'sshPass' => $sshPass,
+                    'nfsServer' => $nfsServer,
+                    'nfsUser' => $nfsUser,
+                    'nfsPass' => $nfsPass,
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
@@ -576,13 +779,18 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->staleness = $staleness;
                 $data['row'][0]->useStartDate = $useStartDate;
                 $data['row'][0]->rsyncServer = $rsyncServer;
-                $data['row'][0]->rsyncUseSSH = $rsyncUseSSH;
                 $data['row'][0]->rsyncUser = $rsyncUser;
                 $data['row'][0]->rsyncPass = $rsyncPass;
                 $data['row'][0]->smbServer = $smbServer;
                 $data['row'][0]->smbUser = $smbUser;
                 $data['row'][0]->smbPass = $smbPass;
                 $data['row'][0]->smbDomain = $smbDomain;
+                $data['row'][0]->sshServer = $sshServer;
+                $data['row'][0]->sshUser = $sshUser;
+                $data['row'][0]->sshPass = $sshPass;
+                $data['row'][0]->nfsServer = $nfsServer;
+                $data['row'][0]->nfsUser = $nfsUser;
+                $data['row'][0]->nfsPass = $nfsPass;
                 $data['row'][0]->includeFilter = $includeFilter;
                 $data['row'][0]->excludeFilter = $excludeFilter;
                 $data['row'][0]->ignoreFilter = $ignoreFilter;
@@ -602,13 +810,18 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->staleness = $_POST['staleness'];
             $gmData['collectionSystemTransfer']->useStartDate = $_POST['useStartDate'];
             $gmData['collectionSystemTransfer']->rsyncServer = $_POST['rsyncServer'];
-            $gmData['collectionSystemTransfer']->rsyncUseSSH = $_POST['rsyncUseSSH'];
             $gmData['collectionSystemTransfer']->rsyncUser = $_POST['rsyncUser'];
             $gmData['collectionSystemTransfer']->rsyncPass = $_POST['rsyncPass'];
             $gmData['collectionSystemTransfer']->smbServer = $_POST['smbServer'];
             $gmData['collectionSystemTransfer']->smbUser = $_POST['smbUser'];
             $gmData['collectionSystemTransfer']->smbPass = $_POST['smbPass'];
             $gmData['collectionSystemTransfer']->smbDomain = $_POST['smbDomain'];
+            $gmData['collectionSystemTransfer']->sshServer = $_POST['sshServer'];
+            $gmData['collectionSystemTransfer']->sshUser = $_POST['sshUser'];
+            $gmData['collectionSystemTransfer']->sshPass = $_POST['sshPass'];
+            $gmData['collectionSystemTransfer']->nfsServer = $_POST['nfsServer'];
+            $gmData['collectionSystemTransfer']->nfsUser = $_POST['nfsUser'];
+            $gmData['collectionSystemTransfer']->nfsPass = $_POST['nfsPass'];
             $gmData['collectionSystemTransfer']->includeFilter = $_POST['includeFilter'];
             $gmData['collectionSystemTransfer']->excludeFilter = $_POST['excludeFilter'];
             $gmData['collectionSystemTransfer']->ignoreFilter = $_POST['ignoreFilter'];
@@ -635,13 +848,18 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->staleness = $_POST['staleness'];
             $data['row'][0]->useStartDate = $_POST['useStartDate'];
             $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
-            $data['row'][0]->rsyncUseSSH = $_POST['rsyncUseSSH'];
             $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
             $data['row'][0]->rsyncPass = $_POST['rsyncPass'];
             $data['row'][0]->smbServer = $_POST['smbServer'];
             $data['row'][0]->smbUser = $_POST['smbUser'];
             $data['row'][0]->smbPass = $_POST['smbPass'];
             $data['row'][0]->smbDomain = $_POST['smbDomain'];
+            $data['row'][0]->sshServer = $_POST['sshServer'];
+            $data['row'][0]->sshUser = $_POST['sshUser'];
+            $data['row'][0]->sshPass = $_POST['sshPass'];
+            $data['row'][0]->nfsServer = $_POST['nfsServer'];
+            $data['row'][0]->nfsUser = $_POST['nfsUser'];
+            $data['row'][0]->nfsPass = $_POST['nfsPass'];
             $data['row'][0]->includeFilter = $_POST['includeFilter'];
             $data['row'][0]->excludeFilter = $_POST['excludeFilter'];
             $data['row'][0]->ignoreFilter = $_POST['ignoreFilter'];
@@ -651,7 +869,6 @@ class CollectionSystemTransfers extends Controller {
         
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
-        $data['rsyncUseSSHOptions'] = $this->_buildSSHOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
 
         View::rendertemplate('header',$data);

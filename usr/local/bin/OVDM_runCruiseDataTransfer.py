@@ -255,6 +255,32 @@ def transfer_rsyncDestDir(data, worker, job):
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
+    rsyncPasswordFilePath = tmpdir + '/passwordFile'
+
+    try:
+        #print "Open temporary rsync password file"
+        rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
+
+        #print "Saving temporary rsync password file"
+        rsyncPasswordFile.write(data['cruiseDataTransfer']['rsyncPass'])
+
+    except IOError:
+        #print "Error Saving temporary rsync password file"
+        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncPasswordFile.close()
+
+        # Cleanup
+        shutil.rmtree(tmpdir)
+
+        return returnVal    
+
+    finally:
+        #print "Closing temporary rsync password file"
+        rsyncPasswordFile.close()
+        os.chmod(rsyncPasswordFilePath, 0600)
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+    
+    
     rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
         
     try:
@@ -280,8 +306,76 @@ def transfer_rsyncDestDir(data, worker, job):
         rsyncFileListFile.close()
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
+    command = ['rsync', '-ti', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + sourceDir, destDir]
+    #print command
     
-    command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'rsync', '-aiv', '--files-from=' + rsyncFileListPath, '-e', 'ssh -c arcfour', data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir'], data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + ':' + data['cruiseDataTransfer']['destDir']]
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        #print(line) # yield line
+        if line.startswith( '>f+++++++++' ):
+            files['new'].append(line.split(' ')[1])
+            count += 1
+        elif line.startswith( '>f.' ):
+            files['updated'].append(line.split(' ')[1])
+            count += 1
+        worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
+            
+        if worker.stop:
+            print "Stopping"
+            break
+    
+    # Cleanup
+    shutil.rmtree(tmpdir)    
+    return files
+
+def transfer_sshDestDir(data, worker, job):
+
+#    print 'DECODED Data:', json.dumps(data, indent=2)
+    
+    #print "Transfer from Rsync Server"
+    filters = {'includeFilter': '*','excludeFilter': '','ignoreFilter': ''}
+
+    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']
+    
+    #print "Build file list"
+    files = build_filelist(sourceDir, filters)
+    
+    createdDirs = []
+
+    count = 0
+    fileCount = len(files['include'])
+    
+    
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    sshFileListPath = tmpdir + '/sshFileList.txt'
+        
+    try:
+        #print "Open rsync password file"
+        sshFileListFile = open(sshFileListPath, 'w')
+
+        #print "Saving ssh filelist file"
+        #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
+        sshFileListFile.write('\n'.join([data['cruiseID'] + str(x) for x in files['include']]))
+
+    except IOError:
+        print "Error Saving temporary ssh filelist file"
+        returnVal.append({"testName": "Writing temporary ssh password file", "result": "Fail"})
+        sshFileListFile.close()
+            
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
+
+    finally:
+        #print "Closing rsync filelist file"
+        sshFileListFile.close()
+        #returnVal.append({"testName": "Writing temporary ssh filelist file", "result": "Pass"})
+    
+    
+    command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'rsync', '-aiv', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir'], data['cruiseDataTransfer']['sshUser'] + '@' + data['cruiseDataTransfer']['sshServer'] + ':' + data['cruiseDataTransfer']['destDir']]
     #print command
     
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
@@ -457,6 +551,10 @@ def task_callback(gearman_worker, job):
         job_results['files'] = transfer_rsyncDestDir(dataObj, gearman_worker, job)
     elif  dataObj['cruiseDataTransfer']['transferType'] == "3": # SMB Server
         job_results['files'] = transfer_smbDestDir(dataObj, gearman_worker, job)
+    elif  dataObj['cruiseDataTransfer']['transferType'] == "4": # SSH Server
+        job_results['files'] = transfer_sshDestDir(dataObj, gearman_worker, job)
+    elif  dataObj['cruiseDataTransfer']['transferType'] == "5": # NFS Server
+        job_results['files'] = transfer_nfsDestDir(dataObj, gearman_worker, job)
 
     #print "Transfer Complete"
     gearman_worker.send_job_status(job, 9, 10)

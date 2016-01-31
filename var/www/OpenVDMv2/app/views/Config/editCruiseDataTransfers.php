@@ -4,7 +4,6 @@ use Core\Error;
 use Helpers\Form;
 
 ?>
-
     <div class="row">
         <div class="col-lg-12">
             <?php echo Error::display($error); ?>
@@ -47,6 +46,12 @@ use Helpers\Form;
                                 <div class="form-group smbShare"><label>SMB Domain</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbDomain', 'value'=> $data['row'][0]->smbDomain)); ?></div>
                                 <div class="form-group smbShare"><label>SMB Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbUser', 'value'=> $data['row'][0]->smbUser)); ?></div>
                                 <div class="form-group smbShare"><label>SMB Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbPass', 'type'=>'password', 'value'=> $data['row'][0]->smbPass)); ?></div>
+                                <div class="form-group sshServer"><label>SSH Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshServer', 'value'=> $data['row'][0]->sshServer)); ?></div>
+                                <div class="form-group sshServer"><label>SSH Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshUser', 'value'=> $data['row'][0]->sshUser)); ?></div>
+                                <div class="form-group sshServer"><label>SSH Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshPass', 'type'=>'password', 'value'=> $data['row'][0]->sshPass)); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Server/Share</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsServer', 'value'=> $data['row'][0]->nfsServer)); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsUser', 'value'=> $data['row'][0]->nfsUser)); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsPass', 'type'=>'password', 'value'=> $data['row'][0]->nfsPass)); ?></div>
                             </div>
                         </div>
                         <div class="row">
@@ -74,6 +79,12 @@ use Helpers\Form;
             <p class="smbShare">The <strong>SMB Domain</strong> is the SMB Server/Share Domain of the Destination System (i.e. "WORKGROUP").  If no value is defined this field will default to "WORKGROUP".</p>
             <p class="smbShare">The <strong>SMB Username</strong> is the SMB username with permission to access the data on the Destination System (i.e. "shipTech").</p>
             <p class="smbShare">The <strong>SMB Password</strong> is the SMB password for the SMB Username.</p>
+            <p class="sshServer">The <strong>SSH Server</strong> is the IP address of the Destination SSH Server (i.e. "192.168.4.151").</p>
+            <p class="sshServer">The <strong>SSH Username</strong> is the SSH username with permission to access the data on the Destination SSH Server (i.e. "shipTech").</p>
+            <p class="sshServer">The <strong>SSH Password</strong> is the SSH password for the Rsync Username.</p>
+            <p class="nfsShare">The <strong>NFS Server/Share</strong> is the IP address of the Destination NFS Server (i.e. "192.168.4.151").</p>
+            <p class="nfsShare">The <strong>NFS Username</strong> is the NFS username with permission to access the data on the Destination NFS Server (i.e. "shipTech").</p>
+            <p class="nfsShare">The <strong>NFS Password</strong> is the NFS password for the NFS Username.</p>
             <p>Click the <strong>Update</strong> button to submit the changes to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.  Click the <strong>Test Setup</strong> button to test the configuration currently in the form.  This DOES NOT save the configuration.  You will need to click the <strong>Update</strong> button to commit the changes.</p>
         </div>
     </div>

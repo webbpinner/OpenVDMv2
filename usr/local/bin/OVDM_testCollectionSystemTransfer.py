@@ -1,4 +1,4 @@
-# ----------------------------------------------------------------------------------- #
+ # ----------------------------------------------------------------------------------- #
 #
 #         FILE:  OVDM_testCollectionSystemTransfer.py
 #
@@ -141,66 +141,82 @@ def test_rsyncSourceDir(data):
     returnVal = []
 
     # Connect to RSYNC Server
-    if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
-        # Create temp directory
-        tmpdir = tempfile.mkdtemp()
-        rsyncPasswordFilePath = tmpdir + '/' + 'passwordFile'
-        
-        try:
-            #print "Open Transfer Log Summary file"
-            rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
-            #print "Saving Transfer Log Summary file"
-            if data['collectionSystemTransfer']['rsyncUser'] != 'anonymous':
-                rsyncPasswordFile.write(data['collectionSystemTransfer']['rsyncPass'])
-            else:
-                rsyncPasswordFile.write('noPasswordNeeded')                
-            
-        except IOError:
-            print "Error Saving temporary rsync password file"
-            returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
-            rsyncPasswordFile.close()
-            
-            # Cleanup
-            shutil.rmtree(tmpdir)
-            
-            return returnVal    
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    rsyncPasswordFilePath = tmpdir + '/' + 'passwordFile'
 
-        finally:
-            #print "Closing Transfer Log Summary file"
-            rsyncPasswordFile.close()
-            os.chmod(rsyncPasswordFilePath, 0600)
-            #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
-        
-    # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
-    if data['collectionSystemTransfer']['rsyncUseSSH'] == '0':
-        if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'], '> /dev/null']) == 0:
-            returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
+    try:
+        #print "Open Transfer Log Summary file"
+        rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
-            if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
-                returnVal.append({"testName": "Source Directory", "result": "Pass"})
-            else:
-                returnVal.append({"testName": "Source Directory", "result": "Fail"})
+        #print "Saving Transfer Log Summary file"
+        if data['collectionSystemTransfer']['rsyncUser'] != 'anonymous':
+            rsyncPasswordFile.write(data['collectionSystemTransfer']['rsyncPass'])
         else:
-            returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
+            rsyncPasswordFile.write('noPasswordNeeded')                
+
+    except IOError:
+        print "Error Saving temporary rsync password file"
+        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncPasswordFile.close()
 
         # Cleanup
-            shutil.rmtree(tmpdir)
+        shutil.rmtree(tmpdir)
 
-    else:
-        # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
-        if call(['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'ssh', data['collectionSystemTransfer']['rsyncServer'], '-l', data['collectionSystemTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
-            returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
+        return returnVal    
 
-            if call(['sshpass', '-p', data['collectionSystemTransfer']['rsyncPass'], 'ssh', data['collectionSystemTransfer']['rsyncServer'], '-l', data['collectionSystemTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
-                returnVal.append({"testName": "Source Directory", "result": "Pass"})
-            else:
-                returnVal.append({"testName": "Source Directory", "result": "Fail"})
+    finally:
+        #print "Closing Transfer Log Summary file"
+        rsyncPasswordFile.close()
+        os.chmod(rsyncPasswordFilePath, 0600)
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+        
+    if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'], '> /dev/null']) == 0:
+        returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
+
+        if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
+            returnVal.append({"testName": "Source Directory", "result": "Pass"})
         else:
-            returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
             returnVal.append({"testName": "Source Directory", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
+        returnVal.append({"testName": "Source Directory", "result": "Fail"})
 
+    # Cleanup
+        shutil.rmtree(tmpdir)
+        
+    #print json.dumps(returnVal, indent=2)
+    return returnVal
+
+def test_sshSourceDir(data):
+    
+    returnVal = []
+
+    # Connect to SSH Server
+        
+    # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
+    if call(['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
+        returnVal.append({"testName": "SSH Connection", "result": "Pass"})
+
+        if call(['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
+            returnVal.append({"testName": "Source Directory", "result": "Pass"})
+        else:
+            returnVal.append({"testName": "Source Directory", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "SSH Connection", "result": "Fail"})
+        returnVal.append({"testName": "Source Directory", "result": "Fail"})
+        
+    #print json.dumps(returnVal, indent=2)
+    return returnVal
+
+def test_nfsSourceDir(data):
+    
+    returnVal = []
+
+    # Connect to NFS Server
+    returnVal.append({"testName": "NFS Connection", "result": "Pass"})
+    returnVal.append({"testName": "Source Directory", "result": "Pass"})
         
     #print json.dumps(returnVal, indent=2)
     return returnVal
@@ -275,6 +291,10 @@ def task_callback(gearman_worker, job):
         job_results += test_rsyncSourceDir(dataObj)
     elif  dataObj['collectionSystemTransfer']['transferType'] == "3": # SMB Server
         job_results += test_smbSourceDir(dataObj)
+    elif  dataObj['collectionSystemTransfer']['transferType'] == "4": # SSH Server
+        job_results += test_sshSourceDir(dataObj)
+    elif  dataObj['collectionSystemTransfer']['transferType'] == "5": # NFS Server
+        job_results += test_nfsSourceDir(dataObj)
     gearman_worker.send_job_status(job, 2, 4)
 
 #    print "Test Destination Directory"

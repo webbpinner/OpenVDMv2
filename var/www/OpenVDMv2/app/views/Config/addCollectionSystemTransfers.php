@@ -51,15 +51,18 @@ use Helpers\Form;
                                 </div>
                                 <div class="form-group"><label>Source Directory</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sourceDir', 'value'=> $_POST['sourceDir'])); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncServer', 'value'=> $_POST['rsyncServer'])); ?></div>
-                                <div class="form-group rsyncServer">
-                                    <label>Use SSH for authentication?</label><?php echo Form::radioInline($data['rsyncUseSSHOptions'], $_POST['rsyncUseSSH']); ?>
-                                </div>
-                                <div class="form-group rsyncServer"><label>Rsync username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncUser', 'value'=> $_POST['rsyncUser'])); ?></div>
-                                <div class="form-group rsyncServer"><label>Rsync password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncPass', 'value'=> $_POST['rsyncPass'], 'type'=>'password')); ?></div>
+                                <div class="form-group rsyncServer"><label>Rsync Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncUser', 'value'=> $_POST['rsyncUser'])); ?></div>
+                                <div class="form-group rsyncServer"><label>Rsync Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncPass', 'value'=> $_POST['rsyncPass'], 'type'=>'password')); ?></div>
                                 <div class="form-group smbShare"><label>SMB Server/Share</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbServer', 'value'=> $_POST['smbServer'])); ?></div>
                                 <div class="form-group smbShare"><label>SMB Domain</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbDomain', 'value'=> $_POST['smbDomain'])); ?></div>
                                 <div class="form-group smbShare"><label>SMB Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbUser', 'value'=> $_POST['smbUser'])); ?></div>
                                 <div class="form-group smbShare"><label>SMB Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbPass', 'value'=> $_POST['smbPass'], 'type'=>'password')); ?></div>
+                                <div class="form-group sshServer"><label>SSH Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshServer', 'value'=> $_POST['sshServer'])); ?></div>
+                                <div class="form-group sshServer"><label>SSH Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshUser', 'value'=> $_POST['sshUser'])); ?></div>
+                                <div class="form-group sshServer"><label>SSH Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshPass', 'value'=> $_POST['sshPass'], 'type'=>'password')); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Server/Share</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsServer', 'value'=> $_POST['nfsServer'])); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsUser', 'value'=> $_POST['nfsUser'])); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsPass', 'value'=> $_POST['nfsPass'], 'type'=>'password')); ?></div>
                             </div>
                         </div>
                         <div class="row">    
@@ -85,13 +88,18 @@ use Helpers\Form;
             <p>The <strong>Transfer Type</strong> defines how OpenVDM will transfer the data from the Collection System to the Data Warehouse.  <strong>Local Directory</strong> is a transfer of data that is located on the Data Warehouse but is outside of the Cruise Data Directory.  <strong>Rsync Server</strong> is a transfer of data from a Collection System running Rsync and SSH servers. <strong>SMB Share</strong> is a transfer of data from a Collection System with a SMB (Windows) Share.  <strong>Remote Push</strong> is a transfer from a Collection System that will push data to the Data Warehouse.  This option allows Collection System on networks that do not allow remote connections to still integrate with OpenVDM.</p>
             <p>The <strong>Source Directory</strong> is the location of the data files on the collection system.</p>
             <p class="rsyncServer">The <strong>Rsync Server</strong> is the IP address of the Collection System (i.e. "192.168.4.151").</p>
-            <p class="rsyncServer">The <strong>Use SSH for authentication</strong> declares whether OpenVDM should try to connect to a remote rsync server directly or connect via SSH.</p>            
-            <p class="rsyncServer">The <strong>Rsync Username</strong> is the rsync username with permission to access the data on the Collection System (i.e. "shipTech").  If the rsync server allows anonymous access set this field to "anonymous" and no password will be required.  If SSH authentication is used, set this field to the SSH username.</p>
-            <p class="rsyncServer">The <strong>Rsync Password</strong> is the rsync/SSH password for the Rsync Username. Not required if SSH authentication is not used AND the Rsync Username is set to "anonymous".</p>
+            <p class="rsyncServer">The <strong>Rsync Username</strong> is the rsync username with permission to access the data on the Collection System (i.e. "shipTech").  If the rsync server allows anonymous access set this field to "anonymous" and no password will be required.</p>
+            <p class="rsyncServer">The <strong>Rsync Password</strong> is the rsync password for the Rsync Username. Not required if Rsync Username is set to "anonymous".</p>
             <p class="smbShare">The <strong>SMB Server/Share</strong> is the SMB Server/Share of the Collection System (i.e. "//192.168.4.151/data").</p>
             <p class="smbShare">The <strong>SMB Domain</strong> is the SMB Server/Share Domain of the Collection System (i.e. "WORKGROUP").  If no value is defined this field will default to "WORKGROUP".</p>
             <p class="smbShare">The <strong>SMB Username</strong> is the SMB username with permission to access the data on the Collection System (i.e. "shipTech").  If the smb server allows guest access set this field to "guest" and no password will be required.</p>
             <p class="smbShare">The <strong>SMB Password</strong> is the SMB password for the SMB Username. Not required if SMB Username is set to "guest".</p>
+            <p class="sshServer">The <strong>SSH Server</strong> is the IP address of the Collection System (i.e. "192.168.4.151").</p>
+            <p class="sshServer">The <strong>SSH Username</strong> is the SSH username with permission to access the data on the Collection System (i.e. "shipTech").</p>
+            <p class="sshServer">The <strong>SSH Password</strong> is the SSH password for the Rsync Username.</p>
+            <p class="nfsShare">The <strong>NFS Server/Share</strong> is the NFS Server/Share of the Collection System (i.e. "//192.168.4.151/data").</p>
+            <p class="nfsShare">The <strong>NFS Username</strong> is the nfs username with permission to access the data on the Collection System (i.e. "shipTech").  If the nfs server allows anonymous access set this field to "anonymous" and no password will be required.</p>
+            <p class="nfsShare">The <strong>NFS Password</strong> is the nfs password for the nfs Username. Not required if the nfs Username is set to "anonymous".</p>
             <p>Click the <strong>Add</strong> button to add the new collection system transfer to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.</p>
         </div>
     </div>

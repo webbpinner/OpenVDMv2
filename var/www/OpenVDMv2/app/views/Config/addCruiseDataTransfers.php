@@ -46,6 +46,12 @@ use Helpers\Form;
                                 <div class="form-group smbShare"><label>SMB Domain</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbDomain', 'value'=> $_POST['smbDomain'])); ?></div>
                                 <div class="form-group smbShare"><label>SMB Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbUser', 'value'=> $_POST['smbUser'])); ?></div>
                                 <div class="form-group smbShare"><label>SMB Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'smbPass', 'type'=>'password', 'value'=> $_POST['smbPass'])); ?></div>
+                                <div class="form-group sshServer"><label>SSH Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshServer', 'value'=> $_POST['sshServer'])); ?></div>
+                                <div class="form-group sshServer"><label>SSH Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshUser', 'value'=> $_POST['sshUser'])); ?></div>
+                                <div class="form-group sshServer"><label>SSH Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshPass', 'type'=>'password', 'value'=> $_POST['sshPass'])); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Server/Share</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsServer', 'value'=> $_POST['nfsServer'])); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsUser', 'value'=> $_POST['nfsUser'])); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsPass', 'type'=>'password', 'value'=> $_POST['nfsPass'])); ?></div>
                             </div>
                         </div>
                         <div class="row">    
@@ -66,13 +72,19 @@ use Helpers\Form;
             <p>The <strong>Long Name</strong> field is a longer name for the Collection System Transfer (i.e. RDI Workhorse 300kHz ADCP ).  These names can have spaces in them.</p>
             <p>The <strong>Transfer Type</strong> defines how OpenVDM will transfer the data from the cruise data directory on the Data Warehouse to the desired destination.  <strong>Local Directory</strong> is a transfer of the cruise data to another location on the Data Warehouse outside of the Cruise Data Directory.  <strong>Rsync Server</strong> is a transfer of cruise data to a destination system running Rsync and SSH servers. <strong>SMB Share</strong> is a transfer of cruise data to a destination system with a SMB (Windows) Share.</p>
             <p>The <strong>Destination Directory</strong> is the location where the cruise data will be copied to.</p>
-            <p class="rsyncServer">The <strong>Rsync Server</strong> is the IP address of the Destination System (i.e. "192.168.4.151").</p>
-            <p class="rsyncServer">The <strong>Rsync Username</strong> is the SSH username with permission to access the data on the Destination System (i.e. "shipTech").</p>
-            <p class="rsyncServer">The <strong>Rsync Password</strong> is the SSH password for the Rsync Username.</p>
-            <p class="smbShare">The <strong>SMB Server/Share</strong> is the SMB Server/Share of the Destination System (i.e. "//192.168.4.151/data").</p>
+            <p class="rsyncServer">The <strong>Rsync Server</strong> is the IP address of the Destination Rsync Server (i.e. "192.168.4.151").</p>
+            <p class="rsyncServer">The <strong>Rsync Username</strong> is the Rsync username with permission to access the data on the Destination System (i.e. "shipTech").</p>
+            <p class="rsyncServer">The <strong>Rsync Password</strong> is the Rsync password for the Rsync Username.</p>
+            <p class="smbShare">The <strong>SMB Server/Share</strong> is the Server/Share of the Destination SMB System (i.e. "//192.168.4.151/data").</p>
             <p class="smbShare">The <strong>SMB Domain</strong> is the SMB Server/Share Domain of the Destination System (i.e. "WORKGROUP").  If no value is defined this field will default to "WORKGROUP".</p>
             <p class="smbShare">The <strong>SMB Username</strong> is the SMB username with permission to access the data on the Destination System (i.e. "shipTech").</p>
             <p class="smbShare">The <strong>SMB Password</strong> is the SMB password for the SMB Username.</p>
+            <p class="sshServer">The <strong>SSH Server</strong> is the IP address of the Destination SSH Server (i.e. "192.168.4.151").</p>
+            <p class="sshServer">The <strong>SSH Username</strong> is the SSH username with permission to access the data on the Destination SSH Server (i.e. "shipTech").</p>
+            <p class="sshServer">The <strong>SSH Password</strong> is the SSH password for the Rsync Username.</p>
+            <p class="nfsShare">The <strong>NFS Server/Share</strong> is the IP address of the Destination NFS Server (i.e. "192.168.4.151").</p>
+            <p class="nfsShare">The <strong>NFS Username</strong> is the NFS username with permission to access the data on the Destination NFS Server (i.e. "shipTech").</p>
+            <p class="nfsShare">The <strong>NFS Password</strong> is the NFS password for the NFS Username.</p>
             <p>Click the <strong>Add</strong> button to add the new cruise data transfer to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.</p>
         </div>
     </div>

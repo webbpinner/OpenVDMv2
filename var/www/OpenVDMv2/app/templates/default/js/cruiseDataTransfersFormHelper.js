@@ -5,7 +5,8 @@ $(function () {
         {"value" : "1", "text" : "Local Directory"},
         {"value" : "2", "text" : "Rsync Server"},
         {"value" : "3", "text" : "SMB Share"},
-        {"value" : "4", "text" : "Remote Push"}
+        {"value" : "4", "text" : "SSH Server"},
+        {"value" : "5", "text" : "NFS Share"}
     ];
     
     function setTransferTypeFields(transferType) {
@@ -17,22 +18,32 @@ $(function () {
         case "Local Directory":
             $(".rsyncServer").hide();
             $(".smbShare").hide();
-        //    $(".remotePush").hide();
+            $(".sshServer").hide();
+            $(".nfsShare").hide();
             break;
         case "Rsync Server":
             $(".rsyncServer").show();
             $(".smbShare").hide();
-        //    $(".remotePush").hide();
+            $(".sshServer").hide();
+            $(".nfsShare").hide();
             break;
         case "SMB Share":
             $(".rsyncServer").hide();
             $(".smbShare").show();
-        //    $(".remotePush").hide();
+            $(".sshServer").hide();
+            $(".nfsShare").hide();
             break;
-        case "Remote Push":
+        case "SSH Server":
             $(".rsyncServer").hide();
             $(".smbShare").hide();
-        //    $(".remotePush").show();
+            $(".sshServer").show();
+            $(".nfsShare").hide();
+            break;
+        case "NFS Share":
+            $(".rsyncServer").hide();
+            $(".smbShare").hide();
+            $(".sshServer").hide();
+            $(".nfsShare").show();
             break;
         default:
         }
