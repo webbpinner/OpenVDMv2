@@ -179,10 +179,10 @@ LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 
 INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `status`, `enable`, `required`, `pid`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',2,'/mnt/vault/shoreside','192.168.1.6','survey','password4survey','','','','',NULL,NULL,NULL,NULL,NULL,NULL,3,1,1,0),
-	(2,'SBDA','Shipboard Data Archive (SMB Share)',3,'/','192.168.1.5','survey','password4survey','//192.168.1.5/ShipArchive','survey','Tethys337813','WORKGROUP',NULL,NULL,NULL,NULL,NULL,NULL,4,0,0,0),
+	(1,'SSDW','Shoreside Data Warehouse',4,'/mnt/vault/shoreside','','','','','','','','192.168.1.6','survey','password4survey',NULL,NULL,NULL,4,0,1,0),
+	(2,'SBDA','Shipboard Data Archive (SMB Share)',3,'/','192.168.1.5','survey','password4survey','//192.168.1.5/ShipArchive','survey','password4survey','WORKGROUP',NULL,NULL,NULL,NULL,NULL,NULL,4,0,0,0),
 	(3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/media/survey/MyBackupHDD','','','','','','','',NULL,NULL,NULL,NULL,NULL,NULL,4,0,0,0),
-	(4,'RemoteBackup','Remote Backup (SSH Server)',4,'/mnt/vault/archive','192.168.1.4','survey','password4survey','','','','','192.168.1.6','survey','Tethys337813','','','',4,0,0,0);
+	(4,'RemoteBackup','Remote Backup (SSH Server)',4,'/mnt/vault/archive','','','','','','','','192.168.1.6','survey','password4survey',NULL,NULL,NULL,4,0,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;

@@ -132,29 +132,29 @@ class System extends Controller {
         foreach($data['requiredCruiseDataTransfers'] as $row) {
             if(strcmp($row->name, 'SSDW') === 0 ) {
                 $data['shoresideDataWarehouseConfig']['cruiseDataTransferID'] = $row->cruiseDataTransferID;
-                $data['shoresideDataWarehouseConfig']['rsyncServer'] = $row->rsyncServer;
-                $data['shoresideDataWarehouseConfig']['rsyncUser'] = $row->rsyncUser;
-                $data['shoresideDataWarehouseConfig']['rsyncPass'] = $row->rsyncPass;
+                $data['shoresideDataWarehouseConfig']['sshServer'] = $row->sshServer;
+                $data['shoresideDataWarehouseConfig']['sshUser'] = $row->sshUser;
+                $data['shoresideDataWarehouseConfig']['sshPass'] = $row->sshPass;
                 $data['shoresideDataWarehouseConfig']['destDir'] = $row->destDir;
                 break;
             }
         }
             
         if(isset($_POST['submit'])){
-            $rsyncServer = $_POST['rsyncServer'];
-            $rsyncUser = $_POST['rsyncUser'];
-            $rsyncPass = $_POST['rsyncPass'];
+            $sshServer = $_POST['sshServer'];
+            $sshUser = $_POST['sshUser'];
+            $sshPass = $_POST['sshPass'];
             $destDir = $_POST['destDir'];
 
-            if($rsyncServer == ''){
+            if($sshServer == ''){
                 $error[] = 'Shoreside Data Warehouse IP is required';
             }
 
-            if($rsyncUser == ''){
+            if($sshUser == ''){
                 $error[] = 'Shipboard Data Warehouse Username is required';
             }
 
-            if($rsyncPass == ''){
+            if($sshPass == ''){
                 $error[] = 'Shipboard Data Warehouse Password is required';
             }
 
@@ -164,9 +164,9 @@ class System extends Controller {
 
             if(!$error){
                 $postdata = array(
-                    'rsyncServer' => $rsyncServer,
-                    'rsyncUser' => $rsyncUser,
-                    'rsyncPass' => $rsyncPass,
+                    'sshServer' => $sshServer,
+                    'sshUser' => $sshUser,
+                    'sshPass' => $sshPass,
                     'destDir' => $destDir,
                 );
                 
@@ -177,9 +177,9 @@ class System extends Controller {
                 Url::redirect('config/system');
             } else {
                 $data['shoresideDataWarehouseConfig'] = array(
-                    'rsyncServer' => $rsyncServer,
-                    'rsyncUser' => $rsyncUser,
-                    'rsyncPass' => $rsyncPass,
+                    'sshServer' => $sshServer,
+                    'sshUser' => $sshUser,
+                    'sshPass' => $sshPass,
                     'destDir' => $destDir,
                 );
             }

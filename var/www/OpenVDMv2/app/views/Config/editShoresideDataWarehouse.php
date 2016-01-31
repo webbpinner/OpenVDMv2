@@ -35,16 +35,16 @@ use Helpers\Form;
                         <div class="row">
                             <div class="col-lg-12">
                                 <div class="form-group">
-                                    <label>Server IP</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'rsyncServer', 'value'=>$data['shoresideDataWarehouseConfig']['rsyncServer'])); ?>
+                                    <label>Server IP</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'sshServer', 'value'=>$data['shoresideDataWarehouseConfig']['sshServer'])); ?>
                                 </div>
                                 <div class="form-group">
                                     <label>Cruise Data Directory</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'destDir', 'value'=>$data['shoresideDataWarehouseConfig']['destDir'])); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Server Username</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'rsyncUser', 'value'=>$data['shoresideDataWarehouseConfig']['rsyncUser'])); ?>
+                                    <label>Server Username</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'sshUser', 'value'=>$data['shoresideDataWarehouseConfig']['sshUser'])); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Server Password</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'password', 'name'=>'rsyncPass', 'value'=>$data['shoresideDataWarehouseConfig']['rsyncPass'])); ?>
+                                    <label>Server Password</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'password', 'name'=>'sshPass', 'value'=>$data['shoresideDataWarehouseConfig']['sshPass'])); ?>
                                 </div>
                             </div>
                         </div>
