@@ -166,7 +166,7 @@ def transfer_smbDestDir(data, worker, job):
     #print "Mount SMB Share"
     if data['cruiseDataTransfer']['smbUser'] == 'guest':
         
-        command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw' + ',guest' +  'domain=' + data['collectionSystemTransfer']['smbDomain']]
+        command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw' + ',guest' +  'domain=' + data['cruiseDataTransfer']['smbDomain']]
         
         #s = ' '
         #print s.join(command)
