@@ -97,19 +97,19 @@ def test_smbSourceDir(data):
         returnVal.append({"testName": "SMB Server", "result": "Pass"})
     
         # Create mountpoint
-        #print "Create mntPoint"
         mntPoint = tmpdir + '/mntpoint'
         os.mkdir(mntPoint, 0755)
 
         # Mount SMB Share
-        #print "Mount SMB Share"
 
         if data['collectionSystemTransfer']['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',domain='+data['collectionSystemTransfer']['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+data['collectionSystemTransfer']['smbDomain']]
         else:
             command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']]
 
-        #print command
+        #s = ' '
+        #print s.join(command)
+
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
@@ -117,7 +117,6 @@ def test_smbSourceDir(data):
             returnVal.append({"testName": "SMB Share", "result": "Fail"})
             returnVal.append({"testName": "Source Directory", "result": "Fail"})
         else:
-            #sudo mount -t cifs $collectionSystemTransfer->{'smbServer'} $tempMountPoint -o username=$collectionSystemTransfer->{'smbUser'},password=$collectionSystemTransfer->{'smbPass'},domain='+data['collectionSystemTransfer']['smbDomain'] 2> /dev/null
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
             # If mount is successful, test source directory
@@ -131,7 +130,6 @@ def test_smbSourceDir(data):
             call(['sudo', 'umount', mntPoint])
 
     # Cleanup
-    #print "Cleanup"
     shutil.rmtree(tmpdir)
 
     return returnVal
@@ -171,11 +169,27 @@ def test_rsyncSourceDir(data):
         rsyncPasswordFile.close()
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
-        
-    if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'], '> /dev/null']) == 0:
+    
+    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer']]
+    
+    s = ' '
+    print s.join(command)
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc.communicate()
+
+    if proc.returncode == 0:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
+        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir']]
+        
+        #s = ' '
+        #print s.join(command)
+    
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode == 0:
             returnVal.append({"testName": "Source Directory", "result": "Pass"})
         else:
             returnVal.append({"testName": "Source Directory", "result": "Fail"})
@@ -194,12 +208,27 @@ def test_sshSourceDir(data):
     returnVal = []
 
     # Connect to SSH Server
-        
-    # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
-    if call(['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
+
+    command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
+    
+    #s = ' '
+    #print s.join(command)
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc.communicate()
+
+    if proc.returncode == 0:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
-        if call(['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['collectionSystemTransfer']['sourceDir'], '> /dev/null']) == 0:
+        command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['collectionSystemTransfer']['sourceDir']]
+        
+        #s = ' '
+        #print s.join(command)
+    
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode == 0:
             returnVal.append({"testName": "Source Directory", "result": "Pass"})
         else:
             returnVal.append({"testName": "Source Directory", "result": "Fail"})

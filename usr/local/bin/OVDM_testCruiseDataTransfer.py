@@ -82,6 +82,9 @@ def test_smbDestDir(data):
     else:
         command = ['smbclient', '-L', data['cruiseDataTransfer']['smbServer'], '-W', data['cruiseDataTransfer']['smbDomain'], '-g', '-U', data['cruiseDataTransfer']['smbUser'] + '%' + data['cruiseDataTransfer']['smbPass']]
  
+    #s = ' '
+    #print s.join(command)
+    
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     lines_iterator = iter(proc.stdout.readline, b"")
     foundServer = False
@@ -99,17 +102,20 @@ def test_smbDestDir(data):
     else:
         returnVal.append({"testName": "SMB Server", "result": "Pass"})
         
-    # Create mountpoint
-    mntPoint = tmpdir + '/mntpoint'
-    os.mkdir(mntPoint, 0755)
+        # Create mountpoint
+        mntPoint = tmpdir + '/mntpoint'
+        os.mkdir(mntPoint, 0755)
 
-    
-    if data['cruiseDataTransfer']['smbUser'] == 'guest':
-        command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw'+',domain='+data['cruiseDataTransfer']['smbDomain']]
-    else:
-        command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw'+',username='+data['cruiseDataTransfer']['smbUser']+',password='+data['cruiseDataTransfer']['smbPass']+',domain='+data['cruiseDataTransfer']['smbDomain']]
+        # Mount SMB Share
 
-        #print command
+        if data['cruiseDataTransfer']['smbUser'] == 'guest':
+            command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw' + ',guest' + ',domain=' + data['cruiseDataTransfer']['smbDomain']]
+        else:
+            command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw' + ',username='+data['cruiseDataTransfer']['smbUser'] + ',password=' + data['cruiseDataTransfer']['smbPass'] + ',domain=' + data['cruiseDataTransfer']['smbDomain']]
+
+        #s = ' '
+        #print s.join(command)
+
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
@@ -180,16 +186,48 @@ def test_rsyncDestDir(data):
         rsyncPasswordFile.close()
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
-        
-    if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'], '> /dev/null']) == 0:
+    
+    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer']]
+    
+    #s = ' '
+    #print s.join(command)
+
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc.communicate()
+
+    if proc.returncode == 0:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        if call(['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + data['cruiseDataTransfer']['sourceDir'], '> /dev/null']) == 0:
+        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + data['cruiseDataTransfer']['sourceDir']]
+
+        #s = ' '
+        #print s.join(command)
+
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode == 0:
             returnVal.append({"testName": "Source Directory", "result": "Pass"})
             
-            if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null']) == 0:
+            command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+            
+            #s = ' '
+            #print s.join(command)
+
+            proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            proc.communicate()
+
+            if proc.returncode == 0:
                 returnVal.append({"testName": "Write Test", "result": "Pass"})
-                call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null'])
+                
+                command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+            
+                #s = ' '
+                #print s.join(command)
+
+                proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                proc.communicate()
+
             else:
                 returnVal.append({"testName": "Write Test", "result": "Fail"})
         else:
@@ -202,28 +240,6 @@ def test_rsyncDestDir(data):
 
     # Cleanup
         shutil.rmtree(tmpdir)
-    
-    # Connect to RSYNC Server
-    #if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
-    #    returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
-
-        #sshpass -p Tethys337813 ssh 192.168.1.4 -l survey -o StrictHostKeyChecking=no ls /mnt/vault/FTPRoot/CruiseData
-    #    if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['cruiseDataTransfer']['destDir'], '> /dev/null']) == 0:
-    #        returnVal.append({"testName": "Destination Directory", "result": "Pass"})
-    #        if call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null']) == 0:
-    #            returnVal.append({"testName": "Write Test", "result": "Pass"})
-    #            call(['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null'])
-    #        else:
-    #            returnVal.append({"testName": "Write Test", "result": "Fail"})
-
-    #    else:
-    #        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-    #        returnVal.append({"testName": "Write Test", "result": "Fail"})
-
-    #else:
-    #    returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
-    #    returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-    #    returnVal.append({"testName": "Write Test", "result": "Fail"})
 
     #print json.dumps(returnVal, indent=2)
     return returnVal
@@ -233,15 +249,48 @@ def test_sshDestDir(data):
     returnVal = []
     
     # Connect to SSH Server
-    if call(['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', '> /dev/null']) == 0:
+    
+    command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls'];
+    
+    #s = ' '
+    #print s.join(command)
+
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc.communicate()
+
+    if proc.returncode == 0:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
-        #sshpass -p Tethys337813 ssh 192.168.1.4 -l survey -o StrictHostKeyChecking=no ls /mnt/vault/FTPRoot/CruiseData
-        if call(['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['cruiseDataTransfer']['destDir'], '> /dev/null']) == 0:
+        command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['cruiseDataTransfer']['destDir']]
+        
+        #s = ' '
+        #print s.join(command)
+
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode == 0:
             returnVal.append({"testName": "Destination Directory", "result": "Pass"})
-            if call(['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null']) == 0:
+            
+            command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+            
+            #s = ' '
+            #print s.join(command)
+
+            proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            proc.communicate()
+
+            if proc.returncode == 0:
                 returnVal.append({"testName": "Write Test", "result": "Pass"})
-                call(['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt', '> /dev/null'])
+        
+                command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+            
+                #s = ' '
+                #print s.join(command)
+
+                proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                proc.communicate()
+            
             else:
                 returnVal.append({"testName": "Write Test", "result": "Fail"})
 

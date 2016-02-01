@@ -19,22 +19,10 @@ class CruiseDataTransfers extends Controller {
 
         foreach($transferTypes as $row){
             $option = array('id'=>'transferType'.$i++, 'name'=>'transferType', 'value'=>$row->transferTypeID, 'label'=>$row->transferType);
-            if($checkedType === $row->transferTypeID) {
-                $option['checked']='1';
-            }
             array_push($output, $option);
         }
-
-        if(!isset($checkedType)) {
-            $output[0]['checked']='1';
-        }        
-        return $output;
-    }
-    
-    private function _buildSSHOptions() {
         
-        $trueFalse = array(array('id'=>'rsyncUseSSH0', 'name'=>'rsyncUseSSH', 'value'=>0, 'label'=>'false'), array('id'=>'rsyncUseSSH1', 'name'=>'rsyncUseSSH', 'value'=>1, 'label'=>'true'));
-        return $trueFalse;
+        return $output;
     }
     
     public function __construct(){
@@ -48,8 +36,8 @@ class CruiseDataTransfers extends Controller {
 
     public function index(){
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('cruiseDataTransfers', 'tabs_config');
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
+        $data['javascript'] = array('cruiseDataTransfers', 'tabs_config');
         View::rendertemplate('header',$data);
         View::render('Config/cruiseDataTransfers',$data);
         View::rendertemplate('footer',$data);
@@ -97,62 +85,144 @@ class CruiseDataTransfers extends Controller {
                 $error[] = 'Destination Directory is required';
             } 
 
-            if ($transferType == 2) { // Rsync Server
+            if ($transferType == 1) { //local directory
+                $smbServer = '';
+                $smbUser = '';
+                $smbPass = '';
+                $smbDomain = '';
+                $rsyncServer = '';
+                $rsyncUser = '';
+                $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshPass = '';
+                $nfsServer = '';
+                $nfsUser = '';
+                $nfsPass = '';
+            
+            } elseif ($transferType == 2) { // Rsync Server
+                $rsyncDataCheck = true;
                 if($rsyncServer == ''){
                     $error[] = 'Rsync Server is required';
+                    $rsyncDataCheck = false;
                 } 
 
                 if($rsyncUser == ''){
                     $error[] = 'Rsync Username is required';
+                    $rsyncDataCheck = false;
                 } 
 
-                if($rsyncPass == ''){
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
                     $error[] = 'Rsync Password is required';
-                } 
+                    $rsyncDataCheck = false;
+                }
+                
+                if($rsyncDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
 
             } elseif ($transferType == 3) { // SMB Share
+                $smbDataCheck = true;
                 if($smbServer == ''){
                     $error[] = 'SMB Server is required';
+                    $smbDataCheck = false;
                 } 
 
                 if($smbUser == ''){
                     $error[] = 'SMB Username is required';
+                    $smbDataCheck = false;
                 } 
 
-                if($smbPass == ''){
+                if($smbUser != 'guest' && $smbPass == ''){
                     $error[] = 'SMB Password is required';
+                    $smbDataCheck = false;
                 } 
             
                 if($smbDomain == ''){
                     $smbDomain = 'WORKGROUP';
+                    $smbDataCheck = false;
+                }
+                
+                if($smbDataCheck) {
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 }
                         
             } elseif ($transferType == 4) { // SSH Server
+                $sshDataCheck = true;
                 if($sshServer == ''){
                     $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
                 } 
 
                 if($sshUser == ''){
                     $error[] = 'SSH Username is required';
+                    $sshDataCheck = false;
                 } 
 
                 if($sshPass == ''){
                     $error[] = 'SSH Password is required';
-                } 
+                    $sshDataCheck = false;
+                }
+                
+                if($sshDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
 
             } elseif ($transferType == 5) { // NFS Server
+                $nfsDataCheck = true;
                 if($nfsServer == ''){
                     $error[] = 'NFS Server is required';
+                    $nfsDataCheck = false;
                 } 
 
                 if($nfsUser == ''){
                     $error[] = 'NFS Username is required';
+                    $nfsDataCheck = false;
                 } 
 
-                if($nfsPass == ''){
+                if($nfsUser != 'anonymous' && $nfsPass == ''){
                     $error[] = 'NFS Password is required';
-                } 
-
+                    $nfsDataCheck = false;
+                }
+                
+                if($nfsDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                }
             }
 
             if(!$error){
@@ -219,61 +289,144 @@ class CruiseDataTransfers extends Controller {
                 $error[] = 'Destination Directory is required';
             } 
 
-            if ($transferType == 2) { // Rsync Server
+            if ($transferType == 1) { //local directory
+                $smbServer = '';
+                $smbUser = '';
+                $smbDomain = '';
+                $smbPass = '';
+                $rsyncServer = '';
+                $rsyncUser = '';
+                $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshPass = '';
+                $nfsServer = '';
+                $nfsUser = '';
+                $nfsPass = '';
+            
+            } elseif ($transferType == 2) { // Rsync Server
+                $rsyncDataCheck = true;
                 if($rsyncServer == ''){
                     $error[] = 'Rsync Server is required';
+                    $rsyncDataCheck = false;
                 } 
 
                 if($rsyncUser == ''){
                     $error[] = 'Rsync Username is required';
+                    $rsyncDataCheck = false;
                 } 
 
-                if($rsyncPass == ''){
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
                     $error[] = 'Rsync Password is required';
-                } 
+                    $rsyncDataCheck = false;
+                }
+                
+                if($rsyncDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbPass = '';
+                    $smbDomain = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
 
             } elseif ($transferType == 3) { // SMB Share
+                $smbDataCheck = true;
                 if($smbServer == ''){
                     $error[] = 'SMB Server is required';
+                    $smbDataCheck = false;
                 } 
 
                 if($smbUser == ''){
                     $error[] = 'SMB Username is required';
+                    $smbDataCheck = false;
                 } 
 
-                if($smbPass == ''){
+                if($smbUser != 'guest' && $smbPass == ''){
                     $error[] = 'SMB Password is required';
+                    $smbDataCheck = false;
                 } 
             
                 if($smbDomain == ''){
                     $smbDomain = 'WORKGROUP';
-                } 
+                    $smbDataCheck = false;
+                }
+                
+                if($smbDataCheck) {
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
             
             } elseif ($transferType == 4) { // SSH Server
+                $sshDataCheck = true;
                 if($sshServer == ''){
                     $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
                 } 
 
                 if($sshUser == ''){
                     $error[] = 'SSH Username is required';
+                    $sshDataCheck = false;
                 } 
 
                 if($sshPass == ''){
                     $error[] = 'SSH Password is required';
+                    $sshDataCheck = false;
+                }
+                
+                if($sshDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
                 }
                 
             } elseif ($transferType == 5) { // NFS Server
+                $nfsDataCheck = true;
                 if($nfsServer == ''){
                     $error[] = 'NFS Server is required';
+                    $nfsDataCheck = false;
                 } 
 
                 if($nfsUser == ''){
                     $error[] = 'NFS Username is required';
+                    $nfsDataCheck = false;
                 } 
 
-                if($nfsPass == ''){
+                if($nfsUser != 'anonymous' && $nfsPass == ''){
                     $error[] = 'NFS Password is required';
-                } 
+                    $nfsDataCheck = false;
+                }
+                
+                if($nfsDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                }
             }
 
             if(!$error){
@@ -311,23 +464,6 @@ class CruiseDataTransfers extends Controller {
 
                 #submit job to Gearman, wait for results
                 $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
-
-                #$data['title'] = 'Configuration';
-                #$data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-                #$data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
-
-                #additional data needed for view
-                #$data['row'][0]->name = $_POST['name'];
-                #$data['row'][0]->longName = $_POST['longName'];
-                #$data['row'][0]->transferType = $_POST['transferType'];
-                #$data['row'][0]->destDir = $_POST['destDir'];
-                #$data['row'][0]->rsyncServer = $_POST['rsyncServer'];
-                #$data['row'][0]->rsyncUser = $_POST['rsyncUser'];
-                #$data['row'][0]->rsyncPass = $_POST['rsyncPass'];
-                #$data['row'][0]->smbServer = $_POST['smbServer'];
-                #$data['row'][0]->smbUser = $_POST['smbUser'];
-                #$data['row'][0]->smbPass = $_POST['smbPass'];
-                #$data['row'][0]->smbDomain = $_POST['smbDomain'];
             
                 $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;     
             }
@@ -379,61 +515,143 @@ class CruiseDataTransfers extends Controller {
                 $error[] = 'Destination Directory is required';
             } 
 
-            if ($transferType == 2) { //rsync
+            if ($transferType == 1) { //local directory
+                $smbServer = '';
+                $smbUser = '';
+                $smbDomain = '';
+                $smbPass = '';
+                $rsyncServer = '';
+                $rsyncUser = '';
+                $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshPass = '';
+                $nfsServer = '';
+                $nfsUser = '';
+                $nfsPass = '';
+            
+            } elseif ($transferType == 2) { //rsync
+                $rsyncDataCheck = true;
                 if($rsyncServer == ''){
                     $error[] = 'Rsync Server is required';
+                    $rsyncDataCheck = false;
                 } 
 
                 if($rsyncUser == ''){
                     $error[] = 'Rsync Username is required';
+                    $rsyncDataCheck = false;
                 } 
 
-                if($rsyncPass == ''){
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
                     $error[] = 'Rsync Password is required';
-                } 
+                    $rsyncDataCheck = false;
+                }
+                
+                if($rsyncDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
 
             } elseif ($transferType == 3) { //smb
+                $smbDataCheck = true;
                 if($smbServer == ''){
                     $error[] = 'SMB Server is required';
+                    $smbDataCheck = false;
                 } 
 
                 if($smbUser == ''){
                     $error[] = 'SMB Username is required';
+                    $smbDataCheck = false;
                 } 
 
-                if($smbPass == ''){
+                if($smbUser != 'guest' && $smbPass == ''){
                     $error[] = 'SMB Password is required';
+                    $smbDataCheck = false;
                 } 
                         
                 if($smbDomain == ''){
                     $smbDomain = 'WORKGROUP';
-                } 
-
+                    $smbDataCheck = false;
+                }
+                
+                if($smbDataCheck) {
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
             } elseif ($transferType == 4) { //ssh
+                $sshDataCheck = true;
                 if($sshServer == ''){
                     $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
                 } 
 
                 if($sshUser == ''){
                     $error[] = 'SSH Username is required';
+                    $sshDataCheck = false;
                 } 
 
                 if($sshPass == ''){
                     $error[] = 'SSH Password is required';
+                    $sshDataCheck = false;
                 } 
-                        
+                
+                if($sshDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
+                
             } elseif ($transferType == 5) { //nfs
+                $nfsDataCheck = true;
                 if($nfsServer == ''){
                     $error[] = 'NFS Server is required';
+                    $nfsDataCheck = false;
                 } 
 
                 if($nfsUser == ''){
                     $error[] = 'NFS Username is required';
+                    $nfsDataCheck = false;
                 } 
 
-                if($nfsPass == ''){
+                if($nfsUser != 'anonymous' && $nfsPass == ''){
                     $error[] = 'NFS Password is required';
+                    $nfsDataCheck = false;
                 } 
+                
+                if($nfsDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                }
             }
                 
             if(!$error){
@@ -457,7 +675,6 @@ class CruiseDataTransfers extends Controller {
                     'nfsPass' => $nfsPass,
 
                 );
-            
                 
                 $where = array('cruiseDataTransferID' => $id);
                 $this->_cruiseDataTransfersModel->updateCruiseDataTransfer($postdata,$where);
@@ -517,10 +734,6 @@ class CruiseDataTransfers extends Controller {
             #submit job to Gearman, wait for results
             $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
 
-            #$data['title'] = 'Configuration';
-            #$data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-            #$data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
-
             #additional data needed for view
             $data['row'][0]->name = $_POST['name'];
             $data['row'][0]->longName = $_POST['longName'];
@@ -543,9 +756,31 @@ class CruiseDataTransfers extends Controller {
             $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;      
         }
         
+        $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
+        
         View::rendertemplate('header',$data);
         View::render('Config/editCruiseDataTransfers',$data,$error);
         View::rendertemplate('footer',$data);
+    }
+    
+    public function delete($id){
+                
+        $where = array('cruiseDataTransferID' => $id);
+        $this->_cruiseDataTransfersModel->deleteCruiseDataTransfer($where);
+        Session::set('message','Collection System Transfer Deleted');
+        Url::redirect('config/cruiseDataTransfers');
+    }
+    
+    public function enable($id) {
+
+        $this->_cruiseDataTransfersModel->enableCruiseDataTransfer($id);
+        Url::redirect('config/cruiseDataTransfers');
+    }
+    
+    public function disable($id) {
+
+        $this->_cruiseDataTransfersModel->disableCruiseDataTransfer($id);
+        Url::redirect('config/cruiseDataTransfers');
     }
     
     public function test($id) {
@@ -564,13 +799,6 @@ class CruiseDataTransfers extends Controller {
 
         #submit job to Gearman, wait for results
         $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
-        
-        # update collectionSystemTransfer status if needed
-        #if(strcmp($data['testResults'][sizeof($data['testResults'])-1]->result, "Fail") === 0) {
-        #    $this->_collectionSystemTransfersModel->setError_collectionSystemTransfer($id);
-        #} else {
-        #    $this->_collectionSystemTransfersModel->setIdle_collectionSystemTransfer($id);
-        #}
 
         $data['title'] = 'Configuration';
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
@@ -604,15 +832,7 @@ class CruiseDataTransfers extends Controller {
         #submit job to Gearman
         $job_handle = $gmc->doBackground("runCruiseDataTransfer", json_encode($gmData));
     
-    //    $done = false;
-    //    do
-    //    {
-            sleep(1);
-    //        $stat = $gmc->jobStatus($job_handle);
-    //        if ($stat[0]) // the job is known so it has been added to gearman 
-    //            $done = true;
-    //    }
-    //    while(!$done);
+        sleep(1);
         
         Url::redirect('config/cruiseDataTransfers');
     }
@@ -632,37 +852,8 @@ class CruiseDataTransfers extends Controller {
         #submit job to Gearman
         $job_handle = $gmc->doBackground("stopJob", json_encode($gmData));
     
-    //    $done = false;
-    //    do
-    //    {
-            sleep(1);
-    //        $stat = $gmc->jobStatus($job_handle);
-    //        if ($stat[0]) // the job is known so it has been added to gearman 
-    //            $done = true;
-    //    }
-    //    while(!$done);
-        
-        Url::redirect('config/cruiseDataTransfers');
-    }
+        sleep(1);
     
-    public function delete($id){
-                
-        $where = array('cruiseDataTransferID' => $id);
-        $this->_cruiseDataTransfersModel->deleteCruiseDataTransfer($where);
-        Session::set('message','Collection System Transfer Deleted');
         Url::redirect('config/cruiseDataTransfers');
     }
-    
-    public function enable($id) {
-
-        $this->_cruiseDataTransfersModel->enableCruiseDataTransfer($id);
-        Url::redirect('config/cruiseDataTransfers');
-    }
-    
-    public function disable($id) {
-
-        $this->_cruiseDataTransfersModel->disableCruiseDataTransfer($id);
-        Url::redirect('config/cruiseDataTransfers');
-    }
-
 }

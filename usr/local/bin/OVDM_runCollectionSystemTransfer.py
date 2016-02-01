@@ -137,8 +137,13 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
 
-    # /usr/bin/rsync -ratlz --rsh="/usr/bin/sshpass -p password ssh -o StrictHostKeyChecking=no -l username" src_path  dest_path
-    proc = subprocess.Popen(['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/'],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    
+    command = ['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/']
+    
+    #s = ' '
+    #print s.join(command)
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     rsyncFileList = out
 
@@ -212,7 +217,12 @@ def build_sshFilelist(data, filters, stalness, cruiseStartDate):
     #print threshold_time
     rsyncFileList = ''
     
-    proc = subprocess.Popen(['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['sshUser'] + '@' + data['collectionSystemTransfer']['sshServer'] + ':' + sourceDir + '/'],stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['sshUser'] + '@' + data['collectionSystemTransfer']['sshServer'] + ':' + sourceDir + '/']
+    
+    #s = ' '
+    #print s.join(command)
+        
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     rsyncFileList = out
         
@@ -423,7 +433,9 @@ def transfer_localSourceDir(data, worker, job):
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
     command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
-    #print command
+    
+    #s = ' '
+    #print s.join(command)
     
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
     lines_iterator = iter(popen.stdout.readline, b"")
@@ -472,9 +484,23 @@ def transfer_smbSourceDir(data, worker, job):
     # Mount SMB Share
     #print "Mount SMB Share"
     if data['collectionSystemTransfer']['smbUser'] == 'guest':
-        subprocess.call(['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',domain='+data['collectionSystemTransfer']['smbDomain']])
+        
+        command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',guest' + ',domain='+data['collectionSystemTransfer']['smbDomain']]
+        
+        #s = ' '
+        #print s.join(command)
+    
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+        
     else:
-        subprocess.call(['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']])
+        command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']]
+        
+        #s = ' '
+        #print s.join(command)
+    
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
 
     rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
     destDir = build_destDir(rawDestDir, data)
@@ -564,15 +590,8 @@ def transfer_rsyncSourceDir(data, worker, job):
     rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
     sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
     
-    #print "destDir: " + destDir
-    #print "sourceDir: " + sourceDir
-        
+    #print "Build file list"    
     files = build_rsyncFilelist(data, filters, staleness, cruiseStartDate)
-    #print json.dumps(files, indent=1)
-    
-    #print "Build destination directories"
-    #print files['include']
-    #build_destDirectories(destDir, files['include'])
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -631,7 +650,6 @@ def transfer_rsyncSourceDir(data, worker, job):
         #returnVal.append({"testName": "Writing temporary rsync filelist file", "result": "Pass"})
     
     
-    #print 'rsync -ti --no-motd --password-file=' + rsyncPasswordFilePath + ' rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/' + filename + ' ' + destDir + '/' + filename
     command = ['rsync', '-ti', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir, destDir]
         
     #print command
@@ -657,8 +675,9 @@ def transfer_rsyncSourceDir(data, worker, job):
 
 def transfer_sshSourceDir(data, worker, job):
 
-    #print "Transfer from RSYNC Server"
 #    print 'DECODED Data:', json.dumps(data, indent=2)
+
+    #print "Transfer from SSH Server"
     staleness = data['collectionSystemTransfer']['staleness']
     cruiseStartDate = data['cruiseStartDate']
 
@@ -672,23 +691,15 @@ def transfer_sshSourceDir(data, worker, job):
     destDir = build_destDir(rawDestDir, data).rstrip('/')
     rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
     sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
-    
-    #print "destDir: " + destDir
-    #print "sourceDir: " + sourceDir
         
     files = build_sshFilelist(data, filters, staleness, cruiseStartDate)
-    #print json.dumps(files, indent=1)
     
-    #print "Build destination directories"
-    #print files['include']
-    #build_destDirectories(destDir, files['include'])
+    count = 1
+    fileCount = len(files['include'])
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
 
-    count = 1
-    fileCount = len(files['include'])
-            
     sshFileListPath = tmpdir + '/sshFileList.txt'
         
     try:
@@ -715,10 +726,10 @@ def transfer_sshSourceDir(data, worker, job):
         #returnVal.append({"testName": "Writing temporary ssh filelist file", "result": "Pass"})
     
     
-    #print 'sshpass -p ' + data['collectionSystemTransfer']['sshPass'] + ' rsync -ti -e ssh -c arcfour' + data['collectionSystemTransfer']['sshUser'] + '@' + data['collectionSystemTransfer']['sshServer'] + ':' + sourceDir + '/' + filename + ' ' + destDir + '/' + filename
     command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['sshUser'] + '@' + data['collectionSystemTransfer']['sshServer'] + ':' + sourceDir, destDir]
 
-    #print command
+    #s = ' '
+    #print s.join(command)
     
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
     lines_iterator = iter(popen.stdout.readline, b"")

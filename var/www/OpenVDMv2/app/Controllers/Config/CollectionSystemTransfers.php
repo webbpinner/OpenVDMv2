@@ -9,8 +9,7 @@ use Helpers\Session;
 class CollectionSystemTransfers extends Controller {
 
     private $_collectionSystemTransfersModel,
-            $_transferTypesModel,
-            $_messagesModel;
+            $_transferTypesModel;
     
     private function _buildTransferTypesOptions() {
         $transferTypes = $this->_transferTypesModel->getTransferTypes();
@@ -24,12 +23,6 @@ class CollectionSystemTransfers extends Controller {
         }
         
         return $output;
-    }
-    
-    private function _buildSSHOptions() {
-        
-        $trueFalse = array(array('id'=>'rsyncUseSSH0', 'name'=>'rsyncUseSSH', 'value'=>'0', 'label'=>'No'), array('id'=>'rsyncUseSSH1', 'name'=>'rsyncUseSSH', 'value'=>'1', 'label'=>'Yes'));
-        return $trueFalse;
     }
     
     private function _buildStalenessOptions() {
@@ -72,7 +65,6 @@ class CollectionSystemTransfers extends Controller {
 
         $this->_collectionSystemTransfersModel = new \Models\Config\CollectionSystemTransfers();
         $this->_transferTypesModel = new \Models\Config\TransferTypes();
-        $this->_messagesModel = new \Models\Config\Messages();
     }
         
     public function index(){
@@ -85,7 +77,7 @@ class CollectionSystemTransfers extends Controller {
     }
 
     public function add(){
-        $data['title'] = 'Collection System Transfers';
+        $data['title'] = 'Add Collection System Transfers';
         $data['javascript'] = array('collectionSystemTransfersFormHelper', 'tabs_config');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
@@ -314,7 +306,6 @@ class CollectionSystemTransfers extends Controller {
                 );
 
                 $this->_collectionSystemTransfersModel->insertCollectionSystemTransfer($postdata);
-
                 Session::set('message','Collection System Transfer Added');
                 Url::redirect('config/collectionSystemTransfers');
             }
@@ -544,9 +535,7 @@ class CollectionSystemTransfers extends Controller {
                     'status' => '4',
                     'enable' => '0',
                 );
-                var_dump($gmData['collectionSystemTransfer']);
-                //$gmData['collectionSystemTransfer'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
-            
+                
                 # create the gearman client
                 $gmc= new \GearmanClient();
 
@@ -555,33 +544,8 @@ class CollectionSystemTransfers extends Controller {
 
                 #submit job to Gearman, wait for results
                 $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)));
-
-                #$data['title'] = 'Configuration';
-                #$data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-                #$data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
             
-
-            #additional data needed for view
-            #$data['row'][0]->name = $_POST['name'];
-            #$data['row'][0]->longName = $_POST['longName'];
-            #$data['row'][0]->transferType = $_POST['transferType'];
-            #$data['row'][0]->sourceDir = $_POST['sourceDir'];
-            #$data['row'][0]->destDir = $_POST['destDir'];
-            #$data['row'][0]->staleness = $_POST['staleness'];
-            #$data['row'][0]->useStartDate = $_POST['useStartDate'];
-            #$data['row'][0]->rsyncServer = $_POST['rsyncServer'];
-            #$data['row'][0]->rsyncUseSSH = $_POST['rsyncUseSSH'];
-            #$data['row'][0]->rsyncUser = $_POST['rsyncUser'];
-            #$data['row'][0]->rsyncPass = $_POST['rsyncPass'];
-            #$data['row'][0]->smbServer = $_POST['smbServer'];
-            #$data['row'][0]->smbUser = $_POST['smbUser'];
-            #$data['row'][0]->smbPass = $_POST['smbPass'];
-            #$data['row'][0]->smbDomain = $_POST['smbDomain'];
-            #$data['row'][0]->includeFilter = $_POST['includeFilter'];
-            #$data['row'][0]->excludeFilter = $_POST['excludeFilter'];
-            #$data['row'][0]->ignoreFilter = $_POST['ignoreFilter'];
-            
-            $data['testCollectionSystemTransferName'] = $gmData['collectionSystemTransfer']->name;
+                $data['testCollectionSystemTransferName'] = $gmData['collectionSystemTransfer']->name;
             }
         }
 
@@ -674,7 +638,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncDataCheck = false;
                 } 
 
-                if(($rsyncUseSSH == 1  && $rsyncPass == '') || ($rsyncUser != 'anonymous' && $rsyncPass == '')){
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
                     $error[] = 'Rsync Password is required';
                     $rsyncDataCheck = false;
                 }
@@ -725,9 +689,65 @@ class CollectionSystemTransfers extends Controller {
                     $nfsUser = '';
                     $nfsPass = '';
                 }
-            
-//            } elseif ($transferType == 4) { //push
-            
+            } elseif ($transferType == 4) { //ssh
+                $sshDataCheck = true;
+                if($sshServer == ''){
+                    $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
+                } 
+
+                if($sshUser == ''){
+                    $error[] = 'SSH Username is required';
+                    $sshDataCheck = false;
+                } 
+
+                if($sshPass == ''){
+                    $error[] = 'SSH Password is required';
+                    $sshDataCheck = false;
+                }
+                
+                if($sshDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $nfsServer = '';
+                    $nfsUser = '';
+                    $nfsPass = '';
+                }
+                        
+            } elseif ($transferType == 5) { //nfs
+                $nfsDataCheck = true;
+                if($nfsServer == ''){
+                    $error[] = 'NFS Server is required';
+                    $nfsDataCheck = false;
+                } 
+
+                if($nfsUser == ''){
+                    $error[] = 'NFS Username is required';
+                    $nfsDataCheck = false;
+                } 
+
+                if($nfsUser != 'anonymous' && $nfsPass == ''){
+                    $error[] = 'NFS Password is required';
+                    $nfsDataCheck = false;
+                } 
+                
+                if($nfsDataCheck) {
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
+                }
             }
                 
             if(!$error){
@@ -755,8 +775,6 @@ class CollectionSystemTransfers extends Controller {
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
-//                    'status' => $status,
-//                    'enable' => $enable
                 );
             
                 
@@ -834,10 +852,6 @@ class CollectionSystemTransfers extends Controller {
 
             #submit job to Gearman, wait for results
             $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)));
-
-            #$data['title'] = 'Configuration';
-            #$data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-            #$data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
 
             #additional data needed for view
             $data['row'][0]->name = $_POST['name'];
