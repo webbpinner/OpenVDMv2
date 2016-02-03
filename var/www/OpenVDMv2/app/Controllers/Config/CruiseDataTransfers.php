@@ -64,8 +64,8 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
-            $nfsUser = $_POST['nfsUser'];
-            $nfsPass = $_POST['nfsPass'];
+            //$nfsUser = $_POST['nfsUser'];
+            //$nfsPass = $_POST['nfsPass'];
             $status = 3;
             $enable = 0;
 
@@ -97,8 +97,8 @@ class CruiseDataTransfers extends Controller {
                 $sshUser = '';
                 $sshPass = '';
                 $nfsServer = '';
-                $nfsUser = '';
-                $nfsPass = '';
+                //$nfsUser = '';
+                //$nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -126,8 +126,8 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 3) { // SMB Share
@@ -160,8 +160,8 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
                         
             } elseif ($transferType == 4) { // SSH Server
@@ -190,8 +190,8 @@ class CruiseDataTransfers extends Controller {
                     $rsyncUser = '';
                     $rsyncPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 5) { // NFS Server
@@ -201,15 +201,15 @@ class CruiseDataTransfers extends Controller {
                     $nfsDataCheck = false;
                 } 
 
-                if($nfsUser == ''){
-                    $error[] = 'NFS Username is required';
-                    $nfsDataCheck = false;
-                } 
+                //if($nfsUser == ''){
+                //    $error[] = 'NFS Username is required';
+                //    $nfsDataCheck = false;
+                //} 
 
-                if($nfsUser != 'anonymous' && $nfsPass == ''){
-                    $error[] = 'NFS Password is required';
-                    $nfsDataCheck = false;
-                }
+                //if($nfsUser != 'anonymous' && $nfsPass == ''){
+                //    $error[] = 'NFS Password is required';
+                //    $nfsDataCheck = false;
+                //}
                 
                 if($nfsDataCheck) {
                     $smbServer = '';
@@ -242,8 +242,8 @@ class CruiseDataTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
-                    'nfsUser' => $nfsUser,
-                    'nfsPass' => $nfsPass,
+                    //'nfsUser' => $nfsUser,
+                    //'nfsPass' => $nfsPass,
                     'status' => $status,
                     'enable' => $enable
                 );
@@ -268,8 +268,8 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
-            $nfsUser = $_POST['nfsUser'];
-            $nfsPass = $_POST['nfsPass'];
+            //$nfsUser = $_POST['nfsUser'];
+            //$nfsPass = $_POST['nfsPass'];
             $status = 3;
             $enable = 0;
 
@@ -301,8 +301,8 @@ class CruiseDataTransfers extends Controller {
                 $sshUser = '';
                 $sshPass = '';
                 $nfsServer = '';
-                $nfsUser = '';
-                $nfsPass = '';
+                //$nfsUser = '';
+                //$nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -330,8 +330,8 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 3) { // SMB Share
@@ -364,8 +364,8 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             
             } elseif ($transferType == 4) { // SSH Server
@@ -394,8 +394,8 @@ class CruiseDataTransfers extends Controller {
                     $rsyncUser = '';
                     $rsyncPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
                 
             } elseif ($transferType == 5) { // NFS Server
@@ -405,15 +405,15 @@ class CruiseDataTransfers extends Controller {
                     $nfsDataCheck = false;
                 } 
 
-                if($nfsUser == ''){
-                    $error[] = 'NFS Username is required';
-                    $nfsDataCheck = false;
-                } 
+                //if($nfsUser == ''){
+                //    $error[] = 'NFS Username is required';
+                //    $nfsDataCheck = false;
+                //} 
 
-                if($nfsUser != 'anonymous' && $nfsPass == ''){
-                    $error[] = 'NFS Password is required';
-                    $nfsDataCheck = false;
-                }
+                //if($nfsUser != 'anonymous' && $nfsPass == ''){
+                //    $error[] = 'NFS Password is required';
+                //    $nfsDataCheck = false;
+                //}
                 
                 if($nfsDataCheck) {
                     $smbServer = '';
@@ -450,8 +450,8 @@ class CruiseDataTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
-                    'nfsUser' => $nfsUser,
-                    'nfsPass' => $nfsPass,
+                    //'nfsUser' => $nfsUser,
+                    //'nfsPass' => $nfsPass,
                     'status' => '4',
                     'enable' => '0'
                     );
@@ -496,8 +496,8 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
-            $nfsUser = $_POST['nfsUser'];
-            $nfsPass = $_POST['nfsPass'];
+            //$nfsUser = $_POST['nfsUser'];
+            //$nfsPass = $_POST['nfsPass'];
 
             if($name == ''){
                 $error[] = 'Name is required';
@@ -527,8 +527,8 @@ class CruiseDataTransfers extends Controller {
                 $sshUser = '';
                 $sshPass = '';
                 $nfsServer = '';
-                $nfsUser = '';
-                $nfsPass = '';
+                //$nfsUser = '';
+                //$nfsPass = '';
             
             } elseif ($transferType == 2) { //rsync
                 $rsyncDataCheck = true;
@@ -556,8 +556,8 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 3) { //smb
@@ -590,8 +590,8 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             } elseif ($transferType == 4) { //ssh
                 $sshDataCheck = true;
@@ -619,8 +619,8 @@ class CruiseDataTransfers extends Controller {
                     $rsyncUser = '';
                     $rsyncPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
                 
             } elseif ($transferType == 5) { //nfs
@@ -630,15 +630,15 @@ class CruiseDataTransfers extends Controller {
                     $nfsDataCheck = false;
                 } 
 
-                if($nfsUser == ''){
-                    $error[] = 'NFS Username is required';
-                    $nfsDataCheck = false;
-                } 
+                //if($nfsUser == ''){
+                //    $error[] = 'NFS Username is required';
+                //    $nfsDataCheck = false;
+                //} 
 
-                if($nfsUser != 'anonymous' && $nfsPass == ''){
-                    $error[] = 'NFS Password is required';
-                    $nfsDataCheck = false;
-                } 
+                //if($nfsUser != 'anonymous' && $nfsPass == ''){
+                //    $error[] = 'NFS Password is required';
+                //    $nfsDataCheck = false;
+                //} 
                 
                 if($nfsDataCheck) {
                     $smbServer = '';
@@ -671,8 +671,8 @@ class CruiseDataTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
-                    'nfsUser' => $nfsUser,
-                    'nfsPass' => $nfsPass,
+                    //'nfsUser' => $nfsUser,
+                    //'nfsPass' => $nfsPass,
 
                 );
                 
@@ -697,8 +697,8 @@ class CruiseDataTransfers extends Controller {
                 $data['row'][0]->sshUser = $sshUser;
                 $data['row'][0]->sshPass = $sshPass;
                 $data['row'][0]->nfsServer = $nfsServer;
-                $data['row'][0]->nfsUser = $nfsUser;
-                $data['row'][0]->nfsPass = $nfsPass;
+                //$data['row'][0]->nfsUser = $nfsUser;
+                //$data['row'][0]->nfsPass = $nfsPass;
             }
         } else if(isset($_POST['inlineTest'])){
             $_warehouseModel = new \Models\Warehouse();
@@ -722,8 +722,8 @@ class CruiseDataTransfers extends Controller {
             $gmData['cruiseDataTransfer']->sshUser = $_POST['sshUser'];
             $gmData['cruiseDataTransfer']->sshPass = $_POST['sshPass'];
             $gmData['cruiseDataTransfer']->nfsServer = $_POST['nfsServer'];
-            $gmData['cruiseDataTransfer']->nfsUser = $_POST['nfsUser'];
-            $gmData['cruiseDataTransfer']->nfsPass = $_POST['nfsPass'];
+            //$gmData['cruiseDataTransfer']->nfsUser = $_POST['nfsUser'];
+            //$gmData['cruiseDataTransfer']->nfsPass = $_POST['nfsPass'];
             
             # create the gearman client
             $gmc= new \GearmanClient();
@@ -750,8 +750,8 @@ class CruiseDataTransfers extends Controller {
             $data['row'][0]->sshUser = $_POST['sshUser'];
             $data['row'][0]->sshPass = $_POST['sshPass'];
             $data['row'][0]->nfsServer = $_POST['nfsServer'];
-            $data['row'][0]->nfsUser = $_POST['nfsUser'];
-            $data['row'][0]->nfsPass = $_POST['nfsPass'];
+            //$data['row'][0]->nfsUser = $_POST['nfsUser'];
+            //$data['row'][0]->nfsPass = $_POST['nfsPass'];
             
             $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;      
         }

@@ -414,6 +414,103 @@ def transfer_sshDestDir(data, worker, job):
     shutil.rmtree(tmpdir)    
     return files
 
+def transfer_nfsDestDir(data, worker, job):
+
+    #print 'DECODED Data:', json.dumps(data, indent=2)
+    
+    #print "Transfer from NFS Server"
+    filters = {'includeFilter': '*','excludeFilter': '','ignoreFilter': ''}
+
+    # Create temp directory
+    #print "Create Temp Directory"
+    tmpdir = tempfile.mkdtemp()
+ 
+    # Create mountpoint
+    #print "Create Mountpoint"
+    mntPoint = tmpdir + '/mntpoint'
+    os.mkdir(mntPoint, 0755)
+
+    # Mount SMB Share
+    #print "Mount NFS Server"
+    command = ['sudo', 'mount', '-t', 'nfs', data['cruiseDataTransfer']['nfsServer'], mntPoint, '-o', 'rw' + ',vers=2' + ',hard' + ',intr']
+
+    #s = ' '
+    #print s.join(command)
+
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc.communicate()
+
+    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']
+    destDir = mntPoint+data['cruiseDataTransfer']['destDir'].rstrip('/') + '/'
+
+    #print "Build file list"
+    files = build_filelist(sourceDir, filters)
+    
+    #print "Build destination directories"
+    #build_destDirectories(destDir, files['include'])
+
+    count = 0
+    fileCount = len(files['include'])
+    
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
+        
+    try:
+        #print "Open rsync password file"
+        rsyncFileListFile = open(rsyncFileListPath, 'w')
+
+        #print "Saving rsync password file"
+        #print '\n'.join([data['cruiseID'] + str(x) for x in files['include']])
+        rsyncFileListFile.write('\n'.join([data['cruiseID'] + str(x) for x in files['include']]))
+
+    except IOError:
+        print "Error Saving temporary rsync filelist file"
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncFileListFile.close()
+            
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
+
+    finally:
+        #print "Closing rsync filelist file"
+        rsyncFileListFile.close()
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+    
+    
+    command = ['rsync', '-rlptDi', '--files-from=' + rsyncFileListPath, data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir'], destDir]
+    
+    #s = ' '
+    #print s.join(command)
+    
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        #print(line) # yield line
+        if line.startswith( '>f+++++++++' ):
+            files['new'].append(line.split(' ')[1])
+            count += 1
+        elif line.startswith( '>f.' ):
+            files['updated'].append(line.split(' ')[1])
+            count += 1
+
+        worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
+            
+        if worker.stop:
+            print "Stopping"
+            break
+    
+    #print "Unmount NFS Server"
+    subprocess.call(['sudo', 'umount', mntPoint])
+    
+    #print "Cleanup"
+    shutil.rmtree(tmpdir)
+
+    #print 'DECODED Files:', json.dumps(files, indent=2)
+    return files
+
 def setError_cruiseDataTransfer(job):
     dataObj = json.loads(job.data)
 
@@ -560,7 +657,7 @@ def task_callback(gearman_worker, job):
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(job, 2, 10)
-    #print "Transfer Data"
+    print "Transfer Data"
     if dataObj['cruiseDataTransfer']['transferType'] == "1": # Local Directory
         job_results['files'] = transfer_localDestDir(dataObj, gearman_worker, job)
     elif  dataObj['cruiseDataTransfer']['transferType'] == "2": # Rsync Server

@@ -172,8 +172,8 @@ def test_rsyncSourceDir(data):
     
     command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer']]
     
-    s = ' '
-    print s.join(command)
+    #s = ' '
+    #print s.join(command)
     
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
@@ -240,14 +240,82 @@ def test_sshSourceDir(data):
     return returnVal
 
 def test_nfsSourceDir(data):
-    
     returnVal = []
 
-    # Connect to NFS Server
-    returnVal.append({"testName": "NFS Connection", "result": "Pass"})
-    returnVal.append({"testName": "Source Directory", "result": "Pass"})
-        
-    #print json.dumps(returnVal, indent=2)
+    # Create temp directory
+    #print "Create Temp Directory"
+    tmpdir = tempfile.mkdtemp()
+ 
+    command = []
+    # Verify the server exists
+    #if data['collectionSystemTransfer']['nfsUser'] == 'guest':
+    command = ['rpcinfo', '-s', data['collectionSystemTransfer']['nfsServer'].split(":")[0]]
+    #else:
+    #    command = ['rpcinfo', '-s', data['collectionSystemTransfer']['nfsServer'].split(":")[0]]
+    
+    #s = ' '
+    #print s.join(command)
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    lines_iterator = iter(proc.stdout.readline, b"")
+    
+    foundNFS = False
+    foundMountd = False
+    
+    for line in lines_iterator:
+        if foundNFS and foundMountd:
+            break
+        lineArray = line.split()
+        if lineArray[3] == 'nfs':
+            foundNFS = True
+            continue
+        if lineArray[3] == 'mountd':
+            foundMountd = True
+            continue
+    
+    if not foundNFS or not foundMountd:
+        returnVal.append({"testName": "NFS Server", "result": "Fail"})
+        returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})        
+        returnVal.append({"testName": "Source Directory", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "NFS Server", "result": "Pass"})
+    
+        # Create mountpoint
+        mntPoint = tmpdir + '/mntpoint'
+        os.mkdir(mntPoint, 0755)
+
+        # Mount NFS Share
+
+        #if data['collectionSystemTransfer']['nfsUser'] == 'guest':
+        command = ['sudo', 'mount', '-t', 'nfs', data['collectionSystemTransfer']['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
+        #else:
+        #    command = ['sudo', 'mount', '-t', 'nfs', data['collectionSystemTransfer']['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
+
+        #s = ' '
+        #print s.join(command)
+
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode != 0:
+            returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})
+            returnVal.append({"testName": "Source Directory", "result": "Fail"})
+        else:
+            returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
+
+            # If mount is successful, test source directory
+            sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir']
+            if os.path.isdir(mntPoint+data['collectionSystemTransfer']['sourceDir']):
+                returnVal.append({"testName": "Source Directory", "result": "Pass"})
+            else:
+                returnVal.append({"testName": "Source Directory", "result": "Fail"})
+
+            # Unmount SMB Share
+            call(['sudo', 'umount', mntPoint])
+
+    # Cleanup
+    shutil.rmtree(tmpdir)
+
     return returnVal
 
 def test_destDir(data):
@@ -318,11 +386,11 @@ def task_callback(gearman_worker, job):
         job_results += test_localSourceDir(dataObj)
     elif  dataObj['collectionSystemTransfer']['transferType'] == "2": # Rsync Server
         job_results += test_rsyncSourceDir(dataObj)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "3": # SMB Server
+    elif  dataObj['collectionSystemTransfer']['transferType'] == "3": # SMB Share
         job_results += test_smbSourceDir(dataObj)
     elif  dataObj['collectionSystemTransfer']['transferType'] == "4": # SSH Server
         job_results += test_sshSourceDir(dataObj)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "5": # NFS Server
+    elif  dataObj['collectionSystemTransfer']['transferType'] == "5": # NFS Server/Path
         job_results += test_nfsSourceDir(dataObj)
     gearman_worker.send_job_status(job, 2, 4)
 

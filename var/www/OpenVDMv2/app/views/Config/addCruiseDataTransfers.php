@@ -49,9 +49,11 @@ use Helpers\Form;
                                 <div class="form-group sshServer"><label>SSH Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshServer', 'value'=> $_POST['sshServer'])); ?></div>
                                 <div class="form-group sshServer"><label>SSH Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshUser', 'value'=> $_POST['sshUser'])); ?></div>
                                 <div class="form-group sshServer"><label>SSH Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshPass', 'type'=>'password', 'value'=> $_POST['sshPass'])); ?></div>
-                                <div class="form-group nfsShare"><label>NFS Server/Share</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsServer', 'value'=> $_POST['nfsServer'])); ?></div>
-                                <div class="form-group nfsShare"><label>NFS Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsUser', 'value'=> $_POST['nfsUser'])); ?></div>
-                                <div class="form-group nfsShare"><label>NFS Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsPass', 'type'=>'password', 'value'=> $_POST['nfsPass'])); ?></div>
+                                <div class="form-group nfsShare"><label>NFS Server/Path</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsServer', 'value'=> $_POST['nfsServer'])); ?></div>
+<?php
+//                                <div class="form-group nfsShare"><label>NFS Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsUser', 'value'=> $_POST['nfsUser'])); /?/></div>
+//                                <div class="form-group nfsShare"><label>NFS Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'nfsPass', 'type'=>'password', 'value'=> $_POST['nfsPass'])); /?/></div>
+?>
                             </div>
                         </div>
                         <div class="row">    
@@ -82,9 +84,11 @@ use Helpers\Form;
             <p class="sshServer">The <strong>SSH Server</strong> is the IP address of the Destination SSH Server (i.e. "192.168.4.151").</p>
             <p class="sshServer">The <strong>SSH Username</strong> is the SSH username with permission to access the data on the Destination SSH Server (i.e. "shipTech").</p>
             <p class="sshServer">The <strong>SSH Password</strong> is the SSH password for the Rsync Username.</p>
-            <p class="nfsShare">The <strong>NFS Server/Share</strong> is the IP address of the Destination NFS Server (i.e. "192.168.4.151").</p>
-            <p class="nfsShare">The <strong>NFS Username</strong> is the nfs username with permission to access the data on the Destination System (i.e. "shipTech").  If the nfs server allows anonymous access set this field to "anonymous" and no password will be required.</p>
-            <p class="nfsShare">The <strong>NFS Password</strong> is the nfs password for the nfs Username. Not required if the nfs Username is set to "anonymous".</p>
+            <p class="nfsShare">The <strong>NFS Server/Path</strong> is the IP address of the Destination NFS Server and the remote path (i.e. "192.168.4.151:/mnt/backup/cruiseData").</p>
+<?php
+//            <p class="nfsShare">The <strong>NFS Username</strong> is the nfs username with permission to access the data on the Destination System (i.e. "shipTech").  If the nfs server allows anonymous access set this field to "anonymous" and no password will be required.</p>
+//            <p class="nfsShare">The <strong>NFS Password</strong> is the nfs password for the nfs Username. Not required if the nfs Username is set to "anonymous".</p>
+?>
             <p>Click the <strong>Add</strong> button to add the new cruise data transfer to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.</p>
         </div>
     </div>

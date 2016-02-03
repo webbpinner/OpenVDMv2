@@ -306,6 +306,92 @@ def test_sshDestDir(data):
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
+def test_nfsDestDir(data):
+    returnVal = []
+
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    
+    command = []
+
+    # Verify the server exists
+    command = ['rpcinfo', '-s', data['cruiseDataTransfer']['nfsServer'].split(":")[0]]
+    
+    #s = ' '
+    #print s.join(command)
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    lines_iterator = iter(proc.stdout.readline, b"")
+    
+    foundNFS = False
+    foundMountd = False
+    
+    for line in lines_iterator:
+        if foundNFS and foundMountd:
+            break
+        lineArray = line.split()
+        if lineArray[3] == 'nfs':
+            foundNFS = True
+            continue
+        if lineArray[3] == 'mountd':
+            foundMountd = True
+            continue
+    
+    if not foundNFS or not foundMountd:
+        returnVal.append({"testName": "NFS Server", "result": "Fail"})
+        returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})        
+        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "NFS Server", "result": "Pass"})
+        
+        # Create mountpoint
+        mntPoint = tmpdir + '/mntpoint'
+        os.mkdir(mntPoint, 0755)
+
+        # Mount NFS Share
+
+        command = ['sudo', 'mount', '-t', 'nfs', data['cruiseDataTransfer']['nfsServer'], mntPoint, '-o', 'rw' + ',vers=2' + ',hard' + ',intr']
+
+        #s = ' '
+        #print s.join(command)
+
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        proc.communicate()
+
+        if proc.returncode != 0:
+            returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})
+            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
+        else:
+            returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
+
+            # If mount is successful, test source directory
+            destDir = mntPoint+data['cruiseDataTransfer']['destDir'].rstrip('/')
+            if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
+                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+                try:
+                    filepath = destDir + '/' + 'writeTest.txt'
+                    filehandle = open(filepath, 'w')
+                    filehandle.close()
+                    os.remove(filepath)
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
+                except Exception as e:
+                    print e
+                    print "{}".format(e)
+                    print "IOError"
+                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+            else:
+                returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+                returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+            # Unmount SMB Share
+            call(['sudo', 'umount', mntPoint])
+
+    # Cleanup
+    shutil.rmtree(tmpdir)
+
+    return returnVal
+
 def setError_cruiseDataTransfer(job):
     dataObj = json.loads(job.data)
 

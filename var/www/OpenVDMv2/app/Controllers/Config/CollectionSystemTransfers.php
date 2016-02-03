@@ -102,8 +102,8 @@ class CollectionSystemTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
-            $nfsUser = $_POST['nfsUser'];
-            $nfsPass = $_POST['nfsPass'];
+            //$nfsUser = $_POST['nfsUser'];
+            //$nfsPass = $_POST['nfsPass'];
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
@@ -147,8 +147,8 @@ class CollectionSystemTransfers extends Controller {
                 $sshUser = '';
                 $sshPass = '';
                 $nfsServer = '';
-                $nfsUser = '';
-                $nfsPass = '';
+                //$nfsUser = '';
+                //$nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -177,8 +177,8 @@ class CollectionSystemTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }       
 
             } elseif ($transferType == 3) { // SMB Share
@@ -211,8 +211,8 @@ class CollectionSystemTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             } elseif ($transferType == 4) { // SSH Server
                 $sshDataCheck = true;
@@ -241,8 +241,8 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncUser = '';
                     $rsyncPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             } elseif ($transferType == 5) { // NFS Share
                 $nfsDataCheck = true;
@@ -251,16 +251,15 @@ class CollectionSystemTransfers extends Controller {
                     $nfsDataCheck = false;
                 } 
 
-                if($nfsUser == ''){
-                    $error[] = 'NFS Username is required';
-                    $nfsDataCheck = false;
+                //if($nfsUser == ''){
+                //    $error[] = 'NFS Username is required';
+                //    $nfsDataCheck = false;
+                //} 
 
-                } 
-
-                if($nfsUser != 'anonymous' && $nfsPass == ''){
-                    $error[] = 'NFS Password is required';
-                    $nfsDataCheck = false;
-                }
+                //if($nfsUser != 'anonymous' && $nfsPass == ''){
+                //    $error[] = 'NFS Password is required';
+                //    $nfsDataCheck = false;
+                //}
                 
                 if($nfsDataCheck) {
                     $smbServer = '';
@@ -296,8 +295,8 @@ class CollectionSystemTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
-                    'nfsUser' => $nfsUser,
-                    'nfsPass' => $nfsPass,
+                    //'nfsUser' => $nfsUser,
+                    //'nfsPass' => $nfsPass,
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
@@ -328,8 +327,8 @@ class CollectionSystemTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
-            $nfsUser = $_POST['nfsUser'];
-            $nfsPass = $_POST['nfsPass'];
+            //$nfsUser = $_POST['nfsUser'];
+            //$nfsPass = $_POST['nfsPass'];
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
@@ -373,8 +372,8 @@ class CollectionSystemTransfers extends Controller {
                 $sshUser = '';
                 $sshPass = '';
                 $nfsServer = '';
-                $nfsUser = '';
-                $nfsPass = '';
+                //$nfsUser = '';
+                //$nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -403,8 +402,8 @@ class CollectionSystemTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }       
 
             } elseif ($transferType == 3) { // SMB Share
@@ -437,8 +436,8 @@ class CollectionSystemTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             } elseif ($transferType == 4) { // SSH Server
                 $sshDataCheck = true;
@@ -467,8 +466,8 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncUser = '';
                     $rsyncPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             } elseif ($transferType == 5) { // NFS Share
                 $nfsDataCheck = true;
@@ -477,16 +476,15 @@ class CollectionSystemTransfers extends Controller {
                     $nfsDataCheck = false;
                 } 
 
-                if($nfsUser == ''){
-                    $error[] = 'NFS Username is required';
-                    $nfsDataCheck = false;
+                //if($nfsUser == ''){
+                //    $error[] = 'NFS Username is required';
+                //    $nfsDataCheck = false;
+                //} 
 
-                } 
-
-                if($nfsUser != 'anonymous' && $nfsPass == ''){
-                    $error[] = 'NFS Password is required';
-                    $nfsDataCheck = false;
-                }
+                //if($nfsUser != 'anonymous' && $nfsPass == ''){
+                //    $error[] = 'NFS Password is required';
+                //    $nfsDataCheck = false;
+                //}
                 
                 if($nfsDataCheck) {
                     $smbServer = '';
@@ -527,8 +525,8 @@ class CollectionSystemTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
-                    'nfsUser' => $nfsUser,
-                    'nfsPass' => $nfsPass,
+                    //'nfsUser' => $nfsUser,
+                    //'nfsPass' => $nfsPass,
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
@@ -579,8 +577,8 @@ class CollectionSystemTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
-            $nfsUser = $_POST['nfsUser'];
-            $nfsPass = $_POST['nfsPass'];
+            //$nfsUser = $_POST['nfsUser'];
+            //$nfsPass = $_POST['nfsPass'];
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
@@ -623,8 +621,8 @@ class CollectionSystemTransfers extends Controller {
                 $sshUser = '';
                 $sshPass = '';
                 $nfsServer = '';
-                $nfsUser = '';
-                $nfsPass = '';
+                //$nfsUser = '';
+                //$nfsPass = '';
             
             } elseif ($transferType == 2) { //rsync
                 $rsyncDataCheck = true;
@@ -652,8 +650,8 @@ class CollectionSystemTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 } 
 
             } elseif ($transferType == 3) { //smb
@@ -686,8 +684,8 @@ class CollectionSystemTransfers extends Controller {
                     $sshUser = '';
                     $sshPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
             } elseif ($transferType == 4) { //ssh
                 $sshDataCheck = true;
@@ -715,8 +713,8 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncUser = '';
                     $rsyncPass = '';
                     $nfsServer = '';
-                    $nfsUser = '';
-                    $nfsPass = '';
+                    //$nfsUser = '';
+                    //$nfsPass = '';
                 }
                         
             } elseif ($transferType == 5) { //nfs
@@ -726,15 +724,15 @@ class CollectionSystemTransfers extends Controller {
                     $nfsDataCheck = false;
                 } 
 
-                if($nfsUser == ''){
-                    $error[] = 'NFS Username is required';
-                    $nfsDataCheck = false;
-                } 
+                //if($nfsUser == ''){
+                //    $error[] = 'NFS Username is required';
+                //    $nfsDataCheck = false;
+                //} 
 
-                if($nfsUser != 'anonymous' && $nfsPass == ''){
-                    $error[] = 'NFS Password is required';
-                    $nfsDataCheck = false;
-                } 
+                //if($nfsUser != 'anonymous' && $nfsPass == ''){
+                //    $error[] = 'NFS Password is required';
+                //    $nfsDataCheck = false;
+                //} 
                 
                 if($nfsDataCheck) {
                     $smbServer = '';
@@ -770,8 +768,8 @@ class CollectionSystemTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
-                    'nfsUser' => $nfsUser,
-                    'nfsPass' => $nfsPass,
+                    //'nfsUser' => $nfsUser,
+                    //'nfsPass' => $nfsPass,
                     'includeFilter' => $includeFilter,
                     'excludeFilter' => $excludeFilter,
                     'ignoreFilter' => $ignoreFilter,
@@ -807,8 +805,8 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->sshUser = $sshUser;
                 $data['row'][0]->sshPass = $sshPass;
                 $data['row'][0]->nfsServer = $nfsServer;
-                $data['row'][0]->nfsUser = $nfsUser;
-                $data['row'][0]->nfsPass = $nfsPass;
+                //$data['row'][0]->nfsUser = $nfsUser;
+                //$data['row'][0]->nfsPass = $nfsPass;
                 $data['row'][0]->includeFilter = $includeFilter;
                 $data['row'][0]->excludeFilter = $excludeFilter;
                 $data['row'][0]->ignoreFilter = $ignoreFilter;
@@ -838,8 +836,8 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->sshUser = $_POST['sshUser'];
             $gmData['collectionSystemTransfer']->sshPass = $_POST['sshPass'];
             $gmData['collectionSystemTransfer']->nfsServer = $_POST['nfsServer'];
-            $gmData['collectionSystemTransfer']->nfsUser = $_POST['nfsUser'];
-            $gmData['collectionSystemTransfer']->nfsPass = $_POST['nfsPass'];
+            //$gmData['collectionSystemTransfer']->nfsUser = $_POST['nfsUser'];
+            //$gmData['collectionSystemTransfer']->nfsPass = $_POST['nfsPass'];
             $gmData['collectionSystemTransfer']->includeFilter = $_POST['includeFilter'];
             $gmData['collectionSystemTransfer']->excludeFilter = $_POST['excludeFilter'];
             $gmData['collectionSystemTransfer']->ignoreFilter = $_POST['ignoreFilter'];
@@ -872,8 +870,8 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->sshUser = $_POST['sshUser'];
             $data['row'][0]->sshPass = $_POST['sshPass'];
             $data['row'][0]->nfsServer = $_POST['nfsServer'];
-            $data['row'][0]->nfsUser = $_POST['nfsUser'];
-            $data['row'][0]->nfsPass = $_POST['nfsPass'];
+            //$data['row'][0]->nfsUser = $_POST['nfsUser'];
+            //$data['row'][0]->nfsPass = $_POST['nfsPass'];
             $data['row'][0]->includeFilter = $_POST['includeFilter'];
             $data['row'][0]->excludeFilter = $_POST['excludeFilter'];
             $data['row'][0]->ignoreFilter = $_POST['ignoreFilter'];
