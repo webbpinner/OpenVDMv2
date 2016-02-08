@@ -254,12 +254,12 @@ class shipToShoreTransfers extends Controller {
     public function run() {
         
         $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
-        $gmData['cruiseDataTransfer'] = $this->_ssdwConfig;
-        $gmData['cruiseDataTransfer']->enable = "1";
-        $gmData['systemStatus'] = "On";
+        $gmData = array(
+            'cruiseDataTransfer' => array(
+                'enable' => '1'
+            ),
+            'systemStatus' => "On"
+        );
 
         
         # create the gearman client
@@ -287,7 +287,6 @@ class shipToShoreTransfers extends Controller {
     public function stop() {
         
         $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
         $gmData['pid'] = $this->_ssdwConfig->pid;
         
         # create the gearman client

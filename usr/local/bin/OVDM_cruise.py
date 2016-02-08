@@ -12,9 +12,9 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.0
 #      CREATED:  2015-01-01
-#     REVISION:  2015-06-09
+#     REVISION:  2016-02-08
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2015  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -37,17 +37,16 @@ import errno
 import gearman
 import json
 import time
-import datetime
-import requests
 import signal
 import pwd
 import grp
 import shutil
+import openvdm
 
-tasks = {
-    "setupNewCruise": "Initializing Cruise",
-    "finalizeCurrentCruise": "Finalizing Cruise",
-    "exportOVDMConfig": "Export OpenVDM Configuration"
+taskLookup = {
+    "setupNewCruise": "Setting up New Cruise",
+    "finalizeCurrentCruise": "Finalizing Current Cruise",
+    "exportOVDMConfig": "Exporting OpenVDM Configuration"
 }
 
 cruiseConfigFN = 'ovdmConfig.json'
@@ -69,11 +68,11 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
         #print "Open JSON file"
         JSONFile = open(filePath, 'w')
 
-        #print "Saving JSON file"
+        #print "Saving JSON file: " + filePath
         json.dump(contents, JSONFile, indent=4)
 
     except IOError:
-        print "Error Saving JSON file"
+        print "Error Saving JSON file: " + filePath
         return False
 
     finally:
@@ -82,13 +81,6 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
         os.chown(filePath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
 
     return True
-
-def build_cruiseConfig(dataObj):
-    url = dataObj['siteRoot'] + 'api/warehouse/getCruiseConfig'
-    r = requests.get(url)
-    ovdmConfig = json.loads(r.text)
-    ovdmConfig['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
-    return ovdmConfig
 
 
 def move_files(sourceDir, destDir, warehouseUser):
@@ -102,131 +94,144 @@ def move_files(sourceDir, destDir, warehouseUser):
             filePath = os.path.join(root, filename)
             os.chown(filePath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
             shutil.move(filePath, destDir)
-
-def setError_task(job, taskID):
-    dataObj = json.loads(job.data)
+            
+def build_ScienceDirPath(worker):
 
     # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setErrorTask/' + taskID
-    r = requests.get(url)
+    directories = worker.OVDM.getRequiredExtraDirectories()
+    for directory in directories:
+        if directory['name'] == 'Science':
+            return directory['destDir']
+            break
     
-    url = dataObj['siteRoot'] + 'api/messages/newMessage'
-    payload = {'message': 'Error: ' + job.task}
-    r = requests.post(url, data=payload)
+    return ''
 
-def setRunning_task(job, taskID):
-    dataObj = json.loads(job.data)
-    jobPID = os.getpid()
-
-    # Set Error for the task in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setRunningTask/' + taskID
-    payload = {'jobPid': jobPID}
-    r = requests.post(url, data=payload)
-
-    # Add Job to DB via API
-    url = dataObj['siteRoot'] + 'api/gearman/newJob/' + job.handle
-    payload = {'jobName': tasks[job.task], 'jobPid': jobPID}
-    r = requests.post(url, data=payload)
-
-def setIdle_task(job, taskID):
-    dataObj = json.loads(job.data)
-
-    # Set Error for the task in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setIdleTask/' + taskID
-    r = requests.get(url)
-
-def clearError_task(job, taskID):
-    dataObj = json.loads(job.data)
-    url = dataObj['siteRoot'] + 'api/tasks/getTask/' + taskID
-    r = requests.get(url)
-    for task in r.json():
-        if task['status'] == '3':
-            # Clear Error for the task in DB via API
-            url = dataObj['siteRoot'] + 'api/tasks/setIdleTask/' + taskID
-            r = requests.get(url)
     
-class CustomGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
-        super(CustomGearmanWorker, self).__init__(host_list=host_list)
         self.stop = False
         self.quit = False
-        self.taskID = "0"
+        self.OVDM = openvdm.OpenVDM()
+        self.cruiseID = ''
+        self.cruiseStartDate = ''
+        self.taskID = '0'
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
         
     def get_taskID(self, current_job):
-        dataObj = json.loads(current_job.data)
-        url = dataObj['siteRoot'] + 'api/tasks/getTasks'
-        r = requests.get(url)
-        for task in r.json():
+        tasks = self.OVDM.getTasks()
+        for task in tasks:
             if task['name'] == current_job.task:
                 self.taskID = task['taskID']
                 return True
-        
-        self.taskID = "0"
+        self.taskID = '0'
         return False
     
     def on_job_execute(self, current_job):
-        print "Job started: " + current_job.handle
         self.get_taskID(current_job)
-        setRunning_task(current_job, self.taskID)
-        return super(CustomGearmanWorker, self).on_job_execute(current_job)
+        payloadObj = json.loads(current_job.data)
+        
+        self.cruiseID = self.OVDM.getCruiseID()
+        self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+        if len(payloadObj) > 0:
+            try:
+                payloadObj['cruiseID']
+            except KeyError:
+                self.cruiseID = self.OVDM.getCruiseID()
+            else:
+                self.cruiseID = payloadObj['cruiseID']
+                
+            try:
+                payloadObj['cruiseStartDate']
+            except KeyError:
+                self.cruiseID = self.OVDM.getCruiseStartDate()
+            else:
+                self.cruiseID = payloadObj['cruiseStartDate']
+
+        if int(self.taskID) > 0:
+            self.OVDM.setRunning_task(self.taskID, os.getpid(), current_job.handle)
+        else:
+            self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
+            
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " started at:   " + time.strftime("%D %T", time.gmtime())
+        
+        #print "CruiseID: " + self.cruiseID
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
             
 
     def on_job_exception(self, current_job, exc_info):
-        print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " failed at:    " + time.strftime("%D %T", time.gmtime())
+        
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
-        setError_task(current_job, self.taskID)
-        print exc_info
-        return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
+        if int(self.taskID) > 0:
+            self.OVDM.setError_task(self.taskID, "Unknown Part of Task")
+        else:
+            self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: Unknown Part of Task')
+        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
-        print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
         
-        if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-            setError_task(current_job,  self.taskID)
-            print "but something prevented the task from successfully completing..."
+        if len(resultObj['parts']) > 0:
+            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                if int(self.taskID) > 0:
+                    self.OVDM.setError_task(self.taskID, resultObj['parts'][-1]['partName'])
+                else:
+                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: ' + resultObj['parts'][-1]['partName'])
+            else:
+                self.OVDM.setIdle_task(self.taskID)
         else:
-            setIdle_task(current_job, self.taskID)
+            self.OVDM.setIdle_task(self.taskID)
+        
             
-        return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " completed at: " + time.strftime("%D %T", time.gmtime())
+            
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
     def after_poll(self, any_activity):
         self.stop = False
-        self.taskID = "0"
+        self.taskID = '0'
         if self.quit:
             print "Quitting"
             self.shutdown()
+        else:
+            self.quit - False
         return True
     
-    def stopWorker(self):
+    def stopTask(self):
         self.stop = True
-        
+
     def quitWorker(self):
         self.stop = True
         self.quit = True
 
 
-def task_callback(gearman_worker, job):
+def task_setupNewCruise(worker, job):
 
     job_results = {'parts':[]}
 
-    dataObj = json.loads(job.data)
-    #print 'DECODED:', json.dumps(dataObj, indent=2)
+    payloadObj = json.loads(job.data)
+    #print 'DECODED Payload:', json.dumps(payloadObj, indent=2)
     
-    cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
-    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
+    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
+    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = baseDir + '/' + worker.cruiseID
+    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
-    gearman_worker.send_job_status(job, 1, 10)
+    worker.send_job_status(job, 1, 10)
     
-    gm_client = gearman.GearmanClient(['localhost:4730'])
+    gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
     completed_job_request = gm_client.submit_job("createCruiseDirectory", job.data)
     
     resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results:', json.dumps(resultObj, indent=2)
+    #print 'DECODED Results from createCruiseDirectory:', json.dumps(resultObj, indent=2)
 
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        #print "Connection Test: Passed"
+        #print "Create Directory: Passed"
         job_results['parts'].append({"partName": "Create Cruise Directory", "result": "Pass"})
     else:
         print "Create Cruise Directory: Failed"
@@ -236,12 +241,12 @@ def task_callback(gearman_worker, job):
         #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
     
-    gearman_worker.send_job_status(job, 5, 10)
+    worker.send_job_status(job, 5, 10)
     
     completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)
 
     resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results:', json.dumps(resultObj, indent=2)
+    #print 'DECODED Results from rebuildDataDashboard:', json.dumps(resultObj, indent=2)
 
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
@@ -254,12 +259,12 @@ def task_callback(gearman_worker, job):
         #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
     
-    gearman_worker.send_job_status(job, 7, 10)
+    worker.send_job_status(job, 7, 10)
     
     completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
 
     resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results:', json.dumps(resultObj, indent=2)
+    #print 'DECODED Results rebuildMD5Summary:', json.dumps(resultObj, indent=2)
 
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         #print "Connection Test: Passed"
@@ -272,30 +277,34 @@ def task_callback(gearman_worker, job):
         #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
     
-    gearman_worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 9, 10)
 
     #build OpenVDM Config file
-    ovdmConfig = build_cruiseConfig(dataObj)
+    ovdmConfig = worker.OVDM.getOVDMConfig()
     output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
     
-    gearman_worker.send_job_status(job, 10, 10)
+    worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)
         
-def task_callback2(gearman_worker, job):
+def task_finalizeCurrentCruise(worker, job):
 
     job_results = {'parts':[]}
     gmData = {}
 
-    dataObj = json.loads(job.data)
-    #print 'DECODED:', json.dumps(dataObj, indent=2)
+    payloadObj = json.loads(job.data)
+    #print 'DECODED:', json.dumps(payloadObj, indent=2)
 
-    cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
-    publicDataDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehousePublicDataDir']
-    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    scienceDir = cruiseDir + '/' + dataObj['scienceDir']
+    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
+    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = baseDir + '/' + worker.cruiseID
+    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
-    gearman_worker.send_job_status(job, 1, 10)
+    publicDataDir = shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
+    scienceDir = cruiseDir + '/' + build_ScienceDirPath(worker)
+    print 'scienceDir:', scienceDir
+    
+    worker.send_job_status(job, 1, 10)
 
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
@@ -309,22 +318,26 @@ def task_callback2(gearman_worker, job):
         job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
-
-    gm_client = gearman.GearmanClient(['localhost:4730'])
-
-    gmData['siteRoot'] = dataObj['siteRoot']
-    gmData['shipboardDataWarehouse'] = dataObj['shipboardDataWarehouse']
-    gmData['cruiseID'] = dataObj['cruiseID']
-    gmData['cruiseStartDate'] = dataObj['cruiseStartDate']
+    gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
+    
+    gmData['cruiseID'] = worker.cruiseID
+    gmData['cruiseStartDate'] = worker.cruiseStartDate
     gmData['systemStatus'] = "On";
+    gmData['collectionSystemTransfer'] = {}
+        
+    print gmData
     
     collectionSystemTransferJobs = []
     
-    gearman_worker.send_job_status(job, 3, 10)
-    
-    for collectionSystemTransfer in dataObj['collectionSystemTransfers']:
+    worker.send_job_status(job, 3, 10)
+
+    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+
+    for collectionSystemTransfer in collectionSystemTransfers:
         
-        gmData['collectionSystemTransfer'] = collectionSystemTransfer
+        gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
+        #print gmData
+        
         collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
 
     #print json.dumps(collectionSystemTransferJobs, indent=2)
@@ -333,43 +346,43 @@ def task_callback2(gearman_worker, job):
     
     #print submitted_job_request
 
-    gearman_worker.send_job_status(job, 4, 10)
+    worker.send_job_status(job, 4, 10)
     
     time.sleep(1)
     completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
 
-    gearman_worker.send_job_status(job, 7, 10)
+    worker.send_job_status(job, 7, 10)
     
     #print "Try to move Public Data from " + publicDataDir + " to " + scienceDir;
     move_files(publicDataDir, scienceDir, warehouseUser)
     
-    gearman_worker.send_job_status(job, 8, 10)
+    worker.send_job_status(job, 8, 10)
     
     #build OpenVDM Config file
-    ovdmConfig = build_cruiseConfig(dataObj)
+    ovdmConfig = worker.OVDM.getOVDMConfig()
     output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
-    gearman_worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 9, 10)
     
     completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
     
     # need to add code for cruise data transfers
-    gearman_worker.send_job_status(job, 10, 10)
+    worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
-def task_callback3(gearman_worker, job):
+def task_exportOVDMConfig(worker, job):
 
     job_results = {'parts':[]}
     gmData = {}
 
-    dataObj = json.loads(job.data)
-    #print 'DECODED:', json.dumps(dataObj, indent=2)
+    payloadObj = json.loads(job.data)
+    #print 'DECODED:', json.dumps(payloadObj, indent=2)
 
-    cruiseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+dataObj['cruiseID']
-    publicDataDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehousePublicDataDir']
-    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    scienceDir = cruiseDir + '/' + dataObj['scienceDir']
+    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
+    cruiseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.OVDM.getCruiseID()
+    publicDataDir = shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
+    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
-    gearman_worker.send_job_status(job, 1, 10)
+    worker.send_job_status(job, 1, 10)
 
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
@@ -378,14 +391,15 @@ def task_callback3(gearman_worker, job):
         return json.dumps(job_results)
     
     #build OpenVDM Config file
-    ovdmConfig = build_cruiseConfig(dataObj)
+    ovdmConfig = worker.OVDM.getOVDMConfig()
+    #print json.dumps(ovdmConfig, indent=2)
     output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
     
-    gearman_worker.send_job_status(job, 10, 10)
+    worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
 global new_worker
-new_worker = CustomGearmanWorker(['localhost:4730'])
+new_worker = OVDMGearmanWorker()
 
 def sigquit_handler(_signo, _stack_frame):
     print "QUIT Signal Received"
@@ -399,7 +413,7 @@ signal.signal(signal.SIGQUIT, sigquit_handler)
 signal.signal(signal.SIGINT, sigint_handler)
 
 new_worker.set_client_id('cruise.py')
-new_worker.register_task("setupNewCruise", task_callback)
-new_worker.register_task("finalizeCurrentCruise", task_callback2)
-new_worker.register_task("exportOVDMConfig", task_callback3)
+new_worker.register_task("setupNewCruise", task_setupNewCruise)
+new_worker.register_task("finalizeCurrentCruise", task_finalizeCurrentCruise)
+new_worker.register_task("exportOVDMConfig", task_exportOVDMConfig)
 new_worker.work()

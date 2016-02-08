@@ -11,9 +11,9 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.0
 #      CREATED:  2015-01-01
-#     REVISION:  2015-06-09
+#     REVISION:  2016-02-05
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2015  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -35,21 +35,23 @@ import gearman
 import shutil
 import errno
 import json
-import requests
-import hashlib
 import signal
-import fnmatch
 import pwd
 import grp
+import time
 import subprocess
+import openvdm
 
-processingScriptDir = "/usr/local/bin/OVDM_dataProcessingScripts"
-processingScriptSuffix = "_dataDashboard.py"
+#processingScriptDir = "/usr/local/bin/OVDM_dataProcessingScripts"
+#processingScriptSuffix = "_dataDashboard.py"
 
-tasks = {
+taskLookup = {
     "rebuildDataDashboard": "Rebuilding Data Dashboard",
     "updateDataDashboard": "Updating Data Dashboard"
 }
+
+dataDashboardManifestFilename = 'manifest.json'
+
 
 
 def build_filelist(sourceDir):
@@ -78,29 +80,11 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
                 return False
     return True
 
-def get_collectionSystemData(collectionSystemID, siteRoot):
+def build_DashboardDataDirPath(worker):
 
     # Set Error for current tranfer in DB via API
-    url = siteRoot + 'api/collectionSystemTransfers/getCollectionSystemTransfer/' + collectionSystemID
-    #print url
-    r = requests.get(url)
-    return r.json()[0]
-
-def get_collectionSystemsData(siteRoot):
-
-    # Set Error for current tranfer in DB via API
-    url = siteRoot + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
-    #print url
-    r = requests.get(url)
-    return r.json()
-
-
-def build_DashboardDataDirPath(siteRoot):
-
-    # Set Error for current tranfer in DB via API
-    url = siteRoot + 'api/extraDirectories/getRequiredExtraDirectories'
-    r = requests.get(url)
-    for directory in r.json():
+    directories = worker.OVDM.getRequiredExtraDirectories()
+    for directory in directories:
         if directory['name'] == 'Dashboard Data':
             return directory['destDir']
             break
@@ -138,121 +122,83 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
 
     return True
 
-#def updateDB(siteRoot, cruiseID):
-    
-#    url = siteRoot + 'api/dataDashboard/updateDataDashboardObjectsFromManifest/' + cruiseID
-    #print url
-#    r = requests.get(url)
-    
-#    if r.json()[0].get('error'):
-#        print r.json()[0]['error']
-#        return False
-#    return True
-
-def setError_tasks(job, taskID):
-    dataObj = json.loads(job.data)
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setErrorTask/' + taskID
-    r = requests.get(url)
-    
-    url = dataObj['siteRoot'] + 'api/messages/newMessage'
-    payload = {'message': 'Error: ' + job.task}
-    r = requests.post(url, data=payload)
-
-def setRunning_tasks(job, taskID):
-    dataObj = json.loads(job.data)
-    jobPID = os.getpid()
-
-    # Set Error for the tasks in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setRunningTask/' + taskID
-    payload = {'jobPid': jobPID}
-    r = requests.post(url, data=payload)
-
-    # Add Job to DB via API
-    url = dataObj['siteRoot'] + 'api/gearman/newJob/' + job.handle
-    payload = {'jobName': tasks[job.task],'jobPid': jobPID}
-    r = requests.post(url, data=payload)
-
-def setIdle_tasks(job, taskID):
-    dataObj = json.loads(job.data)
-
-    # Set Error for the tasks in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setIdleTask/' + taskID
-    r = requests.get(url)
-
-def clearError_tasks(job, taskID):
-    dataObj = json.loads(job.data)
-    url = dataObj['siteRoot'] + 'api/tasks/getTask/' + taskID
-    r = requests.get(url)
-    for tasks in r.json():
-        if tasks['status'] == '3':
-            # Clear Error for the tasks in DB via API
-            url = dataObj['siteRoot'] + 'api/tasks/setIdleTask/' + taskID
-            r = requests.get(url)
-
-def sendMsg(dataObj, message):
-    
-    url = dataObj['siteRoot'] + 'api/messages/newMessage'
-    payload = {'message': message}
-    r = requests.post(url, data=payload)
-
-class CustomGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
-        super(CustomGearmanWorker, self).__init__(host_list=host_list)
         self.stop = False
         self.quit = False
-        self.taskID = "0"
+        self.OVDM = openvdm.OpenVDM()
+        self.cruiseID = ''
+        self.taskID = '0'
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
     def get_taskID(self, current_job):
-        dataObj = json.loads(current_job.data)
-        url = dataObj['siteRoot'] + 'api/tasks/getTasks'
-        r = requests.get(url)
-        for task in r.json():
+        tasks = self.OVDM.getTasks()
+        for task in tasks:
             if task['name'] == current_job.task:
                 self.taskID = task['taskID']
                 return True
-        
-        self.taskID = "0"
+        self.taskID = '0'
         return False
     
     def on_job_execute(self, current_job):
-        print "Job started: " + current_job.handle
         self.get_taskID(current_job)
-        setRunning_tasks(current_job, self.taskID)
-        return super(CustomGearmanWorker, self).on_job_execute(current_job)
+        payloadObj = json.loads(current_job.data)
+        
+        self.cruiseID = self.OVDM.getCruiseID()
+        if len(payloadObj) > 0:
+            try:
+                payloadObj['cruiseID']
+            except KeyError:
+                self.cruiseID = self.OVDM.getCruiseID()
+            else:
+                self.cruiseID = payloadObj['cruiseID']
+            
+        if int(self.taskID) > 0:
+            self.OVDM.setRunning_task(self.taskID, os.getpid(), current_job.handle)
+        else:
+            self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
+            
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " started at:   " + time.strftime("%D %T", time.gmtime())
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
             
 
     def on_job_exception(self, current_job, exc_info):
-        print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " failed at:    " + time.strftime("%D %T", time.gmtime())
+        
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
-        setError_tasks(current_job, self.taskID)
+        if int(self.taskID) > 0:
+            self.OVDM.setError_task(self.taskID, "Unknown Part of Task")
+        else:
+            self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: Unknown Part of Task')
+        
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno)
-        return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
-        print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
-        #print json.dumps(job_result, indent=2)
         
-        if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-            if resultObj['parts'][-1]['partName'] == "Dashboard Processing File Located":
-                print "No processing script found for this collection system"
-                setIdle_tasks(current_job, self.taskID)
+        if len(resultObj['parts']) > 0:
+            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                if int(self.taskID) > 0:
+                    self.OVDM.setError_task(self.taskID, resultObj['parts'][-1]['partName'])
+                else:
+                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: ' + resultObj['parts'][-1]['partName'])
             else:
-                print "but something prevented the tasks from successfully completing..."
-                setError_tasks(current_job,  self.taskID)
+                self.OVDM.setIdle_task(self.taskID)
         else:
-            setIdle_tasks(current_job, self.taskID)
+            self.OVDM.setIdle_task(self.taskID)
+        
             
-        return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " completed at: " + time.strftime("%D %T", time.gmtime())
+            
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
     def after_poll(self, any_activity):
         self.stop = False
-        self.taskID = "0"
+        self.taskID = '0'
         if self.quit:
             print "Quitting"
             self.shutdown()
@@ -267,45 +213,45 @@ class CustomGearmanWorker(gearman.GearmanWorker):
         self.stop = True
         self.quit = True
 
-def task_callback(gearman_worker, job):
+def task_updateDataDashboard(worker, job):
 
     job_results = {'parts':[]}
     
+    payloadObj = json.loads(job.data)
+    #print 'DECODED payloadObj:', json.dumps(payloadObj, indent=2)
+    
+    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
+    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    dataDashboardDir = build_DashboardDataDirPath(worker)
+    dataDashboardManifestFilePath = baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFilename
+    collectionSystemTransfer = worker.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])
 
-    dataObj = json.loads(job.data)
-    #print 'DECODED dataObj:', json.dumps(dataObj, indent=2)
-    
-    gearman_worker.send_job_status(job, 5, 100)
-    
-    baseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']
-    cruiseID = dataObj['cruiseID']
-    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    dataDashboardDir = build_DashboardDataDirPath(dataObj['siteRoot'])
-    dataDashboardManifestFilename = 'manifest.json'
-    dataDashboardManifestFilePath = baseDir + '/' + cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFilename    
-    collectionSystem = get_collectionSystemData(dataObj['collectionSystemID'], dataObj['siteRoot'])
-    #print 'DECODED collectionSystem:', json.dumps(collectionSystem, indent=2)
+    worker.send_job_status(job, 5, 100)
+
+    #print 'DECODED collectionSystemTransfer:', json.dumps(collectionSystemTransfer, indent=2)
     
     newManifestEntries = []
 
     #check for processing file
-    processingScriptFilename = processingScriptDir + '/' + collectionSystem['name'].replace(' ','') + processingScriptSuffix
+    processingScriptFilename = worker.OVDM.getDashboardDataProcessingScriptDir() + '/' + collectionSystemTransfer['name'].replace(' ','') + worker.OVDM.getDashboardDataProcessingScriptSuffix()
+    #print "processingScriptFilename: " + processingScriptFilename
     
     if os.path.isfile(processingScriptFilename):
         job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Fail"})
+        #job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Fail"})
         return json.dumps(job_results)
 
-    gearman_worker.send_job_status(job, 1, 10)
+    worker.send_job_status(job, 10, 100)
     #print 'DECODED:', json.dumps(fileList, indent=2)
 
     #build filelist
     fileList = []
 
-    if dataObj['files']['new'] or dataObj['files']['updated']:
-        fileList = dataObj['files']['new']
-        fileList += dataObj['files']['updated']
+    if payloadObj['files']['new'] or payloadObj['files']['updated']:
+        fileList = payloadObj['files']['new']
+        fileList += payloadObj['files']['updated']
         job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
         #print 'DECODED fileList:', json.dumps(fileList, indent=2)
 
@@ -319,8 +265,8 @@ def task_callback(gearman_worker, job):
     for filename in fileList:
         #print "Processing file: " + filename
         jsonFileName = filename.split('.')[0] + '.json'
-        rawFilePath = baseDir + '/' + cruiseID + '/' + filename
-        jsonFilePath = baseDir + '/' + cruiseID + '/' + dataDashboardDir + '/' + jsonFileName
+        rawFilePath = baseDir + '/' + worker.cruiseID + '/' + filename
+        jsonFilePath = baseDir + '/' + worker.cruiseID + '/' + dataDashboardDir + '/' + jsonFileName
         
         proc = subprocess.Popen(['python', processingScriptFilename, '--dataType', rawFilePath], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         out, err = proc.communicate()
@@ -341,25 +287,25 @@ def task_callback(gearman_worker, job):
                 try:
                     outObj = json.loads(out)
                     if output_JSONDataToFile(jsonFilePath, outObj, warehouseUser):
-                        newManifestEntries.append({"type":dd_type, "dd_json": cruiseID + '/' + dataDashboardDir + '/' + jsonFileName, "raw_data":cruiseID + '/' + filename})
+                        newManifestEntries.append({"type":dd_type, "dd_json": worker.cruiseID + '/' + dataDashboardDir + '/' + jsonFileName, "raw_data":worker.cruiseID + '/' + filename})
                 except:
                     print "Error parsing JSON output from file " + filename
                     job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
                     continue
             else:
-                print "No JSON output recieved from file " + filename
+                #print "No JSON output recieved from file " + filename
                 job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
                 if err:
                     print err
         else:
-            print " *** NO data type returned from processing script for file: " + filename + " ***"
+            #print " *** NO data type returned from processing script for file: " + filename + " ***"
             if err:
                 print err
 
-        gearman_worker.send_job_status(job, int(round(10 + (70*index/fileCount),0)), 100)
+        worker.send_job_status(job, int(round(10 + (70*index/fileCount),0)), 100)
         index += 1
 
-    gearman_worker.send_job_status(job, 8, 10)
+    worker.send_job_status(job, 8, 10)
     
     if newManifestEntries:
         
@@ -398,69 +344,58 @@ def task_callback(gearman_worker, job):
         #print 'DECODED  - Updated Manifest Entries:', json.dumps(existingManifestEntries)
         if output_JSONDataToFile(dataDashboardManifestFilePath, existingManifestEntries, warehouseUser):
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
-
-            #if updateDB(dataObj['siteRoot'], cruiseID):
-            #    job_results['parts'].append({"partName": "Updating Database", "result": "Pass"})
-            #else:
-            #    job_results['parts'].append({"partName": "Updating Database", "result": "Fail"})
-            #    return json.dumps(job_results)
         else:
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail"})
             return json.dumps(job_results)
         
-    gearman_worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 9, 10)
 
-    if(setDirectoryOwnerGroupPermissions(baseDir + '/' + cruiseID + '/' +  dataDashboardDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
+    if(setDirectoryOwnerGroupPermissions(baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:
         print "Error Setting file/directory ownership"
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
         
-    gearman_worker.send_job_status(job, 10, 10)
+    worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)    
         
-def task_callback2(gearman_worker, job):
+def task_rebuildDataDashboard(worker, job):
 
     job_results = {'parts':[]}
-
-    dataObj = json.loads(job.data)
-    #print 'DECODED:', json.dumps(dataObj, indent=2)
-
-    gearman_worker.send_job_status(job, 1, 10)
     
-    baseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']
-    cruiseID = dataObj['cruiseID']
-    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']
-    dataDashboardDir = build_DashboardDataDirPath(dataObj['siteRoot'])
-    dataDashboardManifestFilename = 'manifest.json'
-    dataDashboardManifestFilePath = baseDir + '/' + cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFilename
-    collectionSystems = get_collectionSystemsData(dataObj['siteRoot'])
+    payloadObj = json.loads(job.data)
+    #print 'DECODED dataObj:', json.dumps(payloadObj, indent=2)
+    
+    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
+    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    dataDashboardDir = build_DashboardDataDirPath(worker)
+    dataDashboardManifestFilePath = baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFilename
+    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    #print 'DECODED collectionSystemTransfers:', json.dumps(collectionSystemTransfers, indent=2)
 
-    gearman_worker.send_job_status(job, 1, 10)
+    worker.send_job_status(job, 5, 100)
 
     newManifestEntries = []
 
-    collectionSystemCount = len(collectionSystems)
-    collectionSystemIndex = 1
-    for collectionSystem in collectionSystems:
+    collectionSystemTransferCount = len(collectionSystemTransfers)
+    collectionSystemTransferIndex = 1
+    for collectionSystemTransfer in collectionSystemTransfers:
     
-        #print 'DECODED:', json.dumps(collectionSystem, indent=2)
+        #print 'DECODED:', json.dumps(collectionSystemTransfer, indent=2)
 
         #check for processing file
-        processingScriptFilename = processingScriptDir + '/' + collectionSystem['name'].replace(' ','') + processingScriptSuffix
+        processingScriptFilename = worker.OVDM.getDashboardDataProcessingScriptDir() + '/' + collectionSystemTransfer['name'].replace(' ','') + worker.OVDM.getDashboardDataProcessingScriptSuffix()
         #print 'DECODED:', processingScriptFilename
     
         if not os.path.isfile(processingScriptFilename):
-            gearman_worker.send_job_status(job, int(round(10 + (80*collectionSystemIndex/collectionSystemCount),0)), 100)
-            collectionSystemIndex += 1
+            worker.send_job_status(job, int(round(10 + (80*collectionSystemTransferIndex/collectionSystemTransferCount),0)), 100)
+            collectionSystemTransferIndex += 1
             continue
-            
-        #gearman_worker.send_job_status(job, 2, 10)
-        #print 'DECODED:', json.dumps(fileList, indent=2)
 
         #build filelist
-        fileList = build_filelist(baseDir + '/' + cruiseID + '/' + collectionSystem['destDir'])
+        fileList = build_filelist(baseDir + '/' + worker.cruiseID + '/' + collectionSystemTransfer['destDir'])
         fileCount = len(fileList)
         fileIndex = 1
         #print 'DECODED:', json.dumps(fileList, indent=2)
@@ -468,8 +403,8 @@ def task_callback2(gearman_worker, job):
         for filename in fileList:
             #print "Processing file: " + filename
             jsonFileName = filename.split('.')[0] + '.json'
-            rawFilePath = baseDir + '/' + cruiseID + '/' + collectionSystem['destDir'] + '/' + filename
-            jsonFilePath = baseDir + '/' + cruiseID + '/' + dataDashboardDir + '/' + collectionSystem['destDir'] + '/' + jsonFileName
+            rawFilePath = baseDir + '/' + worker.cruiseID + '/' + collectionSystemTransfer['destDir'] + '/' + filename
+            jsonFilePath = baseDir + '/' + worker.cruiseID + '/' + dataDashboardDir + '/' + collectionSystemTransfer['destDir'] + '/' + jsonFileName
             
             #print "Processing file: " + rawFilePath
         
@@ -491,7 +426,7 @@ def task_callback2(gearman_worker, job):
                     try:
                         outObj = json.loads(out)
                         if output_JSONDataToFile(jsonFilePath, outObj, warehouseUser):
-                            newManifestEntries.append({"type":dd_type, "dd_json": cruiseID + '/' + dataDashboardDir + '/' + collectionSystem['destDir'] + '/' + jsonFileName, "raw_data":cruiseID + '/' + collectionSystem['destDir'] + '/' +filename})
+                            newManifestEntries.append({"type":dd_type, "dd_json": worker.cruiseID + '/' + dataDashboardDir + '/' + collectionSystemTransfer['destDir'] + '/' + jsonFileName, "raw_data":worker.cruiseID + '/' + collectionSystemTransfer['destDir'] + '/' +filename})
                     except:
                         print "Error parsing JSON output from file " + filename
                         job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
@@ -507,25 +442,25 @@ def task_callback2(gearman_worker, job):
                 if err:
                     print err
                     
-            gearman_worker.send_job_status(job, int(round(10 + (70*collectionSystemIndex/collectionSystemCount),0)), 100)
+            worker.send_job_status(job, int(round(10 + (70*collectionSystemTransferIndex/collectionSystemTransferCount),0)), 100)
             fileIndex += 1
             
-            if gearman_worker.stop:
+            if worker.stop:
                 print "Stopping"
                 break
 
-        collectionSystemIndex += 1
+        collectionSystemTransferIndex += 1
 
     
-    gearman_worker.send_job_status(job, 8, 10)
+    worker.send_job_status(job, 80, 100)
     
-    if(setDirectoryOwnerGroupPermissions(baseDir + '/' + cruiseID + '/' +  dataDashboardDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
+    if(setDirectoryOwnerGroupPermissions(baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:
         print "Error Setting file/directory ownership"
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
     
-    gearman_worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 90, 100)
     
     try:
         #print "Open Data Dashboard Manifest file"
@@ -543,17 +478,14 @@ def task_callback2(gearman_worker, job):
         DataDashboardManifest.close()
         os.chown(dataDashboardManifestFilePath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
         job_results['parts'].append({"partName": "Writing Data Dashboard Manifest file", "result": "Pass"})
-        gearman_worker.send_job_status(job, 95, 100)
-
-    #print 'Updating DB'  
-    #updateDB(dataObj['siteRoot'], cruiseID)
+        worker.send_job_status(job, 95, 100)
     
-    gearman_worker.send_job_status(job, 10, 10)
+    worker.send_job_status(job, 10, 10)
     
     return json.dumps(job_results)
 
 global new_worker
-new_worker = CustomGearmanWorker(['localhost:4730'])
+new_worker = OVDMGearmanWorker()
 
 def sigquit_handler(_signo, _stack_frame):
     print "Stopping"
@@ -568,6 +500,6 @@ signal.signal(signal.SIGQUIT, sigquit_handler)
 signal.signal(signal.SIGINT, sigint_handler)
 
 new_worker.set_client_id('dataDashboard.py')
-new_worker.register_task("updateDataDashboard", task_callback)
-new_worker.register_task("rebuildDataDashboard", task_callback2)
+new_worker.register_task("updateDataDashboard", task_updateDataDashboard)
+new_worker.register_task("rebuildDataDashboard", task_rebuildDataDashboard)
 new_worker.work()

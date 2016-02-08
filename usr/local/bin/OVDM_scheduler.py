@@ -46,6 +46,7 @@ import argparse
 import urlparse
 import json
 import gearman
+import openvdm
 
 def getWarehouseConfig(siteRoot):
     url = siteRoot + 'api/warehouse/getShipboardDataWarehouseConfig'
@@ -120,9 +121,14 @@ def getSystemStatus(siteRoot):
         sys.exit(1)
     
 def main(argv):
+    
+    time.sleep(10)
+    
+    openVDM = openvdm.OpenVDM()
+    
     parser = argparse.ArgumentParser(description='OpenVDM Data Transfer Scheduler')
-    parser.add_argument('siteRoot', metavar='siteRoot', help='the base URL for this OpenVDM installation')
-    parser.add_argument('--interval', type=int, default=5, help='Delay in minutes')
+    parser.add_argument('--siteRoot', default=openVDM.getSiteRoot(), metavar='siteRoot', help='the base URL for this OpenVDM installation')
+    parser.add_argument('--interval', default=openVDM.getTransferInterval(), metavar='interval', type=int, help='Delay in minutes')
 
     args = parser.parse_args()
     #print args.siteRoot
@@ -131,11 +137,8 @@ def main(argv):
     if not bool(parsed_url.scheme) or not bool(parsed_url.netloc):
         print args.siteRoot + " is not a valid URL" 
         sys.exit(1)
-        
-    time.sleep(10)
     
-    warehouseConfig = getWarehouseConfig(args.siteRoot)
-    #print json.dumps(warehouseConfig, indent=2)
+    gm_client = gearman.GearmanClient([openVDM.getGearmanServer()])
     
     while True:
         
@@ -148,58 +151,39 @@ def main(argv):
             else:
                 break
 
-        collectionSystemTransfers = getCollectionSystemTransfers(args.siteRoot)
+        collectionSystemTransfers = openVDM.getCollectionSystemTransfers()
         for collectionSystemTransfer in collectionSystemTransfers:
-            print 'Submitting data transfer job for: ' + collectionSystemTransfer['name']
+            print 'Submitting collection system transfer job for: ' + collectionSystemTransfer['longName']
 
             gmData = {}
-            gmData['siteRoot'] = args.siteRoot
-            gmData['cruiseID'] = getCruiseID(args.siteRoot)['cruiseID']
-            gmData['cruiseStartDate'] = getCruiseStartDate(args.siteRoot)['cruiseStartDate']
-            gmData['systemStatus'] = getSystemStatus(args.siteRoot)['systemStatus']
-            gmData['collectionSystemTransfer'] = collectionSystemTransfer
-            gmData['shipboardDataWarehouse'] = getWarehouseConfig(args.siteRoot)
+            gmData['collectionSystemTransfer'] = {}
+            gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
             #print json.dumps(gmData, indent=2)
 
-            gm_client = gearman.GearmanClient(['localhost:4730'])
             completed_job_request = gm_client.submit_job("runCollectionSystemTransfer", json.dumps(gmData), background=True)
             #resultsObj = json.loads(completed_job_request.result)
             time.sleep(2)
+
             
-        cruiseDataTransfers = getCruiseDataTransfers(args.siteRoot)
-                         
+        cruiseDataTransfers = openVDM.getCruiseDataTransfers()
         for cruiseDataTransfer in cruiseDataTransfers:
-            print 'Submitting data transfer job for: ' + cruiseDataTransfer['name']
+            print 'Submitting cruise data transfer job for: ' + cruiseDataTransfer['longName']
 
             gmData = {}
-            gmData['siteRoot'] = args.siteRoot
-            gmData['cruiseID'] = getCruiseID(args.siteRoot)['cruiseID']
-            gmData['systemStatus'] = getSystemStatus(args.siteRoot)['systemStatus']
-            gmData['cruiseDataTransfer'] = cruiseDataTransfer
-            gmData['shipboardDataWarehouse'] = getWarehouseConfig(args.siteRoot)
+            gmData['cruiseDataTransfer'] = {}
+            gmData['cruiseDataTransfer']['cruiseDataTransferID'] = cruiseDataTransfer['cruiseDataTransferID']
             #print json.dumps(gmData, indent=2)
 
-            gm_client = gearman.GearmanClient(['localhost:4730'])
             completed_job_request = gm_client.submit_job("runCruiseDataTransfer", json.dumps(gmData), background=True)
             #resultsObj = json.loads(completed_job_request.result)
             time.sleep(2)
             
-        requiredCruiseDataTransfers = getRequiredCruiseDataTransfers(args.siteRoot)
-        #print json.dumps(cruiseDataTransfers, indent=2)
-        
+        requiredCruiseDataTransfers = openVDM.getRequiredCruiseDataTransfers()
         for requiredCruiseDataTransfer in requiredCruiseDataTransfers:
             if requiredCruiseDataTransfer['name'] == 'SSDW':
-                print 'Submitting data transfer job for: ' + requiredCruiseDataTransfer['name']
+                print 'Submitting cruise data transfer job for: ' + requiredCruiseDataTransfer['longName']
 
                 gmData = {}
-                gmData['siteRoot'] = args.siteRoot
-                gmData['cruiseID'] = getCruiseID(args.siteRoot)['cruiseID']
-                gmData['systemStatus'] = getSystemStatus(args.siteRoot)['systemStatus']
-                gmData['cruiseDataTransfer'] = requiredCruiseDataTransfer
-                gmData['shipboardDataWarehouse'] = getWarehouseConfig(args.siteRoot)
-                #print json.dumps(gmData, indent=2)
-
-                gm_client = gearman.GearmanClient(['localhost:4730'])
                 completed_job_request = gm_client.submit_job("runShipToShoreTransfer", json.dumps(gmData), background=True)
                 #resultsObj = json.loads(completed_job_request.result)
 

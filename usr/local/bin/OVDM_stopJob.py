@@ -35,147 +35,115 @@ import sys
 import gearman
 import shutil
 import json
-import requests
+import time
 import signal
+import openvdm
 
-def getJobInfo(dataObj):
+def getJobInfo(worker):
 
-    jobs = []
-        
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
-    r = requests.get(url)
-    #print r.json()
-    for transfer in r.json():
-        if transfer['pid'] != "0":
-            jobs.append({'type': 'collectionSystemTransfer', 'id': transfer['collectionSystemTransferID'], 'name': transfer['name'], 'pid': transfer['pid']})
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/getCruiseDataTransfers'
-    r = requests.get(url)
-    #print r.json()
-    for transfer in r.json():
-        if transfer['pid'] != "0":
-            jobs.append({'type': 'cruiseDataTransfer', 'id': transfer['cruiseDataTransferID'], 'name': transfer['name'], 'pid': transfer['pid']})
-    
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/getRequiredCruiseDataTransfers'
-    r = requests.get(url)
-    #print r.json()
-    for transfer in r.json():
-        if transfer['pid'] != "0":
-            jobs.append({'type': 'cruiseDataTransfer', 'id': transfer['cruiseDataTransferID'], 'name': transfer['name'], 'pid': transfer['pid']})
-    
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/getTasks'
-    r = requests.get(url)
-    #print r.json()
-    for task in r.json():
-        if task['pid'] != "0":
-            jobs.append({'type': 'task', 'id': task['taskID'], 'name': task['name'], 'pid': task['pid']})
+    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    for collectionSystemTransfer in collectionSystemTransfers:
+        if collectionSystemTransfer['pid'] == worker.jobPID:
+            return {'type': 'collectionSystemTransfer', 'id': collectionSystemTransfer['collectionSystemTransferID'], 'name': collectionSystemTransfer['name'], 'pid': collectionSystemTransfer['pid']}
             
-    # Set Error for current tranfer in DB via API
-    #url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/getCruiseDataTransfers'
-    #r = requests.get(url)
-    #print jobs
+
+    cruiseDataTransfers = worker.OVDM.getCruiseDataTransfers()
+    for cruiseDataTransfer in cruiseDataTransfers:
+        if cruiseDataTransfer['pid'] != "0":
+            return {'type': 'cruiseDataTransfer', 'id': cruiseDataTransfer['cruiseDataTransferID'], 'name': cruiseDataTransfer['name'], 'pid': cruiseDataTransfer['pid']}
     
-    for job in jobs:
-        if job['pid'] == dataObj['pid']:
-            return job
-        
+    cruiseDataTransfers = worker.OVDM.getRequiredCruiseDataTransfers()
+    for cruiseDataTransfer in cruiseDataTransfers:
+        if cruiseDataTransfer['pid'] != "0":
+            return {'type': 'cruiseDataTransfer', 'id': cruiseDataTransfer['cruiseDataTransferID'], 'name': cruiseDataTransfer['name'], 'pid': cruiseDataTransfer['pid']}
+    
+    tasks = worker.OVDM.getTasks()
+    for task in tasks:
+        if task['pid'] != "0":
+            return {'type': 'task', 'id': task['taskID'], 'name': task['name'], 'pid': task['pid']}
+                        
     return {'type':'unknown'}
 
-def sendKillMsg(dataObj, message):
+
+class OVDMGearmanWorker(gearman.GearmanWorker):
     
-    url = dataObj['siteRoot'] + 'api/messages/newMessage'
-    payload = {'message': message}
-    r = requests.post(url, data=payload)
-
-def setIdle_cruiseDataTransfer(dataObj, id):
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setIdleCruiseDataTransfer/' + id
-    r = requests.get(url)
-
-def setIdle_collectionSystemTransfer(dataObj, id):
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + id
-    r = requests.get(url)
-
-def setIdle_task(dataObj, id):
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/tasks/setIdleTask/' + id
-    r = requests.get(url)
-
-class CustomGearmanWorker(gearman.GearmanWorker):
+    def __init__(self, host_list=None):
+        self.OVDM = openvdm.OpenVDM()
+        self.jobPID = ''
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
     def on_job_execute(self, current_job):
-        print "Job started: " + current_job.handle
-        dataObj = json.loads(current_job.data)
-#        setRunning_cruiseDataTransfer(current_job)
-        return super(CustomGearmanWorker, self).on_job_execute(current_job)
+        payloadObj = json.loads(current_job.data)
+        self.jobPID = payloadObj['pid']        
+        print payloadObj
+        
+        print "Job: " + current_job.handle + ", Killing PID: " + self.jobPID + ' started at ' + time.strftime("%D %T", time.gmtime())
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
     def on_job_exception(self, current_job, exc_info):
-        print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
-        print exc_info
-#        setError_cruiseDataTransfer(current_job)
-        return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
+        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " failed at:    " + time.strftime("%D %T", time.gmtime())
+        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of task", "result": "Fail"}]))
+        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
-        resultObj = json.loads(job_result)
-        print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
+        try:
+            resultObj = json.loads(job_result)
         
-        if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-#            setError_cruiseDataTransfer(current_job)
-            print "but something prevented the transfer from successfully completing..."
-            print json.dumps(resultObj)
-        return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
+            if len(resultObj['parts']) > 0:
+                if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                    print resultObj['parts']
+        except:
+            print "Something went wrong"
+            job_result = ''
+
+        print "Job: " + current_job.handle + ", Killing PID: " + self.jobPID + " completed at: " + time.strftime("%D %T", time.gmtime())
+            
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
     def after_poll(self, any_activity):
         # Return True if you want to continue polling, replaces callback_fxn
         return True
 
-def task_callback(gearman_worker, job):
+    
+def task_stopJob(worker, job):
 
     job_results = {'parts':[]}
-
-    dataObj = json.loads(job.data)
-    print 'DECODED dataObj:', json.dumps(dataObj, indent=2)
     
-    jobInfo = getJobInfo(dataObj)
-    print 'DECODED jobInfo:', json.dumps(jobInfo, indent=2)
+    jobInfo = getJobInfo(worker)
+    #print 'DECODED jobInfo:', json.dumps(jobInfo, indent=2)
     
     job_results['parts'].append({"partName": "Retrieve Job Info", "result": "Pass"})
     
     if jobInfo['type'] != "unknown":
-        print "Quitting job: " + jobInfo['pid']
+        #print "Quitting job: " + jobInfo['pid']
         try:
             os.kill(int(jobInfo['pid']), signal.SIGQUIT)
         except OSError:
             if jobInfo['type'] == 'collectionSystemTransfer':
-                setIdle_collectionSystemTransfer(dataObj, jobInfo['id'])
+                worker.OVDM.setIdle_collectionSystemTransfer(jobInfo['id'])
             elif jobInfo['type'] == 'cruiseDataTransfer':
-                setIdle_cruiseDataTransfer(dataObj, jobInfo['id'])
+                worker.OVDM.setIdle_cruiseDataTransfer(jobInfo['id'])
             elif jobInfo['type'] == 'task':
-                setIdle_task(dataObj, jobInfo['id'])
+                worker.OVDM.setIdle_task(jobInfo['id'])
                 
         if jobInfo['type'] == 'collectionSystemTransfer':
-            sendKillMsg(dataObj, "Manual Stop of transfer from " + jobInfo['name'])
+            worker.OVDM.sendMsg("Manual Stop of transfer from " + jobInfo['name'])
         elif jobInfo['type'] == 'cruiseDataTransfer':
-            sendKillMsg(dataObj, "Manual Stop of transfer to " + jobInfo['name'])
+            worker.OVDM.sendMsg("Manual Stop of transfer to " + jobInfo['name'])
         elif jobInfo['type'] == 'task':
-            sendKillMsg(dataObj, "Manual Stop of " + jobInfo['name'])
+            worker.OVDM.sendMsg("Manual Stop of " + jobInfo['name'])
             
         job_results['parts'].append({"partName": "Stopped Job", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Stopped Job", "result": "Fail"})
-
+        
     return json.dumps(job_results)
 
-new_worker = CustomGearmanWorker(['localhost:4730'])
+new_worker = OVDMGearmanWorker()
 new_worker.set_client_id('stopJob.py')
-new_worker.register_task("stopJob", task_callback)
+new_worker.register_task("stopJob", task_stopJob)
 new_worker.work()

@@ -502,9 +502,6 @@ class CollectionSystemTransfers extends Controller {
             
             if(!$error){
                 $_warehouseModel = new \Models\Warehouse();
-                $gmData['siteRoot'] = DIR;
-                $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-                $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
                 $gmData['collectionSystemTransfer'] = (object)array(
                    # 'collectionSystemTransferID' => '0',
                     'name' => $name,
@@ -813,9 +810,6 @@ class CollectionSystemTransfers extends Controller {
             }
         } else if(isset($_POST['inlineTest'])){
             $_warehouseModel = new \Models\Warehouse();
-            $gmData['siteRoot'] = DIR;
-            $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-            $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
             $gmData['collectionSystemTransfer'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
             
             $gmData['collectionSystemTransfer']->name = $_POST['name'];
@@ -911,12 +905,13 @@ class CollectionSystemTransfers extends Controller {
     
     public function test($id) {
         
-        $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
-        $gmData['collectionSystemTransfer'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
-                
+        $collectionSystemTransfer = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
+        $gmData = array(
+            'collectionSystemTransfer' => array(
+                'collectionSystemTransferID' => $collectionSystemTransfer->collectionSystemTransferID
+            )
+        );
+        
         # create the gearman client
         $gmc= new \GearmanClient();
 
@@ -940,14 +935,15 @@ class CollectionSystemTransfers extends Controller {
     
     public function run($id) {
         
-        $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getshipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
-        $gmData['cruiseStartDate'] = $_warehouseModel->getCruiseStartDate();
-        $gmData['collectionSystemTransfer'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
-        $gmData['collectionSystemTransfer']->enable = "1";
-        $gmData['systemStatus'] = "On";
+        $collectionSystemTransfer = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0];
+        
+        $gmData = array(
+            'collectionSystemTransfer' => array(
+                'collectionSystemTransferID' => $collectionSystemTransfer->collectionSystemTransferID,
+                'enable' => "1"
+            ),
+            'systemStatus' => "On"
+        );
         
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -965,9 +961,9 @@ class CollectionSystemTransfers extends Controller {
     
     public function stop($id) {
         
-        $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['pid'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0]->pid;
+        $gmData = array(
+            'pid' => $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id)[0]->pid
+        );
         
         # create the gearman client
         $gmc= new \GearmanClient();

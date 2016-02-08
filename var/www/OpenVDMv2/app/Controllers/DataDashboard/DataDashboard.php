@@ -1,12 +1,14 @@
 <?php
-
 namespace Controllers\DataDashboard;
 use Core\Controller;
+use Core\Router;
 use Core\View;
 use Helpers\Session;
 use Helpers\Url;
+use Helpers\Hooks;
 
-
+//$hooks = Hooks::get();
+//Hooks::addHook('routes', 'Controllers\DataDashboard\DataDashboard@routes');
 
 class Placeholder
 {
@@ -60,6 +62,12 @@ class DataDashboard extends Controller {
             View::render('DataDashboard/noData', $data);
         }
         View::renderTemplate('footer', $data);
+    }
+    
+    public function routes() {
+        Router::any('dataDashboard/position', 'Controllers\DataDashboard\DataDashboard@position');
+        Router::any('dataDashboard/weather', 'Controllers\DataDashboard\DataDashboard@weather');
+        Router::any('dataDashboard/soundVelocity', 'Controllers\DataDashboard\DataDashboard@soundVelocity');
     }
     
     public function position(){

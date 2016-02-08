@@ -11,9 +11,9 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.0
 #      CREATED:  2015-01-01
-#     REVISION:  2015-07-18
+#     REVISION:  2016-02-03
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2015  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,34 +36,30 @@ import tempfile
 import gearman
 import shutil
 import json
-import requests
+import time
 import subprocess
+import openvdm
 
-from subprocess import call
-
-def build_destDir(raw_destDir, data):
+def build_destDir(worker):
     
-    #print raw_destDir
-    
-    returnDestDir = raw_destDir.replace('{cruiseID}', data['cruiseID'])
+    returnDestDir = worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnDestDir
 
-def build_sourceDir(raw_sourceDir, data):
+def build_sourceDir(worker):
     
-    #print raw_sourceDir
-    
-    returnSourceDir = raw_sourceDir.replace('{cruiseID}', data['cruiseID'])
+    returnSourceDir = worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnSourceDir
 
-def test_localSourceDir(data):
-    if os.path.isdir(data['collectionSystemTransfer']['sourceDir']):
+def test_localSourceDir(worker):
+
+    if os.path.isdir(worker.collectionSystemTransfer['sourceDir']):
         return [{"testName": "Source Directory", "result": "Pass"}]
     else:
         return [{"testName": "Source Directory", "result": "Fail"}]
 
-def test_smbSourceDir(data):
+def test_smbSourceDir(worker):
     returnVal = []
 
     # Create temp directory
@@ -72,10 +68,10 @@ def test_smbSourceDir(data):
  
     command = []
     # Verify the server exists
-    if data['collectionSystemTransfer']['smbUser'] == 'guest':
-        command = ['smbclient', '-L', data['collectionSystemTransfer']['smbServer'], '-W', data['collectionSystemTransfer']['smbDomain'], '-g', '-N']
+    if worker.collectionSystemTransfer['smbUser'] == 'guest':
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-N']
     else:
-        command = ['smbclient', '-L', data['collectionSystemTransfer']['smbServer'], '-W', data['collectionSystemTransfer']['smbDomain'], '-g', '-U', data['collectionSystemTransfer']['smbUser'] + '%' + data['collectionSystemTransfer']['smbPass']]
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
     
     #s = ' '
     #print s.join(command)
@@ -102,10 +98,10 @@ def test_smbSourceDir(data):
 
         # Mount SMB Share
 
-        if data['collectionSystemTransfer']['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+data['collectionSystemTransfer']['smbDomain']]
+        if worker.collectionSystemTransfer['smbUser'] == 'guest':
+            command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+worker.collectionSystemTransfer['smbDomain']]
         else:
-            command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+worker.collectionSystemTransfer['smbUser']+',password='+worker.collectionSystemTransfer['smbPass']+',domain='+worker.collectionSystemTransfer['smbDomain']]
 
         #s = ' '
         #print s.join(command)
@@ -120,21 +116,21 @@ def test_smbSourceDir(data):
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
             # If mount is successful, test source directory
-            sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir']
-            if os.path.isdir(mntPoint+data['collectionSystemTransfer']['sourceDir']):
+            sourceDir = mntPoint+worker.collectionSystemTransfer['sourceDir']
+            if os.path.isdir(mntPoint+worker.collectionSystemTransfer['sourceDir']):
                 returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
                 returnVal.append({"testName": "Source Directory", "result": "Fail"})
 
             # Unmount SMB Share
-            call(['sudo', 'umount', mntPoint])
+            subprocess.call(['sudo', 'umount', mntPoint])
 
     # Cleanup
     shutil.rmtree(tmpdir)
 
     return returnVal
 
-def test_rsyncSourceDir(data):
+def test_rsyncSourceDir(worker):
     
     returnVal = []
 
@@ -149,8 +145,8 @@ def test_rsyncSourceDir(data):
         rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
         #print "Saving Transfer Log Summary file"
-        if data['collectionSystemTransfer']['rsyncUser'] != 'anonymous':
-            rsyncPasswordFile.write(data['collectionSystemTransfer']['rsyncPass'])
+        if worker.collectionSystemTransfer['rsyncUser'] != 'anonymous':
+            rsyncPasswordFile.write(worker.collectionSystemTransfer['rsyncPass'])
         else:
             rsyncPasswordFile.write('noPasswordNeeded')                
 
@@ -170,7 +166,7 @@ def test_rsyncSourceDir(data):
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
-    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer']]
+    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer']]
     
     #s = ' '
     #print s.join(command)
@@ -181,7 +177,7 @@ def test_rsyncSourceDir(data):
     if proc.returncode == 0:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + data['collectionSystemTransfer']['sourceDir']]
+        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + worker.collectionSystemTransfer['sourceDir']]
         
         #s = ' '
         #print s.join(command)
@@ -198,18 +194,18 @@ def test_rsyncSourceDir(data):
         returnVal.append({"testName": "Source Directory", "result": "Fail"})
 
     # Cleanup
-        shutil.rmtree(tmpdir)
+    shutil.rmtree(tmpdir)
         
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
-def test_sshSourceDir(data):
+def test_sshSourceDir(worker):
     
     returnVal = []
 
     # Connect to SSH Server
 
-    command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
+    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
     
     #s = ' '
     #print s.join(command)
@@ -220,7 +216,7 @@ def test_sshSourceDir(data):
     if proc.returncode == 0:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
-        command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'ssh', data['collectionSystemTransfer']['sshServer'], '-l', data['collectionSystemTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['collectionSystemTransfer']['sourceDir']]
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', worker.collectionSystemTransfer['sourceDir']]
         
         #s = ' '
         #print s.join(command)
@@ -239,19 +235,18 @@ def test_sshSourceDir(data):
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
-def test_nfsSourceDir(data):
+def test_nfsSourceDir(worker):
     returnVal = []
 
     # Create temp directory
     #print "Create Temp Directory"
     tmpdir = tempfile.mkdtemp()
- 
-    command = []
+    
     # Verify the server exists
-    #if data['collectionSystemTransfer']['nfsUser'] == 'guest':
-    command = ['rpcinfo', '-s', data['collectionSystemTransfer']['nfsServer'].split(":")[0]]
+    #if worker.collectionSystemTransfer['nfsUser'] == 'guest':
+    command = ['rpcinfo', '-s', worker.collectionSystemTransfer['nfsServer'].split(":")[0]]
     #else:
-    #    command = ['rpcinfo', '-s', data['collectionSystemTransfer']['nfsServer'].split(":")[0]]
+    #    command = ['rpcinfo', '-s', worker.collectionSystemTransfer['nfsServer'].split(":")[0]]
     
     #s = ' '
     #print s.join(command)
@@ -286,10 +281,10 @@ def test_nfsSourceDir(data):
 
         # Mount NFS Share
 
-        #if data['collectionSystemTransfer']['nfsUser'] == 'guest':
-        command = ['sudo', 'mount', '-t', 'nfs', data['collectionSystemTransfer']['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
+        #if worker.collectionSystemTransfer['nfsUser'] == 'guest':
+        command = ['sudo', 'mount', '-t', 'nfs', worker.collectionSystemTransfer['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
         #else:
-        #    command = ['sudo', 'mount', '-t', 'nfs', data['collectionSystemTransfer']['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
+        #    command = ['sudo', 'mount', '-t', 'nfs', worker.collectionSystemTransfer['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
 
         #s = ' '
         #print s.join(command)
@@ -304,115 +299,127 @@ def test_nfsSourceDir(data):
             returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
 
             # If mount is successful, test source directory
-            sourceDir = mntPoint+data['collectionSystemTransfer']['sourceDir']
-            if os.path.isdir(mntPoint+data['collectionSystemTransfer']['sourceDir']):
+            sourceDir = mntPoint+worker.collectionSystemTransfer['sourceDir']
+            if os.path.isdir(mntPoint+worker.collectionSystemTransfer['sourceDir']):
                 returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
                 returnVal.append({"testName": "Source Directory", "result": "Fail"})
 
             # Unmount SMB Share
-            call(['sudo', 'umount', mntPoint])
+            subprocess.call(['sudo', 'umount', mntPoint])
 
     # Cleanup
     shutil.rmtree(tmpdir)
 
     return returnVal
 
-def test_destDir(data):
-    destDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir']
-        
+def test_destDir(worker):
+    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID+'/'+worker.collectionSystemTransfer['destDir']
+    
     if os.path.isdir(destDir):
         return [{"testName": "Destination Directory", "result": "Pass"}]
     else:
         return [{"testName": "Destination Directory", "result": "Fail"}]
-    
-def setError_collectionSystemTransfer(job):
-    dataObj = json.loads(job.data)
 
-    if 'collectionSystemTransferID' in dataObj['collectionSystemTransfer']: 
-        # Set Error for current tranfer in DB via API
-        url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setErrorCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-        r = requests.get(url)
+class OVDMGearmanWorker(gearman.GearmanWorker):
 
-def clearError_collectionSystemTransfer(job):
-    dataObj = json.loads(job.data)
-    if dataObj['collectionSystemTransfer']['status'] == "3":
-        if 'collectionSystemTransferID' in dataObj['collectionSystemTransfer']:
-            # Clear Error for current tranfer in DB via API
-            url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-            r = requests.get(url)
-
-class CustomGearmanWorker(gearman.GearmanWorker):
-
+    def __init__(self):
+        self.OVDM = openvdm.OpenVDM()
+        self.cruiseID = ''
+        self.cruiseStartDate = ''
+        self.systemStatus = ''
+        self.startTime = time.gmtime(0)
+        self.collectionSystemTransfer = {}
+        self.shipboardDataWarehouseConfig = {}
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
+        
     def on_job_execute(self, current_job):
-        print "Job started: " + current_job.handle
-        dataObj = json.loads(current_job.data)
+        payloadObj = json.loads(current_job.data)
+        self.startTime = time.gmtime()
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+        
+        try:
+            self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
+        except KeyError:
+            self.collectionSystemTransfer = {'collectionSystemTransferID': '0'}
+        
+        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
+        
+        try:
+            payloadObj['cruiseID']
+        except KeyError:
+            self.cruiseID = self.OVDM.getCruiseID()
+        else:
+            self.cruiseID = payloadObj['cruiseID']
+            
+        #print "Set transfer test status to 'Running'"
+        if self.collectionSystemTransfer['collectionSystemTransferID'] != '0':
+            self.OVDM.setRunning_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
+        
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " connection test started at:   " + time.strftime("%D %T", self.startTime)
 
-        # Add Job to DB via API
-        url = dataObj['siteRoot'] + 'api/gearman/newJob/' + current_job.handle
-        payload = {'jobName': 'Connection Test for ' + dataObj['collectionSystemTransfer']['name'],'jobPid': os.getpid()}
-        r = requests.post(url, data=payload)
-
-        return super(CustomGearmanWorker, self).on_job_execute(current_job)
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
     def on_job_exception(self, current_job, exc_info):
-        print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " connection test failed at:     " + time.strftime("%D %T", time.gmtime())
         self.send_job_data(current_job, json.dumps([{"testName": "Unknown Testing Process", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
-        setError_collectionSystemTransfer(current_job)
+        
+        if self.collectionSystemTransfer['collectionSystemTransferID'] != '0':
+            self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'])
+        
         print exc_info
-        return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
-        print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " connection test ended at:     " + time.strftime("%D %T", time.gmtime())
         #print json.dumps(job_result)
-        dataObj = json.loads(current_job.data)
-        return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
     def after_poll(self, any_activity):
         # Return True if you want to continue polling, replaces callback_fxn
         return True
 
-def task_callback(gearman_worker, job):
-    gearman_worker.send_job_status(job, 1, 4)
-    dataObj = json.loads(job.data)
-    dataObj['collectionSystemTransfer']['destDir'] = build_destDir(dataObj['collectionSystemTransfer']['destDir'],dataObj)
-    dataObj['collectionSystemTransfer']['sourceDir'] = build_sourceDir(dataObj['collectionSystemTransfer']['sourceDir'],dataObj)
-#    print 'DECODED:', json.dumps(dataObj, indent=2)
+def task_testCollectionSystemTransfer(worker, job):
+    worker.send_job_status(job, 1, 4)
+    worker.collectionSystemTransfer['destDir'] = build_destDir(worker)
+    worker.collectionSystemTransfer['sourceDir'] = build_sourceDir(worker)
 
     job_results = []
     
 #    print "Test Source Directory"
-    if dataObj['collectionSystemTransfer']['transferType'] == "1": # Local Directory
-        job_results += test_localSourceDir(dataObj)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "2": # Rsync Server
-        job_results += test_rsyncSourceDir(dataObj)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "3": # SMB Share
-        job_results += test_smbSourceDir(dataObj)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "4": # SSH Server
-        job_results += test_sshSourceDir(dataObj)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "5": # NFS Server/Path
-        job_results += test_nfsSourceDir(dataObj)
-    gearman_worker.send_job_status(job, 2, 4)
+    if worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
+        job_results += test_localSourceDir(worker)
+    elif  worker.collectionSystemTransfer['transferType'] == "2": # Rsync Server
+        job_results += test_rsyncSourceDir(worker)
+    elif  worker.collectionSystemTransfer['transferType'] == "3": # SMB Share
+        job_results += test_smbSourceDir(worker)
+    elif  worker.collectionSystemTransfer['transferType'] == "4": # SSH Server
+        job_results += test_sshSourceDir(worker)
+    elif  worker.collectionSystemTransfer['transferType'] == "5": # NFS Server/Path
+        job_results += test_nfsSourceDir(worker)
+    worker.send_job_status(job, 2, 4)
 
 #    print "Test Destination Directory"
-    job_results += test_destDir(dataObj)
-    gearman_worker.send_job_status(job, 3, 4)
+    job_results += test_destDir(worker)
+    worker.send_job_status(job, 3, 4)
         
     verdict = "Pass"
     for test in job_results:
         if test['result'] == "Fail":
             verdict = "Fail"
-            setError_collectionSystemTransfer(job)
 
-    if verdict == "Pass":
-        clearError_collectionSystemTransfer(job)
+    if worker.collectionSystemTransfer['collectionSystemTransferID'] != '0':
+        if verdict == "Pass":
+            worker.OVDM.clearError_collectionSystemTransfer(worker.collectionSystemTransfer['collectionSystemTransferID'], worker.collectionSystemTransfer['status'])
+        else:
+            worker.OVDM.setError_collectionSystemTransferTest(worker.collectionSystemTransfer['collectionSystemTransferID'])
 
     job_results.append({"testName": "Final Verdict", "result": verdict})
-    gearman_worker.send_job_status(job, 4, 4)
+    worker.send_job_status(job, 4, 4)
 
     return json.dumps(job_results)
 
-new_worker = CustomGearmanWorker(['localhost:4730'])
+new_worker = OVDMGearmanWorker()
 new_worker.set_client_id('testCollectionSystemTransfer.py')
-new_worker.register_task("testCollectionSystemTransfer", task_callback)
+new_worker.register_task("testCollectionSystemTransfer", task_testCollectionSystemTransfer)
 new_worker.work()

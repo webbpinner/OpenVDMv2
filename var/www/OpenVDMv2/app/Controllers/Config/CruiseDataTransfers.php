@@ -431,9 +431,6 @@ class CruiseDataTransfers extends Controller {
 
             if(!$error){
                 $_warehouseModel = new \Models\Warehouse();
-                $gmData['siteRoot'] = DIR;
-                $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-                $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
                 $gmData['cruiseDataTransfer'] = (object)array(
                     'name' => $name,
                     'longName' => $longName,
@@ -678,6 +675,7 @@ class CruiseDataTransfers extends Controller {
                 
                 $where = array('cruiseDataTransferID' => $id);
                 $this->_cruiseDataTransfersModel->updateCruiseDataTransfer($postdata,$where);
+                
                 Session::set('message','Cruise Data Transfers Updated');
                 Url::redirect('config/cruiseDataTransfers');
             } else {
@@ -702,9 +700,6 @@ class CruiseDataTransfers extends Controller {
             }
         } else if(isset($_POST['inlineTest'])){
             $_warehouseModel = new \Models\Warehouse();
-            $gmData['siteRoot'] = DIR;
-            $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-            $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
             $gmData['cruiseDataTransfer'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0];
             
             $gmData['cruiseDataTransfer']->name = $_POST['name'];
@@ -785,11 +780,12 @@ class CruiseDataTransfers extends Controller {
     
     public function test($id) {
         
-        $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
-        $gmData['cruiseDataTransfer'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0];
+        $cruiseDataTransfer = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0];
+        $gmData = array(
+            'cruiseDataTransfer' => array(
+                'cruiseDataTransferID' => $cruiseDataTransfer->cruiseDataTransferID
+            )
+        );
                 
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -839,9 +835,9 @@ class CruiseDataTransfers extends Controller {
         
     public function stop($id) {
         
-        $_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['pid'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0]->pid;
+        $gmData = array(
+            'pid' => $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0]->pid
+        );
         
         # create the gearman client
         $gmc= new \GearmanClient();

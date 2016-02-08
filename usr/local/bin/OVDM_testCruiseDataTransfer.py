@@ -11,9 +11,9 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.0
 #      CREATED:  2015-01-01
-#     REVISION:  2015-12-09
+#     REVISION:  2016-02-07
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2015  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,22 +36,21 @@ import tempfile
 import gearman
 import shutil
 import json
-import requests
+import time
 import subprocess
+import openvdm
 
-from subprocess import call
-
-def test_sourceDir(data):
-    sourceDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']
+def test_sourceDir(worker):
+    sourceDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID
     if os.path.isdir(sourceDir):
         return [{"testName": "Cruise Data Directory", "result": "Pass"}]
     else:
         return [{"testName": "Cruise Data Directory", "result": "Fail"}]
 
-def test_localDestDir(data):
+def test_localDestDir(worker):
 
     returnVal = []
-    sourceDir = data['cruiseDataTransfer']['destDir']
+    sourceDir = worker.cruiseDataTransfer['destDir']
     
     if os.path.isdir(sourceDir):
         returnVal.append({"testName": "Destination Directory", "result": "Pass"})
@@ -69,7 +68,7 @@ def test_localDestDir(data):
 
     return returnVal
 
-def test_smbDestDir(data):
+def test_smbDestDir(worker):
     returnVal = []
 
     # Create temp directory
@@ -77,10 +76,10 @@ def test_smbDestDir(data):
     
     command = []
     # Verify the server exists
-    if data['cruiseDataTransfer']['smbUser'] == 'guest':
-        command = ['smbclient', '-L', data['cruiseDataTransfer']['smbServer'], '-W', data['cruiseDataTransfer']['smbDomain'], '-g', '-N']
+    if worker.cruiseDataTransfer['smbUser'] == 'guest':
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-N']
     else:
-        command = ['smbclient', '-L', data['cruiseDataTransfer']['smbServer'], '-W', data['cruiseDataTransfer']['smbDomain'], '-g', '-U', data['cruiseDataTransfer']['smbUser'] + '%' + data['cruiseDataTransfer']['smbPass']]
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
  
     #s = ' '
     #print s.join(command)
@@ -108,10 +107,10 @@ def test_smbDestDir(data):
 
         # Mount SMB Share
 
-        if data['cruiseDataTransfer']['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw' + ',guest' + ',domain=' + data['cruiseDataTransfer']['smbDomain']]
+        if worker.cruiseDataTransfer['smbUser'] == 'guest':
+            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' + ',domain=' + worker.cruiseDataTransfer['smbDomain']]
         else:
-            command = ['sudo', 'mount', '-t', 'cifs', data['cruiseDataTransfer']['smbServer'], mntPoint, '-o', 'rw' + ',username='+data['cruiseDataTransfer']['smbUser'] + ',password=' + data['cruiseDataTransfer']['smbPass'] + ',domain=' + data['cruiseDataTransfer']['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username='+worker.cruiseDataTransfer['smbUser'] + ',password=' + worker.cruiseDataTransfer['smbPass'] + ',domain=' + worker.cruiseDataTransfer['smbDomain']]
 
         #s = ' '
         #print s.join(command)
@@ -127,8 +126,8 @@ def test_smbDestDir(data):
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
             # If mount is successful, test source directory
-            destDir = mntPoint+data['cruiseDataTransfer']['destDir'].rstrip('/')
-            if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
+            destDir = mntPoint + worker.cruiseDataTransfer['destDir'].rstrip('/')
+            if os.path.isdir(mntPoint + worker.cruiseDataTransfer['destDir']):
                 returnVal.append({"testName": "Destination Directory", "result": "Pass"})
                 try:
                     filepath = destDir + '/' + 'writeTest.txt'
@@ -146,14 +145,14 @@ def test_smbDestDir(data):
                 returnVal.append({"testName": "Write Test", "result": "Fail"})
 
             # Unmount SMB Share
-            call(['sudo', 'umount', mntPoint])
+            subprocess.call(['sudo', 'umount', mntPoint])
 
     # Cleanup
     shutil.rmtree(tmpdir)
 
     return returnVal
 
-def test_rsyncDestDir(data):
+def test_rsyncDestDir(worker):
 
     returnVal = []
     
@@ -166,8 +165,8 @@ def test_rsyncDestDir(data):
         rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
         #print "Saving Transfer Log Summary file"
-        if data['cruiseDataTransfer']['rsyncUser'] != 'anonymous':
-            rsyncPasswordFile.write(data['cruiseDataTransfer']['rsyncPass'])
+        if worker.cruiseDataTransfer['rsyncUser'] != 'anonymous':
+            rsyncPasswordFile.write(worker.cruiseDataTransfer['rsyncPass'])
         else:
             rsyncPasswordFile.write('noPasswordNeeded')                
 
@@ -187,7 +186,7 @@ def test_rsyncDestDir(data):
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
-    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer']]
+    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer']]
     
     #s = ' '
     #print s.join(command)
@@ -198,7 +197,7 @@ def test_rsyncDestDir(data):
     if proc.returncode == 0:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['cruiseDataTransfer']['rsyncUser'] + '@' + data['cruiseDataTransfer']['rsyncServer'] + data['cruiseDataTransfer']['sourceDir']]
+        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + worker.cruiseDataTransfer['sourceDir']]
 
         #s = ' '
         #print s.join(command)
@@ -209,7 +208,7 @@ def test_rsyncDestDir(data):
         if proc.returncode == 0:
             returnVal.append({"testName": "Source Directory", "result": "Pass"})
             
-            command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+            command = ['sshpass', '-p', worker.cruiseDataTransfer['rsyncPass'], 'ssh', worker.cruiseDataTransfer['rsyncServer'], '-l', worker.cruiseDataTransfer['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
             
             #s = ' '
             #print s.join(command)
@@ -220,7 +219,7 @@ def test_rsyncDestDir(data):
             if proc.returncode == 0:
                 returnVal.append({"testName": "Write Test", "result": "Pass"})
                 
-                command = ['sshpass', '-p', data['cruiseDataTransfer']['rsyncPass'], 'ssh', data['cruiseDataTransfer']['rsyncServer'], '-l', data['cruiseDataTransfer']['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+                command = ['sshpass', '-p', worker.cruiseDataTransfer['rsyncPass'], 'ssh', worker.cruiseDataTransfer['rsyncServer'], '-l', worker.cruiseDataTransfer['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
             
                 #s = ' '
                 #print s.join(command)
@@ -244,13 +243,13 @@ def test_rsyncDestDir(data):
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
-def test_sshDestDir(data):
+def test_sshDestDir(worker):
 
     returnVal = []
     
     # Connect to SSH Server
     
-    command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls'];
+    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls'];
     
     #s = ' '
     #print s.join(command)
@@ -261,7 +260,7 @@ def test_sshDestDir(data):
     if proc.returncode == 0:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
-        command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', data['cruiseDataTransfer']['destDir']]
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', worker.cruiseDataTransfer['destDir']]
         
         #s = ' '
         #print s.join(command)
@@ -272,7 +271,7 @@ def test_sshDestDir(data):
         if proc.returncode == 0:
             returnVal.append({"testName": "Destination Directory", "result": "Pass"})
             
-            command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+            command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
             
             #s = ' '
             #print s.join(command)
@@ -283,7 +282,7 @@ def test_sshDestDir(data):
             if proc.returncode == 0:
                 returnVal.append({"testName": "Write Test", "result": "Pass"})
         
-                command = ['sshpass', '-p', data['cruiseDataTransfer']['sshPass'], 'ssh', data['cruiseDataTransfer']['sshServer'], '-l', data['cruiseDataTransfer']['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + data['cruiseDataTransfer']['destDir'] + '/writeTest.txt']
+                command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
             
                 #s = ' '
                 #print s.join(command)
@@ -306,7 +305,7 @@ def test_sshDestDir(data):
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
-def test_nfsDestDir(data):
+def test_nfsDestDir(worker):
     returnVal = []
 
     # Create temp directory
@@ -315,7 +314,7 @@ def test_nfsDestDir(data):
     command = []
 
     # Verify the server exists
-    command = ['rpcinfo', '-s', data['cruiseDataTransfer']['nfsServer'].split(":")[0]]
+    command = ['rpcinfo', '-s', worker.cruiseDataTransfer['nfsServer'].split(":")[0]]
     
     #s = ' '
     #print s.join(command)
@@ -350,7 +349,7 @@ def test_nfsDestDir(data):
 
         # Mount NFS Share
 
-        command = ['sudo', 'mount', '-t', 'nfs', data['cruiseDataTransfer']['nfsServer'], mntPoint, '-o', 'rw' + ',vers=2' + ',hard' + ',intr']
+        command = ['sudo', 'mount', '-t', 'nfs', worker.cruiseDataTransfer['nfsServer'], mntPoint, '-o', 'rw' + ',vers=2' + ',hard' + ',intr']
 
         #s = ' '
         #print s.join(command)
@@ -366,8 +365,8 @@ def test_nfsDestDir(data):
             returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
 
             # If mount is successful, test source directory
-            destDir = mntPoint+data['cruiseDataTransfer']['destDir'].rstrip('/')
-            if os.path.isdir(mntPoint+data['cruiseDataTransfer']['destDir']):
+            destDir = mntPoint+worker.cruiseDataTransfer['destDir'].rstrip('/')
+            if os.path.isdir(mntPoint+worker.cruiseDataTransfer['destDir']):
                 returnVal.append({"testName": "Destination Directory", "result": "Pass"})
                 try:
                     filepath = destDir + '/' + 'writeTest.txt'
@@ -385,100 +384,114 @@ def test_nfsDestDir(data):
                 returnVal.append({"testName": "Write Test", "result": "Fail"})
 
             # Unmount SMB Share
-            call(['sudo', 'umount', mntPoint])
+            subprocess.call(['sudo', 'umount', mntPoint])
 
     # Cleanup
     shutil.rmtree(tmpdir)
 
     return returnVal
 
-def setError_cruiseDataTransfer(job):
-    dataObj = json.loads(job.data)
 
-    if 'cruiseDataTransferID' in dataObj['cruiseDataTransfer']:
-        # Set Error for current tranfer in DB via API
-        url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setErrorCruiseDataTransfer/' + dataObj['cruiseDataTransfer']['cruiseDataTransferID']
-        r = requests.get(url)
+class OVDMGearmanWorker(gearman.GearmanWorker):
+
+    def __init__(self):
+        self.OVDM = openvdm.OpenVDM()
+        self.cruiseID = ''
+        self.systemStatus = ''
+        self.startTime = time.gmtime(0)
+        self.cruiseDataTransfer = {}
+        self.shipboardDataWarehouseConfig = {}
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
     
-def clearError_cruiseDataTransfer(job):
-    dataObj = json.loads(job.data)
-    if dataObj['cruiseDataTransfer']['status'] == "3":
-        if 'cruiseDataTransferID' in dataObj['cruiseDataTransfer']:
-            # Clear Error for current tranfer in DB via API
-            url = dataObj['siteRoot'] + 'api/cruiseDataTransfers/setIdleCruiseDataTransfer/' + dataObj['cruiseDataTransfer']['cruiseDataTransferID']
-            r = requests.get(url)
-
-class CustomGearmanWorker(gearman.GearmanWorker):
-
+    
     def on_job_execute(self, current_job):
-        print "Job started: " + current_job.handle
-        dataObj = json.loads(current_job.data)
+        payloadObj = json.loads(current_job.data)
+        self.startTime = time.gmtime()
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+        
+        try:
+            self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
+        except KeyError:
+            self.cruiseDataTransfer = {'cruiseDataTransferID':'0'}
+        
+        self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
+        
+        try:
+            payloadObj['cruiseID']
+        except KeyError:
+            self.cruiseID = self.OVDM.getCruiseID()
+        else:
+            self.cruiseID = payloadObj['cruiseID']
+            
+        #print "Set transfer test status to 'Running'"
+        if self.cruiseDataTransfer['cruiseDataTransferID'] != '0':
+            self.OVDM.setRunning_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
+        
+        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test started at:   " + time.strftime("%D %T", self.startTime)
 
-        # Add Job to DB via API
-        url = dataObj['siteRoot'] + 'api/gearman/newJob/' + current_job.handle
-        payload = {'jobName': 'Connection Test for ' + dataObj['cruiseDataTransfer']['name'],'jobPid': os.getpid()}
-        r = requests.post(url, data=payload)
-
-        return super(CustomGearmanWorker, self).on_job_execute(current_job)
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
     def on_job_exception(self, current_job, exc_info):
-        print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
+        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test failed at:     " + time.strftime("%D %T", time.gmtime())
         self.send_job_data(current_job, json.dumps([{"testName": "Unknown Testing Process", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
-        setError_cruiseDataTransfer(current_job)
+        
+        if self.cruiseDataTransfer['cruiseDataTransferID'] != '0':
+            self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'])
+        
         print exc_info
-        return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_result):
-        print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
-        dataObj = json.loads(current_job.data)
-        return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
+        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test ended at:     " + time.strftime("%D %T", time.gmtime())
+        #print json.dumps(job_result)
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
     def after_poll(self, any_activity):
         # Return True if you want to continue polling, replaces callback_fxn
         return True
 
-def task_callback(gearman_worker, job):
-    gearman_worker.send_job_status(job, 1, 4)
-    dataObj = json.loads(job.data)
-#    print 'DECODED:', json.dumps(dataObj, indent=2)
+def task_testCruiseDataTransfer(worker, job):
+    worker.send_job_status(job, 1, 4)
 
     job_results = []
     
 #    print "Test Source Directory"
-    job_results += test_sourceDir(dataObj)
-    gearman_worker.send_job_status(job, 2, 4)
+    job_results += test_sourceDir(worker)
+    worker.send_job_status(job, 2, 4)
 
 #    print "Test Destination Directory"
-    if dataObj['cruiseDataTransfer']['transferType'] == "1": # Local Directory
-        job_results += test_localDestDir(dataObj)
-    elif  dataObj['cruiseDataTransfer']['transferType'] == "2": # Rsync Server
-        job_results += test_rsyncDestDir(dataObj)
-    elif  dataObj['cruiseDataTransfer']['transferType'] == "3": # SMB Server
-        job_results += test_smbDestDir(dataObj)
-    elif  dataObj['cruiseDataTransfer']['transferType'] == "4": # SSH Server
-        job_results += test_sshDestDir(dataObj)
-    elif  dataObj['cruiseDataTransfer']['transferType'] == "5": # NFS Server
-        job_results += test_nfsDestDir(dataObj)
+    if worker.cruiseDataTransfer['transferType'] == "1": # Local Directory
+        job_results += test_localDestDir(worker)
+    elif  worker.cruiseDataTransfer['transferType'] == "2": # Rsync Server
+        job_results += test_rsyncDestDir(worker)
+    elif  worker.cruiseDataTransfer['transferType'] == "3": # SMB Server
+        job_results += test_smbDestDir(worker)
+    elif  worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
+        job_results += test_sshDestDir(worker)
+    elif  worker.cruiseDataTransfer['transferType'] == "5": # NFS Server
+        job_results += test_nfsDestDir(worker)
         
     #print json.dumps(job_results)
     
-    gearman_worker.send_job_status(job, 3, 4)
+    worker.send_job_status(job, 3, 4)
 
     verdict = "Pass"
     for test in job_results:
         if test['result'] == "Fail":
             verdict = "Fail"
-            setError_cruiseDataTransfer(job)
 
-    if verdict == "Pass":
-        clearError_cruiseDataTransfer(job)
-
+    if worker.cruiseDataTransfer['cruiseDataTransferID'] != '0':
+        if verdict == "Pass":
+            worker.OVDM.clearError_cruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'], worker.cruiseDataTransfer['status'])
+        else:
+            worker.OVDM.setError_cruiseDataTransferTest(worker.cruiseDataTransfer['cruiseDataTransferID'])
+        
     job_results.append({"testName": "Final Verdict", "result": verdict})
-    gearman_worker.send_job_status(job, 4, 4)
+    worker.send_job_status(job, 4, 4)
 
     return json.dumps(job_results)
 
-new_worker = CustomGearmanWorker(['localhost:4730'])
+new_worker = OVDMGearmanWorker()
 new_worker.set_client_id('testCruiseDataTransfer.py')
-new_worker.register_task("testCruiseDataTransfer", task_callback)
+new_worker.register_task("testCruiseDataTransfer", task_testCruiseDataTransfer)
 new_worker.work()
