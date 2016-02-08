@@ -508,25 +508,28 @@ sudo cp -r ~/OpenVDMv2/usr/local/bin/* /usr/local/bin/
 sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
 ```
 
-####Modify the configuation file for the OpenVDMv2 scheduler
+####Install the OpenVDM configuration files
 ```
-sudo cp /etc/supervisor/conf.d/OVDM_scheduler.conf.dist /etc/supervisor/conf.d/OVDM_scheduler.conf
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.cfg.dist /usr/local/etc/openvdm.cfg
+```
+
+####Modify the OpenVDM configuation file
+```
 sudo nano /etc/supervisor/conf.d/OVDM_scheduler.conf
 ```
 Look for the following line:
 ```
-command=/usr/bin/python /usr/local/bin/OVDM_scheduler.py --interval 5 http://127.0.0.1/OpenVDMv2/
+siteRoot: "http://127.0.0.1/OpenVDMv2/"
 ```
 
 Change the URL to match the URL specified in the Config.php file during the OpenVDMv2 web-application installation.
 
 Restart Supervisor
 ```
-sudo service supervisor
+sudo service supervisor restart
 ```
 
 ####Setup the Samba shares
-
 
 ```
 obey pam restrictions = no
