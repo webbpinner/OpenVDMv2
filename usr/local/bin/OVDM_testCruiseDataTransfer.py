@@ -40,6 +40,7 @@ import time
 import subprocess
 import openvdm
 
+
 def test_sourceDir(worker):
     sourceDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID
     if os.path.isdir(sourceDir):
@@ -47,6 +48,7 @@ def test_sourceDir(worker):
     else:
         return [{"testName": "Cruise Data Directory", "result": "Fail"}]
 
+    
 def test_localDestDir(worker):
 
     returnVal = []
@@ -67,6 +69,7 @@ def test_localDestDir(worker):
         returnVal.append({"testName": "Write Test", "result": "Fail"})
 
     return returnVal
+
 
 def test_smbDestDir(worker):
     returnVal = []
@@ -151,6 +154,7 @@ def test_smbDestDir(worker):
     shutil.rmtree(tmpdir)
 
     return returnVal
+
 
 def test_rsyncDestDir(worker):
 
@@ -243,6 +247,7 @@ def test_rsyncDestDir(worker):
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
+
 def test_sshDestDir(worker):
 
     returnVal = []
@@ -304,6 +309,7 @@ def test_sshDestDir(worker):
 
     #print json.dumps(returnVal, indent=2)
     return returnVal
+
 
 def test_nfsDestDir(worker):
     returnVal = []
@@ -431,6 +437,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
+    
     def on_job_exception(self, current_job, exc_info):
         print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test failed at:     " + time.strftime("%D %T", time.gmtime())
         self.send_job_data(current_job, json.dumps([{"testName": "Unknown Testing Process", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
@@ -441,15 +448,18 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print exc_info
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test ended at:     " + time.strftime("%D %T", time.gmtime())
         #print json.dumps(job_result)
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         # Return True if you want to continue polling, replaces callback_fxn
         return True
 
+    
 def task_testCruiseDataTransfer(worker, job):
     worker.send_job_status(job, 1, 4)
 

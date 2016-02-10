@@ -94,6 +94,7 @@ def move_files(sourceDir, destDir, warehouseUser):
             filePath = os.path.join(root, filename)
             os.chown(filePath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
             shutil.move(filePath, destDir)
+
             
 def build_ScienceDirPath(worker):
 
@@ -118,6 +119,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.taskID = '0'
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
         
+    
     def get_taskID(self, current_job):
         tasks = self.OVDM.getTasks()
         for task in tasks:
@@ -126,6 +128,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 return True
         self.taskID = '0'
         return False
+    
     
     def on_job_execute(self, current_job):
         self.get_taskID(current_job)
@@ -173,8 +176,25 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
+        
+        jobData = {'cruiseID':'', 'self.cruiseStartDate':''}
+        jobData['cruiseID'] = self.cruiseID
+        jobData['cruiseStartDate'] = self.cruiseStartDate
+        
+        if current_job.task == 'setupNewCruise':
+        
+            for task in self.OVDM.getTasksForHook('setupNewCruise'):
+                #print task
+                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+                
+        elif current_job.task == 'finalizeCurrentCruise':
+        
+            for task in self.OVDM.getTasksForHook('finalizeCurrentCruise'):
+                #print task
+                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
         if len(resultObj['parts']) > 0:
             if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
@@ -192,6 +212,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         self.stop = False
         self.taskID = '0'
@@ -202,9 +223,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             self.quit - False
         return True
     
+    
     def stopTask(self):
         self.stop = True
 
+    
     def quitWorker(self):
         self.stop = True
         self.quit = True
@@ -286,7 +309,8 @@ def task_setupNewCruise(worker, job):
     worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)
-        
+    
+    
 def task_finalizeCurrentCruise(worker, job):
 
     job_results = {'parts':[]}
@@ -369,6 +393,7 @@ def task_finalizeCurrentCruise(worker, job):
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
+
 def task_exportOVDMConfig(worker, job):
 
     job_results = {'parts':[]}
@@ -398,13 +423,16 @@ def task_exportOVDMConfig(worker, job):
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
+
 global new_worker
 new_worker = OVDMGearmanWorker()
+
 
 def sigquit_handler(_signo, _stack_frame):
     print "QUIT Signal Received"
     new_worker.stopWorker()
     
+
 def sigint_handler(_signo, _stack_frame):
     print "INT Signal Received"
     new_worker.quitWorker()

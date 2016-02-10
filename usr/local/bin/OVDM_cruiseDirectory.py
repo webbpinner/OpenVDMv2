@@ -47,12 +47,14 @@ taskLookup = {
     "rebuildCruiseDirectory": "Updating Cruise Directory"
 }
 
+
 def build_destDir(worker, destDir):
     
     #print raw_destDir
     returnDestDir = destDir.replace('{cruiseID}', worker.cruiseID)
     #print returnDestDir
     return returnDestDir
+
 
 def build_directorylist(worker):
 
@@ -79,6 +81,7 @@ def build_directorylist(worker):
 
     return returnDirectories
 
+
 def create_directories(worker, directoryList):
 
     for directory in directoryList:
@@ -91,6 +94,7 @@ def create_directories(worker, directoryList):
                 return False
         
     return True
+
 
 def setDirectoryOwnerGroupPermissions(path, uid, gid):
     try:
@@ -170,6 +174,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
         
@@ -189,6 +194,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         self.stop = False
         self.taskID = '0'
@@ -199,9 +205,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             self.quit - False
         return True
     
+    
     def stopTask(self):
         self.stop = True
 
+    
     def quitWorker(self):
         self.stop = True
         self.quit = True
@@ -251,6 +259,7 @@ def task_createCruiseDirectory(worker, job):
     
     return json.dumps(job_results)
         
+
 def task_rebuildCruiseDirectory(worker, job):
 
     job_results = {'parts':[]}
@@ -295,14 +304,22 @@ def task_rebuildCruiseDirectory(worker, job):
 
     return json.dumps(job_results)
 
+
 global new_worker
-new_worker = OVDMGearmanWorker(['localhost:4730'])
+new_worker = OVDMGearmanWorker()
 
 def sigquit_handler(_signo, _stack_frame):
-    print "Stopping"
-    new_worker.stopJob()
+    print "QUIT Signal Received"
+    new_worker.stopWorker()
+    
+
+def sigint_handler(_signo, _stack_frame):
+    print "INT Signal Received"
+    new_worker.quitWorker()
+    
     
 signal.signal(signal.SIGQUIT, sigquit_handler)
+signal.signal(signal.SIGINT, sigint_handler)
 
 new_worker.set_client_id('cruiseDirectory.py')
 new_worker.register_task("createCruiseDirectory", task_createCruiseDirectory)

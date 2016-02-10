@@ -47,113 +47,6 @@ import grp
 import openvdm
 from random import randint
 
-class OVDMGearmanWorker(gearman.GearmanWorker):
-    
-    def __init__(self):
-        self.stop = False
-        self.quit = False
-        self.OVDM = openvdm.OpenVDM()
-        self.cruiseID = ''
-        self.cruiseStartDate = ''
-        self.systemStatus = ''
-        self.collectionSystemTransfer = {}
-        self.shipboardDataWarehouseConfig = {}
-        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
-    
-    def on_job_execute(self, current_job):
-        payloadObj = json.loads(current_job.data)
-        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
-        self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
-        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
-        
-        self.cruiseID = self.OVDM.getCruiseID()
-        self.cruiseStartDate = self.OVDM.getCruiseStartDate()
-        self.systemStatus = self.OVDM.getSystemStatus()
-        if len(payloadObj) > 0:
-            try:
-                payloadObj['cruiseID']
-            except KeyError:
-                self.cruiseID = self.OVDM.getCruiseID()
-            else:
-                self.cruiseID = payloadObj['cruiseID']
-
-            try:
-                payloadObj['cruiseStartDate']
-            except KeyError:
-                self.cruiseStartDate = self.OVDM.getCruiseStartDate()
-            else:
-                self.cruiseStartDate = payloadObj['cruiseStartDate']
-
-            try:
-                payloadObj['systemStatus']
-            except KeyError:
-                self.systemStatus = self.OVDM.getSystemStatus()
-            else:
-                self.systemStatus = payloadObj['systemStatus']
-        
-        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer started at:   " + time.strftime("%D %T", time.gmtime())
-        
-        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
-
-    def on_job_exception(self, current_job, exc_info):
-        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer failed at:    " + time.strftime("%D %T", time.gmtime())
-        
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
-        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], "Unknown Part of Transfer Failed")
-        
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
-        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
-
-    def on_job_complete(self, current_job, job_result):
-        resultObj = json.loads(job_result)
-        
-        if resultObj['files']['new'] or resultObj['files']['updated']:
-
-            jobData = {'cruiseID':'', 'collectionSystemTransferID':'', 'files':{}}
-            jobData['cruiseID'] = self.cruiseID
-            jobData['collectionSystemTransferID'] = self.collectionSystemTransfer['collectionSystemTransferID']
-
-            destDir = build_destDir(self).rstrip('/')
-            jobData['files'] = resultObj['files']
-            jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
-            jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
-                
-            gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
-            
-            for task in self.OVDM.getTasksForHook('runCollectionSystemTransfer'):
-                #print task
-                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
-        
-        # If the last part of the results failed
-        if len(resultObj['parts']) > 0:
-            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                #print "...but there was an error:"
-                print json.dumps(resultObj['parts'])
-                self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
-            else:
-                self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
-        else:
-            self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
-
-        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer completed at: " + time.strftime("%D %T", time.gmtime())
-            
-        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
-
-    def after_poll(self, any_activity):
-        self.stop = False
-        if self.quit:
-            print "Quitting"
-            self.shutdown()
-        return True
-    
-    def stopTransfer(self):
-        self.stop = True
-
-    def quitWorker(self):
-        self.stop = True
-        self.quit = True
 
 def build_filelist(worker, sourceDir):
 
@@ -197,6 +90,7 @@ def build_filelist(worker, sourceDir):
 
     return returnFiles
 
+
 def build_rsyncFilelist(worker, sourceDir):
 
     #print "Build file list"
@@ -236,7 +130,6 @@ def build_rsyncFilelist(worker, sourceDir):
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
 
-    
     command = ['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
     
     #s = ' '
@@ -251,8 +144,6 @@ def build_rsyncFilelist(worker, sourceDir):
         
     #print "rsyncFileListOut: " + rsyncFileList
     
-#    root = data['collectionSystemTransfer']['sourceDir']
-#    baseDir = os.path.basename(data['collectionSystemTransfer']['sourceDir'])
     threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     
@@ -299,6 +190,7 @@ def build_rsyncFilelist(worker, sourceDir):
     #print 'DECODED returnFiles:', json.dumps(returnFiles, indent=2)  
     
     return returnFiles
+
 
 def build_sshFilelist(worker, sourceDir):
 
@@ -323,8 +215,6 @@ def build_sshFilelist(worker, sourceDir):
         
     #print "rsyncFileListOut: " + rsyncFileList
     
-#    root = data['collectionSystemTransfer']['sourceDir']
-#    baseDir = os.path.basename(data['collectionSystemTransfer']['sourceDir'])
     threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     
@@ -372,6 +262,7 @@ def build_sshFilelist(worker, sourceDir):
     
     return returnFiles
 
+
 def build_filters(worker):
     
     rawFilters = {'includeFilter': worker.collectionSystemTransfer['includeFilter'],'excludeFilter': worker.collectionSystemTransfer['excludeFilter'],'ignoreFilter': worker.collectionSystemTransfer['ignoreFilter']}
@@ -385,11 +276,13 @@ def build_filters(worker):
     #print json.dumps(returnFilters, indent=2)
     return returnFilters
 
+
 def build_destDir(worker):
     
     returnDestDir = worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnDestDir
+
 
 def build_sourceDir(worker):
     
@@ -397,6 +290,7 @@ def build_sourceDir(worker):
 
     return returnSourceDir
     
+
 def build_destDirectories(destDir, files):
     files = [filename.replace(filename, destDir + '/' + filename, 1) for filename in files]
     #print 'DECODED Files:', json.dumps(files, indent=2)
@@ -406,9 +300,9 @@ def build_destDirectories(destDir, files):
             #print "Creating Directory: " + dirname
             os.makedirs(dirname)
 
+            
 def build_logfileDirPath(worker):
 
-    #print siteRoot
     requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
 
     for directory in requiredExtraDirectories:
@@ -417,6 +311,7 @@ def build_logfileDirPath(worker):
             break
     
     return ''
+
 
 def setDirectoryOwnerGroupPermissions(path, uid, gid):
     # Set the file permission and ownership for the current directory
@@ -441,6 +336,7 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
             except OSError:
                 return False
     return True
+
 
 def writeLogFile(logfileName, warehouseUser, files):
     
@@ -541,6 +437,7 @@ def transfer_localSourceDir(worker, job):
     # Cleanup
     shutil.rmtree(tmpdir)    
     return files
+
 
 def transfer_smbSourceDir(worker, job):
 
@@ -744,6 +641,7 @@ def transfer_rsyncSourceDir(worker, job):
     shutil.rmtree(tmpdir)    
     return files
 
+
 def transfer_sshSourceDir(worker, job):
 
     #print "Transfer from SSH Server"
@@ -812,6 +710,7 @@ def transfer_sshSourceDir(worker, job):
     # Cleanup
     shutil.rmtree(tmpdir)    
     return files
+
 
 def transfer_nfsSourceDir(worker, job):
 
@@ -912,6 +811,121 @@ def transfer_nfsSourceDir(worker, job):
     return files
 
 
+class OVDMGearmanWorker(gearman.GearmanWorker):
+    
+    def __init__(self):
+        self.stop = False
+        self.quit = False
+        self.OVDM = openvdm.OpenVDM()
+        self.cruiseID = ''
+        self.cruiseStartDate = ''
+        self.systemStatus = ''
+        self.collectionSystemTransfer = {}
+        self.shipboardDataWarehouseConfig = {}
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
+    
+    
+    def on_job_execute(self, current_job):
+        payloadObj = json.loads(current_job.data)
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+        self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
+        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
+        
+        self.cruiseID = self.OVDM.getCruiseID()
+        self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+        self.systemStatus = self.OVDM.getSystemStatus()
+        if len(payloadObj) > 0:
+            try:
+                payloadObj['cruiseID']
+            except KeyError:
+                self.cruiseID = self.OVDM.getCruiseID()
+            else:
+                self.cruiseID = payloadObj['cruiseID']
+
+            try:
+                payloadObj['cruiseStartDate']
+            except KeyError:
+                self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+            else:
+                self.cruiseStartDate = payloadObj['cruiseStartDate']
+
+            try:
+                payloadObj['systemStatus']
+            except KeyError:
+                self.systemStatus = self.OVDM.getSystemStatus()
+            else:
+                self.systemStatus = payloadObj['systemStatus']
+        
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer started at:   " + time.strftime("%D %T", time.gmtime())
+        
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
+
+    
+    def on_job_exception(self, current_job, exc_info):
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer failed at:    " + time.strftime("%D %T", time.gmtime())
+        
+        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
+        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], "Unknown Part of Transfer Failed")
+        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
+
+    
+    def on_job_complete(self, current_job, job_result):
+        resultObj = json.loads(job_result)
+        
+        if resultObj['files']['new'] or resultObj['files']['updated']:
+
+            jobData = {'cruiseID':'', 'collectionSystemTransferID':'', 'files':{}}
+            jobData['cruiseID'] = self.cruiseID
+            jobData['collectionSystemTransferID'] = self.collectionSystemTransfer['collectionSystemTransferID']
+
+            destDir = build_destDir(self).rstrip('/')
+            jobData['files'] = resultObj['files']
+            jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
+            jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
+                
+            gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
+            
+            for task in self.OVDM.getTasksForHook('runCollectionSystemTransfer'):
+                #print task
+                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+        
+        # If the last part of the results failed
+        if len(resultObj['parts']) > 0:
+            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                #print "...but there was an error:"
+                print json.dumps(resultObj['parts'])
+                self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+            else:
+                self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+        else:
+            self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer completed at: " + time.strftime("%D %T", time.gmtime())
+            
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
+
+    
+    def after_poll(self, any_activity):
+        self.stop = False
+        if self.quit:
+            print "Quitting"
+            self.shutdown()
+        return True
+    
+    
+    def stopTransfer(self):
+        self.stop = True
+
+        
+    def quitWorker(self):
+        self.stop = True
+        self.quit = True
+
+
 def task_runCollectionSystemTransfer(worker, job):
 
     time.sleep(randint(0,5))
@@ -1000,7 +1014,6 @@ def task_runCollectionSystemTransfer(worker, job):
     warehouseTransferLogDir = build_logfileDirPath(worker)
     #print warehouseTransferLogDir   
 
-    
     if job_results['files']['new'] or job_results['files']['updated']:
     
         #print "Send transfer log"
@@ -1049,6 +1062,7 @@ def task_runCollectionSystemTransfer(worker, job):
 
     return json.dumps(job_results)
 
+
 global ovdmWorker
 ovdmWorker = OVDMGearmanWorker()
 
@@ -1056,9 +1070,11 @@ def sigquit_handler(_signo, _stack_frame):
     print "QUIT Signal Received"
     ovdmWorker.stopTransfer()
     
+    
 def sigint_handler(_signo, _stack_frame):
     print "INT Signal Received"
     ovdmWorker.quitWorker()
+    
     
 signal.signal(signal.SIGQUIT, sigquit_handler)
 signal.signal(signal.SIGINT, sigint_handler)

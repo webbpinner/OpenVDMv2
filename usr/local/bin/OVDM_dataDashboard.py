@@ -42,16 +42,12 @@ import time
 import subprocess
 import openvdm
 
-#processingScriptDir = "/usr/local/bin/OVDM_dataProcessingScripts"
-#processingScriptSuffix = "_dataDashboard.py"
-
 taskLookup = {
     "rebuildDataDashboard": "Rebuilding Data Dashboard",
     "updateDataDashboard": "Updating Data Dashboard"
 }
 
-dataDashboardManifestFilename = 'manifest.json'
-
+dataDashboardManifestFN = 'manifest.json'
 
 
 def build_filelist(sourceDir):
@@ -63,6 +59,7 @@ def build_filelist(sourceDir):
                 
     returnFiles = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles]
     return returnFiles
+
 
 def setDirectoryOwnerGroupPermissions(path, uid, gid):
     os.chown(path, uid, gid)
@@ -80,6 +77,7 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
                 return False
     return True
 
+
 def build_DashboardDataDirPath(worker):
 
     # Set Error for current tranfer in DB via API
@@ -90,6 +88,7 @@ def build_DashboardDataDirPath(worker):
             break
     
     return ''
+
 
 def output_JSONDataToFile(filePath, contents, warehouseUser):
     
@@ -122,6 +121,7 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
 
     return True
 
+
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
@@ -132,6 +132,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.taskID = '0'
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
+
     def get_taskID(self, current_job):
         tasks = self.OVDM.getTasks()
         for task in tasks:
@@ -141,6 +142,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.taskID = '0'
         return False
     
+
     def on_job_execute(self, current_job):
         self.get_taskID(current_job)
         payloadObj = json.loads(current_job.data)
@@ -177,8 +179,32 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
+        
+        gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
+
+        jobData = {'cruiseID':'', 'collectionSystemTransferID':''}
+        jobData['cruiseID'] = self.cruiseID
+        
+        if current_job.task == 'updateDataDashboard':
+        
+            payloadObj = json.loads(current_job.data)
+            jobData['collectionSystemTransferID'] = payloadObj['collectionSystemTransferID']
+
+            for task in self.OVDM.getTasksForHook(current_job.task):
+                #print task
+                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+
+        elif current_job.task == 'rebuildDataDashboard':
+            
+            collectionSystemTransfers = self.OVDM.getCollectionSystemTransfers()
+            for collectionSystemTransfer in collectionSystemTransfers:
+                jobData['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
+                for task in self.OVDM.getTasksForHook(current_job.task):
+                    #print task
+                    submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
         if len(resultObj['parts']) > 0:
             if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
@@ -191,11 +217,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         else:
             self.OVDM.setIdle_task(self.taskID)
         
-            
         print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " completed at: " + time.strftime("%D %T", time.gmtime())
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         self.stop = False
         self.taskID = '0'
@@ -206,13 +232,16 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             self.quit - False
         return True
     
+    
     def stopTask(self):
         self.stop = True
 
+        
     def quitWorker(self):
         self.stop = True
         self.quit = True
 
+        
 def task_updateDataDashboard(worker, job):
 
     job_results = {'parts':[]}
@@ -224,7 +253,7 @@ def task_updateDataDashboard(worker, job):
     baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     dataDashboardDir = build_DashboardDataDirPath(worker)
-    dataDashboardManifestFilePath = baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFilename
+    dataDashboardManifestFilePath = baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFN
     collectionSystemTransfer = worker.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])
 
     worker.send_job_status(job, 5, 100)
@@ -340,7 +369,6 @@ def task_updateDataDashboard(worker, job):
                 
         ### need to add delete code here ###
         
-        
         #print 'DECODED  - Updated Manifest Entries:', json.dumps(existingManifestEntries)
         if output_JSONDataToFile(dataDashboardManifestFilePath, existingManifestEntries, warehouseUser):
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
@@ -359,7 +387,8 @@ def task_updateDataDashboard(worker, job):
     worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)    
-        
+
+
 def task_rebuildDataDashboard(worker, job):
 
     job_results = {'parts':[]}
@@ -371,7 +400,7 @@ def task_rebuildDataDashboard(worker, job):
     baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     dataDashboardDir = build_DashboardDataDirPath(worker)
-    dataDashboardManifestFilePath = baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFilename
+    dataDashboardManifestFilePath = baseDir + '/' + worker.cruiseID + '/' +  dataDashboardDir + '/' + dataDashboardManifestFN
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
     #print 'DECODED collectionSystemTransfers:', json.dumps(collectionSystemTransfers, indent=2)
 
@@ -450,7 +479,6 @@ def task_rebuildDataDashboard(worker, job):
                 break
 
         collectionSystemTransferIndex += 1
-
     
     worker.send_job_status(job, 80, 100)
     
@@ -484,19 +512,22 @@ def task_rebuildDataDashboard(worker, job):
     
     return json.dumps(job_results)
 
+
 global new_worker
 new_worker = OVDMGearmanWorker()
+
 
 def sigquit_handler(_signo, _stack_frame):
     print "Stopping"
     new_worker.stopTask()
+
     
 def sigint_handler(_signo, _stack_frame):
     print "Quitting"
     new_worker.quitWorker()
     
+    
 signal.signal(signal.SIGQUIT, sigquit_handler)
-
 signal.signal(signal.SIGINT, sigint_handler)
 
 new_worker.set_client_id('dataDashboard.py')

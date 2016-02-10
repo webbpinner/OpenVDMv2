@@ -62,6 +62,7 @@ def build_filelist(sourceDir, filters):
     returnFiles['exclude'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['exclude']]
     return returnFiles
 
+
 def build_destDirectories(destDir, files):
     files = [filename.replace(filename, destDir + filename, 1) for filename in files]
     #print 'DECODED Files:', json.dumps(files, indent=2)
@@ -71,6 +72,7 @@ def build_destDirectories(destDir, files):
             #print "Creating Directory: " + dirname
             os.makedirs(dirname)
 
+            
 def transfer_localDestDir(worker, job):
 
     #print "Transfer from Local Directory"
@@ -136,6 +138,7 @@ def transfer_localDestDir(worker, job):
     # Cleanup
     shutil.rmtree(tmpdir)    
     return files
+
 
 def transfer_smbDestDir(worker, job):
     
@@ -210,7 +213,6 @@ def transfer_smbDestDir(worker, job):
         rsyncFileListFile.close()
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
-    
     command = ['rsync', '-rlptDi', '--files-from=' + rsyncFileListPath, worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], destDir]
     
     #s = ' '
@@ -241,6 +243,7 @@ def transfer_smbDestDir(worker, job):
 
     #print 'DECODED Files:', json.dumps(files, indent=2)
     return files
+
 
 def transfer_rsyncDestDir(worker, job):
 
@@ -333,6 +336,7 @@ def transfer_rsyncDestDir(worker, job):
     shutil.rmtree(tmpdir)    
     return files
 
+
 def transfer_sshDestDir(worker, job):
 
     #print "Transfer from SSH Server"
@@ -398,6 +402,7 @@ def transfer_sshDestDir(worker, job):
     # Cleanup
     shutil.rmtree(tmpdir)    
     return files
+
 
 def transfer_nfsDestDir(worker, job):
     
@@ -505,6 +510,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
         
+        
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
@@ -537,6 +543,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
+    
     def on_job_exception(self, current_job, exc_info):
         print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " transfer failed at:    " + time.strftime("%D %T", time.gmtime())
         
@@ -548,25 +555,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
-        
-        #if resultObj['files']['new'] or resultObj['files']['updated']:
-
-        #    jobData = {'cruiseID':'', 'cruiseDataTransferID':'', 'files':{}}
-        #    jobData['cruiseID'] = self.cruiseID
-        #    jobData['cruiseDataTransferID'] = self.cruiseDataTransfer['cruiseDataTransferID']
-
-        #    destDir = build_destDir(self).rstrip('/')
-        #    jobData['files'] = resultObj['files']
-        #    jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
-        #    jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
-                
-        #    gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
-            
-            #for task in self.OVDM.getTasksForHook('runCruiseDataTransfer'):
-                #print task
-            #    submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
         # If the last part of the results failed
         if len(resultObj['parts']) > 0:
@@ -583,6 +574,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         self.stop = False
         if self.quit:
@@ -590,19 +582,21 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             self.shutdown()
         return True
     
+    
     def stopTransfer(self):
         self.stop = True
 
+        
     def quitWorker(self):
         self.stop = True
         self.quit = True
+        
         
 def task_runCruiseDataTransfer(worker, job):
 
     time.sleep(randint(0,5))
     
     job_results = {'parts':[], 'files':[]}
-
 
     if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
         #print "Transfer Enabled"
@@ -679,6 +673,7 @@ def task_runCruiseDataTransfer(worker, job):
     #print "DECODED: ", json.dumps(job_results)
     return json.dumps(job_results)
 
+
 global new_worker
 new_worker = OVDMGearmanWorker()
 
@@ -686,10 +681,12 @@ def sigquit_handler(_signo, _stack_frame):
     print "QUIT Signal Received"
     new_worker.stopTransfer()
     
+    
 def sigint_handler(_signo, _stack_frame):
     print "INT Signal Received"
     new_worker.quitWorker()
-    
+  
+
 signal.signal(signal.SIGQUIT, sigquit_handler)
 signal.signal(signal.SIGINT, sigint_handler)
 

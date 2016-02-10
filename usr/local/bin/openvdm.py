@@ -46,6 +46,12 @@ class OpenVDM():
         
         f = open('/usr/local/etc/openvdm.cfg', 'r')
         return yaml.load(f.read())
+    
+    
+    def clearGearmanJobsFromDB(self):
+        url = self.config['siteRoot'] + 'api/gearman/clearAllJobsFromDB'
+        r = requests.get(url)
+        returnObj = json.loads(r.text)
 
         
     def getDashboardDataProcessingScriptDir(self):
@@ -95,8 +101,13 @@ class OpenVDM():
 
     def getTasksForHook(self, name):        
         
-        return self.config['hooks'][name]
-
+        try:
+            self.config['hooks'][name]
+        except KeyError:
+            return []
+        else:
+            return self.config['hooks'][name]
+        
     
     def getTransferInterval(self):
         
@@ -175,6 +186,7 @@ class OpenVDM():
         r = requests.get(url)
         return json.loads(r.text)
 
+    
     def getRequiredShipToShoreTransfers(self):
 
         url = self.config['siteRoot'] + 'api/shipToShoreTransfers/getRequiredShipToShoreTransfers'
@@ -208,7 +220,8 @@ class OpenVDM():
             return returnVal[0]
         else:
             return []
-    
+
+        
     def getCollectionSystemTransfers(self):
 
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
@@ -272,7 +285,6 @@ class OpenVDM():
             r = requests.get(url)
             
             
-    
     def clearError_task(self, taskID):
         
         task = self.getTask(taskID)
@@ -294,6 +306,7 @@ class OpenVDM():
             message += ': ' + reason
             
         self.sendMsg(message)
+    
     
     def setError_collectionSystemTransferTest(self, collectionSystemTransferID, message = False):
 
@@ -431,4 +444,3 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/gearman/newJob/' + jobHandle
         payload = {'jobName': jobName, 'jobPid': jobPID}
         r = requests.post(url, data=payload)
-        

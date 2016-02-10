@@ -39,6 +39,7 @@ import time
 import signal
 import openvdm
 
+
 def getJobInfo(worker):
 
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
@@ -46,7 +47,6 @@ def getJobInfo(worker):
         if collectionSystemTransfer['pid'] == worker.jobPID:
             return {'type': 'collectionSystemTransfer', 'id': collectionSystemTransfer['collectionSystemTransferID'], 'name': collectionSystemTransfer['name'], 'pid': collectionSystemTransfer['pid']}
             
-
     cruiseDataTransfers = worker.OVDM.getCruiseDataTransfers()
     for cruiseDataTransfer in cruiseDataTransfers:
         if cruiseDataTransfer['pid'] != "0":

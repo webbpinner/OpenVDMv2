@@ -34,7 +34,6 @@ import sys
 import gearman
 import shutil
 import json
-#import requests
 import hashlib
 import signal
 import fnmatch
@@ -48,19 +47,21 @@ taskLookup = {
     "updateMD5Summary": "Update MD5 Summary"
 }
 
-md5SummaryFilename = 'MD5_Summary.txt'
-md5SummaryMD5Filename = 'MD5_Summary.md5'
+md5SummaryFN = 'MD5_Summary.txt'
+md5SummaryMD5FN = 'MD5_Summary.md5'
+
 
 def build_filelist(sourceDir):
 
     returnFiles = []
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
-            if not filename == md5SummaryFilename and not filename == md5SummaryMD5Filename:
+            if not filename == md5SummaryFN and not filename == md5SummaryMD5FN:
                 returnFiles.append(os.path.join(root, filename))
                 
     returnFiles = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles]
     return returnFiles
+
 
 def build_hashes(sourceDir, worker, job, fileList):
     
@@ -92,9 +93,10 @@ def build_hashes(sourceDir, worker, job, fileList):
 
     return hashes
 
+
 def build_MD5Summary_MD5(cruiseDir, warehouseUser):
-    md5SummaryFilepath = cruiseDir + '/' + md5SummaryFilename
-    md5SummaryMD5Filepath = cruiseDir + '/' + md5SummaryMD5Filename
+    md5SummaryFilepath = cruiseDir + '/' + md5SummaryFN
+    md5SummaryMD5Filepath = cruiseDir + '/' + md5SummaryMD5FN
     md5SummaryMD5Hash = hashlib.md5(md5SummaryFilepath).hexdigest()
     
     try:
@@ -115,6 +117,7 @@ def build_MD5Summary_MD5(cruiseDir, warehouseUser):
 
     return True
 
+
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
@@ -125,6 +128,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.taskID = '0'
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
+        
     def get_taskID(self, current_job):
         tasks = self.OVDM.getTasks()
         for task in tasks:
@@ -133,6 +137,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 return True
         self.taskID = '0'
         return False
+
     
     def on_job_execute(self, current_job):
         self.get_taskID(current_job)
@@ -170,6 +175,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
         
@@ -182,13 +188,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             else:
                 self.OVDM.setIdle_task(self.taskID)
         else:
-            self.OVDM.setIdle_task(self.taskID)
-        
+            self.OVDM.setIdle_task(self.taskID)    
             
         print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " completed at: " + time.strftime("%D %T", time.gmtime())
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         self.stop = False
         self.taskID = '0'
@@ -199,9 +205,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             self.quit - False
         return True
     
+    
     def stopTask(self):
         self.stop = True
 
+        
     def quitWorker(self):
         self.stop = True
         self.quit = True
@@ -220,7 +228,7 @@ def task_updateMD5Summary(worker, job):
     baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = baseDir + '/' + worker.cruiseID
     warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
-    md5SummaryFilepath = cruiseDir + '/' + md5SummaryFilename
+    md5SummaryFilepath = cruiseDir + '/' + md5SummaryFN
     
     #build filelist
     fileList = []
@@ -323,6 +331,7 @@ def task_updateMD5Summary(worker, job):
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)    
         
+    
 def task_rebuildMD5Summary(worker, job):
 
     job_results = {'parts':[]}
@@ -336,7 +345,7 @@ def task_rebuildMD5Summary(worker, job):
     baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     cruiseDir = baseDir + '/' + worker.cruiseID
-    md5SummaryFilepath = cruiseDir + '/' + md5SummaryFilename
+    md5SummaryFilepath = cruiseDir + '/' + md5SummaryFN
     
     fileList = build_filelist(cruiseDir)
     #print 'DECODED:', json.dumps(fileList, indent=2)
@@ -387,14 +396,23 @@ def task_rebuildMD5Summary(worker, job):
     
     return json.dumps(job_results)
 
+
 global new_worker
 new_worker = OVDMGearmanWorker()
+
 
 def sigquit_handler(_signo, _stack_frame):
     print "Stopping"
     new_worker.stopTransfer()
+
+    
+def sigint_handler(_signo, _stack_frame):
+    print "Quitting"
+    new_worker.quitWorker()
+    
     
 signal.signal(signal.SIGQUIT, sigquit_handler)
+signal.signal(signal.SIGINT, sigint_handler)
 
 new_worker.set_client_id('md5Summary.py')
 new_worker.register_task("updateMD5Summary", task_updateMD5Summary)

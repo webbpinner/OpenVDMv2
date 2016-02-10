@@ -40,17 +40,20 @@ import time
 import subprocess
 import openvdm
 
+
 def build_destDir(worker):
     
     returnDestDir = worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnDestDir
 
+
 def build_sourceDir(worker):
     
     returnSourceDir = worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnSourceDir
+
 
 def test_localSourceDir(worker):
 
@@ -59,6 +62,7 @@ def test_localSourceDir(worker):
     else:
         return [{"testName": "Source Directory", "result": "Fail"}]
 
+    
 def test_smbSourceDir(worker):
     returnVal = []
 
@@ -130,6 +134,7 @@ def test_smbSourceDir(worker):
 
     return returnVal
 
+
 def test_rsyncSourceDir(worker):
     
     returnVal = []
@@ -199,6 +204,7 @@ def test_rsyncSourceDir(worker):
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
+
 def test_sshSourceDir(worker):
     
     returnVal = []
@@ -234,6 +240,7 @@ def test_sshSourceDir(worker):
         
     #print json.dumps(returnVal, indent=2)
     return returnVal
+
 
 def test_nfsSourceDir(worker):
     returnVal = []
@@ -313,6 +320,7 @@ def test_nfsSourceDir(worker):
 
     return returnVal
 
+
 def test_destDir(worker):
     destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID+'/'+worker.collectionSystemTransfer['destDir']
     
@@ -321,6 +329,7 @@ def test_destDir(worker):
     else:
         return [{"testName": "Destination Directory", "result": "Fail"}]
 
+    
 class OVDMGearmanWorker(gearman.GearmanWorker):
 
     def __init__(self):
@@ -332,6 +341,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
+        
         
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
@@ -370,15 +380,18 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print exc_info
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " connection test ended at:     " + time.strftime("%D %T", time.gmtime())
         #print json.dumps(job_result)
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
 
+    
     def after_poll(self, any_activity):
         # Return True if you want to continue polling, replaces callback_fxn
         return True
 
+    
 def task_testCollectionSystemTransfer(worker, job):
     worker.send_job_status(job, 1, 4)
     worker.collectionSystemTransfer['destDir'] = build_destDir(worker)

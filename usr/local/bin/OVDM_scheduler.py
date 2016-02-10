@@ -40,85 +40,12 @@
 
 import sys
 import time
-import requests
 import datetime
 import argparse
-import urlparse
+#import urlparse
 import json
 import gearman
 import openvdm
-
-def getWarehouseConfig(siteRoot):
-    url = siteRoot + 'api/warehouse/getShipboardDataWarehouseConfig'
-    try:
-        r = requests.get(url)
-        #print r.text
-        #print json.dumps(r.json(), indent=2)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
-        sys.exit(1)
-
-def getCollectionSystemTransfers(siteRoot):
-    url = siteRoot + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving collectionSystemTransfer data, check URL"
-        sys.exit(1)
-        
-def getCruiseDataTransfers(siteRoot):
-    url = siteRoot + 'api/cruiseDataTransfers/getCruiseDataTransfers'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruiseDataTransfer data, check URL"
-        sys.exit(1)
-        
-def getRequiredCruiseDataTransfers(siteRoot):
-    url = siteRoot + 'api/cruiseDataTransfers/getRequiredCruiseDataTransfers'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving requriedCruiseDataTransfer data, check URL"
-        sys.exit(1)
-
-def getCruiseID(siteRoot):
-    url = siteRoot + 'api/warehouse/getCruiseID'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruise ID, check URL"
-        sys.exit(1)
-        
-def getCruiseStartDate(siteRoot):
-    url = siteRoot + 'api/warehouse/getCruiseStartDate'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruise start date data, check URL"
-        sys.exit(1)
-        
-def getSystemStatus(siteRoot):
-    url = siteRoot + 'api/warehouse/getSystemStatus'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving system status data, check URL"
-        sys.exit(1)
     
 def main(argv):
     
@@ -127,16 +54,16 @@ def main(argv):
     openVDM = openvdm.OpenVDM()
     
     parser = argparse.ArgumentParser(description='OpenVDM Data Transfer Scheduler')
-    parser.add_argument('--siteRoot', default=openVDM.getSiteRoot(), metavar='siteRoot', help='the base URL for this OpenVDM installation')
+    #parser.add_argument('--siteRoot', default=openVDM.getSiteRoot(), metavar='siteRoot', help='the base URL for this OpenVDM installation')
     parser.add_argument('--interval', default=openVDM.getTransferInterval(), metavar='interval', type=int, help='Delay in minutes')
 
     args = parser.parse_args()
     #print args.siteRoot
-    parsed_url = urlparse.urlparse(args.siteRoot)
+    #parsed_url = urlparse.urlparse(args.siteRoot)
     #print parsed_url
-    if not bool(parsed_url.scheme) or not bool(parsed_url.netloc):
-        print args.siteRoot + " is not a valid URL" 
-        sys.exit(1)
+    #if not bool(parsed_url.scheme) or not bool(parsed_url.netloc):
+    #    print args.siteRoot + " is not a valid URL" 
+    #    sys.exit(1)
     
     gm_client = gearman.GearmanClient([openVDM.getGearmanServer()])
     
