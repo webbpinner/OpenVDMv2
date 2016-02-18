@@ -342,6 +342,20 @@ Verify the installation works by going to `http://<servername or IP>/mapproxy/de
 
 ###OpenVDMv2
 
+####Install the dependencies
+```
+sudo apt-get install php-pear
+pear upgrade -Z Archive_Tar
+pecl install yaml
+```
+
+Add the following to the end of `/etc/php/apache2/php.ini` and `/etc/php/cli/php.ini`
+
+```
+extension=yaml.so
+```
+
+
 ####Create the Required Directories
 In order for OpenVDMv2 to properly store data serveral directories must be created on the Warehouse
 
