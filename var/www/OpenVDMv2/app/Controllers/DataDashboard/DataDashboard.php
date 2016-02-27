@@ -5,30 +5,22 @@ use Core\Router;
 use Core\View;
 use Helpers\Session;
 use Helpers\Url;
-use Helpers\Hooks;
+#use Helpers\Hooks;
 
 //$hooks = Hooks::get();
 //Hooks::addHook('routes', 'Controllers\DataDashboard\DataDashboard@routes');
-
-class Placeholder
-{
-    public $plotType;
-    public $dataType;
-    public $id;
-    public $heading;
-    public $dataTypes;
-    public $dataFiles;
-}
 
 class DataDashboard extends Controller {
     
     private $_warehouseModel;
     private $_dashboardDataModel;
+    private $_dataDashboardModel;
 
     public function __construct(){
         
         $this->_warehouseModel = new \Models\Warehouse();
         $this->_dashboardDataModel = new \Models\DashboardData();
+        $this->_dataDashboardModel = new \Models\DataDashboard();
     }
 
     public function index(){
@@ -36,26 +28,21 @@ class DataDashboard extends Controller {
         $data['title'] = 'Data Dashboard';
         $data['page'] = 'main';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
         $data['css'] = array('leaflet');
-        $data['javascript'] = array('dataDashboard', 'tabs_dataDashboard', 'leaflet', 'highcharts');
+        $data['javascript'] = array('dataDashboardMain', 'dataDashboardMainCustom', 'leaflet', 'highcharts');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         
-        $data['geoJSONTypes'] = array('gga');
-        $data['tmsTypes'] = array('geotiff');
-        $data['jsonTypes'] = array('met', 'twind', 'tsg', 'svp');
+        $data['geoJSONTypes'] = $this->_dataDashboardModel->getGeoJSONTypes();
+        $data['tmsTypes'] = $this->_dataDashboardModel->getTMSTypes();
+        $data['jsonTypes'] = $this->_dataDashboardModel->getJSONTypes();
         
-        $data['subPages'] = array(
-            'gga' => 'position',
-            'geotiff' => 'position',
-            'met' => 'weather',
-            'twind' => 'weather',
-            'tsg' => 'soundVelocity',
-            'svp' => 'soundVelocity'
-        );
-            
+        $data['subPages'] = $this->_dataDashboardModel->getSubPages();
+
         View::renderTemplate('header', $data);
+        View::renderTemplate('dataDashboardHeader', $data);
         if( sizeof($data['dataTypes'])>0){
             View::render('DataDashboard/main', $data);
         } else {
@@ -64,38 +51,47 @@ class DataDashboard extends Controller {
         View::renderTemplate('footer', $data);
     }
     
-    public function routes() {
-        Router::any('dataDashboard/position', 'Controllers\DataDashboard\DataDashboard@position');
-        Router::any('dataDashboard/weather', 'Controllers\DataDashboard\DataDashboard@weather');
-        Router::any('dataDashboard/soundVelocity', 'Controllers\DataDashboard\DataDashboard@soundVelocity');
-    }
-    
-    public function position(){
-            
-        $data['title'] = 'Position';
-        $data['page'] = 'position';
+    public function customTab($tabName) {
+        
+        $tab = $this->_dataDashboardModel->getDataDashboardTab($tabName);
+        //var_dump($tab['title']);
+        $data['title'] = $tab['title'];
+        $data['page'] = $tabName;
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['css'] = array('leaflet');
-        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'leaflet', 'highcharts', 'highcharts-exporting');
-        
-        $position = new Placeholder();
-        $position->plotType = 'map';
-        $position->id = 'map';
-        $position->heading = 'Position';
-        $position->dataTypes = array('geoJSON', 'tms');
-        $position->dataFiles = array(
-            $this->_dashboardDataModel->getDashboardObjectsByTypes('gga'),
-            $this->_dashboardDataModel->getDashboardObjectsByTypes('geotiff'),
-        );
 
-        $data['placeholders'] = array($position);
+        $data['css'] = array();
+        if ($tab['cssArray'] && sizeof($tab['cssArray'])>0) {
+            foreach ($tab['cssArray'] as $cssFile) {
+                array_push($data['css'], $cssFile);
+            }
+        }
+        
+        $data['javascript'] = array();
+        if ($tab['jsArray'] && sizeof($tab['jsArray'])>0) {
+            foreach ($tab['jsArray'] as $jsFile) {
+                array_push($data['javascript'], $jsFile);
+            }
+        }
+        
+        $data['placeholders'] = array();
+        if ($tab['placeholderArray'] && sizeof($tab['placeholderArray'])>0) {
+            foreach ($tab['placeholderArray'] as $placeholder) {
+                $placeholder['dataFiles'] = array();
+                foreach ($placeholder['dataArray'] as $dataObj) {
+                    $objects = $this->_dashboardDataModel->getDashboardObjectsByTypes($dataObj['dataType']);
+                    array_push($placeholder['dataFiles'], $objects);
+                }
+                array_push($data['placeholders'], $placeholder);
+            }
+        }
         
         $noDataFiles = true;
         for($i = 0; $i < sizeof($data['placeholders']); $i++) {
-            for($j = 0; $j < sizeof($data['placeholders'][$i]->dataFiles); $j++) {
-                if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0) {
+            for($j = 0; $j < sizeof($data['placeholders'][$i]['dataFiles']); $j++) {
+                if(sizeof($data['placeholders'][$i]['dataFiles'][$j]) > 0) {
                     $noDataFiles = false;
                     break;
                 }
@@ -107,116 +103,15 @@ class DataDashboard extends Controller {
         }
         
         View::renderTemplate('header', $data);
-        if ($noDataFiles) {
-            View::render('DataDashboard/noData', $data);
-        } else {
-            View::render('DataDashboard/dataDashboard', $data);
-        }
-        View::renderTemplate('footer', $data);
-    }
-    
-    public function soundVelocity(){
-            
-        $data['title'] = 'Sound Velocity';
-        $data['page'] = 'soundVelocity';
-        $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard', 'dataTabs', 'highcharts', 'highcharts-exporting');
-        
-        $tsg = new Placeholder();
-        $tsg->plotType = 'chart';
-        $tsg->id = 'tsg';
-        $tsg->heading = 'Thermosalinograph Sensor';
-        $tsg->dataTypes = array('json');
-        $tsg->dataFiles = array(
-            $this->_dashboardDataModel->getDashboardObjectsByTypes('tsg')
-        );
-        
-        $svp = new Placeholder();
-        $svp->plotType = 'chart';
-        $svp->id = 'svp';
-        $svp->heading = 'Sound Velocity Probe';
-        $svp->dataTypes = array('json');
-        $svp->dataFiles = array(
-            $this->_dashboardDataModel->getDashboardObjectsByTypes('svp')
-        );
-        
-        $data['placeholders'] = array($tsg, $svp);
-        
-        $noDataFiles = true;
-        for($i = 0; $i < sizeof($data['placeholders']); $i++) {
-            for($j = 0; $j < sizeof($data['placeholders'][$i]->dataFiles); $j++) {
-                if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0) {
-                    $noDataFiles = false;
-                    break;
-                }
-            }
-            
-            if(!$noDataFiles) {
-                break;
-            }
-        }
-        
-        View::renderTemplate('header', $data);
-        if ($noDataFiles) {
-            View::render('DataDashboard/noData', $data);
-        } else {
-            View::render('DataDashboard/dataDashboard', $data);
-        }
-        View::renderTemplate('footer', $data);
-    }
+        View::renderTemplate('dataDashboardHeader', $data);
 
-    public function weather(){
-            
-        $data['title'] = 'Weather';
-        $data['page'] = 'weather';
-        $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard','dataTabs', 'highcharts', 'highcharts-exporting');
-        
-        $met = new Placeholder();
-        $met->plotType = 'chart';
-        $met->id = 'met';
-        $met->heading = 'Meterological Sensor';
-        $met->dataTypes = array('json');
-        $met->dataFiles = array(
-            $this->_dashboardDataModel->getDashboardObjectsByTypes('met')
-        );
-        
-        $twind = new Placeholder();
-        $twind->plotType = 'chart';
-        $twind->id = 'twind';
-        $twind->heading = 'Wind Sensor';
-        $twind->dataTypes = array('json');
-        $twind->dataFiles = array(
-            $this->_dashboardDataModel->getDashboardObjectsByTypes('twind')
-        );
-        
-        $data['placeholders'] = array($met, $twind);
-        
-        $noDataFiles = true;
-        for($i = 0; $i < sizeof($data['placeholders']); $i++) {
-            for($j = 0; $j < sizeof($data['placeholders'][$i]->dataFiles); $j++) {
-                if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0) {
-                    $noDataFiles = false;
-                    break;
-                }
-            }
-            
-            if(!$noDataFiles) {
-                break;
-            }
-        }
-        
-        View::renderTemplate('header', $data);
         if ($noDataFiles) {
             View::render('DataDashboard/noData', $data);
         } else {
-            View::render('DataDashboard/dataDashboard', $data);
+            View::render('DataDashboard/' . $tab['view'], $data);
         }
         View::renderTemplate('footer', $data);
+        
     }
     
     public function dataQuality(){
@@ -224,9 +119,10 @@ class DataDashboard extends Controller {
         $data['title'] = 'Data Quality';
         $data['page'] = 'dataQuality';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
-        $data['javascript'] = array('tabs_dataDashboard','dataQuality');
+        $data['javascript'] = array('dataDashboardQuality');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         $data['dataObjects'] = array();
         $data['dataObjectsQualityTests'] = array();
@@ -244,6 +140,8 @@ class DataDashboard extends Controller {
         }
         
         View::renderTemplate('header', $data);
+        View::renderTemplate('dataDashboardHeader', $data);
+
         if( sizeof($data['dataTypes'])>0){
             View::render('DataDashboard/dataQuality', $data);
         } else {
@@ -257,8 +155,9 @@ class DataDashboard extends Controller {
         $data['title'] = 'Data Quality';
         $data['page'] = 'dataQuality';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['javascript'] = array('tabs_dataDashboard', 'dataQuality');
+        $data['javascript'] = array('dataDashboardQuality');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         $data['dataObjects'] = array();
         $data['dataObjectsQualityTests'] = array();
@@ -280,6 +179,8 @@ class DataDashboard extends Controller {
         $data['stats'] = $this->_dashboardDataModel->getDashboardObjectStatsByRawName($raw_data);
         
         View::renderTemplate('header', $data);
+        View::renderTemplate('dataDashboardHeader', $data);
+
         View::render('DataDashboard/dataQuality', $data);
         View::renderTemplate('footer', $data);
     }
@@ -289,8 +190,9 @@ class DataDashboard extends Controller {
         $data['title'] = 'Data Quality';
         $data['page'] = 'dataQuality';
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['javascript'] = array('tabs_dataDashboard', 'dataQuality');
+        $data['javascript'] = array('dataDashboardQuality');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         $data['dataObjects'] = array();
         $data['dataObjectsQualityTests'] = array();
@@ -312,6 +214,8 @@ class DataDashboard extends Controller {
         $data['stats'] = $this->_dashboardDataModel->getDataTypeStats($dataType);
         
         View::renderTemplate('header', $data);
+        View::renderTemplate('dataDashboardHeader', $data);
+
         View::render('DataDashboard/dataQuality', $data);
         View::renderTemplate('footer', $data);
     }

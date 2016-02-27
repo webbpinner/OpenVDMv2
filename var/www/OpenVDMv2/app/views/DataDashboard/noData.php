@@ -1,33 +1,3 @@
-<?php
-
-use Core\Language;
-use Core\Error;
-use Helpers\Session;
-use Helpers\Url;
-
-$loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading.gif"/>';
-
-?>
-
-    <div class="row">
-        <div class="col-lg-12">
-            <?php echo Error::display(Session::pull('message'), 'alert alert-success'); ?>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="tabbable" style="margin-bottom: 18px;">
-                <ul class="nav nav-tabs">
-                    <li class="<?php echo ($data['page']==='main'? 'active': ''); ?>"><a id="main" href="#main" data-toggle="tab">Main</a></li>
-                    <li class="<?php echo ($data['page']==='position'? 'active': ''); ?>"><a id="position" href="#position" data-toggle="tab">Position</a></li>
-                    <li class="<?php echo ($data['page']==='weather'? 'active': ''); ?>"><a id="weather" href="#weather" data-toggle="tab">Weather</a></li>
-                    <li class="<?php echo ($data['page']==='soundVelocity'? 'active': ''); ?>"><a id="soundVelocity" href="#soundVelocity" data-toggle="tab">Sound Velocity</a></li>
-                    <li class="<?php echo ($data['page']==='dataQuality'? 'active': ''); ?>"><a id="dataQuality" href="#dataQuality" data-toggle="tab">Data Quality</a></li> 
-                </ul>
-            </div>
-        </div>
-    </div>
     <div class="row">
 		<div class="col-md-12">
 

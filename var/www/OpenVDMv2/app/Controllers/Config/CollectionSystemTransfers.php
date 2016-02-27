@@ -70,7 +70,7 @@ class CollectionSystemTransfers extends Controller {
     public function index(){
         $data['title'] = 'Configuration';
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-        $data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
+        $data['javascript'] = array('collectionSystemTransfers');
         View::rendertemplate('header',$data);
         View::render('Config/collectionSystemTransfers',$data);
         View::rendertemplate('footer',$data);
@@ -78,7 +78,7 @@ class CollectionSystemTransfers extends Controller {
 
     public function add(){
         $data['title'] = 'Add Collection System Transfers';
-        $data['javascript'] = array('collectionSystemTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('collectionSystemTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
@@ -551,7 +551,7 @@ class CollectionSystemTransfers extends Controller {
         
     public function edit($id){
         $data['title'] = 'Collection System Transfers';
-        $data['javascript'] = array('collectionSystemTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('collectionSystemTransfersFormHelper');
         $data['row'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id);
         
         
@@ -923,7 +923,7 @@ class CollectionSystemTransfers extends Controller {
 
         $data['title'] = 'Configuration';
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-        $data['javascript'] = array('collectionSystemTransfers', 'tabs_config');
+        $data['javascript'] = array('collectionSystemTransfers');
 
         #additional data needed for view
         $data['testCollectionSystemTransferName'] = $gmData['collectionSystemTransfer']->name;

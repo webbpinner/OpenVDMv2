@@ -30,7 +30,7 @@
 # ----------------------------------------------------------------------------------- #
 
 # The siteRoot for the OpenVDM web-application/API
-siteRoot: "http://capablesolutions.dyndns.org:8180/OpenVDMv2/"
+siteRoot: "http://localhost/OpenVDMv2/"
 
 # The transferInterval defines the interval for performing collectionSystemTransfer.
 # The unit is in minutes.
@@ -57,8 +57,11 @@ hooks:
     runCollectionSystemTransfer:
         - updateDataDashboard
         - updateMD5Summary
-        
-# The following hooks have not been implemented but it is the works.
+        - postCollectionSystemTransfer
+    updateDataDashboard:
+        - postDataDashboard
+    rebuildDataDashboard:
+        - postDataDashboard
+
 #    setupNewCruise:
 #    finalizeCurrentCruise:
-    

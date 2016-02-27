@@ -44,7 +44,7 @@ class OpenVDM():
         
     def parseOVDMConfig(self):
         
-        f = open('/usr/local/etc/openvdm.cfg', 'r')
+        f = open('/usr/local/etc/openvdm/openvdm.yaml', 'r')
         return yaml.load(f.read())
     
     

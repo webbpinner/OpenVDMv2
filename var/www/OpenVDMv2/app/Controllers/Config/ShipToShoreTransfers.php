@@ -94,7 +94,7 @@ class shipToShoreTransfers extends Controller {
 
     public function index(){
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('tabs_config', 'shipToShoreTransfers');
+        $data['javascript'] = array('shipToShoreTransfers');
         $data['shipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getShipToShoreTransfers();
         $data['ssdwID'] = $this->_ssdwConfig->cruiseDataTransferID;
         $data['ssdwEnable'] = $this->_ssdwConfig->enable;
@@ -107,7 +107,7 @@ class shipToShoreTransfers extends Controller {
 
     public function add(){
         $data['title'] = 'Add Ship-to-Shore Transfer';
-        $data['javascript'] = array('shipToShoreTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('shipToShoreTransfersFormHelper');
         $data['transferPriorityOptions'] = $this->_buildTransferPriorityOptions($_POST['priority']);
         $data['collectionSystemOptions'] = $this->_buildCollectionSystemOptions($_POST['collectionSystemTransfer']);
         $data['extraDirectoryOptions'] = $this->_buildExtraDirectoryOptions($_POST['extraDirectory']);
@@ -165,7 +165,7 @@ class shipToShoreTransfers extends Controller {
         
     public function edit($id){
         $data['title'] = 'Edit Ship-to-Shore Transfer';
-        $data['javascript'] = array('shipToShoreTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('shipToShoreTransfersFormHelper');
         $data['row'] = $this->_shipToShoreTransfersModel->getShipToShoreTransfer($id);
 
         if(isset($_POST['submit'])){

@@ -1,0 +1,58 @@
+- title: Position
+  page: position
+  view: default
+  cssArray:
+  - leaflet
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - leaflet
+  placeholderArray:
+  - plotType: map
+    id: map
+    heading: Position
+    dataArray:
+    - dataType: gga
+      visType: geoJSON
+    - dataType: geotiff
+      visType: tms
+- title: Weather
+  page: weather
+  view: default
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - highcharts-exporting
+  placeholderArray:
+  - plotType: chart
+    id: met
+    heading: Meterological Sensor
+    dataArray:
+    - dataType: met
+      visType: json
+  - plotType: chart
+    id: twind
+    heading: Wind Sensor
+    dataArray:
+    - dataType: twind
+      visType: json
+- title: Sound Velocity
+  page: soundVelocity
+  view: default
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - highcharts-exporting
+  placeholderArray:
+  - plotType: chart
+    id: tsg
+    heading: Thermosalinograph Sensor
+    dataArray:
+    - dataType: tsg
+      visType: json
+  - plotType: chart
+    id: svp
+    heading: Sound Velocity Probe
+    dataArray:
+    - dataType: svp
+      visType: json

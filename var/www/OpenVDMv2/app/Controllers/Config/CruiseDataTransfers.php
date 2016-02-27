@@ -37,7 +37,7 @@ class CruiseDataTransfers extends Controller {
     public function index(){
         $data['title'] = 'Configuration';
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
-        $data['javascript'] = array('cruiseDataTransfers', 'tabs_config');
+        $data['javascript'] = array('cruiseDataTransfers');
         View::rendertemplate('header',$data);
         View::render('Config/cruiseDataTransfers',$data);
         View::rendertemplate('footer',$data);
@@ -45,7 +45,7 @@ class CruiseDataTransfers extends Controller {
 
     public function add(){
         $data['title'] = 'Add Cruise Data Transfer';
-        $data['javascript'] = array('cruiseDataTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('cruiseDataTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($_POST['transferType']);
 
         if(isset($_POST['submit'])){
@@ -473,7 +473,7 @@ class CruiseDataTransfers extends Controller {
         
     public function edit($id){
         $data['title'] = 'Edit Cruise Data Transfer';
-        $data['javascript'] = array('cruiseDataTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('cruiseDataTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($data['row'][0]->transferType);
         $data['row'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id);
 
@@ -798,7 +798,7 @@ class CruiseDataTransfers extends Controller {
 
         $data['title'] = 'Configuration';
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
-        $data['javascript'] = array('cruiseDataTransfers', 'tabs_config');
+        $data['javascript'] = array('cruiseDataTransfers');
 
         #additional data needed for view
         $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->longName;

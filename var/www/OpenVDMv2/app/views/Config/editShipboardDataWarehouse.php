@@ -14,12 +14,12 @@ use Helpers\Form;
         <div class="col-lg-12">
             <div class="tabbable" style="margin-bottom: 18px;">
                 <ul class="nav nav-tabs">
-                    <li class=""><a id="main" href="#main" data-toggle="tab">Main</a></li>
-                    <li class=""><a id="collectionSystemTransfers" href="#collectionSystemTransfers" data-toggle="tab">Collection System Transfers</a></li>
-                    <li class=""><a id="extraDirectories" href="#extraDirectories" data-toggle="tab">Extra Directories</a></li>
-                    <li class=""><a id="cruiseDataTransfers" href="#cruiseDataTransfers" data-toggle="tab">Cruise Data Transfers</a></li>
-                    <li class=""><a id="shipToShoreTransfers" href="#shipToShoreTransfers" data-toggle="tab">Ship-to-Shore Transfers</a></li>
-                    <li class="active"><a id="system" href="#system" data-toggle="tab">System</a></li>
+                    <li class=""><a id="main" href="<?php echo DIR; ?>config">Main</a></li>
+                    <li class=""><a id="collectionSystemTransfers" href="<?php echo DIR; ?>config/collectionSystemTransfers">Collection System Transfers</a></li>
+                    <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>config/extraDirectories">Extra Directories</a></li>
+                    <li class=""><a id="cruiseDataTransfers" href="<?php echo DIR; ?>config/cruiseDataTransfers">Cruise Data Transfers</a></li>
+                    <li class=""><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
+                    <li class="active"><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
                 </ul>
             </div>
         </div>

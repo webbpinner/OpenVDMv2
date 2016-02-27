@@ -30,7 +30,7 @@ class Main extends Controller {
     public function index(){
             
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('main_config', 'tabs_config');
+        $data['javascript'] = array('main_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
@@ -48,7 +48,7 @@ class Main extends Controller {
 
         $data['title'] = 'Configuration';
         $data['css'] = array('bootstrap-datepicker');
-        $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
+        $data['javascript'] = array('bootstrap-datepicker');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
 
@@ -116,7 +116,7 @@ class Main extends Controller {
     
         #additional data needed for view
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('main_config', 'tabs_config');
+        $data['javascript'] = array('main_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
@@ -189,7 +189,7 @@ class Main extends Controller {
         
         $data['title'] = 'Configuration';
         $data['css'] = array('bootstrap-datepicker');
-        $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
+        $data['javascript'] = array('bootstrap-datepicker');
         $data['cruiseID'] = '';
         $data['cruiseStartDate'] = '';
 //        $error = array();
@@ -228,7 +228,7 @@ class Main extends Controller {
         
                 #additional data needed for view
                 $data['title'] = 'Configuration';
-                $data['javascript'] = array('main_config', 'tabs_config');
+                $data['javascript'] = array('main_config');
                 $data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
                 $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
                 $data['tasks'] = $this->_tasksModel->getTasks();

@@ -11,6 +11,7 @@ use Helpers\Hooks;
     $_warehouseModel = new \Models\Warehouse();
     $_messagesModel = new \Models\Config\Messages();
     $_gearmanModel = new \Models\Api\Gearman();
+    $_dataDashboardModel = new \Models\DataDashboard();
 
     $messageLimit = "LIMIT 10";
     $jobLimit = "LIMIT 10";
@@ -89,6 +90,9 @@ use Helpers\Hooks;
 
     $data['jobsNavbar'] = $_gearmanModel->getJobs();
     $data['jobsBadgeNavbar'] = sizeof($data['jobsNavbar']);
+
+    $data['dataDashboardTabs'] = $_dataDashboardModel->getDataDashboardTabs();
+
 ?>
 
 <!DOCTYPE html>
@@ -136,10 +140,10 @@ use Helpers\Hooks;
 </head>
 <body>
 
+    
 <?php
     //hook for running code after body tag
     $hooks->run('afterBody');
-    //var_dump($_SERVER);
 ?>
     
 <div id="wrapper">
@@ -246,9 +250,13 @@ use Helpers\Hooks;
                     <li><a href="#"><i class="fa fa-dashboard fa-fw"></i> Data Dashboard<span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level">
                             <li><a href="<?php echo DIR; ?>dataDashboard">Main</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/position">Position</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/weather">Weather</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/soundVelocity">Sound Velocity</a></li>
+<?php
+    foreach($data['dataDashboardTabs'] as $row){
+?>
+                            <li><a href="<?php echo DIR; ?>dataDashboard/customTab/<?php echo $row['page'];?>"><?php echo $row['title'];?></a></li>
+<?php
+    }
+?>
                             <li><a href="<?php echo DIR; ?>dataDashboard/dataQuality">Data Quality</a></li>
                         </ul> <!-- /.nav-second-level -->
                     </li>
