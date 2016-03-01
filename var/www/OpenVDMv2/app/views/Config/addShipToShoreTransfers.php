@@ -2,6 +2,7 @@
 
 use Core\Error;
 use Helpers\Form;
+use Helpers\FormCustom;
 
 ?>
     <div class="row">
@@ -34,7 +35,7 @@ use Helpers\Form;
                                 <div class="form-group"><label>Name</label><?php echo Form::input(array('class'=>'form-control', 'name'=>'name', 'value'=>$_POST['name'])); ?></div>
                                 <div class="form-group"><label>Long Name</label><?php echo Form::input(array('class'=>'form-control', 'name'=>'longName', 'value'=>$_POST['longName'])); ?></div>
                                 <div class="form-group">
-                                    <label>Priority</label><?php echo Form::radioInline($data['transferPriorityOptions']); ?>
+                                    <label>Priority</label><?php echo FormCustom::radioInline($data['transferPriorityOptions']); ?>
                                 </div>
                                 <div class="form-group"><label>Collection System</label><?php echo Form::select($data['collectionSystemOptions']); ?></div>
                                 <div class="form-group"><label>Extra Directory</label><?php echo Form::select($data['extraDirectoryOptions']); ?></div>

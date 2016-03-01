@@ -1,6 +1,6 @@
 {
   "name": "leaflet-fullscreen",
-  "version": "0.0.4",
+  "version": "1.0.1",
   "homepage": "http://leaflet.github.io/Leaflet.fullscreen/",
   "authors": [
     {
@@ -9,7 +9,8 @@
   ],
   "description": "A fullscreen control for Leaflet",
   "main": [
-    "leaflet.fullscreen.min.js",
+    "Leaflet.fullscreen.min.js",
+    "Leaflet.fullscreen.js",
     "leaflet.fullscreen.css",
     "fullscreen.png",
     "fullscreen@2x.png"
@@ -22,16 +23,16 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/mapbox/Leaflet.fullscreen.git"
+    "url": "https://github.com/Leaflet/Leaflet.fullscreen.git"
   },
-  "license": "BSD",
-  "_release": "0.0.4",
+  "license": "ISC",
+  "_release": "1.0.1",
   "_resolution": {
     "type": "version",
-    "tag": "v0.0.4",
-    "commit": "da9a67355668f00bd3a751422851ad28f2710793"
+    "tag": "v1.0.1",
+    "commit": "a2789468792bfe60416b339dc2e63ea62249cddb"
   },
   "_source": "git://github.com/davidlukerice/leaflet-fullscreen-bower.git",
-  "_target": "~0.0.4",
+  "_target": "~1.0.1",
   "_originalSource": "leaflet-fullscreen-bower"
 }

@@ -2,6 +2,7 @@
 
 use Core\Error;
 use Helpers\Form;
+use Helpers\FormCustom;
 
 ?>
 
@@ -41,13 +42,13 @@ use Helpers\Form;
                                 <div class="form-group"><label>Exclude Filter</label><?php echo Form::textbox( array('class'=>'form-control', 'rows'=>'3', 'name'=>'excludeFilter', 'value'=> $data['row'][0]->excludeFilter)); ?></div>
                                 <div class="form-group"><label>Ignore Filter</label><?php echo Form::textbox( array('class'=>'form-control', 'rows'=>'3', 'name'=>'ignoreFilter', 'value'=> $data['row'][0]->ignoreFilter)); ?></div>
                                 <div class="form-group">
-                                    <label>Skip files being actively written to?</label><?php echo Form::radioInline($data['stalenessOptions'], $data['row'][0]->staleness); ?>
+                                    <label>Skip files being actively written to?</label><?php echo FormCustom::radioInline($data['stalenessOptions'], $data['row'][0]->staleness); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Skip files last modified before cruise start date?</label><?php echo Form::radioInline($data['useStartDateOptions'], $data['row'][0]->useStartDate); ?>
+                                    <label>Skip files last modified before cruise start date?</label><?php echo FormCustom::radioInline($data['useStartDateOptions'], $data['row'][0]->useStartDate); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Transfer Type</label><?php echo Form::radioInline($data['transferTypeOptions'], $data['row'][0]->transferType); ?>
+                                    <label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $data['row'][0]->transferType); ?>
                                 </div>
                                 <div class="form-group"><label>Source Directory</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sourceDir', 'value'=> $data['row'][0]->sourceDir)); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncServer', 'value'=> $data['row'][0]->rsyncServer)); ?></div>

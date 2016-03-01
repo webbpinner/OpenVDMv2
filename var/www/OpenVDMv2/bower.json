@@ -35,7 +35,7 @@
     "highcharts.com": "~4.2.3",
     "leaflet": "~0.7.7",
     "esri-leaflet": "~1.0.3",
-    "leaflet-fullscreen-bower": "~0.0.4",
+    "leaflet-fullscreen-bower": "~1.0.1",
     "js-cookie": "~2.1.0",
     "bootstrap-datepicker": "~1.6.0"
   }

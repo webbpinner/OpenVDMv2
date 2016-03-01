@@ -5,4 +5,6 @@
 /var/www/OpenVDMv2/app/templates/default/js/dataDashboardMainCustom.js
 /usr/local/etc/openvdm/datadashboard.yaml
 /usr/local/etc/openvdm/openvdm.yaml
+/usr/local/bin/OVDM_dataProcessingScripts/EM302_dataDashboard.py
+/usr/local/bin/OVDM_dataProcessingScripts/SCS_dataDashboard.py
 composer.lock

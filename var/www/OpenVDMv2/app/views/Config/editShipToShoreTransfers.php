@@ -2,6 +2,7 @@
 
 use Core\Error;
 use Helpers\Form;
+use Helpers\FormCustom;
 
 ?>
 
@@ -18,8 +19,8 @@ use Helpers\Form;
                     <li class=""><a id="collectionSystemTransfers" href="<?php echo DIR; ?>config/collectionSystemTransfers">Collection System Transfers</a></li>
                     <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>config/extraDirectories">Extra Directories</a></li>
                     <li class=""><a id="cruiseDataTransfers" href="<?php echo DIR; ?>config/cruiseDataTransfers">Cruise Data Transfers</a></li>
-                    <li class=""><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
-                    <li class="active"><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
+                    <li class="active"><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
+                    <li class=""><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
                 </ul>
             </div>
         </div>
@@ -34,7 +35,7 @@ use Helpers\Form;
                                 <div class="form-group"><label>Name</label><?php echo Form::input(array('class'=>'form-control', 'name'=>'name', 'value'=>$data['row'][0]->name)); ?></div>
                                 <div class="form-group"><label>Long Name</label><?php echo Form::input(array('class'=>'form-control', 'name'=>'longName', 'value'=>$data['row'][0]->longName)); ?></div>
                                 <div class="form-group">
-                                    <label>Priority</label><?php echo Form::radioInline($data['transferPriorityOptions'], $data['row'][0]->priority); ?>
+                                    <label>Priority</label><?php echo FormCustom::radioInline($data['transferPriorityOptions'], $data['row'][0]->priority); ?>
                                 </div>
                                 <div class="form-group"><label>Collection System</label><?php echo Form::select($data['collectionSystemOptions']); ?></div>
                                 <div class="form-group"><label>Extra Directory</label><?php echo Form::select($data['extraDirectoryOptions']); ?></div>
