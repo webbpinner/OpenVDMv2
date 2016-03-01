@@ -14,7 +14,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Open Vessel Data Management v2.0 (OpenVDMv2)">
+    <meta name="description" content="Open Vessel Data Management v2.1 (OpenVDMv2)">
     <meta name="author" content="Capable Solutions">
     <title><?php echo $data['title'].' - '.SITETITLE; //SITETITLE defined in app/core/config.php ?></title>
 

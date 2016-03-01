@@ -62,11 +62,11 @@ use Helpers\Hooks;
     if($_warehouseModel->getSystemStatus()) {
             $data['systemStatus'] = "On";
     } else {
-            $data['systemStatus'] = "Off";            
+            $data['systemStatus'] = "Off";
     }
 
     $data['cruiseID'] = $_warehouseModel->getCruiseID();
-        
+
     $cruiseSize = $_warehouseModel->getCruiseSize();
     if(isset($cruiseSize['error'])){
         $data['cruiseSize'] = "Error";
@@ -103,8 +103,8 @@ use Helpers\Hooks;
 	<meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Open Vessel Data Management v2.0 (OpenVDMv2)">
-    <meta name="author" content="Capable Solutions">
+    <meta name="description" content="Open Vessel Data Management v2.1 (OpenVDMv2)">
+    <meta name="author" content="OceanDataRat.org">
 	<title><?php echo $data['title'].' - '.SITETITLE; //SITETITLE defined in app/core/config.php ?></title>
 
 	<!-- CSS -->
@@ -157,7 +157,7 @@ use Helpers\Hooks;
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="<?php echo DIR;?>">Open Vessel Data Management v2<?php //echo SITETITLE;?></a>
+            <a class="navbar-brand" href="<?php echo DIR;?>"><?php echo SITETITLE;?></a>
         </div> <!-- navbar-header -->
         <ul class="nav navbar-top-links navbar-right">
             <li class="dropdown">
