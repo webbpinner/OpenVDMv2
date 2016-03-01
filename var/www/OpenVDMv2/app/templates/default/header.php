@@ -111,20 +111,21 @@ use Helpers\Hooks;
 <?php
 
     $cssFileArray = array(
-        Url::templatePath() . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
-        Url::templatePath() . 'bower_components/metisMenu/dist/metisMenu.min.css',
-        Url::templatePath() . 'bower_components/startbootstrap-sb-admin-2/dist/css/sb-admin-2.css',
-        Url::templatePath() . 'bower_components/font-awesome/css/font-awesome.min.css',
+        DIR . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
+        DIR . 'bower_components/metisMenu/dist/metisMenu.min.css',
+        DIR . 'bower_components/font-awesome/css/font-awesome.min.css',
+        Url::templatePath() . 'css/sb-admin-2.css',
+        Url::templatePath() . 'css/timeline.css',
         Url::templatePath() . 'css/style.css',
     );
 
     if (isset($data['css'])){
         foreach ($data['css'] as &$cssFile) {
             if ($cssFile === 'leaflet') {
-                array_push($cssFileArray, Url::templatePath() . 'bower_components/leaflet/leaflet.css');
-                array_push($cssFileArray, Url::templatePath() . 'bower_components/leaflet/plugins/leaflet-fullscreen/leaflet.fullscreen.css');
+                array_push($cssFileArray, DIR . 'bower_components/leaflet/dist/leaflet.css');
+                array_push($cssFileArray, DIR . 'bower_components/leaflet-fullscreen-bower/leaflet.fullscreen.css');
             } else if ($cssFile === 'bootstrap-datepicker') {
-                array_push($cssFileArray, Url::templatePath() . 'bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css');   
+                array_push($cssFileArray, DIR . 'bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css');   
             } else {
                 array_push($cssFileArray, Url::templatePath() . "css/" . $cssFile . ".css");
             }

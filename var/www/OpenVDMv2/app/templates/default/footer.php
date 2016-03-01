@@ -43,11 +43,11 @@ $hooks = Hooks::get();
 <?php 
 
 $jsFileArray = array(
-    Url::templatePath() . 'bower_components/jquery/dist/jquery.min.js',
-    Url::templatePath() . 'bower_components/bootstrap/dist/js/bootstrap.min.js',
-    Url::templatePath() . 'bower_components/metisMenu/dist/metisMenu.min.js',
-    Url::templatePath() . 'bower_components/startbootstrap-sb-admin-2/dist/js/sb-admin-2.js',
-    Url::templatePath() . 'js/jquery.cookie.js',
+    DIR . 'bower_components/jquery/dist/jquery.min.js',
+    DIR . 'bower_components/bootstrap/dist/js/bootstrap.min.js',
+    DIR . 'bower_components/metisMenu/dist/metisMenu.min.js',
+    DIR . 'bower_components/js-cookie/src/js.cookie.js',
+    Url::templatePath() . 'js/sb-admin-2.js',
     Url::templatePath() . 'js/header.js',    
     Url::templatePath() . 'js/modals.js',
 );
@@ -55,17 +55,17 @@ $jsFileArray = array(
 if (isset($data['javascript'])){
     foreach ($data['javascript'] as &$jsFile) {
         if ($jsFile === 'leaflet') {
-            array_push($jsFileArray, Url::templatePath() . 'bower_components/leaflet/leaflet.js');
-            array_push($jsFileArray, Url::templatePath() . 'bower_components/esri-leaflet/esri-leaflet.js');
-            array_push($jsFileArray, Url::templatePath() . 'bower_components/leaflet/plugins/leaflet-fullscreen/Leaflet.fullscreen.min.js');
+            array_push($jsFileArray, DIR . 'bower_components/leaflet/dist/leaflet.js');
+            array_push($jsFileArray, DIR . 'bower_components/esri-leaflet/dist/esri-leaflet.js');
+            array_push($jsFileArray, DIR . 'bower_components/leaflet-fullscreen-bower/Leaflet.fullscreen.min.js');
             //array_push($jsFileArray, Url::templatePath() . "js/esriCredit.js");
         } else if ($jsFile === 'highcharts') {
-            array_push($jsFileArray, Url::templatePath() . 'bower_components/highcharts/js/highcharts.js');
+            array_push($jsFileArray, DIR . 'bower_components/highcharts.com/lib/highcharts.js');
             array_push($jsFileArray, Url::templatePath() . 'js/highcharts-fa-plugin.js');
         } else if ($jsFile === 'highcharts-exporting') {
-            array_push($jsFileArray, Url::templatePath() . 'bower_components/highcharts/js/modules/exporting.js');
+            array_push($jsFileArray, DIR . 'bower_components/highcharts.com/lib/modules/exporting.js');
         } else if ($jsFile === 'bootstrap-datepicker') {
-            array_push($jsFileArray, Url::templatePath() . 'bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js');   
+            array_push($jsFileArray, DIR . 'bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js');   
             array_push($jsFileArray, Url::templatePath() . 'js/datepicker.js');
         } else {
             array_push($jsFileArray, Url::templatePath() . 'js/' . $jsFile . '.js');

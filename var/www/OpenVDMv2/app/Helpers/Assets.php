@@ -1,25 +1,27 @@
 <?php
-namespace Helpers;
-
 /**
- * Assets static helper
+ * Assets static helper.
  *
  * @author volter9
  * @author QsmaPL
  * @date 27th November, 2014
- * @date May 18 2015
+ * @date updated Sept 19, 2015
  */
+namespace Helpers;
 
+/**
+ * Collect and output css and js link tags.
+ */
 class Assets
 {
     /**
      * @var array Asset templates
      */
-    protected static $templates = array
-    (
+    protected static $templates = 
+    [
         'js'  => '<script src="%s" type="text/javascript"></script>',
-        'css' => '<link href="%s" rel="stylesheet" type="text/css">'
-    );
+        'css' => '<link href="%s" rel="stylesheet" type="text/css">',
+    ];
 
     /**
      * Common templates for assets.
@@ -33,17 +35,17 @@ class Assets
 
         if (is_array($files)) {
             foreach ($files as $file) {
-                echo sprintf($template, $file) . "\n";
+                echo sprintf($template, $file)."\n";
             }
         } else {
-            echo sprintf($template, $files) . "\n";
+            echo sprintf($template, $files)."\n";
         }
     }
 
     /**
-     * Output script
+     * Output script.
      *
-     * @param array|string $file
+     * @param array|string $file/s
      */
     public static function js($files)
     {
@@ -51,7 +53,7 @@ class Assets
     }
 
     /**
-     * Output stylesheet
+     * Output stylesheet.
      *
      * @param string $file
      */

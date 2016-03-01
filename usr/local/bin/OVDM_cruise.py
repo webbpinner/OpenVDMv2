@@ -147,9 +147,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             try:
                 payloadObj['cruiseStartDate']
             except KeyError:
-                self.cruiseID = self.OVDM.getCruiseStartDate()
+                self.cruiseStartDate = self.OVDM.getCruiseStartDate()
             else:
-                self.cruiseID = payloadObj['cruiseStartDate']
+                self.cruiseStartDate = payloadObj['cruiseStartDate']
 
         if int(self.taskID) > 0:
             self.OVDM.setRunning_task(self.taskID, os.getpid(), current_job.handle)
@@ -243,6 +243,8 @@ def task_setupNewCruise(worker, job):
     shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
     baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = baseDir + '/' + worker.cruiseID
+    
+
     warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
     worker.send_job_status(job, 1, 10)
@@ -304,6 +306,7 @@ def task_setupNewCruise(worker, job):
 
     #build OpenVDM Config file
     ovdmConfig = worker.OVDM.getOVDMConfig()
+
     output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
     
     worker.send_job_status(job, 10, 10)

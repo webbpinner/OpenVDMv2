@@ -21,11 +21,12 @@
     <!-- CSS -->
 	<?php
 		Assets::css(array(
-			Url::templatePath() . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
-			Url::templatePath() . 'bower_components/metisMenu/dist/metisMenu.min.css',
-			Url::templatePath() . 'bower_components/startbootstrap-sb-admin-2/dist/css/sb-admin-2.css',
-			Url::templatePath() . 'bower_components/font-awesome/css/font-awesome.min.css',
-			Url::templatePath() . 'css/style.css',
+			DIR . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
+			DIR . 'bower_components/metisMenu/dist/metisMenu.min.css',
+            DIR . 'bower_components/font-awesome/css/font-awesome.min.css',
+			Url::templatePath() . 'css/sb-admin-2.css',
+			Url::templatePath() . 'css/timeline.css',
+            Url::templatePath() . 'css/style.css',
 		))
 	?>
 

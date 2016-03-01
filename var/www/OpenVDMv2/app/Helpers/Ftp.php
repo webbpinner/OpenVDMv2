@@ -1,31 +1,37 @@
 <?php
-namespace Helpers;
-
-/*
- * FTP Class - interact with remote FTP Server
+/**
+ * FTP Class.
  *
- * @author David Carr - dave@simplemvcframework.com
+ * @author David Carr - dave@daveismyname.com
+ *
  * @version 1.0
  * @date June 27, 2014
- * @date May 18 2015
+ * @date updated Sept 19, 2015
+ */
+namespace Helpers;
+
+/**
+ * Interact with remote FTP Server.
  */
 class Ftp
 {
-
     /**
-     * hold the FTP connction
-     * @var integer
+     * Hold the FTP connection.
+     *
+     * @var int
      */
     private $conn;
 
     /**
-     * holds the path relative to the root of the server
+     * Holds the path relative to the root of the server.
+     *
      * @var string
      */
     private $basePath;
 
     /**
-     * open a FTP connection
+     * Open a FTP connection.
+     *
      * @param string $host the server address
      * @param string $user username
      * @param string $pass password
@@ -44,7 +50,7 @@ class Ftp
     }
 
     /**
-     * close the connection
+     * Close the connection.
      */
     public function close()
     {
@@ -52,8 +58,9 @@ class Ftp
     }
 
     /**
-     * create a directory on th remote FTP server
-     * @param  string $dirToCreate name of the directory to create
+     * Create a directory on the remote FTP server.
+     *
+     * @param string $dirToCreate name of the directory to create
      */
     public function makeDirectory($dirToCreate)
     {
@@ -63,8 +70,9 @@ class Ftp
     }
 
     /**
-     * delete directory from FTP server
-     * @param  string $dir foldr to delete
+     * Delete directory from FTP server.
+     *
+     * @param string $dir foldr to delete
      */
     public function deleteDirectory($dir)
     {
@@ -72,10 +80,12 @@ class Ftp
     }
 
     /**
-     * Set folder permission
-     * @param  string $folderChmod folder name
-     * @param  integer $permission permission value
-     * @return string              success message
+     * Set folder permission.
+     *
+     * @param string $folderChmod folder name
+     * @param int    $permission  permission value
+     *
+     * @return string success message
      */
     public function folderPermission($folderChmod, $permission)
     {
@@ -85,10 +95,12 @@ class Ftp
     }
 
     /**
-     * upload file to remove FTP server
-     * @param  string $remoteFile path and filename for remote file
-     * @param  string $localFile  local path to file
-     * @return string             message
+     * Upload file to FTP server.
+     *
+     * @param string $remoteFile path and filename for remote file
+     * @param string $localFile  local path to file
+     *
+     * @return string message
      */
     public function uploadFile($remoteFile, $localFile)
     {
@@ -100,8 +112,9 @@ class Ftp
     }
 
     /**
-     * delete remove file
-     * @param  string $file path and filename
+     * Delete remove file.
+     *
+     * @param string $file path and filename
      */
     public function deleteFile($file)
     {

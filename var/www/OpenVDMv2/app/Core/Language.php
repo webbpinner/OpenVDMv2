@@ -1,48 +1,54 @@
 <?php
-namespace Core;
-
-use Core\Error;
-
-/*
- * Language - simple language handler
+/**
+ * Language - simple language handler.
  *
  * @author Bartek Kuśmierczuk - contact@qsma.pl - http://qsma.pl
+ *
  * @version 2.2
  * @date November 18, 2014
- * @date updated May 18 2015
+ * @date updated Sept 19, 2015
+ */
+namespace Core;
+
+/**
+ * Language class to load the requested language file.
  */
 class Language
 {
     /**
-     * Variable holds array with language
+     * Variable holds array with language.
+     *
      * @var array
      */
     private $array;
 
     /**
-     * Load language function
-     * @param  string $name
-     * @param  string $code
+     * Load language function.
+     *
+     * @param string $name
+     * @param string $code
      */
     public function load($name, $code = LANGUAGE_CODE)
     {
-        // lang file
-        $file = "app/language/$code/$name.php";
+        /* lang file */
+        $file = SMVC."app/language/$code/$name.php";
 
-        // check if is readable
+        /* check if is readable */
         if (is_readable($file)) {
-            // require file
-            $this->array = include($file);
+            /* require file */
+            $this->array = include $file;
         } else {
-            // display error
+            /* display error */
             echo Error::display("Could not load language file '$code/$name.php'");
             die;
         }
     }
 
     /**
-     * Get element from language array by key
-     * @param  string $value
+     * Get element from language array by key.
+     *
+     * @param string $value
+     *
      * @return string
      */
     public function get($value)
@@ -55,28 +61,29 @@ class Language
     }
 
     /**
-     * Get lang for views
-     * @param  string $value this is "word" value from language file
-     * @param  string $name  name of file with language
-     * @param  string $code  optional, language code
+     * Get lang for views.
+     *
+     * @param string $value this is "word" value from language file
+     * @param string $name  name of file with language
+     * @param string $code  optional, language code
+     *
      * @return string
      */
     public static function show($value, $name, $code = LANGUAGE_CODE)
     {
-        // lang file
-        $file = "app/language/$code/$name.php";
+        /* lang file */
+        $file = SMVC."app/language/$code/$name.php";
 
-        // check if is readable
+        /* check if is readable */
         if (is_readable($file)) {
-            // require file
-            $array = include($file);
+            /* require file */
+            $array = include $file;
         } else {
-            // display error
+            /* display error */
             echo Error::display("Could not load language file '$code/$name.php'");
             die;
         }
 
-        // If
         if (!empty($array[$value])) {
             return $array[$value];
         } else {
