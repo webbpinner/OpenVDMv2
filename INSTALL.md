@@ -344,9 +344,9 @@ Verify the installation works by going to `http://<servername or IP>/mapproxy/de
 
 ####Install the dependencies
 ```
-sudo apt-get install php-pear
-pear upgrade -Z Archive_Tar
-pecl install yaml
+sudo apt-get install php-pear libyaml-dev
+sudo pear upgrade -Z Archive_Tar
+sudo pecl install yaml
 ```
 
 Add the following to the end of `/etc/php/apache2/php.ini` and `/etc/php/cli/php.ini`
