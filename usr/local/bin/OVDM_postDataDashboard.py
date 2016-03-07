@@ -198,7 +198,7 @@ def task_postDataDashboard(worker, job):
     worker.send_job_status(job, 1, 10)
     
     #check to see if file exists, if False, end task.
-    if not os.is_file(commandFile):
+    if not os.path.isfile(commandFile):
         return json.dumps(job_results)
     
     worker.send_job_status(job, 2, 10)
