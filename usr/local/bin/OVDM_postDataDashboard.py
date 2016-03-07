@@ -197,6 +197,12 @@ def task_postDataDashboard(worker, job):
     
     worker.send_job_status(job, 1, 10)
     
+    #check to see if file exists, if False, end task.
+    if not os.is_file(commandFile):
+        return json.dumps(job_results)
+    
+    worker.send_job_status(job, 2, 10)
+    
     #print "Get Commands"
     commandsForCollectionSystem = getCommands(worker)
     
@@ -205,6 +211,8 @@ def task_postDataDashboard(worker, job):
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
+    
+    worker.send_job_status(job, 3, 10)
     
     #print "Run Commands"
     runCommands(commandsForCollectionSystem, worker)
