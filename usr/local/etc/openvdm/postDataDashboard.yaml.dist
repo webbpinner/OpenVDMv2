@@ -65,11 +65,3 @@
 # - '{collectionSystemTransferName}' --> the collectionSystemTransferName used for the dataDashboard that just occurred 
 # - '{newFiles}' --> JSON-formatted array of all new files that were just transferred in the cooresponding collectionSystemTransfer
 # - '{updatedFile}' --> JSON-formatted array of all updated files that were just transferred in the cooresponding collectionSystemTransfer
-
-- collectionSystemTransferName: SCS
-  commandList:
-  - name: buildCruiseTracks
-    command:
-    - python
-    - /usr/local/bin/buildCruiseTracks.py
-    - SCS

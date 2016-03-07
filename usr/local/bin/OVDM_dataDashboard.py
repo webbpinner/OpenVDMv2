@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.0
+#      VERSION:  2.1rc
 #      CREATED:  2015-01-01
-#     REVISION:  2016-02-05
+#     REVISION:  2016-03-07
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -192,6 +192,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
             payloadObj = json.loads(current_job.data)
             jobData['collectionSystemTransferID'] = payloadObj['collectionSystemTransferID']
+            jobData['files'] = payloadObj['files']
 
             for task in self.OVDM.getTasksForHook(current_job.task):
                 #print task

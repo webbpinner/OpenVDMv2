@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.0
+#      VERSION:  2.1rc
 #      CREATED:  2015-01-01
-#     REVISION:  2016-02-08
+#     REVISION:  2016-03-07
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #

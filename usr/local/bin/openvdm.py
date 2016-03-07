@@ -8,9 +8,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.0
+#      VERSION:  2.1rc
 #      CREATED:  2016-02-02
-#     REVISION:  2016-02-05
+#     REVISION:  2016-03-07
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -115,6 +115,7 @@ class OpenVDM():
     
 
     def getCruiseID(self):
+        
         url = self.config['siteRoot'] + 'api/warehouse/getCruiseID'
         r = requests.get(url)
         returnVal = json.loads(r.text)
@@ -122,6 +123,7 @@ class OpenVDM():
     
     
     def getCruiseStartDate(self):
+        
         url = self.config['siteRoot'] + 'api/warehouse/getCruiseStartDate'
         r = requests.get(url)
         returnVal = json.loads(r.text)
@@ -129,20 +131,49 @@ class OpenVDM():
     
     
     def getExtraDirectory(self, extraDirectoryID):
+        
         url = self.config['siteRoot'] + 'api/extraDirectories/getExtraDirectory/' + extraDirectoryID
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal[0]
     
+    def getExtraDirectoryByName(self, extraDirectoryName):
+
+        extraDirectories = self.getExtraDirectories()
+        for extraDirectory in extraDirectories:
+            if extraDirectory['name'] == extraDirectoryName:
+                return extraDirectory
+            
+        return
     
     def getExtraDirectories(self):
+        
         url = self.config['siteRoot'] + 'api/extraDirectories/getExtraDirectories'
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal
     
     
+    def getRequiredExtraDirectory(self, extraDirectoryID):
+        
+        url = self.config['siteRoot'] + 'api/extraDirectories/getRequiredExtraDirectory/' + extraDirectoryID
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal[0]
+    
+    
+    def getRequiredExtraDirectoryByName(self, extraDirectoryName):
+
+        extraDirectories = self.getRequiredExtraDirectories()
+        for extraDirectory in extraDirectories:
+            if extraDirectory['name'] == extraDirectoryName:
+                return extraDirectory
+            
+        return
+    
+    
     def getRequiredExtraDirectories(self):
+        
         url = self.config['siteRoot'] + 'api/extraDirectories/getRequiredExtraDirectories'
         r = requests.get(url)
         returnVal = json.loads(r.text)
@@ -150,7 +181,7 @@ class OpenVDM():
     
     
     def getShipboardDataWarehouseConfig(self):
-
+        
         url = self.config['siteRoot'] + 'api/warehouse/getShipboardDataWarehouseConfig'
         r = requests.get(url)
         returnVal = json.loads(r.text)
@@ -158,7 +189,7 @@ class OpenVDM():
     
     
     def getShipToShoreBWLimit(self):
-
+        
         url = self.config['siteRoot'] + 'api/warehouse/getShipToShoreBWLimit'
         r = requests.get(url)
         returnObj = json.loads(r.text)
@@ -236,7 +267,15 @@ class OpenVDM():
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal[0]
+    
+    def getCollectionSystemTransferByName(self, collectionSystemTransferName):
 
+        collectionSystemTransfers = self.getCollectionSystemTransfers()
+        for collectionSystemTransfer in collectionSystemTransfers:
+            if collectionSystemTransfer['name'] == collectionSystemTransferName:
+                return collectionSystemTransfer
+        
+        return
     
     def getCruiseDataTransfers(self):
 

@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.0
+#      VERSION:  2.1rc
 #      CREATED:  2016-02-08
-#     REVISION:  
+#     REVISION:  2016-03-07
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -38,28 +38,28 @@ import json
 import signal
 import time
 import subprocess
+import yaml
 import openvdm
 
 taskLookup = {
     "postDataDashboard": "Post Data Dashboard Processing",
 }
 
-collectionSystemCommands = [
-    {
-        'collectionSystemTransferName': 'SCS',
-        'commandList': [
-            {
-                'name':'placebo',
-                'command':['python', '/usr/local/bin/placebo.py', '{cruiseID}']
-            }
-        ]
-    }
-]
+commandFile = '/usr/local/etc/openvdm/postDataDashboard.yaml'
 
 
 def getCommands(worker):
     
-    #print json.dumps(collectionSystemCommands)
+    try:
+        f = open(commandFile, 'r')
+        collectionSystemCommands = yaml.load(f.read())
+        f.close()
+    except:
+        print "ERROR: Could not process configuration file: " + commandFile + "!"
+        return None
+    
+    #print "New Files: " + "'" + json.dumps(worker.files['new']) + "'"
+    #print "Updated Files: " + json.dumps(worker.files['updated'])
     for collectionSystemCommand in collectionSystemCommands:
         if collectionSystemCommand['collectionSystemTransferName'] == worker.collectionSystemTransfer['name']:
             #print json.dumps(collectionSystemCommand)
@@ -67,9 +67,16 @@ def getCommands(worker):
             #print json.dumps(returnCommandList) 
             for command in returnCommandList:
                 #print json.dumps(command)
+                #print "Replacing cruiseID"
                 command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
+                #print "Replacing collectionSystemTransferID"
                 command['command'] = [arg.replace('{collectionSystemTransferID}', worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
+                #print "Replacing collectionSystemTransferName"
                 command['command'] = [arg.replace('{collectionSystemTransferName}', worker.collectionSystemTransfer['name']) for arg in command['command']]
+                #print "Replacing newFiles"
+                command['command'] = [arg.replace('{newFiles}', "'" + json.dumps(worker.files['new']) + "'") for arg in command['command']]
+                #print "Replacing updatedFiles"
+                command['command'] = [arg.replace('{updatedFiles}', "'" + json.dumps(worker.files['updated']) + "'" ) for arg in command['command']]
                 
             #print json.dumps(returnCommandList) 
             return returnCommandList
@@ -77,23 +84,27 @@ def getCommands(worker):
     return []
     
 
-def runCommands(commands):    
+def runCommands(commands, worker):    
 
     for command in commands:
-        
-        #s = ' '
-        #print s.join(command['command'])
     
         try:
+            s = ' '
+            print "Executing: " + s.join(command['command'])
             proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            out, err = proc.communicate()
+            out, err = proc.communicate()            
             
-            print "stdout: " + out
-            print "stderr: " + err
+            if len(out) > 0:
+                print "stdout:"
+                print out
+                
+            if len(err) > 0:
+                print "stderr:"
+                print err
 
         except:
             print "Error executing the " + command['name'] + " script: ", s.join(command['command'])
-                        
+            worker.OVDM.sendMsg("Error executing script: " + command['name'])            
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
@@ -103,14 +114,15 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
         self.collectionSystemTransfer = {}
+        self.files = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
     
 
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
-        
-        self.cruiseID = self.OVDM.getCruiseID()
+        #print payloadObj
         self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])
+        
         if len(payloadObj) > 1:
             try:
                 payloadObj['cruiseID']
@@ -118,6 +130,17 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
+            
+            try:
+                payloadObj['files']
+            except KeyError:
+                self.files = {
+                    "new": [],
+                    "updated": []
+                }
+            else:
+                self.files = payloadObj['files']
+
     
         self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
             
@@ -174,14 +197,23 @@ def task_postDataDashboard(worker, job):
     
     worker.send_job_status(job, 1, 10)
     
+    #print "Get Commands"
     commandsForCollectionSystem = getCommands(worker)
-    runCommands(commandsForCollectionSystem)
+    
+    if commandsForCollectionSystem is None:
+        job_results['parts'].append({"partName": "Get Commands", "result": "Fail"})
+        return json.dumps(job_results)
+    else:
+        job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
+    
+    #print "Run Commands"
+    runCommands(commandsForCollectionSystem, worker)
 
-    print "done"
+    #print "done"
     
     worker.send_job_status(job, 10, 10)
 
-    return json.dumps(job_results)    
+    return json.dumps(job_results)
 
 
 global new_worker
@@ -201,6 +233,6 @@ def sigint_handler(_signo, _stack_frame):
 signal.signal(signal.SIGQUIT, sigquit_handler)
 signal.signal(signal.SIGINT, sigint_handler)
 
-new_worker.set_client_id('dataDashboard.py')
+new_worker.set_client_id('postDataDashboard.py')
 new_worker.register_task("postDataDashboard", task_postDataDashboard)
 new_worker.work()
