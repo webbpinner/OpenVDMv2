@@ -30,7 +30,7 @@
 # ----------------------------------------------------------------------------------- #
 
 # The siteRoot for the OpenVDM web-application/API
-siteRoot: "http://capablesolutions.dyndns.org:8180/OpenVDMv2/"
+siteRoot: "http://127.0.0.1/OpenVDMv2/"
 
 # The transferInterval defines the interval for performing collectionSystemTransfer.
 # The unit is in minutes.
