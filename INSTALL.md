@@ -379,7 +379,7 @@ sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 
 From a terminal window type:
 ```
-git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
+git clone -b 2.1 git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
 ####Create OpenVDMv2 Database
@@ -1099,7 +1099,7 @@ sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 
 From a terminal window type:
 ```
-git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
+git clone -b 2.1 git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
 ####Create OpenVDMv2 Database
