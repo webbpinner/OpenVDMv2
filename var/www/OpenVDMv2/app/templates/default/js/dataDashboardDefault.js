@@ -118,6 +118,13 @@ $(function () {
                     //Get the last coordinate from the latest trackline
                     var lastCoordinate = data[0].features[0].geometry.coordinates[data[0].features[0].geometry.coordinates.length - 1];
                     var latestPosition = L.latLng(lastCoordinate[1], lastCoordinate[0]);
+                    
+                    if (lastCoordinate[0] < 0) {
+                        latestPosition = latestPosition.wrap(360, 0);
+                    } else {
+                        latestPosition = latestPosition.wrap();
+                    }
+                    
                     var bounds = new L.LatLngBounds([latestPosition]);
                     mapObject['mapBounds']['LatestPosition-' + dataType] = bounds;
                         
@@ -150,7 +157,20 @@ $(function () {
                     $(placeholder).html('<strong>Error: ' + data.error + '</strong>');
                 } else {
                     // Build the layer
-                    mapObject['geoJSONLayers'][dataObjectJsonName] = L.geoJson(data[0], { style: { weight: 3 }});
+                    mapObject['geoJSONLayers'][dataObjectJsonName] = L.geoJson(data[0], { style: { weight: 3 }
+                        coordsToLatLng: function (coords) {
+                            var longitude = coords[0],
+                                latitude = coords[1];
+
+                            var latlng = L.latLng(latitude, longitude);
+
+                            if (longitude < 0) {
+                                return latlng.wrap(360, 0);
+                            } else {
+                                return latlng.wrap();
+                            }
+                        }                                                                    
+                    });
                         
                     // Calculate the bounds of the layer
                     mapObject['mapBounds'][dataObjectJsonName] = mapObject['geoJSONLayers'][dataObjectJsonName].getBounds();

@@ -17,10 +17,10 @@ use Helpers\FormCustom;
                 <ul class="nav nav-tabs">
                     <li class=""><a id="main" href="<?php echo DIR; ?>config">Main</a></li>
                     <li class=""><a id="collectionSystemTransfers" href="<?php echo DIR; ?>config/collectionSystemTransfers">Collection System Transfers</a></li>
-                    <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>/config/extraDirectories">Extra Directories</a></li>
-                    <li class="active"><a id="cruiseDataTransfers" href="<?php echo DIR; ?>/config/cruiseDataTransfers">Cruise Data Transfers</a></li>
-                    <li class=""><a id="shipToShoreTransfers" href="<?php echo DIR; ?>/config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
-                    <li class=""><a id="system" href="<?php echo DIR; ?>/config/system">System</a></li>
+                    <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>config/extraDirectories">Extra Directories</a></li>
+                    <li class="active"><a id="cruiseDataTransfers" href="<?php echo DIR; ?>config/cruiseDataTransfers">Cruise Data Transfers</a></li>
+                    <li class=""><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
+                    <li class=""><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
                 </ul>
             </div>
         </div>

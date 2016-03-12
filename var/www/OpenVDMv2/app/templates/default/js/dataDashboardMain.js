@@ -102,8 +102,28 @@ $(function () {
                     var lastCoordinate = data[0].features[0].geometry.coordinates[data[0].features[0].geometry.coordinates.length - 1],
                         latLng = L.latLng(lastCoordinate[1], lastCoordinate[0]);
                     
+                    if (lastCoordinate[0] < 0) {
+                        latLng = latLng.wrap(360, 0);
+                    } else {
+                        latLng = latLng.wrap();
+                    }
+                    
                     // Add latest trackline (GeoJSON)
-                    var ggaData = L.geoJson(data[0]),
+                    var ggaData = L.geoJson(data[0], {
+                        style: { weight: 3 },
+                        coordsToLatLng: function (coords) {
+                            var longitude = coords[0],
+                                latitude = coords[1];
+
+                            var latlng = L.latLng(latitude, longitude);
+
+                            if (longitude < 0) {
+                                return latlng.wrap(360, 0);
+                            } else {
+                                return latlng.wrap();
+                            }
+                        }
+                    }),
                         mapBounds = ggaData.getBounds();
                     
                     mapBounds.extend(latLng);
@@ -128,7 +148,7 @@ $(function () {
                     L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapdb);
 
                     // Add latest trackline (GeoJSON)
-                    L.geoJson(data[0]).addTo(mapdb);
+                    ggaData.addTo(mapdb);
                     
                     // Add marker at the last coordinate
                     var marker = L.marker(latLng).addTo(mapdb);
