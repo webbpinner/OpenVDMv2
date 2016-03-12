@@ -157,7 +157,7 @@ $(function () {
                     $(placeholder).html('<strong>Error: ' + data.error + '</strong>');
                 } else {
                     // Build the layer
-                    mapObject['geoJSONLayers'][dataObjectJsonName] = L.geoJson(data[0], { style: { weight: 3 }
+                    mapObject['geoJSONLayers'][dataObjectJsonName] = L.geoJson(data[0], { style: { weight: 3 },
                         coordsToLatLng: function (coords) {
                             var longitude = coords[0],
                                 latitude = coords[1];
