@@ -291,7 +291,7 @@ grids:
      tile_size: [256, 256]
      srs: EPSG:900913
      origin: 'nw'
-     #num_levels: 25
+     num_levels: 11
 
 globals:
 ```
