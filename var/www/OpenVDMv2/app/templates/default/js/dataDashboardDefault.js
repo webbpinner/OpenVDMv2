@@ -47,7 +47,7 @@ $(function () {
         //Add basemap layer, use ESRI Oceans Base Layer
         //L.esri.basemapLayer("Oceans").addTo(mapObject['map']);
         //L.esri.basemapLayer("OceansLabels").addTo(mapObject['map']);
-        var worldOceanBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } ),
+        var worldOceanBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1, maxNativeZoom:9 } ),
             worldOceanReference = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanReference/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } );
         
         L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapObject['map']);
