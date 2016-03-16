@@ -208,14 +208,27 @@ $(function () {
                     var coords = data[0]['mapBounds'].split(','),
                         southwest = L.latLng(parseFloat(coords[1]), parseFloat(coords[0])),
                         northeast = L.latLng(parseFloat(coords[3]), parseFloat(coords[2]));
-                        
-                    mapObject['mapBounds'][tmsObjectJsonName] = L.latLngBounds(southwest, northeast);
 
                     // Build the layer
                     mapObject['tmsLayers'][tmsObjectJsonName] = L.tileLayer(location.protocol + '//' + location.host + cruiseDataDir + '/' + data[0]['tileDirectory'] + '/{z}/{x}/{y}.png', {
                         tms:true,
                         bounds:L.latLngBounds(southwest, northeast),
                     });
+                    
+                    if (parseFloat(coords[0]) < 0) {
+                        southwest = southwest.wrap(360, 0);
+                    } else {
+                        southwest = southwest.wrap();
+                    }
+                    
+                    if (parseFloat(coords[2]) < 0) {
+                        northeast = northeast.wrap(360, 0);
+                    } else {
+                        northeast = northeast.wrap();
+                    }
+                    
+                    mapObject['mapBounds'][tmsObjectJsonName] = L.latLngBounds(southwest, northeast);
+                    //console.log(mapObject['mapBounds'][tmsObjectJsonName]);
                         
                     // Add the layer to the map
                     mapObject['tmsLayers'][tmsObjectJsonName].addTo(mapObject['map']);
