@@ -367,8 +367,9 @@ def transfer_localSourceDir(worker, job):
     cruiseStartDate = worker.cruiseStartDate
     
     destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID+'/'+worker.collectionSystemTransfer['destDir'].rstrip('/')
-    sourceDir = worker.collectionSystemTransfer['sourceDir'].rstrip('/')
-    
+#    sourceDir = worker.collectionSystemTransfer['sourceDir'].rstrip('/')
+    sourceDir = build_sourceDir(worker).rstrip('/')
+
     #print "Build file list"
     files = build_filelist(worker, sourceDir)
 
