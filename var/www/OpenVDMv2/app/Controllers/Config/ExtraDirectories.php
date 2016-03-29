@@ -41,7 +41,7 @@ class ExtraDirectories extends Controller {
         
     public function index(){
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('tabs_config');
+        $data['javascript'] = array();
         $data['extraDirectories'] = $this->_model->getExtraDirectories();
         View::rendertemplate('header',$data);
         View::render('Config/extraDirectories',$data);
@@ -50,7 +50,7 @@ class ExtraDirectories extends Controller {
 
     public function add(){
         $data['title'] = 'Add Extra Directory';
-        $data['javascript'] = array('extraDirectoriesFormHelper', 'tabs_config');
+        $data['javascript'] = array('extraDirectoriesFormHelper');
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -92,7 +92,7 @@ class ExtraDirectories extends Controller {
         
     public function edit($id){
         $data['title'] = 'Edit Extra Directory';
-        $data['javascript'] = array('extraDirectoriesFormHelper', 'tabs_config');
+        $data['javascript'] = array('extraDirectoriesFormHelper');
         $data['row'] = $this->_model->getExtraDirectory($id);
 
         if(isset($_POST['submit'])){

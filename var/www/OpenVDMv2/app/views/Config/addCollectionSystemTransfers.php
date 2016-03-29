@@ -2,6 +2,7 @@
 
 use Core\Error;
 use Helpers\Form;
+use Helpers\FormCustom;
 
 ?>
 
@@ -15,12 +16,12 @@ use Helpers\Form;
         <div class="col-lg-12">
             <div class="tabbable" style="margin-bottom: 18px;">
                 <ul class="nav nav-tabs">
-                    <li class=""><a id="main" href="#main" data-toggle="tab">Main</a></li>
-                    <li class="active"><a id="collectionSystemTransfers" href="#collectionSystemTransfers" data-toggle="tab">Collection System Transfers</a></li>
-                    <li class=""><a id="extraDirectories" href="#extraDirectories" data-toggle="tab">Extra Directories</a></li>
-                    <li class=""><a id="cruiseDataTransfers" href="#cruiseDataTransfers" data-toggle="tab">Cruise Data Transfers</a></li>
-                    <li class=""><a id="shipToShoreTransfers" href="#shipToShoreTransfers" data-toggle="tab">Ship-to-Shore Transfers</a></li>
-                    <li class=""><a id="system" href="#system" data-toggle="tab">System</a></li>
+                    <li class=""><a id="main" href="<?php echo DIR; ?>config">Main</a></li>
+                    <li class="active"><a id="collectionSystemTransfers" href="<?php echo DIR; ?>config/collectionSystemTransfers">Collection System Transfers</a></li>
+                    <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>config/extraDirectories">Extra Directories</a></li>
+                    <li class=""><a id="cruiseDataTransfers" href="<?php echo DIR; ?>config/cruiseDataTransfers">Cruise Data Transfers</a></li>
+                    <li class=""><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
+                    <li class=""><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
                 </ul>
             </div>
         </div>
@@ -41,13 +42,13 @@ use Helpers\Form;
                                 <div class="form-group"><label>Exclude Filter</label><?php echo Form::textbox( array('class'=>'form-control', 'rows'=>'3', 'name'=>'excludeFilter', 'value'=> $_POST['excludeFilter'])); ?></div>
                                 <div class="form-group"><label>Ignore Filter</label><?php echo Form::textbox( array('class'=>'form-control', 'rows'=>'3', 'name'=>'ignoreFilter', 'value'=> $_POST['ignoreFilter'])); ?></div>
                                 <div class="form-group">
-                                    <label>Skip files being actively written to?</label><?php echo Form::radioInline($data['stalenessOptions'], $_POST['staleness']); ?>
+                                    <label>Skip files being actively written to?</label><?php echo FormCustom::radioInline($data['stalenessOptions'], $_POST['staleness']); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Skip files last modified before cruise start date?</label><?php echo Form::radioInline($data['useStartDateOptions'], $_POST['useStartDate']); ?>
+                                    <label>Skip files last modified before cruise start date?</label><?php echo FormCustom::radioInline($data['useStartDateOptions'], $_POST['useStartDate']); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Transfer Type</label><?php echo Form::radioInline($data['transferTypeOptions'], $_POST['transferType']); ?>
+                                    <label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $_POST['transferType']); ?>
                                 </div>
                                 <div class="form-group"><label>Source Directory</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sourceDir', 'value'=> $_POST['sourceDir'])); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncServer', 'value'=> $_POST['rsyncServer'])); ?></div>

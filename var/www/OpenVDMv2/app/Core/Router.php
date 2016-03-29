@@ -1,46 +1,79 @@
-<?php namespace Core;
-
-use Core\View;
-
-/*
- * Router - routing urls to closurs and controllers - modified from https://github.com/NoahBuscher/Macaw
+<?php
+/**
+ * Router - routing urls to closurs and controllers - modified from https://github.com/NoahBuscher/Macaw.
  *
- * @author David Carr - dave@simplemvcframework.com
+ * @author David Carr - dave@daveismyname.com
+ *
  * @version 2.2
  * @date Auguest 16th, 2014
- * @date updated May 18 2015
+ * @date updated Sept 19, 2015
+ */
+namespace Core;
+
+/**
+ * Router class will load requested controller / closure based on url.
  */
 class Router
 {
-
-    // Fallback for auto dispatching feature.
+    /**
+     * Fallback for auto dispatching feature.
+     *
+     * @var bool
+     */
     public static $fallback = true;
 
-    // If true - do not process other routes when match is found
+    /**
+     * If true - do not process other routes when match is found.
+     *
+     * @var bool
+     */
     public static $halts = true;
 
-    // Set routes, methods and etc.
-    public static $routes = array();
-    public static $methods = array();
-    public static $callbacks = array();
-    public static $errorCallback;
-
-    // Set route patterns
-    public static $patterns = array(
-        ':any' => '[^/]+',
-        ':num' => '[0-9]+',
-        ':all' => '.*'
-    );
+    /**
+     * Array of routes.
+     *
+     * @var array
+     */
+    public static $routes = [];
 
     /**
-     * Defines a route w/ callback and method
+     * Array of methods.
      *
-     * @param   string $method
-     * @param   array @params
+     * @var array
+     */
+    public static $methods = [];
+
+    /**
+     * Array of callbacks.
+     *
+     * @var array
+     */
+    public static $callbacks = [];
+
+    /**
+     * Set an error callback.
+     *
+     * @var null
+     */
+    public static $errorCallback;
+
+    /** Set route patterns */
+    public static $patterns = [
+        ':any'    => '[^/]+',
+        ':num'    => '-?[0-9]+',
+        ':all'    => '.*',
+        ':hex'    => '[[:xdigit:]]+',
+        ':uuidV4' => '\w{8}-\w{4}-\w{4}-\w{4}-\w{12}',
+    ];
+
+    /**
+     * Defines a route with or without callback and method.
+     *
+     * @param string $method
+     * @param array @params
      */
     public static function __callstatic($method, $params)
     {
-
         $uri = dirname($_SERVER['PHP_SELF']).'/'.$params[0];
         $callback = $params[1];
 
@@ -50,8 +83,9 @@ class Router
     }
 
     /**
-     * Defines callback if route is not found
-     * @param   string $callback
+     * Defines callback if route is not found.
+     *
+     * @param string $callback
      */
     public static function error($callback)
     {
@@ -59,8 +93,9 @@ class Router
     }
 
     /**
-     * Don't load any further routes on match
-     * @param  boolean $flag
+     * Don't load any further routes on match.
+     *
+     * @param bool $flag
      */
     public static function haltOnMatch($flag = true)
     {
@@ -68,41 +103,39 @@ class Router
     }
 
     /**
-     * Call object and instantiate
+     * Call object and instantiate.
      *
-     * @param  object $callback
-     * @param  array $matched  array of matched parameters
-     * @param  string $msg
+     * @param object $callback
+     * @param array  $matched  array of matched parameters
+     * @param string $msg
      */
     public static function invokeObject($callback, $matched = null, $msg = null)
     {
-
-        //grab all parts based on a / separator and collect the last index of the array
         $last = explode('/', $callback);
         $last = end($last);
 
-        //grab the controller name and method call
         $segments = explode('@', $last);
 
-        //instanitate controller with optional msg (used for errorCallback)
-        $controller = new $segments[0]($msg);
+        $controller = $segments[0];
+        $method = $segments[1];
 
-        if ($matched == null) {
-            //call method
-            $controller->$segments[1]();
-        } else {
-            //call method and pass in array keys as params
-            call_user_func_array(array($controller, $segments[1]), $matched);
-        }
+        $controller = new $controller($msg);
+
+        call_user_func_array([$controller, $method], $matched ? $matched : []);
     }
 
     /**
-     * autoDispatch by Volter9
-     * Ability to call controllers in their controller/model/param way
+     * autoDispatch by Volter9.
+     *
+     * Ability to call controllers in their controller/model/param way.
      */
     public static function autoDispatch()
     {
         $uri = parse_url($_SERVER['QUERY_STRING'], PHP_URL_PATH);
+        $uri = '/'.$uri;
+        if (strpos($uri, DIR) === 0) {
+            $uri = substr($uri, strlen(DIR));
+        }
         $uri = trim($uri, ' /');
         $uri = ($amp = strpos($uri, '&')) !== false ? substr($uri, 0, $amp) : $uri;
 
@@ -110,23 +143,23 @@ class Router
 
         $controller = array_shift($parts);
         $controller = $controller ? $controller : DEFAULT_CONTROLLER;
+        $controller = ucwords($controller);
 
         $method = array_shift($parts);
         $method = $method ? $method : DEFAULT_METHOD;
 
-        $args = !empty($parts) ? $parts : array();
+        $args = !empty($parts) ? $parts : [];
 
         // Check for file
-        if (!file_exists("App/Controllers/$controller.php")) {
+        if (!file_exists("app/Controllers/$controller.php")) {
             return false;
         }
 
-        $controller = ucwords($controller);
         $controller = "\Controllers\\$controller";
-        $c = new $controller;
+        $c = new $controller();
 
         if (method_exists($c, $method)) {
-            $c->$method($args);
+            call_user_func_array([$c, $method], $args);
             //found method so stop
             return true;
         }
@@ -135,11 +168,10 @@ class Router
     }
 
     /**
-     * Runs the callback for the given request
+     * Runs the callback for the given request.
      */
     public static function dispatch()
     {
-
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $method = $_SERVER['REQUEST_METHOD'];
 
@@ -153,14 +185,14 @@ class Router
         // parse query parameters
 
         $query = '';
-        $q_arr = array();
+        $q_arr = [];
         if (strpos($uri, '&') > 0) {
             $query = substr($uri, strpos($uri, '&') + 1);
             $uri = substr($uri, 0, strpos($uri, '&'));
             $q_arr = explode('&', $query);
             foreach ($q_arr as $q) {
                 $qobj = explode('=', $q);
-                $q_arr[] = array($qobj[0] => $qobj[1]);
+                $q_arr[] = [$qobj[0] => $qobj[1]];
                 if (!isset($_GET[$qobj[0]])) {
                     $_GET[$qobj[0]] = $qobj[1];
                 }
@@ -191,10 +223,8 @@ class Router
                         }
                     }
                 }
-
             }
             // end foreach
-
         } else {
             // check if defined with regex
             $pos = 0;
@@ -207,7 +237,7 @@ class Router
                     $route = str_replace($searches, $replaces, $route);
                 }
 
-                if (preg_match('#^' . $route . '$#', $uri, $matched)) {
+                if (preg_match('#^'.$route.'$#', $uri, $matched)) {
                     if (self::$methods[$pos] == $method || self::$methods[$pos] == 'ANY') {
                         $found_route = true;
 
@@ -246,7 +276,7 @@ class Router
                     header("{$_SERVER['SERVER_PROTOCOL']} 404 Not Found");
 
                     $data['title'] = '404';
-                    $data['error'] = "Oops! Page not found..";
+                    $data['error'] = 'Oops! Page not found..';
 
                     View::renderTemplate('header', $data);
                     View::render('Error/404', $data);

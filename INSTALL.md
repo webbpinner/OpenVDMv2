@@ -1,7 +1,7 @@
 [OpenVDMv2_Logo]: http://www.oceandatarat.org/wp-content/uploads/2014/11/openVDM_LogoV2_1_long.png "Open Vessel Data Managment v2" 
 
 ![OpenVDMv2_Logo]
-#Open Vessel Data Management v2
+#Open Vessel Data Management v2.1
 
 ##Installation Guide
 At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 14.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 14.04 LTS is used.
@@ -342,6 +342,19 @@ Verify the installation works by going to `http://<servername or IP>/mapproxy/de
 
 ###OpenVDMv2
 
+####Install the dependencies
+```
+sudo apt-get install php-pear libyaml-dev
+sudo pear upgrade -Z Archive_Tar
+sudo pecl install yaml
+```
+
+Add the following to the end of `/etc/php/apache2/php.ini` and `/etc/php/cli/php.ini`
+
+```
+extension=yaml.so
+```
+
 ####Create the Required Directories
 In order for OpenVDMv2 to properly store data serveral directories must be created on the Warehouse
 
@@ -366,7 +379,7 @@ sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 
 From a terminal window type:
 ```
-git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
+git clone -b 2.1 git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
 ####Create OpenVDMv2 Database
@@ -431,7 +444,7 @@ sudo nano /var/www/OpenVDMv2/app/Core/Config.php
  - Set the file URL of the OpenVDMv2 installation.  Look for the following lines and change the IP address in the URL to the actual IP address or hostname of the warehouse:
 ```
 //site address
-define('DIR', 'http://127.0.0.1/OpenVDMv2/');
+define('DIR', '/OpenVDMv2/');
 ```
 
 **A word of caution.** The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
@@ -508,25 +521,29 @@ sudo cp -r ~/OpenVDMv2/usr/local/bin/* /usr/local/bin/
 sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
 ```
 
-####Modify the configuation file for the OpenVDMv2 scheduler
+####Install the OpenVDM configuration files
 ```
-sudo cp /etc/supervisor/conf.d/OVDM_scheduler.conf.dist /etc/supervisor/conf.d/OVDM_scheduler.conf
-sudo nano /etc/supervisor/conf.d/OVDM_scheduler.conf
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/dataDashboard.yaml
+```
+
+####Modify the OpenVDM configuation file
+```
+sudo nano /usr/local/etc/openvdm/openvdm.yaml
 ```
 Look for the following line:
 ```
-command=/usr/bin/python /usr/local/bin/OVDM_scheduler.py --interval 5 http://127.0.0.1/OpenVDMv2/
+siteRoot: "http://127.0.0.1/OpenVDMv2/"
 ```
 
 Change the URL to match the URL specified in the Config.php file during the OpenVDMv2 web-application installation.
 
 Restart Supervisor
 ```
-sudo service supervisor
+sudo service supervisor restart
 ```
 
 ####Setup the Samba shares
-
 
 ```
 obey pam restrictions = no
@@ -580,8 +597,7 @@ Restart the Samba service
 sudo service samba restart
 ```
 
-At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure collection system transfers, cruise data transfers and the shoreside data warehouse.
-
+At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure data dashboard collection system transfers, cruise data transfers and the shoreside data warehouse.
 
 ### CentOS 6.7 Install Notes - BETA
 
@@ -1083,7 +1099,7 @@ sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 
 From a terminal window type:
 ```
-git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
+git clone -b 2.1 git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
 ####Create OpenVDMv2 Database

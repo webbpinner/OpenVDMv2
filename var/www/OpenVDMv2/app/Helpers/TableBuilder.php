@@ -1,17 +1,16 @@
 <?php
-namespace Helpers;
-
-/*
- * Table builder class
+/**
+ * Table builder class.
  *
  * @author Volter9 - https://github.com/Volter9
+ *
  * @version 2.2
  * @date Sept 22, 2014
- * @date updated May 18 2015
+ * @date updated Sept 19, 2015
  */
+namespace Helpers;
 
 use PDO;
-use Helpers\Database;
 
 /**
  * Table builder class for SimpleMVCFramework.
@@ -41,7 +40,6 @@ use Helpers\Database;
  * @author volter9
  * @copyright volter9 ( c ) 2014
  */
-
 class TableBuilder
 {
     /**
@@ -62,32 +60,44 @@ class TableBuilder
     private $sql = '';
 
     /**
-     * @var string $name   Table name
-     * @var array  $fields Table fields
-     * @var strin  $pk     Primary key field
+     * Name.
+     *
+     * @var string Table name
      */
     private $name = '';
-    private $fields = array();
+
+    /**
+     * fields.
+     *
+     * @var array Table fields
+     */
+    private $fields = [];
+
+    /**
+     * pk.
+     *
+     * @var strin Primary key field
+     */
     private $pk = '';
 
     /**
-     * @var boolean Prevents errors in case if table already exists
+     * @var bool Prevents errors in case if table already exists
      */
     private $notExists = false;
 
     /**
      * @var array Type aliases
      */
-    private static $typeAliases = array (
+    private static $typeAliases =  [
         'int'         => 'INT(11)',
         'string'      => 'VARCHAR(255)',
-        'description' => 'TINYTEXT'
-    );
+        'description' => 'TINYTEXT',
+    ];
 
     /**
      * Set alias.
      * Alias is just a way to simplify datatype of field in expression.
-     * You probably don't want to write a lot of times INT(11), so you can add 'int' alias 'INT(11)'
+     * You probably don't want to write a lot of times INT(11), so you can add 'int' alias 'INT(11)'.
      *
      * @param string $aliasName - Name of the Alias
      * @param string $aliasType - Type of the Alias
@@ -105,7 +115,7 @@ class TableBuilder
      * you'll set second parameter false.
      *
      * @param PDO|null $db - PDO instance (it can be a \helper\database instance)
-     * @param boolean  $id - A flag to add or not to add `id` field automatically
+     * @param bool     $id - A flag to add or not to add `id` field automatically
      */
     public function __construct(PDO $db = null, $id = true)
     {
@@ -123,6 +133,7 @@ class TableBuilder
      * Private utility for converting constants into strings.
      *
      * @param int|array $constant - Constant(s) to convert
+     *
      * @return string
      */
     private function getOptions($constant)
@@ -151,7 +162,7 @@ class TableBuilder
      *
      * @param string    $field   - Field name
      * @param string    $type    - Type of the field, for types, please visit CREATE TABLE page for reference
-     * @param boolean   $null    - NOT null or null
+     * @param bool      $null    - NOT null or null
      * @param array|int $options - Options, it's either array of constants or just one constant
      */
     public function addField($field, $type, $null = false, $options = 0)
@@ -161,11 +172,11 @@ class TableBuilder
             $type = self::$typeAliases[$type];
         }
 
-        $this->fields[$field] = array (
+        $this->fields[$field] =  [
             'type'    => $type,
             'null'    => $null,
-            'options' => $options
-        );
+            'options' => $options,
+        ];
 
         if ($options === self::CURRENT_TIMESTAMP ||
             is_array($options) &&
@@ -175,9 +186,9 @@ class TableBuilder
     }
 
     /**
-     * Sets 'IF NOT EXISTS' property
+     * Sets 'IF NOT EXISTS' property.
      *
-     * @param boolean $boolean
+     * @param bool $boolean
      */
     public function setNotExists($boolean)
     {
@@ -185,10 +196,11 @@ class TableBuilder
     }
 
     /**
-     * Set Primary Key field
+     * Set Primary Key field.
      *
      * @param string $field - Field which you want to set a primary key
-     * @return boolean
+     *
+     * @return bool
      */
     public function setPK($field)
     {
@@ -202,7 +214,7 @@ class TableBuilder
     }
 
     /**
-     * Set name of table
+     * Set name of table.
      *
      * @param string $name - A name for database
      */
@@ -238,20 +250,20 @@ class TableBuilder
         $sql = 'CREATE TABLE ';
 
         if ($this->notExists) {
-            $sql = $sql . 'IF NOT EXISTS ';
+            $sql = $sql.'IF NOT EXISTS ';
         }
 
         $sql .= "{$this->name} (";
 
         // Handling fields
         foreach ($this->fields as $name => $field) {
-            $sql .= "`$name` {$field['type']} " . ($field['null'] === false ? 'NOT' : '') . " null ";
+            $sql .= "`$name` {$field['type']} ".($field['null'] === false ? 'NOT' : '').' null ';
 
             if (isset($field['default'])) {
                 $sql .= "DEFAULT {$field['default']} ";
             }
 
-            $sql .= $this->getOptions($field['options']) . ', ';
+            $sql .= $this->getOptions($field['options']).', ';
         }
 
         if ($this->pk !== '') {
@@ -259,7 +271,7 @@ class TableBuilder
         }
 
         // Removing additional commas
-        $sql = rtrim($sql, ', ') . ')';
+        $sql = rtrim($sql, ', ').')';
 
         $this->sql = $sql;
     }
@@ -279,10 +291,11 @@ class TableBuilder
     }
 
     /**
-     * Creates table
+     * Creates table.
      *
-     * @param boolean $reset - A flag to reset whole set of data.
-     * @return boolean
+     * @param bool $reset - A flag to reset whole set of data.
+     *
+     * @return bool
      */
     public function create($reset = true)
     {
@@ -310,6 +323,6 @@ class TableBuilder
         $this->pk = '';
         $this->notExists = false;
 
-        $this->fields = array();
+        $this->fields = [];
     }
 }

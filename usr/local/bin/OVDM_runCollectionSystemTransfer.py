@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.0
+#      VERSION:  2.1rc
 #      CREATED:  2015-01-01
-#     REVISION:  2016-02-08
+#     REVISION:  2016-03-07
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -36,7 +36,6 @@ import tempfile
 import gearman
 import shutil
 import json
-import requests
 import time
 import calendar
 import datetime
@@ -45,17 +44,16 @@ import subprocess
 import signal
 import pwd
 import grp
+import openvdm
 from random import randint
 
-def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
 
-    #print "Filter sourceDir: " + sourceDir
-    #print "Build file list"
-    #find . -path ./archive -prune -o -type f -mmin +5 -print
+def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-    threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
-    cruiseStart_time = calendar.timegm(time.strptime(cruiseStartDate, "%m/%d/%Y"))
+    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%m/%d/%Y"))
+    filters = build_filters(worker)
     
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
@@ -86,26 +84,21 @@ def build_filelist(sourceDir, filters, stalness, cruiseStartDate):
                             break
                 if not include:
                     returnFiles['exclude'].append(os.path.join(root, filename))
-            
-    returnFiles['include'] = [filename.replace(sourceDir+'/', '', 1) for filename in returnFiles['include']]
-    returnFiles['exclude'] = [filename.replace(sourceDir+'/', '', 1) for filename in returnFiles['exclude']]
-    
-    #print 'DECODED fileList:', json.dumps(returnFiles, indent=2)  
-    
+
+    returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
+    returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
+
     return returnFiles
 
-def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
+
+def build_rsyncFilelist(worker, sourceDir):
 
     #print "Build file list"
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-    #print "Calculate now"
-    threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
-    cruiseStart_time = calendar.timegm(time.strptime(cruiseStartDate, "%m/%d/%Y"))
-    
-    rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
-    #print "sourceDir: " + sourceDir
+    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%m/%d/%Y"))
+    filters = build_filters(worker)
 
     #print threshold_time
     rsyncFileList = ''
@@ -119,7 +112,7 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
         rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
         #print "Saving rsync password file"
-        rsyncPasswordFile.write(data['collectionSystemTransfer']['rsyncPass'])
+        rsyncPasswordFile.write(worker.collectionSystemTransfer['rsyncPass'])
 
     except IOError:
         #print "Error Saving temporary rsync password file"
@@ -137,8 +130,7 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
         os.chmod(rsyncPasswordFilePath, 0600)
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
 
-    
-    command = ['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir + '/']
+    command = ['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
     
     #s = ' '
     #print s.join(command)
@@ -152,9 +144,7 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
         
     #print "rsyncFileListOut: " + rsyncFileList
     
-#    root = data['collectionSystemTransfer']['sourceDir']
-#    baseDir = os.path.basename(data['collectionSystemTransfer']['sourceDir'])
-    threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
+    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     
     for line in rsyncFileList.splitlines():
@@ -194,30 +184,27 @@ def build_rsyncFilelist(data, filters, stalness, cruiseStartDate):
                     #print "exclude"
                     returnFiles['exclude'].append(filename)        
 
-    returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
-    returnFiles['exclude'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['exclude']]
-    
+    returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
+    returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
+
     #print 'DECODED returnFiles:', json.dumps(returnFiles, indent=2)  
     
     return returnFiles
 
-def build_sshFilelist(data, filters, stalness, cruiseStartDate):
+
+def build_sshFilelist(worker, sourceDir):
 
     #print "Build file list"
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-    #print "Calculate now"
-    threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
-    cruiseStart_time = calendar.timegm(time.strptime(cruiseStartDate, "%m/%d/%Y"))
+    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%m/%d/%Y"))
+    filters = build_filters(worker)
     
-    rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
-    #print "sourceDir: " + sourceDir
-
     #print threshold_time
     rsyncFileList = ''
     
-    command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['sshUser'] + '@' + data['collectionSystemTransfer']['sshServer'] + ':' + sourceDir + '/']
+    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     
     #s = ' '
     #print s.join(command)
@@ -228,9 +215,7 @@ def build_sshFilelist(data, filters, stalness, cruiseStartDate):
         
     #print "rsyncFileListOut: " + rsyncFileList
     
-#    root = data['collectionSystemTransfer']['sourceDir']
-#    baseDir = os.path.basename(data['collectionSystemTransfer']['sourceDir'])
-    threshold_time = time.time() - (int(stalness) * 60) # 5 minutes
+    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     
     for line in rsyncFileList.splitlines():
@@ -270,41 +255,42 @@ def build_sshFilelist(data, filters, stalness, cruiseStartDate):
                     #print "exclude"
                     returnFiles['exclude'].append(filename)        
 
-    returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
-    returnFiles['exclude'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['exclude']]
-    
+    returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
+    returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
+
     #print 'DECODED returnFiles:', json.dumps(returnFiles, indent=2)  
     
     return returnFiles
 
-def build_filters(raw_filters, data):
+
+def build_filters(worker):
     
-    returnFilters = raw_filters
-    #print json.dumps(raw_filters, indent=2)
+    rawFilters = {'includeFilter': worker.collectionSystemTransfer['includeFilter'],'excludeFilter': worker.collectionSystemTransfer['excludeFilter'],'ignoreFilter': worker.collectionSystemTransfer['ignoreFilter']}
+    returnFilters = rawFilters
+    #print json.dumps(rawFilters, indent=2)
     
-    returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', data['cruiseID'])
-    returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{cruiseID}', data['cruiseID'])
-    returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', data['cruiseID'])
+    returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
     
     #print json.dumps(returnFilters, indent=2)
     return returnFilters
 
-def build_destDir(raw_destDir, data):
+
+def build_destDir(worker):
     
-    #print raw_destDir
-    
-    returnDestDir = raw_destDir.replace('{cruiseID}', data['cruiseID'])
+    returnDestDir = worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnDestDir
 
-def build_sourceDir(raw_sourceDir, data):
+
+def build_sourceDir(worker):
     
-    #print raw_sourceDir
-    
-    returnSourceDir = raw_sourceDir.replace('{cruiseID}', data['cruiseID'])
+    returnSourceDir = worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', worker.cruiseID)
 
     return returnSourceDir
     
+
 def build_destDirectories(destDir, files):
     files = [filename.replace(filename, destDir + '/' + filename, 1) for filename in files]
     #print 'DECODED Files:', json.dumps(files, indent=2)
@@ -314,17 +300,18 @@ def build_destDirectories(destDir, files):
             #print "Creating Directory: " + dirname
             os.makedirs(dirname)
 
-def build_logfileDirPath(warehouseBaseDir, siteRoot):
+            
+def build_logfileDirPath(worker):
 
-    url = siteRoot + 'api/extraDirectories/getRequiredExtraDirectories'
-    r = requests.get(url)
-    transferLogDir = ''
-    for directory in r.json():
+    requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
+
+    for directory in requiredExtraDirectories:
         if directory['name'] == 'Transfer Logs':
-            transferLogDir = warehouseBaseDir + '/' + directory['destDir']
+            return worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + directory['destDir']
             break
     
-    return transferLogDir
+    return ''
+
 
 def setDirectoryOwnerGroupPermissions(path, uid, gid):
     # Set the file permission and ownership for the current directory
@@ -350,6 +337,7 @@ def setDirectoryOwnerGroupPermissions(path, uid, gid):
                 return False
     return True
 
+
 def writeLogFile(logfileName, warehouseUser, files):
     
     try:
@@ -371,30 +359,19 @@ def writeLogFile(logfileName, warehouseUser, files):
     return True
     
 
-def get_collectionSystemTransfer(job, collectionSystemTransferID):
-    dataObj = json.loads(job.data)
-    # Set Error for current tranfer in DB via API
-    
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfer/' + collectionSystemTransferID
-    r = requests.get(url)
-    returnVal = json.loads(r.text)
-    return returnVal[0]
-
-def transfer_localSourceDir(data, worker, job):
+def transfer_localSourceDir(worker, job):
 
     #print "Transfer from Local Directory"
-    rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
     
-    staleness = data['collectionSystemTransfer']['staleness']
-    cruiseStartDate = data['cruiseStartDate']
+    staleness = worker.collectionSystemTransfer['staleness']
+    cruiseStartDate = worker.cruiseStartDate
     
-    filters = build_filters(rawFilters, data)
-    
-    destDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    sourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')+'/'
-    
+    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID+'/'+worker.collectionSystemTransfer['destDir'].rstrip('/')
+#    sourceDir = worker.collectionSystemTransfer['sourceDir'].rstrip('/')
+    sourceDir = build_sourceDir(worker).rstrip('/')
+
     #print "Build file list"
-    files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
+    files = build_filelist(worker, sourceDir)
 
     #print "Build destination directories"
     #build_destDirectories(destDir, files['include'])
@@ -432,7 +409,7 @@ def transfer_localSourceDir(data, worker, job):
         rsyncFileListFile.close()
         #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
-    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, sourceDir + '/', destDir]
     
     #s = ' '
     #print s.join(command)
@@ -462,15 +439,13 @@ def transfer_localSourceDir(data, worker, job):
     shutil.rmtree(tmpdir)    
     return files
 
-def transfer_smbSourceDir(data, worker, job):
+
+def transfer_smbSourceDir(worker, job):
 
 #    print 'DECODED Data:', json.dumps(data, indent=2)
-    staleness = data['collectionSystemTransfer']['staleness']
-    cruiseStartDate = data['cruiseStartDate']
-
-    #print "Transfer from SMB Server"
-    rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
-    filters = build_filters(rawFilters, data)
+    staleness = worker.collectionSystemTransfer['staleness']
+    cruiseStartDate = worker.cruiseStartDate
+    filters = build_filters(worker)
 
     # Create temp directory
     #print "Create Temp Directory"
@@ -483,9 +458,9 @@ def transfer_smbSourceDir(data, worker, job):
 
     # Mount SMB Share
     #print "Mount SMB Share"
-    if data['collectionSystemTransfer']['smbUser'] == 'guest':
+    if worker.collectionSystemTransfer['smbUser'] == 'guest':
         
-        command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',guest' + ',domain='+data['collectionSystemTransfer']['smbDomain']]
+        command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+ ',guest' + ',domain='+worker.collectionSystemTransfer['smbDomain']]
         
         #s = ' '
         #print s.join(command)
@@ -494,7 +469,7 @@ def transfer_smbSourceDir(data, worker, job):
         proc.communicate()
         
     else:
-        command = ['sudo', 'mount', '-t', 'cifs', data['collectionSystemTransfer']['smbServer'], mntPoint, '-o', 'ro'+ ',username='+data['collectionSystemTransfer']['smbUser']+',password='+data['collectionSystemTransfer']['smbPass']+',domain='+data['collectionSystemTransfer']['smbDomain']]
+        command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+ ',username='+worker.collectionSystemTransfer['smbUser']+',password='+worker.collectionSystemTransfer['smbPass']+',domain='+worker.collectionSystemTransfer['smbDomain']]
         
         #s = ' '
         #print s.join(command)
@@ -502,16 +477,15 @@ def transfer_smbSourceDir(data, worker, job):
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
-    rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    destDir = build_destDir(rawDestDir, data)
-    rawSourceDir = mntPoint+'/'+data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
+    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + build_destDir(worker).rstrip('/')
+    sourceDir = mntPoint + '/' + build_sourceDir(worker)
+    sourceDir = sourceDir.rstrip('/')
     
     #print "Source Dir: " + sourceDir
     #print "Destinstation Dir: " + destDir
     
     #print "Build file list"
-    files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
+    files = build_filelist(worker, sourceDir)
     
     #print "File List:"
     #print json.dumps(files['include'])
@@ -572,26 +546,21 @@ def transfer_smbSourceDir(data, worker, job):
     return files
 
 
-def transfer_rsyncSourceDir(data, worker, job):
+def transfer_rsyncSourceDir(worker, job):
 
     #print "Transfer from RSYNC Server"
 #    print 'DECODED Data:', json.dumps(data, indent=2)
-    staleness = data['collectionSystemTransfer']['staleness']
-    cruiseStartDate = data['cruiseStartDate']
 
-    #print "Build Raw Filters"
-    rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
-
-    #print "Build Processed Filters"
-    filters = build_filters(rawFilters, data)
-
-    rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    destDir = build_destDir(rawDestDir, data).rstrip('/')
-    rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
+    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + build_destDir(worker).rstrip('/')
+    sourceDir = '/' + build_sourceDir(worker).rstrip('/')
+    
+    #print destDir
+    #print sourceDir
     
     #print "Build file list"    
-    files = build_rsyncFilelist(data, filters, staleness, cruiseStartDate)
+    files = build_rsyncFilelist(worker, sourceDir)
+    
+    #print json.dumps(files)
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -606,7 +575,7 @@ def transfer_rsyncSourceDir(data, worker, job):
         rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
         #print "Saving temporary rsync password file"
-        rsyncPasswordFile.write(data['collectionSystemTransfer']['rsyncPass'])
+        rsyncPasswordFile.write(worker.collectionSystemTransfer['rsyncPass'])
 
     except IOError:
         #print "Error Saving temporary rsync password file"
@@ -650,7 +619,7 @@ def transfer_rsyncSourceDir(data, worker, job):
         #returnVal.append({"testName": "Writing temporary rsync filelist file", "result": "Pass"})
     
     
-    command = ['rsync', '-ti', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + data['collectionSystemTransfer']['rsyncUser'] + '@' + data['collectionSystemTransfer']['rsyncServer'] + sourceDir, destDir]
+    command = ['rsync', '-ti', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
         
     #print command
     
@@ -673,27 +642,20 @@ def transfer_rsyncSourceDir(data, worker, job):
     shutil.rmtree(tmpdir)    
     return files
 
-def transfer_sshSourceDir(data, worker, job):
 
-#    print 'DECODED Data:', json.dumps(data, indent=2)
+def transfer_sshSourceDir(worker, job):
 
     #print "Transfer from SSH Server"
-    staleness = data['collectionSystemTransfer']['staleness']
-    cruiseStartDate = data['cruiseStartDate']
-
-    #print "Build Raw Filters"
-    rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
-
-    #print "Build Processed Filters"
-    filters = build_filters(rawFilters, data)
-
-    rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    destDir = build_destDir(rawDestDir, data).rstrip('/')
-    rawSourceDir = data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
-        
-    files = build_sshFilelist(data, filters, staleness, cruiseStartDate)
+    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + build_destDir(worker).rstrip('/')
+    sourceDir = build_sourceDir(worker).rstrip('/')
     
+    #print destDir
+    #print sourceDir   
+    
+    files = build_sshFilelist(worker, sourceDir)
+    
+    #print json.dumps(files)
+
     count = 1
     fileCount = len(files['include'])
     
@@ -726,7 +688,7 @@ def transfer_sshSourceDir(data, worker, job):
         #returnVal.append({"testName": "Writing temporary ssh filelist file", "result": "Pass"})
     
     
-    command = ['sshpass', '-p', data['collectionSystemTransfer']['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', data['collectionSystemTransfer']['sshUser'] + '@' + data['collectionSystemTransfer']['sshServer'] + ':' + sourceDir, destDir]
+    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
     #s = ' '
     #print s.join(command)
@@ -750,15 +712,13 @@ def transfer_sshSourceDir(data, worker, job):
     shutil.rmtree(tmpdir)    
     return files
 
-def transfer_nfsSourceDir(data, worker, job):
 
-#    print 'DECODED Data:', json.dumps(data, indent=2)
-    staleness = data['collectionSystemTransfer']['staleness']
-    cruiseStartDate = data['cruiseStartDate']
+def transfer_nfsSourceDir(worker, job):
 
-    #print "Transfer from NFS Server"
-    rawFilters = {'includeFilter': data['collectionSystemTransfer']['includeFilter'],'excludeFilter': data['collectionSystemTransfer']['excludeFilter'],'ignoreFilter': data['collectionSystemTransfer']['ignoreFilter']}
-    filters = build_filters(rawFilters, data)
+    #print 'DECODED Data:', json.dumps(job.data, indent=2)
+    staleness = worker.collectionSystemTransfer['staleness']
+    cruiseStartDate = worker.cruiseStartDate
+    filters = build_filters(worker)
 
     # Create temp directory
     #print "Create Temp Directory"
@@ -772,7 +732,7 @@ def transfer_nfsSourceDir(data, worker, job):
     # Mount NFS Server
     #print "Mount NFS Server"
         
-    command = ['sudo', 'mount', '-t', 'nfs', data['collectionSystemTransfer']['nfsServer'], mntPoint, '-o', 'ro'+ ',vers=2' + ',hard' + ',intr']
+    command = ['sudo', 'mount', '-t', 'nfs', worker.collectionSystemTransfer['nfsServer'], mntPoint, '-o', 'ro'+ ',vers=2' + ',hard' + ',intr']
 
     #s = ' '
     #print s.join(command)
@@ -780,18 +740,17 @@ def transfer_nfsSourceDir(data, worker, job):
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
         
-    rawDestDir = data['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']+'/'+data['cruiseID']+'/'+data['collectionSystemTransfer']['destDir'].rstrip('/')
-    destDir = build_destDir(rawDestDir, data)
-    rawSourceDir = mntPoint+'/'+data['collectionSystemTransfer']['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(rawSourceDir, data).rstrip('/')
+    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + build_destDir(worker).rstrip('/')
+    sourceDir = mntPoint + '/' + build_sourceDir(worker)
+    sourceDir = sourceDir.rstrip('/')
     
     #print "Source Dir: " + sourceDir
     #print "Destinstation Dir: " + destDir
     
     #print "Build file list"
-    files = build_filelist(sourceDir, filters, staleness, cruiseStartDate)
+    files = build_filelist(worker, sourceDir)
     
-    #print "File List:"
+    #print "Raw File List:"
     #print json.dumps(files['include'])
     
     count = 1
@@ -799,6 +758,7 @@ def transfer_nfsSourceDir(data, worker, job):
     
     rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
         
+    #print "Proc File List:"
     try:
         #print "Open rsync filelist file"
         rsyncFileListFile = open(rsyncFileListPath, 'w')
@@ -823,7 +783,9 @@ def transfer_nfsSourceDir(data, worker, job):
         #returnVal.append({"testName": "Writing rsync filelist file", "result": "Pass"})
     
     command = ['rsync', '-trim', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
-    #print command
+    
+    #s = ' '
+    #print s.join(command)
     
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
     lines_iterator = iter(popen.stdout.readline, b"")
@@ -849,108 +811,105 @@ def transfer_nfsSourceDir(data, worker, job):
     #print 'DECODED Files:', json.dumps(files, indent=2)
     return files
 
-def setError_collectionSystemTransfer(job, reason=''):
-    dataObj = json.loads(job.data)
 
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setErrorCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-    r = requests.get(url)
+class OVDMGearmanWorker(gearman.GearmanWorker):
     
-    if not reason == '':
-        url = dataObj['siteRoot'] + 'api/messages/newMessage'
-        payload = {'message': dataObj['collectionSystemTransfer']['name'] + ' Data Transfer: ' + reason}
-        r = requests.post(url, data=payload)
-
-def setRunning_collectionSystemTransfer(job):
-    dataObj = json.loads(job.data)
-    jobPID = os.getpid()
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setRunningCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-    payload = {'jobPid': jobPID}
-    r = requests.post(url, data=payload)
-
-    # Add Job to DB via API
-    url = dataObj['siteRoot'] + 'api/gearman/newJob/' + job.handle
-    payload = {'jobName': 'Run Transfer for ' + dataObj['collectionSystemTransfer']['name'],'jobPid': jobPID}
-    r = requests.post(url, data=payload)
-
-def setIdle_collectionSystemTransfer(job):
-    dataObj = json.loads(job.data)
-
-    # Set Error for current tranfer in DB via API
-    url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-    r = requests.get(url)
-
-def clearError_collectionSystemTransfer(job):
-    dataObj = json.loads(job.data)
-    if dataObj['collectionSystemTransfer']['status'] == "3":
-        # Clear Error for current tranfer in DB via API
-        url = dataObj['siteRoot'] + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-        r = requests.get(url)
-
-class CustomGearmanWorker(gearman.GearmanWorker):
-    
-    def __init__(self, host_list=None):
-        super(CustomGearmanWorker, self).__init__(host_list=host_list)
-        self.startTime = time.gmtime(0)
+    def __init__(self):
         self.stop = False
         self.quit = False
+        self.OVDM = openvdm.OpenVDM()
+        self.cruiseID = ''
+        self.cruiseStartDate = ''
+        self.systemStatus = ''
+        self.collectionSystemTransfer = {}
+        self.shipboardDataWarehouseConfig = {}
+        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
+    
     
     def on_job_execute(self, current_job):
-        print "Job started: " + current_job.handle
-        self.startTime = time.gmtime()
-        return super(CustomGearmanWorker, self).on_job_execute(current_job)
+        payloadObj = json.loads(current_job.data)
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+        self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
+        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
+        
+        self.cruiseID = self.OVDM.getCruiseID()
+        self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+        self.systemStatus = self.OVDM.getSystemStatus()
+        if len(payloadObj) > 0:
+            try:
+                payloadObj['cruiseID']
+            except KeyError:
+                self.cruiseID = self.OVDM.getCruiseID()
+            else:
+                self.cruiseID = payloadObj['cruiseID']
 
+            try:
+                payloadObj['cruiseStartDate']
+            except KeyError:
+                self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+            else:
+                self.cruiseStartDate = payloadObj['cruiseStartDate']
+
+            try:
+                payloadObj['systemStatus']
+            except KeyError:
+                self.systemStatus = self.OVDM.getSystemStatus()
+            else:
+                self.systemStatus = payloadObj['systemStatus']
+        
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer started at:   " + time.strftime("%D %T", time.gmtime())
+        
+        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
+
+    
     def on_job_exception(self, current_job, exc_info):
-        print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer failed at:    " + time.strftime("%D %T", time.gmtime())
+        
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
-        setError_collectionSystemTransfer(current_job, "Unknown Part of Transfer Failed")
-        print exc_info
-        return super(CustomGearmanWorker, self).on_job_exception(current_job, exc_info)
+        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], "Unknown Part of Transfer Failed")
+        
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
+    
     def on_job_complete(self, current_job, job_result):
         resultObj = json.loads(job_result)
-        dataObj = json.loads(current_job.data)
-        print "Job complete, CAN stop last gasp GEARMAN_COMMAND_WORK_COMPLETE"
         
-        if resultObj['parts'][-1]['partName'] != "Transfer Enabled" and resultObj['parts'][-1]['partName'] != "Transfer In-Progress": # Final Verdict
-            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                print resultObj['parts'][-1]['partName']
-                if resultObj['parts'][-1]['partName'] != "Transfer Enabled" and resultObj['parts'][-1]['partName'] != "Transfer In-Progress Test":
-                    setError_collectionSystemTransfer(current_job, resultObj['parts'][-1]['partName'] + " Failed")
-                    print "but something prevented the transfer from successfully completing..."
-                else:
-                    if dataObj['collectionSystemTransfer']['status'] == '3':
-                        setError_collectionSystemTransfer(current_job)
-                    else:
-                        setIdle_collectionSystemTransfer(current_job)
-            else:
-                setIdle_collectionSystemTransfer(current_job)
-            
-                #print 'DECODED:', json.dumps(resultObj, indent=2)
-                gm_client = gearman.GearmanClient(['localhost:4730'])
+        if resultObj['files']['new'] or resultObj['files']['updated']:
 
-                jobData = {'shipboardDataWarehouse':{}, 'cruiseID':'', 'files':{}}
-                jobData['siteRoot'] = dataObj['siteRoot']
-                jobData['shipboardDataWarehouse'] = dataObj['shipboardDataWarehouse']
-                jobData['cruiseID'] = dataObj['cruiseID']
-                destDir = build_destDir(dataObj['collectionSystemTransfer']['destDir'], dataObj)
-                jobData['files'] = resultObj['files']
-                jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
-                jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
-                #jobData['files']['exclude'] = [destDir + filename for filename in jobData['files']['exclude']]
+            jobData = {'cruiseID':'', 'collectionSystemTransferID':'', 'files':{}}
+            jobData['cruiseID'] = self.cruiseID
+            jobData['collectionSystemTransferID'] = self.collectionSystemTransfer['collectionSystemTransferID']
 
-                if resultObj['files']['new'] or resultObj['files']['updated']:
-                    #print "Sending transfer results to MD5 Updater worker"
-                    submitted_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(jobData), background=True)
+            destDir = build_destDir(self).rstrip('/')
+            jobData['files'] = resultObj['files']
+            jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
+            jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
                 
-                    #print "Sending transfer results to Update Data Dashboard worker"
-                    jobData['collectionSystemID'] = dataObj['collectionSystemTransfer']['collectionSystemTransferID']
-                    submitted_job_request = gm_client.submit_job("updateDataDashboard", json.dumps(jobData), background=True)
-                    
-        return super(CustomGearmanWorker, self).send_job_complete(current_job, job_result)
+            gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
+            
+            for task in self.OVDM.getTasksForHook('runCollectionSystemTransfer'):
+                #print task
+                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+        
+        # If the last part of the results failed
+        if len(resultObj['parts']) > 0:
+            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                #print "...but there was an error:"
+                print json.dumps(resultObj['parts'])
+                self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+            else:
+                self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+        else:
+            self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
 
+        print "Job: " + current_job.handle + ", " + self.collectionSystemTransfer['name'] + " transfer completed at: " + time.strftime("%D %T", time.gmtime())
+            
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
+
+    
     def after_poll(self, any_activity):
         self.stop = False
         if self.quit:
@@ -958,59 +917,61 @@ class CustomGearmanWorker(gearman.GearmanWorker):
             self.shutdown()
         return True
     
+    
     def stopTransfer(self):
         self.stop = True
 
+        
     def quitWorker(self):
         self.stop = True
         self.quit = True
-        
-def task_callback(gearman_worker, job):
+
+
+def task_runCollectionSystemTransfer(worker, job):
 
     time.sleep(randint(0,5))
     
-    t = time.mktime(gearman_worker.startTime)
-    job_results = {'parts':[], 'files':[], 'startDate':time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(t))}
+    job_results = {'parts':[], 'files':{'new':[],'updated':[], 'exclude':[]}, 'startDate':time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())}
 
-    dataObj = json.loads(job.data)
-    baseDir = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseBaseDir']
-    cruiseID = dataObj['cruiseID']
-    warehouseUser = dataObj['shipboardDataWarehouse']['shipboardDataWarehouseUsername']  
-    collectionSystemDestDir = build_destDir(dataObj['collectionSystemTransfer']['destDir'], dataObj)
-    dataObj['collectionSystemTransfer']['destDir'] = build_destDir(dataObj['collectionSystemTransfer']['destDir'], dataObj)
-    dataObj['collectionSystemTransfer']['sourceDir'] = build_sourceDir(dataObj['collectionSystemTransfer']['sourceDir'], dataObj)
-    #print 'DECODED:', json.dumps(dataObj, indent=2)
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseID = worker.cruiseID
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']  
+    collectionSystemDestDir = build_destDir(worker).rstrip('/')
+    collectionSystemSourceDir = build_sourceDir(worker).rstrip('/')
     
-    if dataObj['collectionSystemTransfer']['enable'] == "1" and dataObj['systemStatus'] == "On":
+    #print "Is transfer enabled?"
+    if worker.collectionSystemTransfer['enable'] == "1" and worker.systemStatus == "On":
         #print "Transfer Enabled"
         job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
         #print "Transfer Disabled"
         #print "Stopping"
-        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Fail"})
+        #job_results['parts'].append({"partName": "Transfer Enabled", "result": "Fail"})
         return json.dumps(job_results)
-
-    transfer = get_collectionSystemTransfer(job, dataObj['collectionSystemTransfer']['collectionSystemTransferID'])
     
-    if transfer['status'] == "1": #running
-        #print "Transfer already in-progress"
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+    #print "Is transfer for this collection system already running?"
+    if worker.collectionSystemTransfer['status'] != "1": #not running
+        #print "Transfer is not already in-progress"
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
+    else:
+        #print "Transfer is already in-progress"
+        #job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
         #print "Stopping"
         return json.dumps(job_results)
-    else:
-        #print "Transfer not already in-progress"
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
         
-    # Set transfer status to "Running"
-    setRunning_collectionSystemTransfer(job)
+    #print "Set transfer status to 'Running'"
+    worker.OVDM.setRunning_collectionSystemTransfer(worker.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), job.handle)
         
     #print "Testing configuration"
-    gearman_worker.send_job_status(job, 1, 10)
+    worker.send_job_status(job, 1, 10)
 
-    # First test to see if the transfer can occur 
-    gm_client = gearman.GearmanClient(['localhost:4730'])
-    gmData = dataObj
-    gmData['collectionSystemTransfer']['status'] = "1"
+    gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
+
+    gmData = {}
+    gmData['collectionSystemTransfer'] = worker.collectionSystemTransfer
+    #gmData['collectionSystemTransfer']['status'] = "1"
+    gmData['cruiseID'] = worker.cruiseID
+    
     completed_job_request = gm_client.submit_job("testCollectionSystemTransfer", json.dumps(gmData))
     resultsObj = json.loads(completed_job_request.result)
     #print 'DECODED Results:', json.dumps(resultsObj, indent=2)
@@ -1019,31 +980,31 @@ def task_callback(gearman_worker, job):
         #print "Connection Test: Passed"
         job_results['parts'].append({"partName": "Connection Test", "result": "Pass"})
     else:
-        #print "Connection Test: Failed"
+        print "Connection Test: Failed"
         #print "Stopping"
         job_results['parts'].append({"partName": "Connection Test", "result": "Fail"})
         #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
 
-    gearman_worker.send_job_status(job, 2, 10)
+    worker.send_job_status(job, 2, 10)
     
-    if dataObj['collectionSystemTransfer']['useStartDate'] == "0":
-        dataObj['cruiseStartDate'] = "01/01/1970"    
+    if worker.collectionSystemTransfer['useStartDate'] == "0":
+        worker.cruiseStartDate = "01/01/1970"    
     
     #print "Transfer Data"
-    if dataObj['collectionSystemTransfer']['transferType'] == "1": # Local Directory
-        job_results['files'] = transfer_localSourceDir(dataObj, gearman_worker, job)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "2": # Rsync Server
-        job_results['files'] = transfer_rsyncSourceDir(dataObj, gearman_worker, job)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "3": # SMB Server
-        job_results['files'] = transfer_smbSourceDir(dataObj, gearman_worker, job)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "4": # SSH Server
-        job_results['files'] = transfer_sshSourceDir(dataObj, gearman_worker, job)
-    elif  dataObj['collectionSystemTransfer']['transferType'] == "5": # NFS Server
-        job_results['files'] = transfer_nfsSourceDir(dataObj, gearman_worker, job)
+    if worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
+        job_results['files'] = transfer_localSourceDir(worker, job)
+    elif  worker.collectionSystemTransfer['transferType'] == "2": # Rsync Server
+        job_results['files'] = transfer_rsyncSourceDir(worker, job)
+    elif  worker.collectionSystemTransfer['transferType'] == "3": # SMB Server
+        job_results['files'] = transfer_smbSourceDir(worker, job)
+    elif  worker.collectionSystemTransfer['transferType'] == "4": # SSH Server
+        job_results['files'] = transfer_sshSourceDir(worker, job)
+    elif  worker.collectionSystemTransfer['transferType'] == "5": # NFS Server
+        job_results['files'] = transfer_nfsSourceDir(worker, job)
 
     #print "Transfer Complete"
-    gearman_worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 9, 10)
     
     if(setDirectoryOwnerGroupPermissions(baseDir + '/' + cruiseID + '/' +  collectionSystemDestDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
@@ -1051,15 +1012,17 @@ def task_callback(gearman_worker, job):
         print "Error Setting file/directory ownership"
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
     
-    warehouseTransferLogDir = build_logfileDirPath(baseDir + '/' + cruiseID , dataObj['siteRoot'])
+    warehouseTransferLogDir = build_logfileDirPath(worker)
     #print warehouseTransferLogDir   
 
     if job_results['files']['new'] or job_results['files']['updated']:
-
+    
         #print "Send transfer log"
         if os.path.isdir(warehouseTransferLogDir):
     
-            logfileName = warehouseTransferLogDir + '/' + dataObj['collectionSystemTransfer']['name'] + '_' + job_results['startDate'] + '.log'
+            logfileName = warehouseTransferLogDir + '/' + worker.collectionSystemTransfer['name'] + '_' + job_results['startDate'] + '.log'
+            #print logfileName
+
             logOutput = {'files':{'new':[], 'updated':[]}}
             logOutput['files']['new'] = job_results['files']['new']
             logOutput['files']['updated'] = job_results['files']['updated']
@@ -1077,43 +1040,47 @@ def task_callback(gearman_worker, job):
     #print json.dumps(job_results['files']['exclude'], indent=2)
     if job_results['files']['exclude']:
         # Format exclude files for transfer log
-        job_results['files']['exclude'] = [dataObj['collectionSystemTransfer']['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
+        job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
         
-    #print "Send filename error log"
-    if os.path.isdir(warehouseTransferLogDir):
+        #print "Send filename error log"
+        if os.path.isdir(warehouseTransferLogDir):
 
-        filenameErrorLogfileName = warehouseTransferLogDir + '/' + dataObj['collectionSystemTransfer']['name'] + '_Exclude.log'
-        filenameErrorlogOutput = {'files':{'exclude':[]}}
-        filenameErrorlogOutput['files']['exclude'] = job_results['files']['exclude']
-        if writeLogFile(filenameErrorLogfileName, warehouseUser, filenameErrorlogOutput['files']):
-            job_results['parts'].append({"partName": "Write filename error logfile", "result": "Pass"})
+            filenameErrorLogfileName = warehouseTransferLogDir + '/' + worker.collectionSystemTransfer['name'] + '_Exclude.log'
+            #print filenameErrorLogfileName
+            filenameErrorlogOutput = {'files':{'exclude':[]}}
+            filenameErrorlogOutput['files']['exclude'] = job_results['files']['exclude']
+            if writeLogFile(filenameErrorLogfileName, warehouseUser, filenameErrorlogOutput['files']):
+                job_results['parts'].append({"partName": "Write filename error logfile", "result": "Pass"})
+            else:
+                job_results['parts'].append({"partName": "Write filename error logfile", "result": "Fail"})
+
         else:
-            job_results['parts'].append({"partName": "Write filename error logfile", "result": "Fail"})
-                
-    else:
-        job_results['parts'].append({"partName": "Logfile directory", "result": "Fail"})
+            job_results['parts'].append({"partName": "Logfile directory", "result": "Fail"})
 
-    gearman_worker.send_job_status(job, 10, 10)
+    worker.send_job_status(job, 10, 10)
     
     time.sleep(5)
 
     return json.dumps(job_results)
 
-global new_worker
-new_worker = CustomGearmanWorker(['localhost:4730'])
+
+global ovdmWorker
+ovdmWorker = OVDMGearmanWorker()
 
 def sigquit_handler(_signo, _stack_frame):
     print "QUIT Signal Received"
-    new_worker.stopTransfer()
+    ovdmWorker.stopTransfer()
+    
     
 def sigint_handler(_signo, _stack_frame):
     print "INT Signal Received"
-    new_worker.quitWorker()
+    ovdmWorker.quitWorker()
+    
     
 signal.signal(signal.SIGQUIT, sigquit_handler)
 signal.signal(signal.SIGINT, sigint_handler)
 
-new_worker.set_client_id('runCollectionSystemTransfer.py')
-new_worker.register_task("runCollectionSystemTransfer", task_callback)
+ovdmWorker.set_client_id('runCollectionSystemTransfer.py')
+ovdmWorker.register_task("runCollectionSystemTransfer", task_runCollectionSystemTransfer)
 
-new_worker.work()
+ovdmWorker.work()

@@ -1,23 +1,25 @@
 <?php
+/**
+ * Sample language.
+ */
+return [
 
-return array(
-
-	// Index method
-	'welcome_text' => 'Welkom',
-	'welcome_message' => '
+    // Index method
+    'welcome_text'    => 'Welkom',
+    'welcome_message' => '
 		Hallo, welkom van de welcome controller! <br/>
-		Deze content kan in worden veranderd <code>app/views/welcome/welcome.php</code>
+		Deze inhoud kan worden veranderd in <code>app/views/welcome/welcome.php</code>
 	',
 
-	// Subpage method
-	'subpage_text' => 'Subpagina',
-	'subpage_message' => '
-		Hallo, welkom van de welcome controller en methoden subpagina! <br/>
-		Deze content kan in worden veranderd <code>app/views/welcome/subpage.php</code>
+    // Subpage method
+    'subpage_text'    => 'Subpagina',
+    'subpage_message' => '
+		Hallo, welkom van de welcome controller en de subpagina methode! <br/>
+		Deze inhoud kan worden veranderd in <code>app/views/welcome/subpage.php</code>
 	',
 
-	// Buttons
-	'open_subpage' => 'Open subpagina',
-	'back_home' => 'Home',
+    // Buttons
+    'open_subpage' => 'Open subpagina',
+    'back_home'    => 'Home',
 
-);
+];

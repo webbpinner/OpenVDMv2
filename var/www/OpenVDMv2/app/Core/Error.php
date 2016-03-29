@@ -1,27 +1,30 @@
 <?php
-namespace Core;
-
-use Core\Controller;
-use Core\View;
-
-/*
- * error class - calls a 404 page
+/**
+ * Error class - calls a 404 page.
  *
- * @author David Carr - dave@simplemvcframework.com
+ * @author David Carr - dave@daveismyname.com
+ *
  * @version 2.2
  * @date June 27, 2014
- * @date updated May 18 2015
+ * @date updated Sept 19, 2015
+ */
+namespace Core;
+
+/**
+ * Error class to generate 404 pages.
  */
 class Error extends Controller
 {
     /**
-     * $error holder
+     * $error holder.
+     *
      * @var string
      */
     private $error = null;
 
     /**
-     * save error to $this->_error
+     * Save error to $this->error.
+     *
      * @param string $error
      */
     public function __construct($error)
@@ -31,11 +34,11 @@ class Error extends Controller
     }
 
     /**
-     * load a 404 page with the error message
+     * Load a 404 page with the error message.
      */
     public function index()
     {
-        header("HTTP/1.0 404 Not Found");
+        header('HTTP/1.0 404 Not Found');
 
         $data['title'] = '404';
         $data['error'] = $this->error;
@@ -46,17 +49,20 @@ class Error extends Controller
     }
 
     /**
-     * display errors
-     * @param  array  $error an error of errors
-     * @param  string $class name of class to apply to div
-     * @return string        return the errors inside divs
+     * Display errors.
+     *
+     * @param array  $error an error of errors
+     * @param string $class name of class to apply to div
+     *
+     * @return string return the errors inside divs
      */
     public static function display($error, $class = 'alert alert-danger')
     {
         if (is_array($error)) {
             foreach ($error as $error) {
-                $row.= "<div class='$class'>$error</div>";
+                $row .= "<div class='$class'>$error</div>";
             }
+
             return $row;
         } else {
             if (isset($error)) {

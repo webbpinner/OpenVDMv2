@@ -1,47 +1,65 @@
 <?php
-
-namespace Helpers;
-
 /**
- * Cross Site Request Forgery helper
+ * Cross Site Request Forgery helper.
  *
  * @author jimgwhit
  * @date May 23 2015
+ * @date updated Sept 19, 2015
  */
- 
+namespace Helpers;
+
 /**
  * Instructions:
  * At the top of the controller where the other "use" statements are place:
- * use Helpers\Csrf;
- * 
- * Just prior to rendering the view for adding or editing data create the token:
- * $data['token'] = Csrf::makeToken();
+ * use Helpers\Csrf;.
+ *
+ * Just prior to rendering the view for adding or editing data create the CSRF token:
+ * $data['csrf_token'] = Csrf::makeToken();
  * $this->view->renderTemplate('header', $data);
  * $this->view->render('pet/edit', $data, $error); // as an example
  * $this->view->renderTemplate('footer', $data);
- * 
- * In the add or edit view (form) at top of page place:
- * <?php
- * use \Helpers\Session;
- * $token = trim($data['token']);
- * Session::set('token', $token);
- * ?>
- * 
- * Towards the bottom of your add or edit form (same form) before the submit button put:
- * <input type="hidden" name="token" value="<?php echo $token; ?>" />
- * 
- * These lines need to be placed in the controller action for the update or add method:
- * if ($_POST['token'] != Session::get('token')) {
- *     Url::redirect('admin/login'); // or wherever you want to redirect to.
+ *
+ * At the bottom of your form, before the submit button put:
+ * <input type="hidden" name="csrf_token" value="<?= $data['csrf_token']; ?>" />
+ *
+ * These lines need to be placed in the controller action to validate CSRF token submitted with the form:
+ * if (!Csrf::isTokenValid()) {
+ *      Url::redirect('admin/login'); // or wherever you want to redirect to.
  *    }
- * And that's all 
+ * And that's all
  */
+class Csrf
+{
+    /**
+     * get CSRF token and generate a new one if expired.
+     *
+     * @static static method
+     *
+     * @return string
+     */
+    public static function makeToken()
+    {
+        $max_time = 60 * 60 * 24; // token is valid for 1 day
+        $csrf_token = Session::get('csrf_token');
+        $stored_time = Session::get('csrf_token_time');
 
-class Csrf {
+        if ($max_time + $stored_time <= time() || empty($csrf_token)) {
+            Session::set('csrf_token', md5(uniqid(rand(), true)));
+            Session::set('csrf_token_time', time());
+        }
 
-    public static function makeToken() {
-        $csrf_token = md5(uniqid(rand(), TRUE));
-        return $csrf_token;
+        return Session::get('csrf_token');
     }
 
+    /**
+     * checks if CSRF token in session is same as in the form submitted.
+     *
+     * @static static method
+     *
+     * @return bool
+     */
+    public static function isTokenValid()
+    {
+        return $_POST['csrf_token'] === Session::get('csrf_token');
+    }
 }

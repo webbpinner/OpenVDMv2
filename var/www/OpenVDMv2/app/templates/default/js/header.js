@@ -279,18 +279,18 @@ $(function () {
     
     // When document is ready...
     $(document).ready(function () {
-
+        
         // If cookie is set, scroll to the position saved in the cookie.
-        if (($.cookie("scrollDown") !== null) && (window.location.hash == null)) {
-            $(document).scrollTop($.cookie("scrollDown"));
-            $.removeCookie("scrollDown");
+        if ((Cookies.get("scrollDown") !== null) && (window.location.hash == null)) {
+            $(document).scrollTop(Cookies.get("scrollDown"));
+            Cookies.remove("scrollDown");
         }
     });
     
     // When a button is clicked...
     $('a').on("click", function () {
         // Set a cookie that holds the scroll position.
-        $.cookie("scrollDown", $(document).scrollTop());
+        Cookies.set("scrollDown", $(document).scrollTop());
     });
     
     $('a.OVDM_message').on('click', function () {

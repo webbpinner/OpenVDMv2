@@ -2,6 +2,7 @@
 
 use Core\Error;
 use Helpers\Form;
+use Helpers\FormCustom;
 
 ?>
 
@@ -14,12 +15,12 @@ use Helpers\Form;
         <div class="col-lg-12">
             <div class="tabbable" style="margin-bottom: 18px;">
                 <ul class="nav nav-tabs">
-                    <li class=""><a id="main" href="#main" data-toggle="tab">Main</a></li>
-                    <li class=""><a id="collectionSystemTransfers" href="#collectionSystemTransfers" data-toggle="tab">Collection System Transfers</a></li>
-                    <li class=""><a id="extraDirectories" href="#extraDirectories" data-toggle="tab">Extra Directories</a></li>
-                    <li class=""><a id="cruiseDataTransfers" href="#cruiseDataTransfers" data-toggle="tab">Cruise Data Transfers</a></li>
-                    <li class="active"><a id="shipToShoreTransfers" href="#shipToShoreTransfers" data-toggle="tab">Ship-to-Shore Transfers</a></li>
-                    <li class=""><a id="system" href="#system" data-toggle="tab">System</a></li>
+                    <li class=""><a id="main" href="<?php echo DIR; ?>config">Main</a></li>
+                    <li class=""><a id="collectionSystemTransfers" href="<?php echo DIR; ?>config/collectionSystemTransfers">Collection System Transfers</a></li>
+                    <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>config/extraDirectories">Extra Directories</a></li>
+                    <li class=""><a id="cruiseDataTransfers" href="<?php echo DIR; ?>config/cruiseDataTransfers">Cruise Data Transfers</a></li>
+                    <li class="active"><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
+                    <li class=""><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
                 </ul>
             </div>
         </div>
@@ -34,7 +35,7 @@ use Helpers\Form;
                                 <div class="form-group"><label>Name</label><?php echo Form::input(array('class'=>'form-control', 'name'=>'name', 'value'=>$data['row'][0]->name)); ?></div>
                                 <div class="form-group"><label>Long Name</label><?php echo Form::input(array('class'=>'form-control', 'name'=>'longName', 'value'=>$data['row'][0]->longName)); ?></div>
                                 <div class="form-group">
-                                    <label>Priority</label><?php echo Form::radioInline($data['transferPriorityOptions'], $data['row'][0]->priority); ?>
+                                    <label>Priority</label><?php echo FormCustom::radioInline($data['transferPriorityOptions'], $data['row'][0]->priority); ?>
                                 </div>
                                 <div class="form-group"><label>Collection System</label><?php echo Form::select($data['collectionSystemOptions']); ?></div>
                                 <div class="form-group"><label>Extra Directory</label><?php echo Form::select($data['extraDirectoryOptions']); ?></div>

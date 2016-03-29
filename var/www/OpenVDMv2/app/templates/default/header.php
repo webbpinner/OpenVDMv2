@@ -11,6 +11,7 @@ use Helpers\Hooks;
     $_warehouseModel = new \Models\Warehouse();
     $_messagesModel = new \Models\Config\Messages();
     $_gearmanModel = new \Models\Api\Gearman();
+    $_dataDashboardModel = new \Models\DataDashboard();
 
     $messageLimit = "LIMIT 10";
     $jobLimit = "LIMIT 10";
@@ -61,11 +62,11 @@ use Helpers\Hooks;
     if($_warehouseModel->getSystemStatus()) {
             $data['systemStatus'] = "On";
     } else {
-            $data['systemStatus'] = "Off";            
+            $data['systemStatus'] = "Off";
     }
 
     $data['cruiseID'] = $_warehouseModel->getCruiseID();
-        
+
     $cruiseSize = $_warehouseModel->getCruiseSize();
     if(isset($cruiseSize['error'])){
         $data['cruiseSize'] = "Error";
@@ -89,6 +90,9 @@ use Helpers\Hooks;
 
     $data['jobsNavbar'] = $_gearmanModel->getJobs();
     $data['jobsBadgeNavbar'] = sizeof($data['jobsNavbar']);
+
+    $data['dataDashboardTabs'] = $_dataDashboardModel->getDataDashboardTabs();
+
 ?>
 
 <!DOCTYPE html>
@@ -99,28 +103,29 @@ use Helpers\Hooks;
 	<meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Open Vessel Data Management v2.0 (OpenVDMv2)">
-    <meta name="author" content="Capable Solutions">
+    <meta name="description" content="Open Vessel Data Management v2.1 (OpenVDMv2)">
+    <meta name="author" content="OceanDataRat.org">
 	<title><?php echo $data['title'].' - '.SITETITLE; //SITETITLE defined in app/core/config.php ?></title>
 
 	<!-- CSS -->
 <?php
 
     $cssFileArray = array(
-        Url::templatePath() . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
-        Url::templatePath() . 'bower_components/metisMenu/dist/metisMenu.min.css',
-        Url::templatePath() . 'bower_components/startbootstrap-sb-admin-2/dist/css/sb-admin-2.css',
-        Url::templatePath() . 'bower_components/font-awesome/css/font-awesome.min.css',
+        DIR . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
+        DIR . 'bower_components/metisMenu/dist/metisMenu.min.css',
+        DIR . 'bower_components/font-awesome/css/font-awesome.min.css',
+        Url::templatePath() . 'css/sb-admin-2.css',
+        Url::templatePath() . 'css/timeline.css',
         Url::templatePath() . 'css/style.css',
     );
 
     if (isset($data['css'])){
         foreach ($data['css'] as &$cssFile) {
             if ($cssFile === 'leaflet') {
-                array_push($cssFileArray, Url::templatePath() . 'bower_components/leaflet/leaflet.css');
-                array_push($cssFileArray, Url::templatePath() . 'bower_components/leaflet/plugins/leaflet-fullscreen/leaflet.fullscreen.css');
+                array_push($cssFileArray, DIR . 'bower_components/leaflet/dist/leaflet.css');
+                array_push($cssFileArray, DIR . 'bower_components/leaflet-fullscreen-bower/leaflet.fullscreen.css');
             } else if ($cssFile === 'bootstrap-datepicker') {
-                array_push($cssFileArray, Url::templatePath() . 'bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css');   
+                array_push($cssFileArray, DIR . 'bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css');   
             } else {
                 array_push($cssFileArray, Url::templatePath() . "css/" . $cssFile . ".css");
             }
@@ -136,10 +141,10 @@ use Helpers\Hooks;
 </head>
 <body>
 
+    
 <?php
     //hook for running code after body tag
     $hooks->run('afterBody');
-    //var_dump($_SERVER);
 ?>
     
 <div id="wrapper">
@@ -152,7 +157,7 @@ use Helpers\Hooks;
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="<?php echo DIR;?>">Open Vessel Data Management v2<?php //echo SITETITLE;?></a>
+            <a class="navbar-brand" href="<?php echo DIR;?>"><?php echo SITETITLE;?></a>
         </div> <!-- navbar-header -->
         <ul class="nav navbar-top-links navbar-right">
             <li class="dropdown">
@@ -246,9 +251,13 @@ use Helpers\Hooks;
                     <li><a href="#"><i class="fa fa-dashboard fa-fw"></i> Data Dashboard<span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level">
                             <li><a href="<?php echo DIR; ?>dataDashboard">Main</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/position">Position</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/weather">Weather</a></li>
-                            <li><a href="<?php echo DIR; ?>dataDashboard/soundVelocity">Sound Velocity</a></li>
+<?php
+    foreach($data['dataDashboardTabs'] as $row){
+?>
+                            <li><a href="<?php echo DIR; ?>dataDashboard/customTab/<?php echo $row['page'];?>"><?php echo $row['title'];?></a></li>
+<?php
+    }
+?>
                             <li><a href="<?php echo DIR; ?>dataDashboard/dataQuality">Data Quality</a></li>
                         </ul> <!-- /.nav-second-level -->
                     </li>

@@ -46,7 +46,7 @@ class System extends Controller {
     public function index(){
             
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('system', 'tabs_config');
+        $data['javascript'] = array('system');
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['requiredShipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getRequiredShipToShoreTransfers();
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
@@ -70,7 +70,7 @@ class System extends Controller {
     public function editShipboardDataWarehouse(){
 
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('tabs_config');
+        $data['javascript'] = array();
         $data['shipboardDataWarehouseConfig'] = $this->_coreValuesModel->getShipboardDataWarehouseConfig();
 
         if(isset($_POST['submit'])){
@@ -124,7 +124,7 @@ class System extends Controller {
     public function editShoresideDataWarehouse(){
 
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('tabs_config');
+        $data['javascript'] = array();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['shoresideDataWarehouseConfig'] = array();
         
@@ -192,7 +192,7 @@ class System extends Controller {
     
     public function editExtraDirectories($id){
         $data['title'] = 'Edit Extra Directory';
-        $data['javascript'] = array('extraDirectoriesFormHelper', 'tabs_config');
+        $data['javascript'] = array('extraDirectoriesFormHelper');
         $data['row'] = $this->_extraDirectoriesModel->getExtraDirectory($id);
 
         if(isset($_POST['submit'])){
@@ -234,7 +234,7 @@ class System extends Controller {
     
     public function editShipToShoreTransfers($id){
         $data['title'] = 'Edit Ship-to-Shore Transfer';
-        $data['javascript'] = array('shipToShoreTransfersFormHelper', 'tabs_config');
+        $data['javascript'] = array('shipToShoreTransfersFormHelper');
         $data['row'] = $this->_shipToShoreTransfersModel->getShipToShoreTransfer($id);
 
         if(isset($_POST['submit'])){
@@ -286,7 +286,7 @@ class System extends Controller {
     
     public function editShipToShoreBWLimit(){
         $data['title'] = 'Edit Ship-to-Shore Bandwidth Limit';
-        $data['javascript'] = array('tabs_config');
+        $data['javascript'] = array();
         $data['shipToShoreBWLimit'] = $this->_coreValuesModel->getShipToShoreBWLimit();
 
         if(isset($_POST['submit'])){
@@ -331,7 +331,7 @@ class System extends Controller {
     
     public function editMD5FilesizeLimit(){
         $data['title'] = 'Edit MD5 Checksum Filesize Limit';
-        $data['javascript'] = array('tabs_config');
+        $data['javascript'] = array();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
 
         if(isset($_POST['submit'])){
@@ -430,7 +430,7 @@ class System extends Controller {
         }
         
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('system', 'tabs_config');
+        $data['javascript'] = array('system');
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['requiredShipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getRequiredShipToShoreTransfers();
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
@@ -487,7 +487,7 @@ class System extends Controller {
         #}
 
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('system', 'tabs_config');
+        $data['javascript'] = array('system');
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['requiredShipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getRequiredShipToShoreTransfers();
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();

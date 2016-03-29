@@ -30,7 +30,7 @@ class Main extends Controller {
     public function index(){
             
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('main_config', 'tabs_config');
+        $data['javascript'] = array('main_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
@@ -48,7 +48,7 @@ class Main extends Controller {
 
         $data['title'] = 'Configuration';
         $data['css'] = array('bootstrap-datepicker');
-        $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
+        $data['javascript'] = array('bootstrap-datepicker');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
 
@@ -102,8 +102,6 @@ class Main extends Controller {
     public function rebuildCruiseDirectory() {
 
         //$_warehouseModel = new \models\warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
         $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
@@ -118,7 +116,7 @@ class Main extends Controller {
     
         #additional data needed for view
         $data['title'] = 'Configuration';
-        $data['javascript'] = array('main_config', 'tabs_config');
+        $data['javascript'] = array('main_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
@@ -137,8 +135,6 @@ class Main extends Controller {
     public function rebuildMD5Summary() {
 
         //$_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
         $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
@@ -154,33 +150,10 @@ class Main extends Controller {
         
         Url::redirect('config');
     }
-
-    public function rebuildTransferLogSummary() {
-
-        //$_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        
-        # create the gearman client
-        $gmc= new \GearmanClient();
-
-        # add the default server (localhost)
-        $gmc->addServer();
-
-        #submit job to Gearman
-        $job_handle = $gmc->doBackground("rebuildTransferLogSummary", json_encode($gmData));
-    
-        sleep(1);
-
-        Url::redirect('config');
-    }
     
     public function rebuildDataDashboard() {
 
         //$_warehouseModel = new \Models\Warehouse();
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
         $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
         # create the gearman client
@@ -216,7 +189,7 @@ class Main extends Controller {
         
         $data['title'] = 'Configuration';
         $data['css'] = array('bootstrap-datepicker');
-        $data['javascript'] = array('tabs_config', 'bootstrap-datepicker');
+        $data['javascript'] = array('bootstrap-datepicker');
         $data['cruiseID'] = '';
         $data['cruiseStartDate'] = '';
 //        $error = array();
@@ -240,8 +213,6 @@ class Main extends Controller {
                 
                 $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
                 $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
-                $gmData['siteRoot'] = DIR;
-                $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
                 $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
                 # create the gearman client
@@ -257,7 +228,7 @@ class Main extends Controller {
         
                 #additional data needed for view
                 $data['title'] = 'Configuration';
-                $data['javascript'] = array('main_config', 'tabs_config');
+                $data['javascript'] = array('main_config');
                 $data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
                 $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
                 $data['tasks'] = $this->_tasksModel->getTasks();
@@ -308,20 +279,7 @@ class Main extends Controller {
     
     public function finalizeCurrentCruise() {
 
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $gmData['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
-        $gmData['systemStatus'] = "On";
-        $gmData['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-        $extraDirectories = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
-                    
-        foreach($extraDirectories as $row) {
-            if(strcmp($row->name, 'Science') === 0 ) {
-                $gmData['scienceDir'] = $row->destDir;
-                break;
-            }
-        }
+        $gmData = array();
         
         # create the gearman client
         $gmc= new \GearmanClient();
@@ -340,21 +298,8 @@ class Main extends Controller {
     }
     
     public function exportOVDMConfig() {
-
-        $gmData['siteRoot'] = DIR;
-        $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
-        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $gmData['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
-        $gmData['systemStatus'] = "On";
-        $gmData['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-        $extraDirectories = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
-                    
-        foreach($extraDirectories as $row) {
-            if(strcmp($row->name, 'Science') === 0 ) {
-                $gmData['scienceDir'] = $row->destDir;
-                break;
-            }
-        }
+        
+        $gmData = array();
         
         # create the gearman client
         $gmc= new \GearmanClient();

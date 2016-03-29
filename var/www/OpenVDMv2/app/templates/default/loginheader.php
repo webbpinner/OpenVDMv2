@@ -14,18 +14,19 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Open Vessel Data Management v2.0 (OpenVDMv2)">
+    <meta name="description" content="Open Vessel Data Management v2.1 (OpenVDMv2)">
     <meta name="author" content="Capable Solutions">
     <title><?php echo $data['title'].' - '.SITETITLE; //SITETITLE defined in app/core/config.php ?></title>
 
     <!-- CSS -->
 	<?php
 		Assets::css(array(
-			Url::templatePath() . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
-			Url::templatePath() . 'bower_components/metisMenu/dist/metisMenu.min.css',
-			Url::templatePath() . 'bower_components/startbootstrap-sb-admin-2/dist/css/sb-admin-2.css',
-			Url::templatePath() . 'bower_components/font-awesome/css/font-awesome.min.css',
-			Url::templatePath() . 'css/style.css',
+			DIR . 'bower_components/bootstrap/dist/css/bootstrap.min.css',
+			DIR . 'bower_components/metisMenu/dist/metisMenu.min.css',
+            DIR . 'bower_components/font-awesome/css/font-awesome.min.css',
+			Url::templatePath() . 'css/sb-admin-2.css',
+			Url::templatePath() . 'css/timeline.css',
+            Url::templatePath() . 'css/style.css',
 		))
 	?>
 

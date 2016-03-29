@@ -1,20 +1,24 @@
 <?php
+/**
+ * PHPMailer exception handler.
+ *
+ * @date May 18 2015
+ */
 namespace Helpers\PhpMailer;
 
 /**
- * PHPMailer exception handler
- * @package PHPMailer
- * @date May 18 2015
+ * Exceptions for PHPMailer.
  */
-class PhpMailerException extends \Exception
+class Exception extends \Exception
 {
     /**
-     * Prettify error message output
+     * Prettify error message output.
+     *
      * @return string
      */
     public function errorMessage()
     {
-        $errorMsg = '<strong>' . $this->getMessage() . "</strong><br />\n";
+        $errorMsg = '<strong>'.$this->getMessage()."</strong><br />\n";
         echo $errorMsg;
     }
 }

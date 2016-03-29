@@ -1,7 +1,7 @@
 {
     "name": "simple-mvc-framework/framework",
     "type": "project",
-    "description": "Framework for PHP 5.4+",
+    "description": "Framework for PHP 5.5+",
     "homepage": "https://github.com/simple-mvc-framework/framework",
     "license": "MIT",
     "authors": [
@@ -13,11 +13,18 @@
         }
     ],
     "require": {
-        "php": ">=5.4.0"
+        "php": ">=5.5.0"
     },
     "autoload": {
-        "psr-4": {"": "app/"},
-        "files": ["app/files/password.php"]
+        "psr-4": {"": "app/"}
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "bower --allow-root install"
+        ],
+        "post-update-cmd": [
+            "bower --allow-root install"
+        ]
     },
     "minimum-stability": "dev"
 }

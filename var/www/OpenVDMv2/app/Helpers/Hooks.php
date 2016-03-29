@@ -1,24 +1,45 @@
 <?php
+/**
+ * Hooks controller.
+ *
+ * @author David Carr - dave@daveismyname.com
+ *
+ * @version 2.2
+ * @date updated Sept 19, 2015
+ */
 namespace Helpers;
 
-/*
- * Hooks controller
- *
- * @author David Carr - dave@simplemvcframework.com
- * @version 2.2
- * @date updated May 18 2015
+/**
+ * Hooks allow code to be injected into various parts of the framework.
  */
-
 class Hooks
 {
-
-    private static $plugins = array();
-    private static $hooks = array();
-    private static $instances = array();
+    /**
+     * Array of plugins.
+     *
+     * @var array
+     */
+    private static $plugins = [];
 
     /**
-     * initial hooks
-     * @param  integer $id
+     * Array of available hooks.
+     *
+     * @var array
+     */
+    private static $hooks = [];
+
+    /**
+     * Array of instances - for the purpose of reusing the same instance.
+     *
+     * @var array
+     */
+    private static $instances = [];
+
+    /**
+     * Initial hooks.
+     *
+     * @param int $id
+     *
      * @return $instance
      */
     public static function get($id = 0)
@@ -29,30 +50,38 @@ class Hooks
         }
 
         //define hooks
-        self::setHooks(array(
+        self::setHooks([
             'meta',
             'css',
             'afterBody',
             'footer',
             'js',
-            'routes'
-        ));
+            'routes',
+        ]);
 
         //load modules
-        self::loadPlugins('app/Modules/');
+        self::loadPlugins(SMVC.'app/Modules/');
         $instance = new self();
         self::$instances[$id] = $instance;
-        return $instance;
 
+        return $instance;
     }
 
-    //adds hook to hook list
+    /**
+     * Adds hook to hook list.
+     *
+     * @param string $where Hook to add.
+     */
     public static function setHook($where)
     {
         self::$hooks[$where] = '';
     }
 
-    //add multiple hooks
+    /**
+     * Add multiple hooks.
+     *
+     * @param array $where array of hooks to add.
+     */
     public static function setHooks($where)
     {
         foreach ($where as $where) {
@@ -60,12 +89,22 @@ class Hooks
         }
     }
 
+    /**
+     * Load all modules found in folder.
+     *
+     * Only load modulename.module.php files
+     *
+     * @param string $fromFolder path to the folder.
+     */
     public static function loadPlugins($fromFolder)
     {
         if ($handle = opendir($fromFolder)) {
             while ($file = readdir($handle)) {
                 if (is_file($fromFolder.$file)) {
-                    require_once $fromFolder . $file;
+                    //only load modulename.module.php file
+                    if (preg_match('@module.php@', $file)) {
+                        require_once $fromFolder.$file;
+                    }
                     self::$plugins [$file] ['file'] = $file;
                 } elseif ((is_dir($fromFolder.$file)) && ($file != '.') && ($file != '..')) {
                     self::loadPlugins($fromFolder.$file.'/');
@@ -75,19 +114,38 @@ class Hooks
         }
     }
 
-    //attach custom function to hook
+    /**
+     * Attach custom function to hook.
+     *
+     * @param string $where    hook to use
+     * @param string $function function to attach to hook
+     *
+     * @throws \Exception Exception when hook $where (location) isn't known (yet)
+     *
+     * @return bool success with adding, false if $where is not defined.
+     */
     public static function addHook($where, $function)
     {
         if (!isset(self::$hooks[$where])) {
-            die("There is no such place ($where) for hooks.");
-        } else {
-            $theseHooks = explode('|', self::$hooks[$where]);
-            $theseHooks[] = $function;
-            self::$hooks[$where] = implode('|', $theseHooks);
-
+            throw new \Exception('Hook location ('.$where.') not defined!');
         }
+        $theseHooks = explode('|', self::$hooks[$where]);
+        $theseHooks[] = $function;
+        self::$hooks[$where] = implode('|', $theseHooks);
+
+        return true;
     }
 
+    /**
+     * Run all hooks attached to the hook.
+     *
+     * @param string $where Hook to execute
+     * @param string $args  option arguments
+     *
+     * @throws \Exception Exception when hook $where (location) isn't known (yet)
+     *
+     * @return object|false - returns the called function or false if the $where is not found
+     */
     public function run($where, $args = '')
     {
         if (isset(self::$hooks[$where])) {
@@ -95,7 +153,7 @@ class Hooks
             $result = $args;
 
             foreach ($theseHooks as $hook) {
-                if (preg_match("/@/i", $hook)) {
+                if (preg_match('/@/i', $hook)) {
                     //grab all parts based on a / separator
                     $parts = explode('/', $hook);
 
@@ -106,8 +164,7 @@ class Hooks
                     $segments = explode('@', $last);
 
                     $classname = new $segments[0]();
-                    $result = call_user_func(array($classname, $segments[1]), $result);
-
+                    $result = call_user_func([$classname, $segments[1]], $result);
                 } else {
                     if (function_exists($hook)) {
                         $result = call_user_func($hook, $result);
@@ -116,15 +173,23 @@ class Hooks
             }
 
             return $result;
-        } else {
-            die("There is no such place ($where) for hooks.");
         }
+        throw new \Exception('Hook location ('.$where.') not defined!');
     }
 
+    /**
+     * Execute hooks attached to run and collect instead of running.
+     *
+     * @param string $where hook
+     * @param string $args  optional arguments
+     *
+     * @return object - returns output of hook call
+     */
     public function collectHook($where, $args = null)
     {
         ob_start();
-            echo $this->run($where, $args);
+        echo $this->run($where, $args);
+
         return ob_get_clean();
     }
 }

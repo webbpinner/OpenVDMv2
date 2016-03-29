@@ -12,9 +12,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.0
+#      VERSION:  2.1rc
 #      CREATED:  2015-06-22
-#     REVISION:  2016-02-08
+#     REVISION:  2016-03-07
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -35,157 +35,34 @@
 
 import sys
 import time
-import requests
-import datetime
-import argparse
-import urlparse
-import json
-import gearman
-
-def clearGearmanJobsFromDB(siteRoot):
-    url = siteRoot + 'api/gearman/clearAllJobsFromDB'
-    try:
-        r = requests.get(url)
-	#print json.dumps(r.json(), indent=2)
-        return r.text
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
-        sys.exit(1)
-
-
-def getWarehouseConfig(siteRoot):
-    url = siteRoot + 'api/warehouse/getShipboardDataWarehouseConfig'
-    try:
-        r = requests.get(url)
-        #print r.text
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
-        sys.exit(1)
-
-def getCollectionSystemTransfers(siteRoot):
-    url = siteRoot + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving collectionSystemTransfer data, check URL"
-        sys.exit(1)
-        
-def getCruiseDataTransfers(siteRoot):
-    url = siteRoot + 'api/cruiseDataTransfers/getCruiseDataTransfers'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruiseDataTransfer data, check URL"
-        sys.exit(1)
-        
-def getRequiredCruiseDataTransfers(siteRoot):
-    url = siteRoot + 'api/cruiseDataTransfers/getRequiredCruiseDataTransfers'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruiseDataTransfer data, check URL"
-        sys.exit(1)
-        
-def getTasks(siteRoot):
-    url = siteRoot + 'api/tasks/getTasks'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving cruiseDataTransfer data, check URL"
-        sys.exit(1)
-
-def getCruiseID(siteRoot):
-    url = siteRoot + 'api/warehouse/getCruiseID'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
-        sys.exit(1)
-        
-def getSystemStatus(siteRoot):
-    url = siteRoot + 'api/warehouse/getSystemStatus'
-    try:
-        r = requests.get(url)
-        return r.json()
-
-    except requests.exceptions.RequestException as e: 
-        print "Error retrieving warehouse data, check URL"
-        sys.exit(1)
-        
-def setIdle_task(siteRoot, taskID):
-    url = siteRoot + 'api/tasks/setIdleTask/' + taskID
-    try:
-        r = requests.get(url)
-
-    except requests.exceptions.RequestException as e: 
-        print "Error resetting task: " + taskID + ", check URL"
-        
-def setIdle_collectionSystemTransfer(siteRoot, collectionSystemTransferID):
-    url = siteRoot + 'api/collectionSystemTransfers/setIdleCollectionSystemTransfer/' + collectionSystemTransferID
-    try:
-        r = requests.get(url)
-
-    except requests.exceptions.RequestException as e: 
-        print "Error resetting task: " + collectionSystemID + ", check URL"
-        
-def setIdle_cruiseDataTransfer(siteRoot, cruiseDataTransferID):
-    url = siteRoot + 'api/cruiseDataTransfers/setIdleCruiseDataTransfer/' + cruiseDataTransferID
-    try:
-        r = requests.get(url)
-
-    except requests.exceptions.RequestException as e: 
-        print "Error resetting task: " + cruiseDataTransferID + ", check URL"
+import openvdm
     
 def main(argv):
-    parser = argparse.ArgumentParser(description='OpenVDM Reboot Reset Utility')
-    parser.add_argument('siteRoot', metavar='siteRoot', help='the base URL for this OpenVDM installation')
     
-    args = parser.parse_args()
-    #print args.siteRoot
-    parsed_url = urlparse.urlparse(args.siteRoot)
-    #print parsed_url
-    if not bool(parsed_url.scheme) or not bool(parsed_url.netloc):
-        print args.siteRoot + " is not a valid URL" 
-        sys.exit(1)
+    openVDM = openvdm.OpenVDM()
     
     time.sleep(5)
-    
-    warehouseConfig = getWarehouseConfig(args.siteRoot)
-    #print json.dumps(warehouseConfig, indent=2)
-    
-    tasks = getTasks(args.siteRoot)
+        
+    tasks = openVDM.getTasks()
     for task in tasks:
-        setIdle_task(args.siteRoot, task['taskID'])
+        openVDM.setIdle_task(task['taskID'])
     
-    collectionSystemTransfers = getCollectionSystemTransfers(args.siteRoot)
+    collectionSystemTransfers = openVDM.getCollectionSystemTransfers()
     for collectionSystemTransfer in collectionSystemTransfers:
         if not collectionSystemTransfer['status'] == '3':
-            setIdle_collectionSystemTransfer(args.siteRoot, collectionSystemTransfer['collectionSystemTransferID'])
+            openVDM.setIdle_collectionSystemTransfer(collectionSystemTransfer['collectionSystemTransferID'])
             
-    cruiseDataTransfers = getCruiseDataTransfers(args.siteRoot)
+    cruiseDataTransfers = openVDM.getCruiseDataTransfers()
     for cruiseDataTransfer in cruiseDataTransfers:
         if not cruiseDataTransfer['status'] == '3':
-            setIdle_cruiseDataTransfer(args.siteRoot, cruiseDataTransfer['cruiseDataTransferID'])
+            openVDM.setIdle_cruiseDataTransfer(cruiseDataTransfer['cruiseDataTransferID'])
             
-    requiredCruiseDataTransfers = getRequiredCruiseDataTransfers(args.siteRoot)
+    requiredCruiseDataTransfers = openVDM.getRequiredCruiseDataTransfers()
     for requiredCruiseDataTransfer in requiredCruiseDataTransfers:
         if not requiredCruiseDataTransfer['status'] == '3':
-            setIdle_cruiseDataTransfer(args.siteRoot, requiredCruiseDataTransfer['cruiseDataTransferID'])
+            openVDM.setIdle_cruiseDataTransfer(requiredCruiseDataTransfer['cruiseDataTransferID'])
 
-    clearGearmanJobsFromDB(args.siteRoot)
+    openVDM.clearGearmanJobsFromDB()
 
 if __name__ == "__main__":
     main(sys.argv[1:])

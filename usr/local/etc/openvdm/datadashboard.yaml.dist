@@ -1,0 +1,175 @@
+# ----------------------------------------------------------------------------------- #
+#
+#         FILE:  datadashboard.yaml
+#
+#  DESCRIPTION:  DataDashboard configuration file, YAML format
+#
+#         BUGS:
+#        NOTES:
+#       AUTHOR:  Webb Pinner
+#      COMPANY:  Capable Solutions
+#      VERSION:  2.1rc
+#      CREATED:  2016-03-04
+#     REVISION:  2016-03-07
+#
+# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# ----------------------------------------------------------------------------------- #
+
+# SAMPLE BLOCK --- INDENTS ARE IMPORTANT TO THE YAML-FORMAT ---
+#- title: Position
+#  page: position
+#  view: default
+#  cssArray:
+#  - leaflet
+#  jsArray:
+#  - dataDashboardDefault
+#  - highcharts
+#  - leaflet
+#  placeholderArray:
+#  - plotType: map
+#    id: map
+#    heading: Position
+#    dataArray:
+#    - dataType: gga
+#      visType: geoJSON
+#    - dataType: geotiff
+#      visType: tms
+
+# Breakdown of SAMPLE BLOCK
+# Title of the Tab
+#- title: Position
+
+# Internal-use title, this should be all lower-case, no spaces, and unique from the
+# "page" values used for other tabs
+#  page: position
+
+# The MVC view used to format the tab.  OpenVDM includes a "default" view that can be
+# used for displaying maps, and time-series data but additional custom view can be
+# developed and used.  For custom views, specify the filename of the view (which must
+# be located in the ./app/views/DataDashboard directory of the OpenVDM web-application)
+# minus the php suffix (i.e use "customView" for "customView.php")
+#  view: default
+
+# Additional css files to include when rendering the tab.  Only specify the filename of
+# the css file (which must be located in the ./app/templates/default/css directory of
+# the OpenVDM web-application) minus the .css suffix (i.e use "customCSS" for
+# "customCSS.css").
+#
+# SPECIAL CASES:
+# If the view needs to leverage leaflet simple add "leaflet".
+#  cssArray:
+#  - leaflet
+
+# Additional js files to include when rendering the tab.  Only specify the filename of
+# the js file (which must be located in the ./app/templates/default/js directory of
+# the OpenVDM web-application) minus the .js suffix (i.e use "customJS" for
+# "customJS.js").
+#
+# SPECIAL CASES:
+# If the view needs to leverage leaflet simple add "leaflet".
+# If the view needs to leverage highcharts, simple add "highcharts"
+# If the view needs to leverage the highcharts export plugin use "highcharts-exporting"
+#  jsArray:
+#  - dataDashboardDefault
+#  - highcharts
+#  - leaflet
+
+# Placeholders are the bootstrap-styled panels that contain the <div> blocks where data
+# will be visualized that are rendered by the view.
+#  placeholderArray:
+
+# The "plotType" defines how the view should render the panel and <div> block
+#  - plotType: map
+
+# The "id" specifices the id attribute of the <div> block.  This is usful when needing
+# to find/modify the contents of the <div> block using javascript.  The "id" should be
+# unique for each placeholder on an individual tab
+#    id: map
+
+# The "heading" is the text to display in the panel-header
+#    heading: Position
+
+# The "dataArray" is the dashboard data to display within a single <div> block.  Each
+# element of this array includes a dashboardData 'dataType' (i.e. 'gga') and a
+# 'visType'.  The 'visType' specifies how that data should be rendered (geoJSON vs tms)
+#    dataArray:
+#    - dataType: gga
+#      visType: geoJSON
+#    - dataType: geotiff
+#      visType: tms
+#
+
+- title: Position
+  page: position
+  view: default
+  cssArray:
+  - leaflet
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - leaflet
+  placeholderArray:
+  - plotType: map
+    id: map
+    heading: Position
+    dataArray:
+    - dataType: gga
+      visType: geoJSON
+    - dataType: geotiff
+      visType: tms
+
+- title: Weather
+  page: weather
+  view: default
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - highcharts-exporting
+  placeholderArray:
+  - plotType: chart
+    id: met
+    heading: Meterological Sensor
+    dataArray:
+    - dataType: met
+      visType: json
+  - plotType: chart
+    id: twind
+    heading: Wind Sensor
+    dataArray:
+    - dataType: twind
+      visType: json
+
+- title: Sound Velocity
+  page: soundVelocity
+  view: default
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - highcharts-exporting
+  placeholderArray:
+  - plotType: chart
+    id: tsg
+    heading: Thermosalinograph Sensor
+    dataArray:
+    - dataType: tsg
+      visType: json
+  - plotType: chart
+    id: svp
+    heading: Sound Velocity Probe
+    dataArray:
+    - dataType: svp
+      visType: json

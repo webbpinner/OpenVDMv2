@@ -1,56 +1,64 @@
 <?php
+/**
+ * Logger class - Custom errors.
+ *
+ * @author David Carr - dave@daveismyname.com
+ *
+ * @version 2.2
+ * @date June 27, 2014
+ * @date updated Sept 19, 2015
+ */
 namespace Core;
 
 use Helpers\PhpMailer\Mail;
 
-/*
- * logger class - Custom errors
- *
- * @author David Carr - dave@simplemvcframework.com
- * @version 2.2
- * @date June 27, 2014
- * @date updated May 18 2015
+/**
+ * Record and email/display errors or a custom error message.
  */
 class Logger
 {
-
     /**
-    * determins if error should be displayed
-    * @var boolean
-    */
+     * Determins if error should be displayed.
+     *
+     * @var bool
+     */
     private static $printError = false;
 
     /**
-    * determins if error should be emailed to SITEEMAIL defined in app/Core/Config.php
-    * @var boolean
-    */
+     * Determins if error should be emailed to SITEEMAIL defined in app/Core/Config.php.
+     *
+     * @var bool
+     */
     private static $emailError = false;
 
     /**
-    * clear the errorlog
-    * @var boolean
-    */
+     * Clear the errorlog.
+     *
+     * @var bool
+     */
     private static $clear = false;
 
     /**
-    * path to error file
-    * @var boolean
-    */
-    private static $errorFile = 'errorlog.html';
+     * Path to error file.
+     *
+     * @var bool
+     */
+    public static $errorFile = 'errorlog.html';
 
     /**
-    * in the event of an error show this message
-    */
+     * In the event of an error show this message.
+     */
     public static function customErrorMsg()
     {
-        echo "<p>An error occured, The error has been reported.</p>";
+        echo '<p>An error occured, The error has been reported.</p>';
         exit;
     }
 
     /**
-    * saved the exception and calls customer error function
-    * @param  exeption $e
-    */
+     * Saved the exception and calls customer error function.
+     *
+     * @param exeption $e
+     */
     public static function exceptionHandler($e)
     {
         self::newMessage($e);
@@ -58,12 +66,13 @@ class Logger
     }
 
     /**
-    * saves error message from exception
-    * @param  numeric $number  error number
-    * @param  string $message the error
-    * @param  string $file    file originated from
-    * @param  numeric $line   line number
-    */
+     * Saves error message from exception.
+     *
+     * @param numeric $number  error number
+     * @param string  $message the error
+     * @param string  $file    file originated from
+     * @param numeric $line    line number
+     */
     public static function errorHandler($number, $message, $file, $line)
     {
         $msg = "$message in $file on line $line";
@@ -77,20 +86,21 @@ class Logger
     }
 
     /**
-    * new exception
-    * @param  Exception $exception
-    * @param  boolean   $printError show error or not
-    * @param  boolean   $clear       clear the errorlog
-    * @param  string    $errorFile  file to save to
-    */
-    public static function newMessage(\Exception $exception)
+     * New exception.
+     *
+     * @param Throwable/Exception $exception
+     * @param bool                $printError show error or not
+     * @param bool                $clear      clear the errorlog
+     * @param string              $errorFile  file to save to
+     */
+    public static function newMessage($exception)
     {
-
         $message = $exception->getMessage();
         $code = $exception->getCode();
         $file = $exception->getFile();
         $line = $exception->getLine();
         $trace = $exception->getTraceAsString();
+        $trace = str_replace(DB_PASS, '********', $trace);
         $date = date('M d, Y G:iA');
 
         $logMessage = "<h3>Exception information:</h3>\n
@@ -108,18 +118,14 @@ class Logger
         }
 
         if (self::$clear) {
-            $f = fopen(self::$errorFile, "r+");
+            $f = fopen(self::$errorFile, 'r+');
             if ($f !== false) {
                 ftruncate($f, 0);
                 fclose($f);
             }
-
-            $content = null;
-        } else {
-            $content = file_get_contents(self::$errorFile);
         }
 
-        file_put_contents(self::$errorFile, $logMessage . $content);
+        file_put_contents(self::$errorFile, $logMessage, FILE_APPEND);
 
         //send email
         self::sendEmail($logMessage);
@@ -131,11 +137,12 @@ class Logger
     }
 
     /**
-    * custom error
-    * @param  string  $error       the error
-    * @param  boolean $printError display error
-    * @param  string  $errorFile  file to save to
-    */
+     * Custom error.
+     *
+     * @param string $error      the error
+     * @param bool   $printError display error
+     * @param string $errorFile  file to save to
+     */
     public static function errorMessage($error)
     {
         $date = date('M d, Y G:iA');
@@ -146,19 +153,16 @@ class Logger
         }
 
         if (self::$clear) {
-            $f = fopen(self::$errorFile, "r+");
+            $f = fopen(self::$errorFile, 'r+');
             if ($f !== false) {
                 ftruncate($f, 0);
                 fclose($f);
             }
-
-            $content = null;
         } else {
-            $content = file_get_contents(self::$errorFile);
-            file_put_contents(self::$errorFile, $logMessage . $content);
+            file_put_contents(self::$errorFile, $logMessage, FILE_APPEND);
         }
 
-        //send email
+        /* send email */
         self::sendEmail($logMessage);
 
         if (self::$printError == true) {
@@ -167,6 +171,11 @@ class Logger
         }
     }
 
+    /**
+     * Send Email upon error.
+     *
+     * @param string $message holds the error to send
+     */
     public static function sendEmail($message)
     {
         if (self::$emailError == true) {

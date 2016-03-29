@@ -1,77 +1,71 @@
 <?php
-namespace Core;
-
-/*
- * View - load template pages
+/**
+ * View - load template pages.
  *
- * @author David Carr - dave@simplemvcframework.com
+ * @author David Carr - dave@daveismyname.com
+ *
  * @version 2.2
  * @date June 27, 2014
- * @date updated May 18 2015
+ * @date updated Sept 19, 2015
+ */
+namespace Core;
+
+/**
+ * View class to load template and views files.
  */
 class View
 {
     /**
      * @var array Array of HTTP headers
      */
-    private static $headers = array();
+    private static $headers = [];
 
     /**
-     * include template file
-     * @param  string  $path  path to file from views folder
-     * @param  array $data  array of data
-     * @param  array $error array of errors
+     * Include template file.
+     *
+     * @param string $path  path to file from views folder
+     * @param array  $data  array of data
+     * @param array  $error array of errors
      */
     public static function render($path, $data = false, $error = false)
     {
-        if (!headers_sent()) {
-            foreach (self::$headers as $header) {
-                header($header, true);
-            }
-        }
-        require "app/views/$path.php";
+        self::sendHeaders();
+
+        require SMVC."app/views/$path.php";
     }
 
     /**
-     * include template file
-     * @param  string  $path  path to file from Modules folder
-     * @param  array $data  array of data
-     * @param  array $error array of errors
+     * Include template file.
+     *
+     * @param string $path  path to file from Modules folder
+     * @param array  $data  array of data
+     * @param array  $error array of errors
      */
     public static function renderModule($path, $data = false, $error = false)
     {
-        if (!headers_sent()) {
-            foreach (self::$headers as $header) {
-                header($header, true);
-            }
-        }
-        require "app/Modules/$path.php";
+        self::sendHeaders();
+
+        require SMVC."app/Modules/$path.php";
     }
 
     /**
-     * return absolute path to selected template directory
-     * @param  string  $path  path to file from views folder
-     * @param  array   $data  array of data
-     * @param  string  $custom path to template folder
+     * Return absolute path to selected template directory.
+     *
+     * @param string $path   path to file from views folder
+     * @param array  $data   array of data
+     * @param string $custom path to template folder
      */
-    public static function renderTemplate($path, $data = false, $custom = false)
+    public static function renderTemplate($path, $data = false, $custom = TEMPLATE)
     {
-        if (!headers_sent()) {
-            foreach (self::$headers as $header) {
-                header($header, true);
-            }
-        }
+        self::sendHeaders();
 
-        if ($custom == false) {
-            require "app/templates/".TEMPLATE."/$path.php";
-        } else {
-            require "app/templates/$custom/$path.php";
-        }
+        require SMVC."app/templates/$custom/$path.php";
     }
 
     /**
-     * add HTTP header to headers array
-     * @param  string  $header HTTP header text
+     * Add HTTP header to headers array.
+     *
+     * @param string $header HTTP header text
      */
     public function addHeader($header)
     {
@@ -79,13 +73,24 @@ class View
     }
 
     /**
-    * Add an array with headers to the view.
-    * @param array $headers
-    */
-    public function addHeaders($headers = array())
+     * Add an array with headers to the view.
+     *
+     * @param array $headers
+     */
+    public function addHeaders(array $headers = [])
     {
-        foreach ($headers as $header) {
-            $this->addHeader($header);
+        self::$headers = array_merge(self::$headers, $headers);
+    }
+
+    /**
+     * Send headers.
+     */
+    public static function sendHeaders()
+    {
+        if (!headers_sent()) {
+            foreach (self::$headers as $header) {
+                header($header, true);
+            }
         }
     }
 }
