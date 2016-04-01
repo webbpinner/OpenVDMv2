@@ -239,7 +239,7 @@ Copy the following into `~/mapproxy/mapproxy.yaml`
 services:
   demo:
   tms:
-    use_grid_names: true
+    use_grid_names: false
     # origin for /tiles service
     origin: 'nw'
   kml:
@@ -262,6 +262,10 @@ layers:
     title: ESRI World Ocean Reference
     sources: [esri_worldOceanReference_cache]
 
+  - name: GMRTBase
+    title: GMRT Basemap
+    sources: [gmrt_wms_cache]
+
 caches:
   esri_worldOceanBase_cache:
     grids: [esri_online]
@@ -270,6 +274,10 @@ caches:
   esri_worldOceanReference_cache:
     grids: [esri_online]
     sources: [esri_worldOceanReference]
+
+  gmrt_wms_cache:
+    grids: [gmrt]
+    sources: [gmrt_wms]
 
 sources:
   esri_worldOceanBase:
@@ -283,6 +291,17 @@ sources:
     url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/%(z)s/%(y)s/%(x)s.png
     grid: esri_online
 
+  gmrt_wms:
+    type: wms
+    grid: gmrt
+    supported_srs: ['EPSG:4326', 'EPSG:3395', 'EPSG:3031', 'EPSG:3857','EPSG:900913']
+    wms_opts:
+      version: 1.0.0
+    req:
+      url: http://gmrt.marine-geo.org/cgi-bin/mapserv?map=/public/mgg/web/gmrt.marine-geo.org/htdocs/services/map/wms_merc.map&
+      layers: topo
+      transparent: false
+
 grids:
   webmercator:
     base: GLOBAL_WEBMERCATOR
@@ -292,6 +311,11 @@ grids:
      srs: EPSG:900913
      origin: 'nw'
      num_levels: 11
+
+  gmrt:
+    tile_size: [256,256]
+    srs: EPSG:900913
+    origin: 'nw'
 
 globals:
 ```
