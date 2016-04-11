@@ -91,7 +91,7 @@ class TransferLogs extends Model {
     public function getShipboardLogsSummary($count = 0) {
         
         //preg_grep('#\.zip$#', glob('/dir/somewhere/*'), PREG_GREP_INVERT)
-        $files = preg_grep('#SSDW#', glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/*Z.log"), PREG_GREP_INVERT);
+        array_multisort(array_map('filemtime', ($files = preg_grep('#SSDW#', glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/*Z.log"), PREG_GREP_INVERT))), SORT_ASC, $files);
         if ($count > 0) {
             array_splice($files, 0, sizeof($files)-$count);
         }
