@@ -344,7 +344,8 @@ VALUES
 	(3,'rebuildMD5Summary','Rebuild MD5 Summary',2,1,0),
 	(4,'rebuildDataDashboard','Rebuild Data Dashboard',2,1,0),
 	(5,'rebuildCruiseDirectory','Rebuild Cruise Directory',2,1,0),
-	(6,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0);
+	(6,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0),
+	(7,'rsyncPublicDataToCruiseData','Copy PublicData to Cruise Data',2,1,0);
 
 /*!40000 ALTER TABLE `OVDM_Tasks` ENABLE KEYS */;
 UNLOCK TABLES;
