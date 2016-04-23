@@ -122,7 +122,7 @@ LOCK TABLES `OVDM_CoreVars` WRITE;
 
 INSERT INTO `OVDM_CoreVars` (`coreVarID`, `name`, `value`)
 VALUES
-	(1,'shipboardDataWarehouseIP','192.168.1.6'),
+	(1,'shipboardDataWarehouseIP','127.0.0.1'),
 	(2,'shipboardDataWarehouseBaseDir','/mnt/vault/FTPRoot/CruiseData'),
 	(3,'shipboardDataWarehouseUsername','survey'),
 	(4,'shipboardDataWarehousePublicDataDir','/mnt/vault/FTPRoot/PublicData'),
@@ -233,6 +233,35 @@ VALUES
 UNLOCK TABLES;
 
 
+# Dump of table OVDM_Links
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `OVDM_Links`;
+
+CREATE TABLE `OVDM_Links` (
+  `linkID` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` tinytext NOT NULL,
+  `url` tinytext NOT NULL,
+  `enable` tinyint(1) NOT NULL DEFAULT '0',
+  `private` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`linkID`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+
+LOCK TABLES `OVDM_Links` WRITE;
+/*!40000 ALTER TABLE `OVDM_Links` DISABLE KEYS */;
+
+INSERT INTO `OVDM_Links` (`linkID`, `name`, `url`, `enable`, `private`)
+VALUES
+	(1,'Supervisord','http://127.0.0.1:9001',1,1),
+	(2,'Gearman','http://127.0.0.1/gearman-ui/',1,1),
+	(3,'Cruise Data','http://127.0.0.1/CruiseData/{cruiseID}/',1,0),
+	(4,'Public Data','http://127.0.0.1/PublicData/',1,0),
+	(5,'Visitor Information','http://127.0.0.1/VisitorInformation/',1,0),
+	(6,'MapProxy','http://127.0.0.1/mapproxy/demo/',1,0);
+
+/*!40000 ALTER TABLE `OVDM_Links` ENABLE KEYS */;
+UNLOCK TABLES;
+
 # Dump of table OVDM_Gearman
 # ------------------------------------------------------------
 
@@ -263,23 +292,6 @@ CREATE TABLE `OVDM_Messages` (
   `messageViewed` tinyint(1) NOT NULL,
   PRIMARY KEY (`messageID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
-
-
-# Dump of table OVDM_RecentData
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `OVDM_RecentData`;
-
-CREATE TABLE `OVDM_RecentData` (
-  `recentDataID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `recentDataName` varchar(255) DEFAULT NULL,
-  `recentDataUnit` varchar(24) DEFAULT NULL,
-  `recentDataValue` varchar(32) DEFAULT NULL,
-  `recentDataDataObjectID` int(11) unsigned DEFAULT NULL,
-  `recentDataType` varchar(24) DEFAULT NULL,
-  `recentDataDateTime` varchar(16) DEFAULT NULL,
-  PRIMARY KEY (`recentDataID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 # Dump of table OVDM_ShipToShoreTransfers
