@@ -12,13 +12,15 @@ class System extends Controller {
     private $_extraDirectoriesModel;
     private $_cruiseDataTransfersModel;
     private $_shipToShoreTransfersModel;
+    private $_linksModel;
 
     private function updateCruiseDirectory() {
         if($this->_coreValuesModel->getSystemStatus()) {
 
+            $_warehouseModel = new \Models\Warehouse();
             $gmData['siteRoot'] = DIR;
             $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
-            $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
+            $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
         
             # create the gearman client
             $gmc= new \GearmanClient();
@@ -41,6 +43,7 @@ class System extends Controller {
         $this->_extraDirectoriesModel = new \Models\Config\ExtraDirectories();
         $this->_cruiseDataTransfersModel = new \Models\Config\CruiseDataTransfers();
         $this->_shipToShoreTransfersModel = new \Models\Config\ShipToShoreTransfers();
+        $this->_linksModel = new \Models\Config\Links();
     }
     
     public function index(){
@@ -50,12 +53,15 @@ class System extends Controller {
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['requiredShipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getRequiredShipToShoreTransfers();
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
+        $data['links'] = $this->_linksModel->getLinks();
         $data['shipboardDataWarehouseStatus'] = $this->_coreValuesModel->getShipboardDataWarehouseStatus();
         $data['shipToShoreBWLimit'] = $this->_coreValuesModel->getShipToShoreBWLimit();
         $data['shipToShoreBWLimitStatus'] = $this->_coreValuesModel->getShipToShoreBWLimitStatus();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
         $data['md5FilesizeLimitStatus'] = $this->_coreValuesModel->getMd5FilesizeLimitStatus();
 
+        $this->_linksModel->processLinkURL($data['links']);
+        
         $freeSpace = $this->_coreValuesModel->getFreeSpace();
         
         if(isset($freeSpace['error'])){
@@ -508,6 +514,112 @@ class System extends Controller {
         View::rendertemplate('header',$data);
         View::render('Config/system',$data);
         View::rendertemplate('footer',$data);
+    }
+    
+    public function addLink(){
+        $data['title'] = 'Edit Link';
+        $data['javascript'] = array('LinksFormHelper');
+
+        if(isset($_POST['submit'])){
+            $name = $_POST['name'];
+            $url = $_POST['url'];
+
+            if($name == ''){
+                $error[] = 'Name is required';
+            } 
+
+            if($url == ''){
+                $error[] = 'URL is required';
+            } 
+                
+            if(!$error){
+                $postdata = array(
+                    'name' => $name,
+                    'url' => $url,
+                    'private' => '0',
+                    'enable' => '0',
+                );
+            
+                $this->_linksModel->insertLink($postdata,$where);
+                Session::set('message','Link Added');
+                Url::redirect('config/system');
+            }
+        }
+
+        View::rendertemplate('header',$data);
+        View::render('Config/addLink',$data,$error);
+        View::rendertemplate('footer',$data);
+    }
+    
+    public function editLink($id){
+        $data['title'] = 'Edit Link';
+        $data['javascript'] = array('LinksFormHelper');
+        $data['row'] = $this->_linksModel->getLink($id);
+
+        if(isset($_POST['submit'])){
+            $name = $_POST['name'];
+            $url = $_POST['url'];
+
+            if($name == ''){
+                $error[] = 'Name is required';
+            } 
+
+            if($url == ''){
+                $error[] = 'URL is required';
+            } 
+                
+            if(!$error){
+                $postdata = array(
+                    'name' => $name,
+                    'url' => $url,
+                );
+            
+                
+                $where = array('linkID' => $id);
+                $this->_linksModel->updateLink($postdata,$where);
+                Session::set('message','Link Updated');
+                Url::redirect('config/system');
+            } else {
+                
+                $data['row'][0]->name = $name;
+                $data['row'][0]->url = $url;
+            }
+        }
+
+        View::rendertemplate('header',$data);
+        View::render('Config/editLink',$data,$error);
+        View::rendertemplate('footer',$data);
+    }
+    
+    public function deleteLink($id) {
+
+        $where = array('linkID' => $id);
+        $this->_linksModel->deleteLink($where);
+        Url::redirect('config/system');
+    }
+
+    public function enableLink($id) {
+
+        $this->_linksModel->enableLink($id);
+        Url::redirect('config/system');
+    }
+    
+    public function disableLink($id) {
+
+        $this->_linksModel->disableLink($id);
+        Url::redirect('config/system');
+    }
+    
+    public function privateLink($id) {
+
+        $this->_linksModel->privateLink($id);
+        Url::redirect('config/system');
+    }
+    
+    public function publicLink($id) {
+
+        $this->_linksModel->publicLink($id);
+        Url::redirect('config/system');
     }
 
 }

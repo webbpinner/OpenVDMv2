@@ -316,4 +316,24 @@ class Main extends Controller {
         Url::redirect('config');
     
     }
+    
+    public function rsyncPublicDataToCruiseData() {
+        
+        $gmData = array();
+        
+        # create the gearman client
+        $gmc= new \GearmanClient();
+
+        # add the default server (localhost)
+        $gmc->addServer();
+
+        #submit job to Gearman
+        #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
+        $data['jobResults'] = json_decode($gmc->doBackground("rsyncPublicDataToCruiseData", json_encode($gmData)));
+        
+        sleep(1);
+
+        Url::redirect('config');
+    
+    }
 }

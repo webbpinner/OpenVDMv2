@@ -20,6 +20,7 @@ Router::any('config/disableSystem', '\Controllers\Config\Main@disableSystem');
 Router::any('config/setupNewCruise', '\Controllers\Config\Main@setupNewCruise');
 Router::any('config/finalizeCurrentCruise', '\Controllers\Config\Main@finalizeCurrentCruise');
 Router::any('config/exportOVDMConfig', '\Controllers\Config\Main@exportOVDMConfig');
+Router::any('config/rsyncPublicDataToCruiseData', '\Controllers\Config\Main@rsyncPublicDataToCruiseData');
 Router::any('config/rebuildMD5Summary', '\Controllers\Config\Main@rebuildMD5Summary');
 Router::any('config/rebuildTransferLogSummary', '\Controllers\Config\Main@rebuildTransferLogSummary');
 Router::any('config/rebuildCruiseDirectory', '\Controllers\Config\Main@rebuildCruiseDirectory');
@@ -44,6 +45,13 @@ Router::any('config/system/editShipToShoreBWLimit', '\Controllers\Config\System@
 Router::any('config/system/enableMD5FilesizeLimit', '\Controllers\Config\System@enableMD5FilesizeLimit');
 Router::any('config/system/disableMD5FilesizeLimit', '\Controllers\Config\System@disableMD5FilesizeLimit');
 Router::any('config/system/editMD5FilesizeLimit', '\Controllers\Config\System@editMD5FilesizeLimit');
+Router::any('config/system/addLink', '\Controllers\Config\System@addLink');
+Router::any('config/system/editLink/(:num)', '\Controllers\Config\System@editLink');
+Router::any('config/system/deleteLink/(:num)', '\Controllers\Config\System@deleteLink');
+Router::any('config/system/enableLink/(:num)', '\Controllers\Config\System@enableLink');
+Router::any('config/system/disableLink/(:num)', '\Controllers\Config\System@disableLink');
+Router::any('config/system/privateLink/(:num)', '\Controllers\Config\System@privateLink');
+Router::any('config/system/publicLink/(:num)', '\Controllers\Config\System@publicLink');
 //Router::any('config/system/delete/(:num)', '\Controllers\Config\System@delete');
 
 Router::any('config/users/edit/(:num)', '\Controllers\Config\Users@edit');

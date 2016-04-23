@@ -12,6 +12,8 @@ use Helpers\Hooks;
     $_messagesModel = new \Models\Config\Messages();
     $_gearmanModel = new \Models\Api\Gearman();
     $_dataDashboardModel = new \Models\DataDashboard();
+    $_linksModel = new \Models\Config\Links();
+
 
     $messageLimit = "LIMIT 10";
     $jobLimit = "LIMIT 10";
@@ -273,20 +275,25 @@ use Helpers\Hooks;
                     </li>
                     <li><a href="#"><i class="fa fa-external-link fa-fw"></i> Links<span class="fa arrow"></span></a>
                         <ul class="nav nav-second-level">
-                            <li><a href="/CruiseData/<?php echo $data['cruiseID']; ?>/">Cruise Data</a></li>
-                            <li><a href="/PublicData/">Public Data</a></li>
-                            <li><a href="/VisitorInformation/">Visitor Information</a></li>
 <?php
-    if(Session::get('loggedin')){
+    $links = $_linksModel->getLinks();
+    $_linksModel->processLinkURL($links);
+    foreach ($links as $row) {
+        if (strcmp($row->enable, '1') == 0) {
+            if (strcmp($row->private, '0') == 0) {
 ?>
-                            <li><a href="/gearman-ui/">Gearman</a></li>
-                            <li><a href="http://<?php echo $_SERVER['HTTP_HOST']?>:9001">Supervisor</a></li>
+                            <li><a href="<?php echo $row->url; ?>" target="_blank"><?php echo $row->name; ?></a></li>
 <?php
+            } else if((strcmp($row->private, '1') == 0) && Session::get('loggedin')){
+?>
+                            <li><a href="<?php echo $row->url; ?>" target="_blank"><?php echo $row->name; ?></a></li>
+<?php
+            }
+        }
     }
 ?>
                         </ul> <!-- /.nav-second-level -->
                     </li>
-
                 </ul>
             </div> <!-- /.sidebar-collapse -->
         </div> <!-- /.navbar-static-side -->
