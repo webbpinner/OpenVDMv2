@@ -238,11 +238,11 @@ def transfer_sshDestDir(worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '<f+++++++++' ):
-            #print line.split(' ')[1]
-            files['new'].append(line.split(' ')[1])
+            #print line.split(' ',1)[1]
+            files['new'].append(line.split(' ',1)[1])
         elif line.startswith( '<f.' ):
-            #print line.split(' ')[1]
-            files['updated'].append(line.split(' ')[1])
+            #print line.split(' ',1)[1]
+            files['updated'].append(line.split(' ',1)[1])
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
         

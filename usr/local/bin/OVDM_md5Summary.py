@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.1
 #      CREATED:  2015-01-01
-#     REVISION:  2016-03-07
+#     REVISION:  2016-05-11
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -65,6 +65,10 @@ def build_filelist(sourceDir):
 
 def build_hashes(sourceDir, worker, job, fileList):
     
+    #print sourceDir
+    #print json.dumps(fileList, indent=2)
+    
+    
     filesizeLimit = worker.OVDM.getMD5FilesizeLimit()
     filesizeLimitStatus = worker.OVDM.getMD5FilesizeLimitStatus() 
     
@@ -75,7 +79,7 @@ def build_hashes(sourceDir, worker, job, fileList):
     for filename in fileList:
         #print filename
         if filesizeLimitStatus == 'On' and not filesizeLimit == '0':
-            if os.stat(sourceDir+'/'+filename).st_size < int(filesizeLimit) * 1000000:
+            if os.stat(sourceDir+'/'+ filename).st_size < int(filesizeLimit) * 1000000:
                 hashes.append({'hash': hashlib.md5(sourceDir+'/'+filename).hexdigest(), 'filename': filename})
             else:
                 #print 'Skipping File: ' + filename
@@ -126,6 +130,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
         self.taskID = '0'
+        self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
         
@@ -142,6 +147,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_execute(self, current_job):
         self.get_taskID(current_job)
         payloadObj = json.loads(current_job.data)
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+        #print json.dumps(payloadObj, indent=2)
         
         self.cruiseID = self.OVDM.getCruiseID()
         if len(payloadObj) > 0:
@@ -224,10 +231,9 @@ def task_updateMD5Summary(worker, job):
 
     worker.send_job_status(job, 1, 10)
 
-    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
-    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     cruiseDir = baseDir + '/' + worker.cruiseID
-    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     md5SummaryFilepath = cruiseDir + '/' + md5SummaryFN
     
     #build filelist
@@ -247,7 +253,7 @@ def task_updateMD5Summary(worker, job):
     #print 'DECODED:', json.dumps(fileList, indent=2)
     
     newHashes = build_hashes(cruiseDir, worker, job, fileList)
-
+    
     #print 'DECODED newHashes:', json.dumps(newHashes, indent=2)
     worker.send_job_status(job, 8, 10)
         
@@ -341,9 +347,8 @@ def task_rebuildMD5Summary(worker, job):
 
     worker.send_job_status(job, 1, 10)
     
-    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
-    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     cruiseDir = baseDir + '/' + worker.cruiseID
     md5SummaryFilepath = cruiseDir + '/' + md5SummaryFN
     

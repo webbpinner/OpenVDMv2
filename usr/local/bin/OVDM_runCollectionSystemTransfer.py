@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.1
 #      CREATED:  2015-01-01
-#     REVISION:  2016-03-07
+#     REVISION:  2016-05-11
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -367,9 +367,8 @@ def transfer_localSourceDir(worker, job):
     cruiseStartDate = worker.cruiseStartDate
     
     destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID+'/'+worker.collectionSystemTransfer['destDir'].rstrip('/')
-#    sourceDir = worker.collectionSystemTransfer['sourceDir'].rstrip('/')
-    sourceDir = build_sourceDir(worker).rstrip('/')
-
+    sourceDir = worker.collectionSystemTransfer['sourceDir'].rstrip('/')
+    
     #print "Build file list"
     files = build_filelist(worker, sourceDir)
 
@@ -419,13 +418,13 @@ def transfer_localSourceDir(worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            filename = line.split(' ')[1].rstrip('\n')
+            filename = line.split(' ',1)[1].rstrip('\n')
             files['new'].append(filename)
             #os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
             worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
             count += 1
         elif line.startswith( '>f.' ):
-            filename = line.split(' ')[1].rstrip('\n')
+            filename = line.split(' ',1)[1].rstrip('\n')
             files['updated'].append(filename)
             #os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
             worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
@@ -442,7 +441,7 @@ def transfer_localSourceDir(worker, job):
 
 def transfer_smbSourceDir(worker, job):
 
-#    print 'DECODED Data:', json.dumps(data, indent=2)
+    #print 'DECODED Data:', json.dumps(data, indent=2)
     staleness = worker.collectionSystemTransfer['staleness']
     cruiseStartDate = worker.cruiseStartDate
     filters = build_filters(worker)
@@ -526,9 +525,9 @@ def transfer_smbSourceDir(worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            files['new'].append(line.split(' ')[1].rstrip('\n'))
+            files['new'].append(line.split(' ',1)[1].rstrip('\n'))
         elif line.startswith( '>f.' ):
-            files['updated'].append(line.split(' ')[1].rstrip('\n'))
+            files['updated'].append(line.split(' ',1)[1].rstrip('\n'))
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
             
@@ -549,7 +548,7 @@ def transfer_smbSourceDir(worker, job):
 def transfer_rsyncSourceDir(worker, job):
 
     #print "Transfer from RSYNC Server"
-#    print 'DECODED Data:', json.dumps(data, indent=2)
+    #print 'DECODED Data:', json.dumps(data, indent=2)
 
     destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + build_destDir(worker).rstrip('/')
     sourceDir = '/' + build_sourceDir(worker).rstrip('/')
@@ -628,9 +627,9 @@ def transfer_rsyncSourceDir(worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            files['new'].append(line.split(' ')[1].rstrip('\n'))
+            files['new'].append(line.split(' ',1)[1].rstrip('\n'))
         elif line.startswith( '>f.' ):
-            files['updated'].append(line.split(' ')[1].rstrip('\n'))
+            files['updated'].append(line.split(' ',1)[1].rstrip('\n'))
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
             
@@ -698,9 +697,9 @@ def transfer_sshSourceDir(worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            files['new'].append(line.split(' ')[1].rstrip('\n'))
+            files['new'].append(line.split(' ',1)[1].rstrip('\n'))
         elif line.startswith( '>f.' ):
-            files['updated'].append(line.split(' ')[1].rstrip('\n'))
+            files['updated'].append(line.split(' ',1)[1].rstrip('\n'))
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
             
@@ -792,9 +791,9 @@ def transfer_nfsSourceDir(worker, job):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            files['new'].append(line.split(' ')[1].rstrip('\n'))
+            files['new'].append(line.split(' ',1)[1].rstrip('\n'))
         elif line.startswith( '>f.' ):
-            files['updated'].append(line.split(' ')[1].rstrip('\n'))
+            files['updated'].append(line.split(' ',1)[1].rstrip('\n'))
         worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
         count += 1
             
@@ -898,7 +897,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultObj['parts']) > 0:
             if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 #print "...but there was an error:"
-                print json.dumps(resultObj['parts'])
+                #print json.dumps(resultObj['parts'])
                 self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
             else:
                 self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])

@@ -10,9 +10,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.1
 #      CREATED:  2015-01-01
-#     REVISION:  2016-03-07
+#     REVISION:  2016-05-11
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -55,6 +55,19 @@ taskLookup = {
 
 cruiseConfigFN = 'ovdmConfig.json'
 
+def get_scienceDir(worker):
+
+    requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
+    #print requiredExtraDirectories
+
+    for directory in requiredExtraDirectories:
+        if directory['name'] == 'Science':
+            #print directory['destDir']
+            return directory['destDir']
+            break
+    
+    return ''
+
 def output_JSONDataToFile(filePath, contents, warehouseUser):
     
     try:
@@ -86,38 +99,107 @@ def output_JSONDataToFile(filePath, contents, warehouseUser):
 
     return True
 
-def build_filelist(sourceDir):
+def build_ParticipantDataDestPath(worker):
 
-    returnFiles = []
+    # Set Error for current tranfer in DB via API
+    directories = worker.OVDM.getRequiredExtraDirectories()
+    for directory in directories:
+        if directory['name'] == 'Science':
+            return directory['destDir']
+            break
+    
+    return ''
+
+def build_ParticipantDataSourcePath(worker):
+    
+    return publicDataShareDir
+
+
+def setDirectoryOwnerGroupPermissions(path, uid, gid):
+    # Set the file permission and ownership for the current directory
+    try:
+        os.chown(path, uid, gid)
+        os.chmod(path, 0755)
+    except OSError:
+        print "Unable to set file permissions for " + path
+        return False
+    
+    for item in os.listdir(path):
+        itempath = os.path.join(path, item)
+        if os.path.isdir(itempath):
+            try:
+                setDirectoryOwnerGroupPermissions(itempath, uid, gid)
+            except OSError:
+                return False
+        elif os.path.isfile(itempath):
+            try:
+                os.chown(itempath, uid, gid)
+                os.chmod(itempath, 0644)
+            except OSError:
+                return False
+    return True
+
+
+def build_filelist(worker, sourceDir):
+
+    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+    #threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    #cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%m/%d/%Y"))
+    #filters = build_filters(worker)
+    
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
-            returnFiles.append(os.path.join(root, filename))
-                
-    returnFiles = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles]
+            #exclude = False
+            #ignore = False
+            #include = False
+            #for filt in filters['ignoreFilter'].split(','):
+            #    #print filt
+            #    if fnmatch.fnmatch(os.path.join(root, filename), filt):
+            #        ignore = True
+            #        break
+            #if not ignore:
+            #    for filt in filters['includeFilter'].split(','): 
+            #        if fnmatch.fnmatch(filename, filt):
+            #            for filt in filters['excludeFilter'].split(','): 
+            #                if fnmatch.fnmatch(filename, filt):
+            #                    returnFiles['exclude'].append(os.path.join(root, filename))
+            #                    exclude = True
+            #                    break
+            #            if not exclude:
+            if os.path.islink(os.path.join(root, filename)):
+                continue
+                            #print 'Filename: ' + os.path.join(root, filename)
+            #                file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
+            #                if file_mod_time > cruiseStart_time and file_mod_time < threshold_time:
+            returnFiles['include'].append(os.path.join(root, filename))
+            #                include = True
+            #                break
+            #    if not include:
+            #        returnFiles['exclude'].append(os.path.join(root, filename))
+
+    returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
+    #returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
+
     return returnFiles
 
-def transfer_localSourceDir(worker, job, sourceDir, destDir):
+def transfer_localSourceDir(worker, job, publicDataDir, scienceDir):
 
     #print "Transfer from Local Directory"
     
-#    staleness = worker.collectionSystemTransfer['staleness']
-#    cruiseStartDate = worker.cruiseStartDate
+    #staleness = worker.collectionSystemTransfer['staleness']
+    #cruiseStartDate = worker.cruiseStartDate
     
-#    destDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID+'/'+worker.collectionSystemTransfer['destDir'].rstrip('/')
-#    sourceDir = worker.collectionSystemTransfer['sourceDir'].rstrip('/')
-#    sourceDir = build_sourceDir(worker).rstrip('/')
-
+    destDir = scienceDir
+    sourceDir = publicDataDir
+    
     #print "Build file list"
-    files = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-    
-    files['include'] = build_filelist(sourceDir)
+    files = build_filelist(worker, sourceDir)
 
     #print "Build destination directories"
     #build_destDirectories(destDir, files['include'])
     
     count = 1
     fileCount = len(files['include'])
-    #print fileCount
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -159,53 +241,114 @@ def transfer_localSourceDir(worker, job, sourceDir, destDir):
     for line in lines_iterator:
         #print(line) # yield line
         if line.startswith( '>f+++++++++' ):
-            filename = line.split(' ')[1].rstrip('\n')
+            filename = line.split(' ',1)[1].rstrip('\n')
             files['new'].append(filename)
-            #os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
             worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
             count += 1
         elif line.startswith( '>f.' ):
-            filename = line.split(' ')[1].rstrip('\n')
+            filename = line.split(' ',1)[1].rstrip('\n')
             files['updated'].append(filename)
-            #os.chown(destDir + '/' + filename, pwd.getpwnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(data['shipboardDataWarehouse']['shipboardDataWarehouseUsername']).gr_gid)
             worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
             count += 1
             
         if worker.stop:
             print "Stopping"
             break
-
+    
     # Cleanup
     shutil.rmtree(tmpdir)    
     return files
 
-def move_files(sourceDir, destDir, warehouseUser):
+def transfer_localSourceDir2(worker, job, publicDataDir, scienceDir):
 
-    files = {'new':[],'updated':[]}
+    #print "Transfer from Local Directory"
     
-    for root, dirnames, filenames in os.walk(sourceDir):
-        for dirname in dirnames:
-            dirPath = os.path.join(root, dirname)
-            os.chown(dirPath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-            shutil.move(dirPath, destDir)
-        for filename in filenames:
-            filePath = os.path.join(root, filename)
-            os.chown(filePath, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-            shutil.move(filePath, destDir)
-            files['new'].append(filePath)
+    #staleness = worker.collectionSystemTransfer['staleness']
+    #cruiseStartDate = worker.cruiseStartDate
     
-    return files
+    destDir = scienceDir
+    sourceDir = publicDataDir
+    
+    #print "Build file list"
+    files = build_filelist(worker, sourceDir)
+    #print "Files: " + json.dumps(files, indent=2)
+
+    #print "Build destination directories"
+    #build_destDirectories(destDir, files['include'])
+    
+    count = 1
+    fileCount = len(files['include'])
+    
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
+        
+    try:
+        #print "Open rsync password file"
+        rsyncFileListFile = open(rsyncFileListPath, 'w')
+
+        #print "Saving rsync password file"
+        localTransferFileList = files['include']
+        localTransferFileList = [filename.replace(sourceDir, '', 1) for filename in localTransferFileList]
+
+        #print '\n'.join([str(x) for x in localTransferFileList])
+        rsyncFileListFile.write('\n'.join([str(x) for x in localTransferFileList]))
+
+    except IOError:
+        print "Error Saving temporary rsync filelist file"
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        rsyncFileListFile.close()
             
-def build_ScienceDirPath(worker):
+        # Cleanup
+        shutil.rmtree(tmpdir)
+            
+        return files    
 
-    # Set Error for current tranfer in DB via API
-    directories = worker.OVDM.getRequiredExtraDirectories()
-    for directory in directories:
-        if directory['name'] == 'Science':
-            return directory['destDir']
-            break
+    finally:
+        #print "Closing rsync filelist file"
+        rsyncFileListFile.close()
+        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
-    return ''
+    command = ['rsync', '-tri', '--remove-source-files', '--files-from=' + rsyncFileListPath, sourceDir + '/', destDir]
+    
+    #s = ' '
+    #print s.join(command)
+    
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+    lines_iterator = iter(popen.stdout.readline, b"")
+    for line in lines_iterator:
+        #print(line) # yield line
+        if line.startswith( '>f+++++++++' ):
+            filename = line.split(' ',1)[1].rstrip('\n')
+            files['new'].append(filename)
+            worker.send_job_status(job, int(round(50 + (40*count/fileCount),0)), 100)
+            count += 1
+        elif line.startswith( '>f.' ):
+            filename = line.split(' ',1)[1].rstrip('\n')
+            files['updated'].append(filename)
+            worker.send_job_status(job, int(round(50 + (40*count/fileCount),0)), 100)
+            count += 1
+        
+        if worker.stop:
+            print "Stopping"
+            break
+
+    # Clear out PublicData
+    for root, dirs, pdFiles in os.walk(sourceDir + '/', topdown=False):
+        for dir in dirs:
+            dirPath = os.path.join(root, dir)
+            try:
+                os.rmdir(dirPath)
+                #print "Directory empty! Deleting " + dirPath
+            except OSError:
+                print "Directory " + dirPath + " is not empty and will not be removed"
+    
+    # Cleanup
+    shutil.rmtree(tmpdir)
+    
+    #print "Files: " + json.dumps(files, indent=2)
+
+    return files
 
     
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -216,6 +359,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
         self.cruiseStartDate = ''
+        self.systemStatus = ''
+        self.collectionSystemTransfer = {}
+        self.shipboardDataWarehouseConfig = {}
         self.taskID = '0'
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
         
@@ -233,9 +379,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_execute(self, current_job):
         self.get_taskID(current_job)
         payloadObj = json.loads(current_job.data)
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         
         self.cruiseID = self.OVDM.getCruiseID()
         self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+        self.systemStatus = self.OVDM.getSystemStatus()
         if len(payloadObj) > 0:
             try:
                 payloadObj['cruiseID']
@@ -340,12 +488,11 @@ def task_setupNewCruise(worker, job):
     payloadObj = json.loads(job.data)
     #print 'DECODED Payload:', json.dumps(payloadObj, indent=2)
     
-    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
-    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = baseDir + '/' + worker.cruiseID
     
 
-    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
     worker.send_job_status(job, 1, 10)
     
@@ -422,14 +569,12 @@ def task_finalizeCurrentCruise(worker, job):
     payloadObj = json.loads(job.data)
     #print 'DECODED:', json.dumps(payloadObj, indent=2)
 
-    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
-    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = baseDir + '/' + worker.cruiseID
-    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
-    publicDataDir = shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    scienceDir = cruiseDir + '/' + build_ScienceDirPath(worker)
-    print 'scienceDir:', scienceDir
+    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
+    scienceDir = get_scienceDir(worker)
     
     worker.send_job_status(job, 1, 10)
 
@@ -449,15 +594,13 @@ def task_finalizeCurrentCruise(worker, job):
     
     gmData['cruiseID'] = worker.cruiseID
     gmData['cruiseStartDate'] = worker.cruiseStartDate
-    gmData['systemStatus'] = "On";
+    gmData['systemStatus'] = "On"
     gmData['collectionSystemTransfer'] = {}
         
-    print gmData
+    #print gmData
     
     collectionSystemTransferJobs = []
     
-    worker.send_job_status(job, 3, 10)
-
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
@@ -473,24 +616,44 @@ def task_finalizeCurrentCruise(worker, job):
     
     #print submitted_job_request
 
-    worker.send_job_status(job, 4, 10)
+    worker.send_job_status(job, 2, 10)
     
     time.sleep(1)
     completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
 
-    worker.send_job_status(job, 7, 10)
+    worker.send_job_status(job, 5, 10)
     
-    #print "Try to move Public Data from " + publicDataDir + " to " + scienceDir;
-    files = move_files(publicDataDir, scienceDir, warehouseUser)
+    #print "Try to move Public Data from " + publicDataDir + " to " + cruiseDir + '/' + scienceDir
+    files = transfer_localSourceDir2(worker, job, publicDataDir, cruiseDir + '/' + scienceDir)
+    #print "Files: " + json.dumps(files, indent=2)
     
-    worker.send_job_status(job, 8, 10)
+    worker.send_job_status(job, 9, 10)
+    
+    if(setDirectoryOwnerGroupPermissions(cruiseDir + '/' + scienceDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
+    else:
+        print "Error Setting file/directory ownership"
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
+        
+    worker.send_job_status(job, 95, 100)
     
     #build OpenVDM Config file
     ovdmConfig = worker.OVDM.getOVDMConfig()
     output_JSONDataToFile(cruiseDir + '/' + cruiseConfigFN, ovdmConfig, warehouseUser)
-    worker.send_job_status(job, 9, 10)
     
-    completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
+    gmData = {}
+    gmData['cruiseID'] = worker.cruiseID
+    gmData['files'] = files
+    gmData['files']['new'] = [scienceDir + '/' + filename for filename in gmData['files']['new']]
+    gmData['files']['updated'] = [scienceDir + '/' + filename for filename in gmData['files']['updated']]
+    
+    gmData['files']['updated'].append(cruiseConfigFN)
+    
+    #print json.dumps(gmData, indent=2)
+    
+    completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
+    
+    #completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
     
     # need to add code for cruise data transfers
     worker.send_job_status(job, 10, 10)
@@ -501,16 +664,16 @@ def task_rsyncPublicDataToCruiseData(worker, job):
     job_results = {'parts':[]}
 
     payloadObj = json.loads(job.data)
-    print 'DECODED:', json.dumps(payloadObj, indent=2)
+    #print 'DECODED:', json.dumps(payloadObj, indent=2)
 
-    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
-    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = baseDir + '/' + worker.cruiseID
-    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
-    publicDataDir = shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    scienceDir = cruiseDir + '/' + build_ScienceDirPath(worker)
-    print 'scienceDir:', scienceDir
+    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
+    scienceDir = get_scienceDir(worker)
+    #print 'scienceDir:', scienceDir
+    #print 'publicDataDir:', publicDataDir
     
     worker.send_job_status(job, 1, 10)
 
@@ -528,20 +691,29 @@ def task_rsyncPublicDataToCruiseData(worker, job):
     
     worker.send_job_status(job, 2, 10)
     
-    files = transfer_localSourceDir(worker, job, publicDataDir, scienceDir)
-    print json.dumps(files, indent=2)
-
-    gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
-    
-    gmData = {}
-    gmData['cruiseID'] = worker.cruiseID
-    gmData['files'] = files;
-    gmData['files']['new'] = [build_ScienceDirPath(worker) + '/' + filename for filename in gmData['files']['new']]
-    gmData['files']['updated'] = [build_ScienceDirPath(worker) + '/' + filename for filename in gmData['files']['updated']]
+    files = transfer_localSourceDir(worker, job, publicDataDir, cruiseDir + '/' + scienceDir)
+    #print "Files: " + json.dumps(files, indent=2)
     
     worker.send_job_status(job, 9, 10)
+    
+    if(setDirectoryOwnerGroupPermissions(cruiseDir + '/' + scienceDir, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)):
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
+    else:
+        print "Error Setting file/directory ownership"
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
         
-    completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
+    worker.send_job_status(job, 95, 100)
+
+    if len(files['new']) > 0 or len(files['updated']) > 0:
+
+        gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])    
+        gmData = {}
+        gmData['cruiseID'] = worker.cruiseID
+        gmData['files'] = files
+        gmData['files']['new'] = [scienceDir + '/' + filename for filename in gmData['files']['new']]
+        gmData['files']['updated'] = [scienceDir + '/' + filename for filename in gmData['files']['updated']]
+        
+        completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
     
     # need to add code for cruise data transfers
     worker.send_job_status(job, 10, 10)
@@ -556,10 +728,9 @@ def task_exportOVDMConfig(worker, job):
     payloadObj = json.loads(job.data)
     #print 'DECODED:', json.dumps(payloadObj, indent=2)
 
-    shipboardDataWarehouseConfig = worker.OVDM.getShipboardDataWarehouseConfig()
-    cruiseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.OVDM.getCruiseID()
-    publicDataDir = shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    cruiseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID()
+    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     
     worker.send_job_status(job, 1, 10)
 
