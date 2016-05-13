@@ -6,19 +6,23 @@ use Core\Model;
 
 class DashboardData extends Model {
 
+    const CONFIG_FN = 'ovdmConfig.json';
+    const MANIFEST_FN = 'manifest.json';
+    
     private $_cruiseDataDir;
-    private $_cruiseID;
-    private $_dashboardDataDir;
     private $_manifestObj;
+    private $_cruiseID;
+    private $_warehouseModel;
 
-    public function __construct(){
-        $warehouseModel = new \Models\Warehouse();
-        $extraDirectoriesModel = new \Models\Config\ExtraDirectories();
-        $this->_cruiseDataDir = $warehouseModel->getShipboardDataWarehouseBaseDir();
-        $this->_cruiseID = $warehouseModel->getCruiseID();
-        $this->_dashboardDataDir = $extraDirectoriesModel->getExtraDirectoryByName('Dashboard Data')[0]->destDir;
-
+    public function __construct($cruiseID = null) {
+        $this->_warehouseModel = new \Models\Warehouse();
+        $this->_cruiseDataDir = $this->_warehouseModel->getShipboardDataWarehouseBaseDir();
         $this->_manifestObj = null;
+        if ($cruiseID == null){
+            $this->setCruiseID($this->_warehouseModel->getLatestCruise());
+        } else {
+            $this->setCruiseID($cruiseID);
+        }
     }
     
     public function getDashboardManifest() {
@@ -28,29 +32,43 @@ class DashboardData extends Model {
     private function buildManifestObj(){
 
         $results = array();
-        
-        $manifestFile = $this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $this->_dashboardDataDir . DIRECTORY_SEPARATOR . "manifest.json";
 
-        if (file_exists($manifestFile) && is_readable($manifestFile)) {
-            $manifestContents = file_get_contents($manifestFile);
-            $this->_manifestObj = json_decode($manifestContents,true);
+        if($this->_manifestObj === null && $this->_cruiseID != null) {
+
+            //Get the list of directories
+            if (is_dir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID))
+            {
+                //Check each Directory for ovdmConfig.json
+                $cruiseList = scandir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID);
+                foreach ($cruiseList as $cruiseKey => $cruiseValue){
+                    if (in_array($cruiseValue,array(self::CONFIG_FN))){
+                        $ovdmConfigContents = file_get_contents($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                        $ovdmConfigJSON = json_decode($ovdmConfigContents,true);
+                        //Get the the directory that holds the DashboardData
+                        for($i = 0; $i < sizeof($ovdmConfigJSON['extraDirectoriesConfig']); $i++){
+                            if(strcmp($ovdmConfigJSON['extraDirectoriesConfig'][$i]['name'], 'Dashboard Data') === 0){
+                                $dataDashboardList = scandir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $ovdmConfigJSON['extraDirectoriesConfig'][$i]['destDir']);
+                                foreach ($dataDashboardList as $dataDashboardKey => $dataDashboardValue){
+                                    //If a manifest file is found, add CruiseID to output
+                                    if (in_array($dataDashboardValue,array(self::MANIFEST_FN))){
+                                        $manifestContents = file_get_contents($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $ovdmConfigJSON['extraDirectoriesConfig'][$i]['destDir'] . DIRECTORY_SEPARATOR . self::MANIFEST_FN);
+					$this->_manifestObj = json_decode($manifestContents,true);
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 
     public function getDashboardDataTypes() {
 
         $dataTypes = array();
-
-        //If the manifest object has not been set, set it.
-        if($this->_manifestObj === null) {
-            $this->buildManifestObj();
-
-            //If the manifest object is still null, something's wrong, quit.
-            if($this->_manifestObj === null) {
-                return $dataTypes;
-            }
-        }
-
 
         foreach ($this->_manifestObj as $manifestItem){
             foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
@@ -70,16 +88,6 @@ class DashboardData extends Model {
 
         $dataObjects = array();
 
-        //If the manifest object has not been set, set it.
-        if($this->_manifestObj === null) {
-            $this->buildManifestObj();
-            
-            //If the manifest object is still null, something's wrong, quit.
-            if($this->_manifestObj === null) {
-                return $dataObjects;
-            }
-        }
-        
         foreach ($this->_manifestObj as $manifestItem) {
             foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
                 if (strcmp($manifestItemKey, 'type') === 0){
@@ -114,16 +122,6 @@ class DashboardData extends Model {
     public function getDashboardObjectContentsByJsonName($dd_json){
         $dataObjectContents = '';
         
-        //If the manifest object has not been set, set it.
-        if($this->_manifestObj === null) {
-            $this->buildManifestObj();
-            
-            //If the manifest object is still null, something's wrong, quit.
-            if($this->_manifestObj === null) {
-                return $dataObjectContents;
-            }
-        }
-        
         $foundIt = false;
         foreach ($this->_manifestObj as $manifestItem) {
             foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
@@ -145,16 +143,6 @@ class DashboardData extends Model {
     public function getDashboardObjectContentsByRawName($raw_data){
         $dataObjectContents = '';
         
-        //If the manifest object has not been set, set it.
-        if($this->_manifestObj === null) {
-            $this->buildManifestObj();
-            
-            //If the manifest object is still null, something's wrong, quit.
-            if($this->_manifestObj === null) {
-                return $dataObjectContents;
-            }
-        }
-        
         $foundIt = false;
         foreach ($this->_manifestObj as $manifestItem) {
             foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
@@ -172,19 +160,9 @@ class DashboardData extends Model {
         }
         return $dataObjectContents;
     }
-        
+    
     public function getDashboardObjectDataTypeByJsonName($dd_json){
         $dataType = '';
-        
-        //If the manifest object has not been set, set it.
-        if($this->_manifestObj === null) {
-            $this->buildManifestObj();
-            
-            //If the manifest object is still null, something's wrong, quit.
-            if($this->_manifestObj === null) {
-                return $dataType;
-            }
-        }
         
         foreach ($this->_manifestObj as $manifestItem) {
             if (strcmp($manifestItem['dd_json'], $dd_json) === 0) {
@@ -195,18 +173,8 @@ class DashboardData extends Model {
         return $dataType;
     }
 
-  public function getDashboardObjectDataTypeByRawName($raw_data){
+    public function getDashboardObjectDataTypeByRawName($raw_data){
         $dataType = '';
-        
-        //If the manifest object has not been set, set it.
-        if($this->_manifestObj === null) {
-            $this->buildManifestObj();
-            
-            //If the manifest object is still null, something's wrong, quit.
-            if($this->_manifestObj === null) {
-                return $dataType;
-            }
-        }
         
         foreach ($this->_manifestObj as $manifestItem) {
             if (strcmp($manifestItem['raw_data'], $raw_data) === 0) {
@@ -216,7 +184,7 @@ class DashboardData extends Model {
         }
         return $dataType;
     }
-    
+        
     public function getDashboardObjectVisualizerDataByJsonName($dd_json){
         $dataObjectContentsOBJ = json_decode($this->getDashboardObjectContentsByJsonName($dd_json));
         return $dataObjectContentsOBJ->visualizerData;
@@ -253,6 +221,7 @@ class DashboardData extends Model {
     
     public function setCruiseID($cruiseID) {
         $this->_cruiseID = $cruiseID;
+        $this->buildManifestObj();
     }
     
     public function getDataTypeStats($dataType) {

@@ -30,7 +30,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getShipboardDataWarehouseApacheDir();
         $data['css'] = array('leaflet');
         $data['javascript'] = array('dataDashboardMain', 'dataDashboardMainCustom', 'leaflet', 'highcharts');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
@@ -60,7 +60,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getShipboardDataWarehouseApacheDir();
 
         $data['css'] = array();
         if ($tab['cssArray'] && sizeof($tab['cssArray'])>0) {
@@ -121,7 +121,7 @@ class DataDashboard extends Controller {
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['customDataDashboardTabs'] = $this->_dataDashboardModel->getDataDashboardTabs();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getDataWarehouseApacheDir();
+        $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getShipboardDataWarehouseApacheDir();
         $data['javascript'] = array('dataDashboardQuality');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
         $data['dataObjects'] = array();

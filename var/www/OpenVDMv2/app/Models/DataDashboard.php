@@ -3,8 +3,6 @@
 namespace Models;
 use Core\Model;
 
-const CONF_FILE_PATH = '/usr/local/etc/openvdm/datadashboard.yaml';
-
 class DataDashboard extends Model {
 
     private $_tabs;
@@ -13,7 +11,7 @@ class DataDashboard extends Model {
     public function __construct(){
         
         $this->_dashboardDataModel = new \Models\DashboardData();
-        $this->_tabs = yaml_parse_file(CONF_FILE_PATH);
+        $this->_tabs = yaml_parse_file(DASHBOARD_CONF);
     }
     
     private function getAllDataTypes() {

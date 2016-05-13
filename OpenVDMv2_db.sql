@@ -115,7 +115,7 @@ CREATE TABLE `OVDM_CoreVars` (
   `name` tinytext NOT NULL,
   `value` tinytext,
   PRIMARY KEY (`coreVarID`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_CoreVars` WRITE;
 /*!40000 ALTER TABLE `OVDM_CoreVars` DISABLE KEYS */;
@@ -123,17 +123,16 @@ LOCK TABLES `OVDM_CoreVars` WRITE;
 INSERT INTO `OVDM_CoreVars` (`coreVarID`, `name`, `value`)
 VALUES
 	(1,'shipboardDataWarehouseIP','127.0.0.1'),
-	(2,'shipboardDataWarehouseBaseDir','/mnt/vault/FTPRoot/CruiseData'),
-	(3,'shipboardDataWarehouseUsername','survey'),
-	(4,'shipboardDataWarehousePublicDataDir','/mnt/vault/FTPRoot/PublicData'),
-	(5,'shipboardDataWarehouseStatus','2'),
-	(6,'cruiseID','CS1601'),
-	(7,'cruiseStartDate','01/01/2016'),
-	(8,'systemStatus','On'),
-	(9,'shipToShoreBWLimit','128'),
-	(10,'shipToShoreBWLimitStatus','On'),
-	(11,'md5FilesizeLimit','10'),
-	(12,'md5FilesizeLimitStatus','On');
+	(2,'shipboardDataWarehouseUsername','survey'),
+	(3,'shipboardDataWarehousePublicDataDir','/mnt/vault/FTPRoot/PublicData'),
+	(4,'shipboardDataWarehouseStatus','2'),
+	(5,'cruiseID','CS1601'),
+	(6,'cruiseStartDate','01/01/2016'),
+	(7,'systemStatus','On'),
+	(8,'shipToShoreBWLimit','128'),
+	(9,'shipToShoreBWLimitStatus','On'),
+	(10,'md5FilesizeLimit','10'),
+	(11,'md5FilesizeLimitStatus','On');
 
 /*!40000 ALTER TABLE `OVDM_CoreVars` ENABLE KEYS */;
 UNLOCK TABLES;

@@ -81,16 +81,11 @@ class System extends Controller {
 
         if(isset($_POST['submit'])){
             $shipboardDataWarehouseIP = $_POST['shipboardDataWarehouseIP'];
-            $shipboardDataWarehouseBaseDir = $_POST['shipboardDataWarehouseBaseDir'];
             $shipboardDataWarehouseUsername = $_POST['shipboardDataWarehouseUsername'];
             $shipboardDataWarehousePublicDataDir = $_POST['shipboardDataWarehousePublicDataDir'];
 
             if($shipboardDataWarehouseIP == ''){
                 $error[] = 'Shipboard Data Warehouse IP is required';
-            }
-
-            if($shipboardDataWarehouseBaseDir == ''){
-                $error[] = 'Shipboard Data Warehouse Base Directory is required';
             }
 
             if($shipboardDataWarehouseUsername == ''){
@@ -104,7 +99,6 @@ class System extends Controller {
             if(!$error){
                 $postdata = array(
                     'shipboardDataWarehouseIP' => $shipboardDataWarehouseIP,
-                    'shipboardDataWarehouseBaseDir' => $shipboardDataWarehouseBaseDir,
                     'shipboardDataWarehouseUsername' => $shipboardDataWarehouseUsername,
                     'shipboardDataWarehousePublicDataDir' => $shipboardDataWarehousePublicDataDir,
                 );
@@ -115,7 +109,6 @@ class System extends Controller {
             } else {
                 $data['shipboardDataWarehouseConfig'] = array(
                     'shipboardDataWarehouseIP' => $shipboardDataWarehouseIP,
-                    'shipboardDataWarehouseBaseDir' => $shipboardDataWarehouseBaseDir,
                     'shipboardDataWarehouseUsername' => $shipboardDataWarehouseUsername,
                     'shipboardDataWarehousePublicDataDir' => $shipboardDataWarehousePublicDataDir,
                 );

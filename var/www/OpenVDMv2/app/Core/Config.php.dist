@@ -33,11 +33,21 @@ class Config
          * Define relative base path.
          */
         define('DIR', '/OpenVDMv2/');
+        
+        /*
+         * Define path on webserver that contains cruise data
+         */
+        define('CRUISEDATA_BASEDIR', '/mnt/vault/FTPRoot/CruiseData');
 
-	/*
-	 * Define directory on webserver that contains cruise data
-	 */
-        define('CRUISEDATADIR', '/CruiseData');
+        /*
+         * Define directory alias configured within the webserver that contains cruise data
+         */
+        define('CRUISEDATA_APACHEDIR', '/CruiseData');
+
+        /*
+         * Define location/name of the data dashboard configuration file
+         */
+        define('DASHBOARD_CONF', '/usr/local/etc/openvdm/datadashboard.yaml');
 
         /*
          * Set default controller and method for legacy calls.
