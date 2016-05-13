@@ -403,7 +403,7 @@ sudo chown -R survey:survey /mnt/vault/FTPRoot/*
 
 From a terminal window type:
 ```
-git clone -b 2.1 git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
+git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
 ####Create OpenVDMv2 Database
@@ -436,6 +436,24 @@ exit
 ```
 
 ####Install OpenVDMv2 Web-Application
+
+####Install the OpenVDM configuration files
+```
+sudo mkdir -p /usr/local/etc/openvdm
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/dataDashboard.yaml
+```
+
+####Modify the OpenVDM configuation file
+```
+sudo nano /usr/local/etc/openvdm/openvdm.yaml
+```
+Look for the following line:
+```
+siteRoot: "http://127.0.0.1/OpenVDMv2/"
+```
+
+Change the URL to match the URL specified in the Config.php file during the OpenVDMv2 web-application installation.
 
 Copy the web-application code to a directory that can be accessed by Apache
 
@@ -475,13 +493,20 @@ define('DIR', '/OpenVDMv2/');
 
  - Set the access creditials for the MySQL database.  Look for the following lines and modify them to fit the actual database name (`DB_NAME`), database username (`DB_USER`), and database user password (`DB_PASS`).
 ```
-//database details ONLY NEEDED IF USING A DATABASE
-define('DB_TYPE', 'mysql');
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'OpenVDMv2');
+/*
+ * Database name.
+ */
+define('DB_NAME', 'OpenVDMv2_PO');
+
+/*
+ * Database username.
+ */
 define('DB_USER', 'openvdmDBUser');
+
+/*
+ * Database password.
+ */
 define('DB_PASS', 'oxhzbeY8WzgBL3');
-define('PREFIX', 'OVDM_');
 ```
 
 Edit the default Apache2 VHost file.
@@ -544,23 +569,6 @@ sudo cp -r ~/OpenVDMv2/usr/local/bin/* /usr/local/bin/
 ```
 sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
 ```
-
-####Install the OpenVDM configuration files
-```
-sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
-sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/dataDashboard.yaml
-```
-
-####Modify the OpenVDM configuation file
-```
-sudo nano /usr/local/etc/openvdm/openvdm.yaml
-```
-Look for the following line:
-```
-siteRoot: "http://127.0.0.1/OpenVDMv2/"
-```
-
-Change the URL to match the URL specified in the Config.php file during the OpenVDMv2 web-application installation.
 
 Restart Supervisor
 ```
