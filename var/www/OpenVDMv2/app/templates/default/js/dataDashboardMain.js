@@ -77,7 +77,7 @@ $(function () {
                         xAxis: {
                             type: 'datetime',
                             title: {text: ''},
-                            dateTimeLabelFormats: {millisecond: '%H', second: '%H:%M:%S', minute: '%H:%M', hour: '%H:%M', day: '%e. %b', week: '%e. %b', month: '%b \'%y', year: '%Y'}
+                            dateTimeLabelFormats: {millisecond: '%H', second: '%H:%M:%S', minute: '%H:%M', hour: '%H:%M', day: '%b %e', week: '%b %e', month: '%b \'%y', year: '%Y'}
                         },
                         yAxis: yAxes,
                         series: seriesData

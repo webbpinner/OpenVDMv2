@@ -331,7 +331,7 @@ $(function () {
                             crosshairs: true,
                             xDateFormat: '%Y-%m-%d',
                             formatter: function() {
-                                var toolTipStr = '<span style="font-size: 10px">Time: ' + Highcharts.dateFormat('%H:%M:%S', new Date(this.x)) + '</span>';
+                                var toolTipStr = '<span style="font-size: 10px">Time: ' + Highcharts.dateFormat('%b %e %Y - %H:%M:%S', this.x) + '</span>';
                                 $.each(this.points, function (i) {
                                     toolTipStr += '<br/>' + '<span style="font-size: 10px; color:' + this.series.color + '">\u25CF</span><span style="font-size: 10px"> ' + data[i].label + ': ' + this.y +  ' ' + data[i].unit + '</span>';
                                 });
@@ -341,7 +341,7 @@ $(function () {
                         legend: {enabled: true},
                         xAxis: {type: 'datetime',
                                 title: {text: ''},
-                                dateTimeLabelFormats: {millisecond: '%H', second: '%H:%M:%S', minute: '%H:%M', hour: '%H:%M', day: '%e. %b', week: '%e. %b', month: '%b \'%y', year: '%Y'}
+                                dateTimeLabelFormats: {millisecond: '%H', second: '%H:%M:%S', minute: '%H:%M', hour: '%H:%M', day: '%b %e', week: '%b %e', month: '%b \'%y', year: '%Y'}
                                },
                         yAxis: yAxes,
                         series: seriesData,
