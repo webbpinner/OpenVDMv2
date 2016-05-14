@@ -144,9 +144,14 @@ $(function () {
 
                     //Add basemap layer, use ESRI Oceans Base Layer
                     //L.esri.basemapLayer("Oceans").addTo(mapdb);
-                    L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/EPSG900913/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1, maxNativeZoom:9 } ).addTo(mapdb);
-                    L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapdb);
-
+                    L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/EPSG900913/{z}/{x}/{y}.png', {
+                        tms:true,
+                        zoomOffset:-1,
+                        minZoom:1,
+                        maxNativeZoom:9,
+                        attribution: '<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>'
+                    }).addTo(mapdb);
+                    
                     // Add latest trackline (GeoJSON)
                     ggaData.addTo(mapdb);
                     
@@ -192,9 +197,14 @@ $(function () {
 
                     //Add basemap layer, use ESRI Oceans Base Layer
                     //L.esri.basemapLayer("Oceans").addTo(mapdb);
-                    L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/esri_online/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1 } ).addTo(mapdb);
-                    L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapdb);
-
+                    L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/EPSG900913/{z}/{x}/{y}.png', {
+                        tms:true,
+                        zoomOffset:-1,
+                        minZoom:1,
+                        maxNativeZoom:9,
+                        attribution: '<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>'
+                    }).addTo(mapdb);
+                    
                     // Add latest trackline (GeoJSON)
                     L.tileLayer(location.protocol + '//' + location.host + cruiseDataDir + '/' + data[0]['tileDirectory'] + '/{z}/{x}/{y}.png', {
                         tms: true,

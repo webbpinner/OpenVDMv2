@@ -45,13 +45,37 @@ $(function () {
         }).setView(L.latLng(0, 0), 2);
 
         //Add basemap layer, use ESRI Oceans Base Layer
-        //L.esri.basemapLayer("Oceans").addTo(mapObject['map']);
-        //L.esri.basemapLayer("OceansLabels").addTo(mapObject['map']);
-        var worldOceanBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/EPSG900913/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1, maxNativeZoom:9 } ),
-            worldOceanReference = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanReference/EPSG900913/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1, maxNativeZoom:9 } ),
-	    gmrtBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/GMRTBase/EPSG900913/{z}/{x}/{y}.png', { tms:true, zoomOffset:-1, minZoom:1} );
+        //var worldOceanBase = L.esri.basemapLayer('Oceans'),
+        //    worldOceanReference = L.esri.basemapLayer('OceansLabels'),
+        //    gmrtBase = L.tileLayer.wms('http://gmrt.marine-geo.org/cgi-bin/mapserv?map=/public/mgg/web/gmrt.marine-geo.org/htdocs/services/map/wms_merc.map', {
+        //        layers: 'topo',
+        //        transparent: true,
+        //        //format: 'image/png',
+        //        version: '1.1.1',
+        //        crs: L.CRS.EPSG4326,
+        //        attribution: '<a href="http://www.marine-geo.org/portals/gmrt/" target="_blank">GMRT</a>'
+        //    });
         
-        L.control.attribution().addAttribution('<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>').addTo(mapObject['map']);
+        var worldOceanBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanBase/EPSG900913/{z}/{x}/{y}.png', {
+                tms:true,
+                zoomOffset:-1,
+                minZoom:1,
+                maxNativeZoom:9,
+                attribution: '<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>'
+            }),
+            worldOceanReference = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/WorldOceanReference/EPSG900913/{z}/{x}/{y}.png', {
+                tms:true,
+                zoomOffset:-1,
+                minZoom:1,
+                maxNativeZoom:9,
+                attribution: '<a href="http://www.esri.com" target="_blank" style="border: none;">esri</a>'
+            }),
+	        gmrtBase = L.tileLayer(window.location.origin + MAPPROXY_DIR +'/tms/1.0.0/GMRTBase/EPSG900913/{z}/{x}/{y}.png', {
+                tms:true,
+                zoomOffset:-1,
+                minZoom:1,
+                attribution: '<a href="http://www.marine-geo.org/portals/gmrt/" target="_blank">GMRT</a>'
+            });
         
         worldOceanBase.addTo(mapObject['map']);
         worldOceanBase.bringToBack();

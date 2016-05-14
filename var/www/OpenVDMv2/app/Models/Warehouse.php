@@ -84,23 +84,23 @@ class Warehouse extends Model {
         return CRUISEDATA_APACHEDIR;
     }
     
-     public function getShipboardDataWarehouseConfig(){
-         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehouseIP'");
-         $shipboardDataWarehouseIP = $row[0]->value;
-         $shipboardDataWarehouseBaseDir = $this->getShipboardDataWarehouseBaseDir();
-         $shipboardDataWarehouseApacheDir = $this->getShipboardDataWarehouseApacheDir();
-         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehouseUsername'");
-         $shipboardDataWarehouseUsername = $row[0]->value;
-         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehousePublicDataDir'");
-         $shipboardDataWarehousePublicDataDir = $row[0]->value;
+    public function getShipboardDataWarehouseConfig(){
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehouseIP'");
+        $shipboardDataWarehouseIP = $row[0]->value;
+        $shipboardDataWarehouseBaseDir = $this->getShipboardDataWarehouseBaseDir();
+        $shipboardDataWarehouseApacheDir = $this->getShipboardDataWarehouseApacheDir();
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehouseUsername'");
+        $shipboardDataWarehouseUsername = $row[0]->value;
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehousePublicDataDir'");
+        $shipboardDataWarehousePublicDataDir = $row[0]->value;
          
-         return array(
-                    'shipboardDataWarehouseIP' => $shipboardDataWarehouseIP,
-                    'shipboardDataWarehouseBaseDir' => $shipboardDataWarehouseBaseDir,
-                    'shipboardDataWarehouseApacheDir' => $shipboardDataWarehouseApacheDir,
-                    'shipboardDataWarehouseUsername' => $shipboardDataWarehouseUsername,
-                    'shipboardDataWarehousePublicDataDir' => $shipboardDataWarehousePublicDataDir,
-         );
+        return array(
+            'shipboardDataWarehouseIP' => $shipboardDataWarehouseIP,
+            'shipboardDataWarehouseBaseDir' => $shipboardDataWarehouseBaseDir,
+            'shipboardDataWarehouseApacheDir' => $shipboardDataWarehouseApacheDir,
+            'shipboardDataWarehouseUsername' => $shipboardDataWarehouseUsername,
+            'shipboardDataWarehousePublicDataDir' => $shipboardDataWarehousePublicDataDir,
+        );
     }
     
     public function enableSystem(){

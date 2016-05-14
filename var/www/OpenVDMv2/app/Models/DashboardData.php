@@ -19,7 +19,7 @@ class DashboardData extends Model {
         $this->_cruiseDataDir = $this->_warehouseModel->getShipboardDataWarehouseBaseDir();
         $this->_manifestObj = null;
         if ($cruiseID == null){
-            $this->setCruiseID($this->_warehouseModel->getLatestCruise());
+            $this->setCruiseID($this->_warehouseModel->getCruiseID());
         } else {
             $this->setCruiseID($cruiseID);
         }
