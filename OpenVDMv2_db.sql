@@ -128,7 +128,7 @@ VALUES
 	(4,'shipboardDataWarehouseStatus','2'),
 	(5,'cruiseID','CS1601'),
 	(6,'cruiseStartDate','01/01/2016'),
-	(7,'systemStatus','On'),
+	(7,'systemStatus','Off'),
 	(8,'shipToShoreBWLimit','128'),
 	(9,'shipToShoreBWLimitStatus','On'),
 	(10,'md5FilesizeLimit','10'),
