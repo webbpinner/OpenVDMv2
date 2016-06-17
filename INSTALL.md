@@ -362,7 +362,7 @@ Restart Apache2
 sudo service apache2 restart
 ```
 
-Verify the installation works by going to `http://<servername or IP>/mapproxy/demo/`
+Verify the installation works by going to: <http://127.0.0.1/mapproxy/demo/>
 
 ###OpenVDMv2
 
@@ -422,7 +422,7 @@ Now create a new MySQL user specifically for interacting with only the OpenVDM d
 GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';
 ```
 
-It is not important what the name and passwork are for this new user however it is important to remember the designated username/password as it will be reference later in the installation.
+It is not important what the name and password are for this new user however it is important to remember the designated username/password as it will be reference later in the installation.
 
 To build the database schema and perform the initial import type:
 ```
@@ -435,13 +435,11 @@ Exit the MySQL console:
 exit
 ```
 
-####Install OpenVDMv2 Web-Application
-
 ####Install the OpenVDM configuration files
 ```
 sudo mkdir -p /usr/local/etc/openvdm
-sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
-sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm.yaml.dist /usr/local/etc/openvdm/dataDashboard.yaml
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
+sudo cp -r ~/OpenVDMv2/usr/local/etc/openvdm/datadashboard.yaml.dist /usr/local/etc/openvdm/datadashboard.yaml
 ```
 
 ####Modify the OpenVDM configuation file
@@ -453,7 +451,7 @@ Look for the following line:
 siteRoot: "http://127.0.0.1/OpenVDMv2/"
 ```
 
-Change the URL to match the URL specified in the Config.php file during the OpenVDMv2 web-application installation.
+If the web-application is NOT going to be accessed as `http://<server IP>/OpenVDMv2/` Change the URL to match the intended location i.e. `http://127.0.0.1/CustomURLJustForOpenVDM/`.   If URL is changed you will need to specified the exact same URL within the `Config.php` and `.htaccess` files.  Editing the `Config.php` and `.htaccess` files is covered below.
 
 Copy the web-application code to a directory that can be accessed by Apache
 
@@ -476,27 +474,33 @@ Edit the `.htaccess` file:
 sudo nano /var/www/OpenVDMv2/.htaccess
 ```
 
- - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to http://<hostname or IP>/OpenVDMv2/.
+ - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to http://<hostname or IP>/OpenVDMv2/.  If the default URL was changed in the `openvdm.yaml` file, you will need to change the `RewriteBase` accordingly.  Be sure to include the trailing `/`.
 
 Edit the `./app/Core/Config.php` file:
 ```
 sudo nano /var/www/OpenVDMv2/app/Core/Config.php
 ```
 
- - Set the file URL of the OpenVDMv2 installation.  Look for the following lines and change the IP address in the URL to the actual IP address or hostname of the warehouse:
+ - Set the URL of the OpenVDMv2 installation.  If the default URL was changed in the `openvdm.yaml` file, you will need to change this line accordingly.  Be sure to include the trailing `/`.  Look for the following lines and change the IP address in the URL to the actual IP address or hostname of the warehouse:
 ```
 //site address
 define('DIR', '/OpenVDMv2/');
 ```
 
-**A word of caution.** The framework used by OpenVDMv2 does not allow more than one URL to access the web-application.  This means that you can NOT access the web-application using the machine hostname AND IP.  You must pick one.  Also with dual-homed machines you CAN NOT access the web-application by entering the IP address of the interface not used in this configuration file.  Typically this is not a problem since dual-homed installation are dual-homed because the Warehouse is spanning a public and private subnet.  While users on the the public subnet can't access machines on the private network, users on the private network can access machines on the public network.  In that scenario the URL should be set to the Warehouse's interface on the public network, thus allowing users on both subnets access.
+- Set the base directory containing the cruise data as defined earlier.
+```
+/*
+ * Define path on webserver that contains cruise data
+ */
+define('CRUISEDATA_BASEDIR', '/mnt/vault/FTPRoot/CruiseData');
+```
 
  - Set the access creditials for the MySQL database.  Look for the following lines and modify them to fit the actual database name (`DB_NAME`), database username (`DB_USER`), and database user password (`DB_PASS`).
 ```
 /*
  * Database name.
  */
-define('DB_NAME', 'OpenVDMv2_PO');
+define('DB_NAME', 'OpenVDMv2');
 
 /*
  * Database username.
@@ -514,7 +518,7 @@ Edit the default Apache2 VHost file.
 sudo nano /etc/apache2/sites-available/000-default.conf
 ```
 
-Copy text below into the Apache2 configuration file just above `</VirtualHost>`.  You will need to alter the directory locations to match the locations selected for the **CruiseData**, **PublicData** and **VisitorInformation** directories:
+Copy text below into the Apache2 configuration file just above `</VirtualHost>`.  If you changed the default URL for OpenVDM you will need to edit the Alias definition.  You will need to alter the directory locations to match the locations selected for the **CruiseData**, **PublicData** and **VisitorInformation** directories:
 ```
   Alias /OpenVDMv2 /var/www/OpenVDMv2
   <Directory "/var/www/OpenVDMv2">
@@ -577,11 +581,14 @@ sudo service supervisor restart
 
 ####Setup the Samba shares
 
+Edit the Samba configuration file located at: `/etc/samba/smb.cfg`.
+
+Within the authentication section search for the `obey pam restrictions` line as set it to:
 ```
 obey pam restrictions = no
 ```
 
-Add to end of the `smb.conf` file.  Set the user in `write list` to the username created during the OS the installation:
+Add the following to end of the `smb.conf` file.  Set the user in `write list` to the username created during the OS installation.
 ```
 [CruiseData]
   comment=Cruise Data, read-only access to guest
@@ -630,6 +637,8 @@ sudo service samba restart
 ```
 
 At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure data dashboard collection system transfers, cruise data transfers and the shoreside data warehouse.
+
+To access the OpenVDM web-application goto: <http://127.0.0.1/OpenVDMv2/>
 
 ### CentOS 6.7 Install Notes - BETA
 
