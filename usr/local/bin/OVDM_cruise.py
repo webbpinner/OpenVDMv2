@@ -755,7 +755,7 @@ new_worker = OVDMGearmanWorker()
 
 def sigquit_handler(_signo, _stack_frame):
     print "QUIT Signal Received"
-    new_worker.stopWorker()
+    new_worker.stopTask()
     
 
 def sigint_handler(_signo, _stack_frame):
