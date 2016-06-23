@@ -34,8 +34,10 @@ class TransferLogs extends Model {
         for($i = sizeof($files)-1; $i >= 0; $i--) {
             if (file_exists($files[$i]) && is_readable($files[$i])) {
                 $transferLogSummary = json_decode(file_get_contents($files[$i]));
-                list($collectionSystem, $date) = explode("_", basename($files[$i]), 2);
-                $date = explode(".", $date, 2)[0];
+                $filename = explode(".", basename($files[$i]))[0];
+                $filenameArray = explode("_", $filename);
+		$date = array_pop($filenameArray);
+		$collectionSystem = join("_", $filenameArray);
 
                 if (strcmp($date, "Exclude") === 0) {
                     $obj = (object) array('collectionSystemName' => $collectionSystem, 'errorFiles' => $transferLogSummary->exclude);
