@@ -68,7 +68,7 @@ The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
 ```
-sudo apt-get install php5 php5-cli php5-mysql
+sudo apt-get install php5 php5-cli php5-mysql php5-dev
 ```
 
 ###Apache2 Web-server
