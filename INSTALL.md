@@ -106,7 +106,7 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php` and `/etc/php5/apache2/php`.
+OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php.ini` and `/etc/php5/apache2/php.ini`.
 
 Modifying these files requires root privledges:
 ```
@@ -373,7 +373,7 @@ sudo pear upgrade -Z Archive_Tar
 sudo pecl install yaml
 ```
 
-Add the following to the end of `/etc/php/apache2/php.ini` and `/etc/php/cli/php.ini`
+Add the following to the end of `/etc/php5/apache2/php.ini` and `/etc/php5/cli/php.ini`
 
 ```
 extension=yaml.so
@@ -581,7 +581,7 @@ sudo service supervisor restart
 
 ####Setup the Samba shares
 
-Edit the Samba configuration file located at: `/etc/samba/smb.cfg`.
+Edit the Samba configuration file located at: `/etc/samba/smb.conf`.
 
 Within the authentication section search for the `obey pam restrictions` line as set it to:
 ```
