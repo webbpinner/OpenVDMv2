@@ -17,10 +17,10 @@ class System extends Controller {
     private function updateCruiseDirectory() {
         if($this->_coreValuesModel->getSystemStatus()) {
 
-            $_warehouseModel = new \Models\Warehouse();
+            $warehouseModel = new \Models\Warehouse();
             $gmData['siteRoot'] = DIR;
-            $gmData['shipboardDataWarehouse'] = $this->_warehouseModel->getShipboardDataWarehouseConfig();
-            $gmData['cruiseID'] = $_warehouseModel->getCruiseID();
+            $gmData['shipboardDataWarehouse'] = $warehouseModel->getShipboardDataWarehouseConfig();
+            $gmData['cruiseID'] = $warehouseModel->getCruiseID();
         
             # create the gearman client
             $gmc= new \GearmanClient();
@@ -215,7 +215,6 @@ class System extends Controller {
                 
                 $where = array('extraDirectoryID' => $id);
                 $this->_extraDirectoriesModel->updateExtraDirectory($postdata,$where);
-                $this->updateCruiseDirectory();
                 Session::set('message','Extra Directory Updated');
                 Url::redirect('config/system');
             } else {
