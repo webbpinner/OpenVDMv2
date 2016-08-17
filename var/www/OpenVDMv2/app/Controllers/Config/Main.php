@@ -47,8 +47,8 @@ class Main extends Controller {
     public function editCruiseID(){
 
         $data['title'] = 'Configuration';
-        $data['css'] = array('bootstrap-datepicker');
-        $data['javascript'] = array('bootstrap-datepicker');
+        $data['css'] = array('datetimepicker');
+        $data['javascript'] = array('datetimepicker');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
 
@@ -59,7 +59,7 @@ class Main extends Controller {
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';
-            } elseif(!preg_match('/([0-9]{2})\/([0-9]{2})\/([0-9]{4})/', $cruiseStartDate)){
+            } elseif(!preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $cruiseStartDate)){
                 $error[] = 'Valid Cruise Start Date is required';                
             } else {
                 $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();
@@ -188,8 +188,8 @@ class Main extends Controller {
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
         
         $data['title'] = 'Configuration';
-        $data['css'] = array('bootstrap-datepicker');
-        $data['javascript'] = array('bootstrap-datepicker');
+        $data['css'] = array('datetimepicker');
+        $data['javascript'] = array('datetimepicker');
         $data['cruiseID'] = '';
         $data['cruiseStartDate'] = '';
 //        $error = array();
@@ -200,7 +200,7 @@ class Main extends Controller {
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';
-            } elseif(!preg_match('/([0-9]{2})\/([0-9]{2})\/([0-9]{4})/', $cruiseStartDate)){
+            } elseif(!preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $cruiseStartDate)){
                 $error[] = 'Valid Cruise Start Date is required';
             } else {
                 $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();  

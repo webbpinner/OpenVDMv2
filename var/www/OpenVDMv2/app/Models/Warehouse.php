@@ -176,6 +176,9 @@ class Warehouse extends Model {
         $this->db->update(PREFIX."CoreVars", array('value' => $data['shipboardDataWarehouseIP']), $where);
         $where = array('name' => 'shipboardDataWarehouseUsername');
         $this->db->update(PREFIX."CoreVars", array('value' => $data['shipboardDataWarehouseUsername']), $where);
+        $where = array('name' => 'shipboardDataWarehousePublicDataDir');
+        $this->db->update(PREFIX."CoreVars", array('value' => $data['shipboardDataWarehousePublicDataDir']), $where);
+        
     }
     
     public function setErrorShipboardDataWarehouseStatus(){

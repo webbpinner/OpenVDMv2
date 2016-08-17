@@ -64,9 +64,10 @@ if (isset($data['javascript'])){
             array_push($jsFileArray, Url::templatePath() . 'js/highcharts-fa-plugin.js');
         } else if ($jsFile === 'highcharts-exporting') {
             array_push($jsFileArray, DIR . 'bower_components/highcharts.com/lib/modules/exporting.js');
-        } else if ($jsFile === 'bootstrap-datepicker') {
-            array_push($jsFileArray, DIR . 'bower_components/bootstrap-datepicker/dist/js/bootstrap-datepicker.min.js');   
-            array_push($jsFileArray, Url::templatePath() . 'js/datepicker.js');
+        } else if ($jsFile === 'datetimepicker') {
+            array_push($jsFileArray, DIR . 'bower_components/moment/moment.js');
+            array_push($jsFileArray, DIR . 'bower_components/eonasdan-bootstrap-datetimepicker/build/js/bootstrap-datetimepicker.min.js');   
+            array_push($jsFileArray, Url::templatePath() . 'js/datetimepicker.js');
         } else {
             array_push($jsFileArray, Url::templatePath() . 'js/' . $jsFile . '.js');
         }

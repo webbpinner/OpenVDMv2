@@ -144,7 +144,7 @@ def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
     #threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
-    #cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%m/%d/%Y"))
+    #cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
     #filters = build_filters(worker)
     
     for root, dirnames, filenames in os.walk(sourceDir):

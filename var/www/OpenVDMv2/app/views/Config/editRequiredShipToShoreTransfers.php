@@ -47,7 +47,7 @@ use Helpers\Form;
             <p>This form is for editing an OpenVDM-Specific Ship-to-Shore Transfer. A Ship-to-Shore Transfers specifies subsets of the cruise data directory that should be queued for transfer to the Shoreside Data Warehouse (SSDW).</p>
             <p>The <strong>Name</strong> field is a short name for the Ship-to-Shore Transfer (i.e. KML_Tracklines).  This name cannot be changed because it is leveraged by the various parts of OpenVDM.</p>
             <p>The <strong>Long Name</strong> field is a longer name for the Ship-to-Shore Transfer (i.e. Google KML Tracklines ).  These names can have spaces in them.</p>
-            <p>The <strong>Include Filter</strong> is used to specify which files from the selected Collection System and/or Extra Directory to transfer.  If no filter is specified, OpenVDM will attempt to transfer all the files in the selected Collection System and/or Extra Directory.  The filter uses the standard regex structure language (i.e. *.Raw).  Use a single space to deliminate between filters when multiple include filters are required (i.e. *.Raw *.txt).</p>
+            <p>The <strong>Include Filter</strong> is used to specify which files from the selected Collection System and/or Extra Directory to transfer.  If no filter is specified, OpenVDM will attempt to transfer all the files in the selected Collection System and/or Extra Directory.  The filter uses the standard regex structure language (i.e. *.Raw).  Use a single comma (,) to deliminate between filters when multiple include filters are required (i.e. *.Raw *.txt).</p>
             <p>Click the <strong>Update</strong> button to submit the changes to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.</p>
         </div>
     </div>

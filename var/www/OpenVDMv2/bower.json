@@ -1,11 +1,11 @@
 {
-  "name": "OpenVDM",
+  "name": "openvdm",
   "version": "2.1.0",
   "homepage": "http://OceanDataRat.org",
   "authors": [
     { "name": "Webb Pinner", "email": "oceandatarat@gmail.com"}
   ],
-  "description": "An open source data management framework tailored to support oceanographic research vessels. The web-application is built on top of the SimpleMVCFramework by David Carr and the SB Admin 2 Bootstrap theme by David Miller",
+  "description": "Web-based components of OpenVDM. Built on NOVAFramework by David Carr and the SB Admin 2 Bootstrap theme by David Miller",
   "keywords": [
     "research vessels",
     "data management"
@@ -37,6 +37,6 @@
     "esri-leaflet": "~1.0.3",
     "leaflet-fullscreen-bower": "~1.0.1",
     "js-cookie": "~2.1.0",
-    "bootstrap-datepicker": "~1.6.0"
+    "eonasdan-bootstrap-datetimepicker": "~4.17.37"
   }
 }

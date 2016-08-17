@@ -193,10 +193,10 @@ class CollectionSystemTransfers extends Controller {
                     $smbDataCheck = false;
                 } 
 
-                if($smbUser != 'guest' && $smbPass == ''){
-                    $error[] = 'SMB Password is required';
-                    $smbDataCheck = false;
-                }
+//                if($smbUser != 'guest' && $smbPass == ''){
+//                    $error[] = 'SMB Password is required';
+//                    $smbDataCheck = false;
+//                }
                 
                 if($smbDomain == ''){
                     $smbDomain = 'WORKGROUP'; // Default value
@@ -418,10 +418,10 @@ class CollectionSystemTransfers extends Controller {
                     $smbDataCheck = false;
                 } 
 
-                if($smbUser != 'guest' && $smbPass == ''){
-                    $error[] = 'SMB Password is required';
-                    $smbDataCheck = false;
-                }
+//                if($smbUser != 'guest' && $smbPass == ''){
+//                    $error[] = 'SMB Password is required';
+//                    $smbDataCheck = false;
+//                }
                 
                 if($smbDomain == ''){
                     $smbDomain = 'WORKGROUP'; // Default value
@@ -651,7 +651,7 @@ class CollectionSystemTransfers extends Controller {
                     //$nfsPass = '';
                 } 
 
-            } elseif ($transferType == 3) { //smb
+            } elseif ($transferType == 3) { // SMB Share
                 $smbDataCheck = true;
                 if($smbServer == ''){
                     $error[] = 'SMB Server is required';
@@ -663,13 +663,13 @@ class CollectionSystemTransfers extends Controller {
                     $smbDataCheck = false;
                 } 
 
-                if($smbUser != 'guest' && $smbPass == ''){
-                    $error[] = 'SMB Password is required';
-                    $smbDataCheck = false;
-                }
+//                if($smbUser != 'guest' && $smbPass == ''){
+//                    $error[] = 'SMB Password is required';
+//                    $smbDataCheck = false;
+//                }
                 
                 if($smbDomain == ''){
-                    $smbDomain = 'WORKGROUP';
+                    $smbDomain = 'WORKGROUP'; // Default value
                     $smbDataCheck = false;
                 }
                 
@@ -684,7 +684,7 @@ class CollectionSystemTransfers extends Controller {
                     //$nfsUser = '';
                     //$nfsPass = '';
                 }
-            } elseif ($transferType == 4) { //ssh
+            } elseif ($transferType == 4) { // SSH Server
                 $sshDataCheck = true;
                 if($sshServer == ''){
                     $error[] = 'SSH Server is required';

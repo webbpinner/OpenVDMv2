@@ -107,7 +107,7 @@ use Helpers\Hooks;
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Open Vessel Data Management v2.1 (OpenVDMv2)">
     <meta name="author" content="OceanDataRat.org">
-	<title><?php echo $data['title'].' - '.SITETITLE; //SITETITLE defined in app/core/config.php ?></title>
+	<title><?php echo $data['title'].' - '.SITETITLE; ?></title>
 
 	<!-- CSS -->
 <?php
@@ -126,8 +126,8 @@ use Helpers\Hooks;
             if ($cssFile === 'leaflet') {
                 array_push($cssFileArray, DIR . 'bower_components/leaflet/dist/leaflet.css');
                 array_push($cssFileArray, DIR . 'bower_components/leaflet-fullscreen-bower/leaflet.fullscreen.css');
-            } else if ($cssFile === 'bootstrap-datepicker') {
-                array_push($cssFileArray, DIR . 'bower_components/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css');   
+            } else if ($cssFile === 'datetimepicker') {
+                array_push($cssFileArray, DIR . 'bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css');   
             } else {
                 array_push($cssFileArray, Url::templatePath() . "css/" . $cssFile . ".css");
             }

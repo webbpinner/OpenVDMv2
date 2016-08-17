@@ -23,8 +23,7 @@ var defaultOptions = Highcharts.getOptions(),
 	seriesTypes = Highcharts.seriesTypes,
 	merge = Highcharts.merge,
 	noop = function () {},
-	each = Highcharts.each,
-	pick = Highcharts.pick;
+	each = Highcharts.each;
 
 // set default options
 defaultPlotOptions.funnel = merge(defaultPlotOptions.pie, {
@@ -110,7 +109,7 @@ seriesTypes.funnel = Highcharts.extendClass(seriesTypes.pie, {
 				neckWidth + (width - neckWidth) * (1 - (y - top) / (height - neckHeight));
 		};
 		series.getX = function (y, half) {
-			return centerX + (half ? -1 : 1) * ((getWidthAt(reversed ? plotHeight - y : y) / 2) + options.dataLabels.distance);
+			return centerX + (half ? -1 : 1) * ((getWidthAt(reversed ? 2 * centerY - y : y) / 2) + options.dataLabels.distance);
 		};
 
 		// Expose
@@ -177,9 +176,9 @@ seriesTypes.funnel = Highcharts.extendClass(seriesTypes.pie, {
 			}
 
 			if (reversed) {
-				y1 = height - y1;
-				y3 = height - y3;
-				y5 = (y5 ? height - y5 : null);
+				y1 = 2 * centerY - y1;
+				y3 = 2 * centerY - y3;
+				y5 = (y5 ? 2 * centerY - y5 : null);
 			}
 			// save the path
 			path = [
@@ -229,24 +228,17 @@ seriesTypes.funnel = Highcharts.extendClass(seriesTypes.pie, {
 	 */
 	drawPoints: function () {
 		var series = this,
-			options = series.options,
 			chart = series.chart,
 			renderer = chart.renderer,
-			pointOptions,
 			pointAttr,
 			shapeArgs,
 			graphic;
 
 		each(series.data, function (point) {
-			pointOptions = point.options;
 			graphic = point.graphic;
 			shapeArgs = point.shapeArgs;
 
-			pointAttr = {
-				fill: point.color,
-				stroke: pick(pointOptions.borderColor, options.borderColor),
-				'stroke-width': pick(pointOptions.borderWidth, options.borderWidth)
-			};
+			pointAttr = point.pointAttr[point.selected ? 'select' : ''];
 
 			if (!graphic) { // Create the shapes				
 				point.graphic = renderer.path(shapeArgs)

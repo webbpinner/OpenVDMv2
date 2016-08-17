@@ -37,10 +37,12 @@ use Helpers\Form;
                                 <div class="form-group">
                                     <label>Cruise ID</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseID', 'value'=>$data['cruiseID'])); ?>
                                 </div>
-                                <label>Cruise Start Date</label>
-                                <div class="form-group input-group">
-                                    <?php echo Form::input(array('class'=>'form-control datepicker', 'type'=>'text', 'name'=>'cruiseStartDate', 'value'=>$data['cruiseStartDate'])); ?>
-                                    <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                                <label>Cruise Start Date/Time</label>
+                                <div class="form-group">
+                                    <div class="input-group date" id="datetimepicker">
+                                        <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseStartDate', 'value'=>$data['cruiseStartDate'])); ?>
+                                        <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                                    </div>
                                 </div>
                                 <label>Collection Systems</label>
                                 <table class='table table-striped table-hover table-bordered responsive'>
@@ -92,7 +94,7 @@ use Helpers\Form;
             <h3>Page Guide</h3>
             <p>This page is for creating a new cruiseID and associated cruise data directory.  This page is NOT for configuring OpenVDM to use a previously created cruiseID.  If you are trying to configure OpenVDM to use a previously created cruiseID click <a href="<?php echo DIR; ?>config/editCruiseID">here</a>.</p>
             <p>The <strong>Cruise ID</strong> is the unique indentifier for the cruise (i.e. CS1501)</p>
-            <p>The <strong>Cruise Start Date </strong> is the designated start date of the cruise. This date is exported as part of the cruise finialization process and optionally used for identifying old data files that should be skipped during file transfers.  The required format of this date is mm/dd/yyyy (i.e. 05/12/2015).</p>
+            <p>The <strong>Cruise Start Date/Time </strong> is the designated start date/time of the cruise. This date/time is exported as part of the cruise finialization process and optionally used for identifying old data files that should be skipped during file transfers.  The required format of this date is mm/dd/yyyy hh:mm (i.e. 05/12/2015 00:00).</p>
             <p>The <strong>Collection Systems</strong> table is for specifying what collection system will be used during the cruise.  These can always be changed later from the Collection System Transfers tab.</p>
             <p>Click the <strong>Create</strong> button to save the change and exit back to the main configuration page.  If you enter a cruiseID for a cruise that already exists you will be asked to enter a different cruiseID.</p>
             <p>Click the <strong>Cancel</strong> button to exit back to the main configuration page without creating a new cruise.</p>

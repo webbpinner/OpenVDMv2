@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://cloud.githubusercontent.com/assets/835857/14581711/ba623018-0436-11e6-8fce-d2ccd4d379c9.gif">
+</p>
+
 # JavaScript Cookie [![Build Status](https://travis-ci.org/js-cookie/js-cookie.svg?branch=master)](https://travis-ci.org/js-cookie/js-cookie) [![Code Climate](https://codeclimate.com/github/js-cookie/js-cookie.svg)](https://codeclimate.com/github/js-cookie/js-cookie)
 
 A simple, lightweight JavaScript API for handling cookies
@@ -9,12 +13,12 @@ A simple, lightweight JavaScript API for handling cookies
 * [Unobtrusive](#json) JSON support
 * Supports AMD/CommonJS
 * [RFC 6265](https://tools.ietf.org/html/rfc6265) compliant
-* Very good [Wiki](https://github.com/js-cookie/js-cookie/wiki)
+* Useful [Wiki](https://github.com/js-cookie/js-cookie/wiki)
 * Enable [custom encoding/decoding](#converters)
 * **~800 bytes** gzipped!
 
 **If you're viewing this at https://github.com/js-cookie/js-cookie, you're reading the documentation for the master branch.
-[View documentation for the latest release (2.0.4).](https://github.com/js-cookie/js-cookie/tree/v2.0.4#readme)**
+[View documentation for the latest release (2.1.1).](https://github.com/js-cookie/js-cookie/tree/v2.1.1#readme)**
 
 ## Build Status Matrix
 
@@ -22,7 +26,9 @@ A simple, lightweight JavaScript API for handling cookies
 
 ## Installation
 
-Include the script (unless you are packaging scripts somehow else):
+### Direct download
+
+Download the script [here](https://github.com/js-cookie/js-cookie/blob/v2.1.1/src/js.cookie.js) and include it (unless you are packaging scripts somehow else):
 
 ```html
 <script src="/path/to/js.cookie.js"></script>
@@ -31,9 +37,13 @@ Include the script (unless you are packaging scripts somehow else):
 **Do not include the script directly from GitHub (http://raw.github.com/...).** The file is being served as text/plain and as such being blocked
 in Internet Explorer on Windows 7 for instance (because of the wrong MIME type). Bottom line: GitHub is not a CDN.
 
-js-cookie supports [npm](https://www.npmjs.com/package/js-cookie) and [Bower](http://bower.io/search/?q=js-cookie) under the name `js-cookie`
+### Package Managers
 
-It can also be loaded as an AMD or CommonJS module.
+JavaScript Cookie supports [npm](https://www.npmjs.com/package/js-cookie) and [Bower](http://bower.io/search/?q=js-cookie) under the name `js-cookie`.
+
+### Module Loaders
+
+JavaScript Cookie can also be loaded as an AMD or CommonJS module.
 
 ## Basic Usage
 
@@ -82,7 +92,7 @@ Cookies.remove('name'); // fail!
 Cookies.remove('name', { path: '' }); // removed!
 ```
 
-*IMPORTANT! when deleting a cookie, you must pass the exact same path, domain and secure attributes that were used to set the cookie, unless you're relying on the [default attributes](#cookie-attributes).*
+*IMPORTANT! when deleting a cookie, you must pass the exact same path and domain attributes that was used to set the cookie, unless you're relying on the [default attributes](#cookie-attributes).*
 
 ## Namespace conflicts
 
@@ -267,6 +277,7 @@ Check out the [Contributing Guidelines](CONTRIBUTING.md)
 * Create version tag in git
 * Create a github release and upload the minified file
 * Link the documentation of the latest release tag in the `README.md`
+* Link the download link to the latest release tag in the `README.md`
 * Commit with the message "Prepare for the next development iteration"
 * Release on npm
 
