@@ -53,6 +53,7 @@ def build_filelist(worker, sourceDir):
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
     threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
+    #print cruiseStart_time
     filters = build_filters(worker)
     
     for root, dirnames, filenames in os.walk(sourceDir):
@@ -988,7 +989,7 @@ def task_runCollectionSystemTransfer(worker, job):
     worker.send_job_status(job, 2, 10)
     
     if worker.collectionSystemTransfer['useStartDate'] == "0":
-        worker.cruiseStartDate = "01/01/1970"    
+        worker.cruiseStartDate = "1970/01/01 00:00"    
     
     #print "Transfer Data"
     if worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
