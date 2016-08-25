@@ -400,7 +400,7 @@ $(function () {
     }
     
     //Check for updates
-    $.each(mapObjects, function(i) {
+    $.each(mapObjects, function(i) {        
         $( '#' + mapObjects[i]['objectListID']).find(':checkbox:checked').change(function() {
             if ($(this).is(":checked")) {
                 if ($(this).hasClass("lp-checkbox")) {
@@ -426,6 +426,23 @@ $(function () {
                 }
             }
         });
+        
+        $( '#' + mapObjects[i]['objectListID']).find('.clearAll').click(function() {
+            var row = $(this).closest("div.row")
+            $.each(row.find(':checkbox'), function () {
+                $(this).prop('checked', false); // Unchecks it
+                $(this).trigger('change');
+            });
+        });
+
+        $( '#' + mapObjects[i]['objectListID']).find('.selectAll').click(function() {
+            var row = $(this).closest("div.row")
+            $.each(row.find(':checkbox'), function () {
+                $(this).prop('checked', true); // Unchecks it
+                $(this).trigger('change');
+            });
+        });
+
     });
     
     //Check for updates
@@ -444,5 +461,7 @@ $(function () {
             chartObjects[i]['expanded'] = !chartObjects[i]['expanded'];
         });
     });
+    
+    
 
 });
