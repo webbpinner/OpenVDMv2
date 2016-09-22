@@ -430,16 +430,20 @@ $(function () {
         $( '#' + mapObjects[i]['objectListID']).find('.clearAll').click(function() {
             var row = $(this).closest("div.row")
             $.each(row.find(':checkbox'), function () {
-                $(this).prop('checked', false); // Unchecks it
-                $(this).trigger('change');
+                if ($(this).prop('checked')) {
+                    $(this).prop('checked', false); // Unchecks it
+                    $(this).trigger('change');
+                }
             });
         });
 
         $( '#' + mapObjects[i]['objectListID']).find('.selectAll').click(function() {
             var row = $(this).closest("div.row")
             $.each(row.find(':checkbox'), function () {
-                $(this).prop('checked', true); // Unchecks it
-                $(this).trigger('change');
+                if (!$(this).prop('checked')) {
+                    $(this).prop('checked', true); // Unchecks it
+                    $(this).trigger('change');
+                }
             });
         });
 
