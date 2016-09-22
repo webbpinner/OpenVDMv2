@@ -104,7 +104,7 @@ def runCommands(commands, worker):
 
         except:
             print "Error executing the " + command['name'] + " script: ", s.join(command['command'])
-            worker.OVDM.sendMsg("Error executing psotDataDashboard script", command['name'])
+            worker.OVDM.sendMsg("Error executing script: " + command['name'])            
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
@@ -152,7 +152,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " failed at:    " + time.strftime("%D %T", time.gmtime())
         
         self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
-        self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', 'Unknown Part of Task')
+        self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: Unknown Part of Task')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -165,7 +165,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
         if len(resultObj['parts']) > 0:
             if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', resultObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: ' + resultObj['parts'][-1]['partName'])
         print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " completed at: " + time.strftime("%D %T", time.gmtime())
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
