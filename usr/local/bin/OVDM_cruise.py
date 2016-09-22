@@ -417,7 +417,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if int(self.taskID) > 0:
             self.OVDM.setError_task(self.taskID, "Unknown Part of Task")
         else:
-            self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', 'Unknown Part of Task')
+            self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: Unknown Part of Task')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -449,7 +449,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 if int(self.taskID) > 0:
                     self.OVDM.setError_task(self.taskID, resultObj['parts'][-1]['partName'])
                 else:
-                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', resultObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: ' + resultObj['parts'][-1]['partName'])
             else:
                 self.OVDM.setIdle_task(self.taskID)
         else:

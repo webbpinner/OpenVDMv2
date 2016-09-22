@@ -129,11 +129,7 @@ $(function () {
         //alert($( '#' + chartObject['objectListID']).length);
         //alert($( '#' + chartObject['objectListID']).find(':radio:checked').length);
         $( '#' + chartObject['objectListID']).find(':radio:checked').each(function() {
-            if ($(this).hasClass( "json-reversed-y-radio" )) {
-                updateChart(chartObjects[i], $(this).val(), true);
-            } else {
-                updateChart(chartObjects[i], $(this).val());
-            }
+            updateChart(chartObject, $(this).val());
         }); 
     }
     
@@ -146,7 +142,7 @@ $(function () {
                     $('#' + mapObject['placeholderID']).html('<strong>Error: ' + data.error + '</strong>');
                 } else {
                     //Get the last coordinate from the latest trackline
-                    var lastCoordinate = data[0].features[data[0].features.length - 1].geometry.coordinates[data[0].features[data[0].features.length - 1].geometry.coordinates.length - 1];
+                    var lastCoordinate = data[0].features[0].geometry.coordinates[data[0].features[0].geometry.coordinates.length - 1];
                     var latestPosition = L.latLng(lastCoordinate[1], lastCoordinate[0]);
                     
                     if (lastCoordinate[0] < 0) {
@@ -281,7 +277,7 @@ $(function () {
         updateBounds(mapObject);
     }
     
-    function updateChart(chartObject, dataObjectJsonName, reversedY = false) {
+    function updateChart(chartObject, dataObjectJsonName) {
         var getVisualizerDataURL = siteRoot + 'api/dashboardData/getDashboardObjectVisualizerDataByJsonName/' + cruiseID + '/' + dataObjectJsonName;
         $.getJSON(getVisualizerDataURL, function (data, status) {
             if (status === 'success' && data !== null) {
@@ -314,9 +310,10 @@ $(function () {
                             yAxes[i].opposite = true;
                         }
 
-                        if (reversedY) {
-                            yAxes[i].reversed = true;
-                        }
+                        //if (data[i].label === "Humidity (%)") {
+                        //    yAxes[i].min = 0;
+                        //    yAxes[i].max = 100;
+                        //}
 
                         seriesData[i] = {
                             name: data[i].label +  ' (' + data[i].unit + ')',
@@ -455,11 +452,7 @@ $(function () {
     //Check for updates
     $.each(chartObjects, function(i) {
         $( '#' + chartObjects[i]['objectListID']).find(':radio').change(function() {
-	    if ($(this).hasClass( "json-reversed-y-radio" )) {
-                updateChart(chartObjects[i], $(this).val(), true);
-            } else {
-                updateChart(chartObjects[i], $(this).val());
-            }
+            updateChart(chartObjects[i], $(this).val());
         });
         
         $( '#' + chartObjects[i]['dataType'] + '_expand-btn').click(function() {

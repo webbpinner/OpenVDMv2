@@ -17,16 +17,17 @@ class Messages extends Controller {
 
         $this->_messagesModel = new \Models\Config\Messages();
     }
-
+        
     public function index(){
         $data['title'] = 'Messages';
-
+        
         $pages = new Paginator('15','page');
 
         $pages->setTotal($this->_messagesModel->getMessagesTotal());
         $data['messages'] = $this->_messagesModel->getMessages($pages->getLimit());
         $data['page_links'] = $pages->pageLinks();
-
+        
+        
         $data['javascript'] = array();
 
         View::rendertemplate('header',$data);

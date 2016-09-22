@@ -20,13 +20,13 @@ use Helpers\Session;
                     <li class=""><a id="extraDirectories" href="<?php echo DIR; ?>config/extraDirectories">Extra Directories</a></li>
                     <li class=""><a id="cruiseDataTransfers" href="<?php echo DIR; ?>config/cruiseDataTransfers">Cruise Data Transfers</a></li>
                     <li class=""><a id="shipToShoreTransfers" href="<?php echo DIR; ?>config/shipToShoreTransfers">Ship-to-Shore Transfers</a></li>
-                    <li class=""><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
+                    <li class="active"><a id="system" href="<?php echo DIR; ?>config/system">System</a></li>
                 </ul>
             </div>
         </div>
     </div>
     <div class="row">
-        <div class="col-md-12">
+        <div class="col-lg-8">
             <div class="panel panel-default">
                 <div class="panel-heading">Manage Messages</div>
                 <div class="panel-body">
@@ -36,8 +36,7 @@ use Helpers\Session;
                     <table class='table table-striped table-hover table-bordered responsive'>
                         <tr>
                             <th style='width:40px'>Delete</th>
-                            <th>Message Title</th>
-                            <th>Message Body</th>
+                            <th>Message</th>
                             <th>Timestamp (UTC)</th>
                         </tr>
 <?php
@@ -51,11 +50,11 @@ use Helpers\Session;
 <?php
             if($row->messageViewed == 0) {
 ?>
-                                <a href="<?php echo DIR; ?>config/messages/viewedMessage/<?php echo $row->messageID; ?>"><strong><?php echo $row->messageTitle; ?></strong></a></td><td><?php echo $row->messageBody; ?>
+                                <a href="<?php echo DIR; ?>config/messages/viewedMessage/<?php echo $row->messageID; ?>"><strong><?php echo $row->message; ?></strong></a>
 <?php
             } else {
 ?>
-                        <?php echo $row->messageTitle; ?></td><td><?php echo $row->messageBody; ?>
+                        <?php echo $row->message; ?>
 <?php
             }
 ?>
