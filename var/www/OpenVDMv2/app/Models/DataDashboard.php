@@ -44,6 +44,10 @@ class DataDashboard extends Model {
         return $this->getDataTypeByVisType('json');
     }
 
+    public function getJSONReversedYTypes() {
+        return $this->getDataTypeByVisType('json-reversed-y');
+    }
+
     
     public function getGeoJSONTypes() {
         return $this->getDataTypeByVisType('geoJSON');

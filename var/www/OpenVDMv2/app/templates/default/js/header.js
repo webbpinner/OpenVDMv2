@@ -146,7 +146,7 @@ $(function () {
                     sp.innerHTML = timeAgo;
 
                     var s = document.createElement('strong');
-                    s.innerHTML = data[index]['message'];
+                    s.innerHTML = data[index]['messageTitle'];
                     s.appendChild(sp);
                     
                     var a = document.createElement('a');

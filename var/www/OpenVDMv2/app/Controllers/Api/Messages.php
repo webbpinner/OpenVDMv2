@@ -14,10 +14,13 @@ class Messages extends Controller {
 
     public function newMessage(){
 
-        var_dump($_POST);
-        
-        if(isset($_POST['message'])) {
-            $this->_messageModel->insertMessage(array('message'=>$_POST['message']));
+        //var_dump($_POST);
+
+        if(isset($_POST['messageTitle']) && isset($_POST['messageBody'])) {
+            $this->_messageModel->insertMessage(array('messageTitle'=>$_POST['messageTitle'], 'messageBody'=>$_POST['messageBody']));
+            $return['status'] = 'success';
+        } elseif(isset($_POST['messageTitle'])) {
+            $this->_messageModel->insertMessage(array('messageTitle'=>$_POST['messageTitle'], 'messageBody'=>''));
             $return['status'] = 'success';
         } else {
             $return['status'] = 'error';
