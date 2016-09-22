@@ -127,7 +127,7 @@ use Helpers\Hooks;
                 array_push($cssFileArray, DIR . 'bower_components/leaflet/dist/leaflet.css');
                 array_push($cssFileArray, DIR . 'bower_components/leaflet-fullscreen-bower/leaflet.fullscreen.css');
             } else if ($cssFile === 'datetimepicker') {
-                array_push($cssFileArray, DIR . 'bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css');   
+                array_push($cssFileArray, DIR . 'bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css');
             } else {
                 array_push($cssFileArray, Url::templatePath() . "css/" . $cssFile . ".css");
             }
@@ -143,12 +143,12 @@ use Helpers\Hooks;
 </head>
 <body>
 
-    
+
 <?php
     //hook for running code after body tag
     $hooks->run('afterBody');
 ?>
-    
+
 <div id="wrapper">
     <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
         <!-- Brand and toggle get grouped for better mobile display -->
@@ -194,7 +194,7 @@ use Helpers\Hooks;
             }
         } else {
 ?>
-                    <li><a class="text-center" href="#"><strong>No tasks are running</strong></a></li>               
+                    <li><a class="text-center" href="#"><strong>No tasks are running</strong></a></li>
 <?php
         }
 ?>
@@ -214,7 +214,7 @@ use Helpers\Hooks;
 ?>
                     <li>
                             <a class="OVDM_message" messageID="<?php echo $row->messageID; ?>" href="#">
-                                <strong><?php echo $row->message; ?><span class="pull-right text-muted small"><?php echo time_elapsed_string($row->messageTS); ?></span></strong>
+                                <strong><?php echo $row->messageTitle; ?><span class="pull-right text-muted small"><?php echo time_elapsed_string($row->messageTS); ?></span></strong>
                             </a>
                     </li>
                     <li class="divider"></li>

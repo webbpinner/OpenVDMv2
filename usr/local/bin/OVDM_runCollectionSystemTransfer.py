@@ -1024,8 +1024,8 @@ def task_runCollectionSystemTransfer(worker, job):
             #print logfileName
 
             logOutput = {'files':{'new':[], 'updated':[]}}
-            logOutput['files']['new'] = [build_destDir(worker).rstrip('/') + '/' + filename for filename in job_results['files']['new']]
-            logOutput['files']['updated'] = [build_destDir(worker).rstrip('/') + '/' + filename for filename in job_results['files']['updated']]
+            logOutput['files']['new'] = job_results['files']['new']
+            logOutput['files']['updated'] = job_results['files']['updated']
             
             #print json.dumps(logOutput);
             
@@ -1040,22 +1040,22 @@ def task_runCollectionSystemTransfer(worker, job):
     #print json.dumps(job_results['files']['exclude'], indent=2)
     if job_results['files']['exclude']:
         # Format exclude files for transfer log
-        job_results['files']['exclude'] = [build_sourceDir(worker).rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
+        job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
         
-    #print "Send filename error log"
-    if os.path.isdir(warehouseTransferLogDir):
+        #print "Send filename error log"
+        if os.path.isdir(warehouseTransferLogDir):
 
-        filenameErrorLogfileName = warehouseTransferLogDir + '/' + worker.collectionSystemTransfer['name'] + '_Exclude.log'
-        #print filenameErrorLogfileName
-        filenameErrorlogOutput = {'files':{'exclude':[]}}
-        filenameErrorlogOutput['files']['exclude'] = job_results['files']['exclude']
-        if writeLogFile(filenameErrorLogfileName, warehouseUser, filenameErrorlogOutput['files']):
-            job_results['parts'].append({"partName": "Write filename error logfile", "result": "Pass"})
+            filenameErrorLogfileName = warehouseTransferLogDir + '/' + worker.collectionSystemTransfer['name'] + '_Exclude.log'
+            #print filenameErrorLogfileName
+            filenameErrorlogOutput = {'files':{'exclude':[]}}
+            filenameErrorlogOutput['files']['exclude'] = job_results['files']['exclude']
+            if writeLogFile(filenameErrorLogfileName, warehouseUser, filenameErrorlogOutput['files']):
+                job_results['parts'].append({"partName": "Write filename error logfile", "result": "Pass"})
+            else:
+                job_results['parts'].append({"partName": "Write filename error logfile", "result": "Fail"})
+
         else:
-            job_results['parts'].append({"partName": "Write filename error logfile", "result": "Fail"})
-
-    else:
-        job_results['parts'].append({"partName": "Logfile directory", "result": "Fail"})
+            job_results['parts'].append({"partName": "Logfile directory", "result": "Fail"})
 
     worker.send_job_status(job, 10, 10)
     

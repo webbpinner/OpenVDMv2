@@ -58,22 +58,22 @@ def build_filelist(sourceDir):
         for filename in filenames:
             if not filename == md5SummaryFN and not filename == md5SummaryMD5FN:
                 returnFiles.append(os.path.join(root, filename))
-                
+
     returnFiles = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles]
     return returnFiles
 
 
 def build_hashes(sourceDir, worker, job, fileList):
-    
+
     #print sourceDir
     #print json.dumps(fileList, indent=2)
-    
-    
+
+
     filesizeLimit = worker.OVDM.getMD5FilesizeLimit()
     filesizeLimitStatus = worker.OVDM.getMD5FilesizeLimitStatus() 
-    
+
     hashes = []
-    
+
     fileCount = len(fileList)
     index = 1
     for filename in fileList:
@@ -86,7 +86,7 @@ def build_hashes(sourceDir, worker, job, fileList):
                 hashes.append({'hash': '********************************', 'filename': filename})
         else:
             hashes.append({'hash': hashlib.md5(sourceDir+'/'+filename).hexdigest(), 'filename': filename})
-        
+
         worker.send_job_status(job, int(round(20 + (60*index/fileCount),0)), 100)
 
         if worker.stop:
@@ -175,7 +175,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if int(self.taskID) > 0:
             self.OVDM.setError_task(self.taskID, "Unknown Part of Task")
         else:
-            self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: Unknown Part of Task')
+            self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', 'Unknown Part of Task')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -191,7 +191,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 if int(self.taskID) > 0:
                     self.OVDM.setError_task(self.taskID, resultObj['parts'][-1]['partName'])
                 else:
-                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed: ' + resultObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', resultObj['parts'][-1]['partName'])
             else:
                 self.OVDM.setIdle_task(self.taskID)
         else:

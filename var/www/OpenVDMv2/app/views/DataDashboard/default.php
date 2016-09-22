@@ -11,7 +11,7 @@
 <?php
         for($j=0; $j < sizeof($data['placeholders'][$i]['dataFiles']); $j++){
 ?>
-                                <a id="<?php echo $data['placeholders'][$i]['dataArray'][$j]['dataType']; ?>"></a>
+                                <a id="<?php echo $data['placeholders'][$i]['dataFiles'][$j][0]['type']; ?>"></a>
 <?php
             $filecount += sizeof($data['placeholders'][$i]['dataFiles'][$j]);
         }
@@ -27,7 +27,7 @@
         for($j = 0; $j < sizeof($data['placeholders'][$i]['dataArray']); $j++){
 ?>                                     
                                                 <div class="row">
-                                                    <div class="col-lg-12"><strong><?php echo $data['placeholders'][$i]['dataArray'][$j]['dataType']; ?></strong><?php echo (strcmp($data['placeholders'][$i][plotType], 'map') === 0? '<div class="pull-right"><div class="btn btn-xs btn-default selectAll" >Select All</div> <div class="btn btn-xs btn-default clearAll" >Clear All</div></div>': ''); ?></div>
+                                                    <div class="col-lg-12"><strong><?php echo $data['placeholders'][$i]['dataFiles'][$j][0]['type']; ?></strong><?php echo (strcmp($data['placeholders'][$i][plotType], 'map') === 0? '<div class="pull-right"><div class="btn btn-xs btn-default selectAll" >Select All</div> <div class="btn btn-xs btn-default clearAll" >Clear All</div></div>': ''); ?></div>
 <?php
             if(sizeof($data['placeholders'][$i]['dataFiles'][$j]) > 0){
                 if(strcmp($data['placeholders'][$i]['dataArray'][$j]['visType'], 'geoJSON')===0) {
@@ -68,11 +68,28 @@
 ?>
                                                     </div>
 <?php
-                    }
-            } else {
+                } else if(strcmp($data['placeholders'][$i]['dataArray'][$j]['visType'], 'json-reversed-y')===0) {
 ?>
-                                                    <div class='col-lg-12'>No data found</div>
+                                                    <div class="form-group">
 <?php
+                    for($k = sizeof($data['placeholders'][$i]['dataFiles'][$j])-1; $k >= 0; $k--){
+?>                              
+                                                        <div class='col-lg-4 col-sm-6'>
+                                                            <input class='<?php echo $data['placeholders'][$i]['dataArray'][$j]['visType']; ?>-radio' name="<?php echo $data['placeholders'][$i]['dataFiles'][$j][$k]['type'];?>" type="radio" value="<?php echo $data['placeholders'][$i]['dataFiles'][$j][$k]['dd_json'];?>"  <?php echo ($k === sizeof($data['placeholders'][$i]['dataFiles'][$j])-1? 'checked' : '');   ?>> <?php echo end(explode('/',$data['placeholders'][$i]['dataFiles'][$j][$k]['raw_data']));?>
+                                                            <a href="<?php echo $data['dataWarehouseApacheDir'] . '/' . $data['placeholders'][$i]['dataFiles'][$j][$k]['raw_data']; ?>" download target="_blank"><i class="fa fa-download"></i></a>
+                                                        </div>
+<?php
+                    }
+?>
+                                                    </div>
+<?php
+                } else {
+?>
+                                                    <div class='col-lg-12'>No data found
+							<?php var_dump($data['placeholders'][$i]['dataArray'][$j]); ?>
+						    </div>
+<?php
+                }
             }
 ?>
                                                 </div>
