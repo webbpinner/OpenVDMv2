@@ -37,6 +37,7 @@
     "esri-leaflet": "~1.0.3",
     "leaflet-fullscreen-bower": "~1.0.1",
     "js-cookie": "~2.1.0",
-    "eonasdan-bootstrap-datetimepicker": "~4.17.37"
+    "eonasdan-bootstrap-datetimepicker": "~4.17.37",
+    "leaflet-timedimension": "~1.0.6"
   }
 }

@@ -460,7 +460,7 @@ class CruiseDataTransfers extends Controller {
                 $gmc->addServer();
 
                 #submit job to Gearman, wait for results
-                $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
+                $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)), true);
             
                 $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;     
             }
@@ -727,7 +727,7 @@ class CruiseDataTransfers extends Controller {
             $gmc->addServer();
 
             #submit job to Gearman, wait for results
-            $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
+            $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)), true);
 
             #additional data needed for view
             $data['row'][0]->name = $_POST['name'];
@@ -794,7 +794,7 @@ class CruiseDataTransfers extends Controller {
         $gmc->addServer();
 
         #submit job to Gearman, wait for results
-        $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
+        $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)), true);
 
         $data['title'] = 'Configuration';
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();

@@ -61,6 +61,8 @@ if (isset($data['javascript'])){
             array_push($jsFileArray, DIR . 'bower_components/esri-leaflet/dist/esri-leaflet.js');
             array_push($jsFileArray, DIR . 'bower_components/leaflet-fullscreen-bower/Leaflet.fullscreen.min.js');
             //array_push($jsFileArray, Url::templatePath() . "js/esriCredit.js");
+        } else if ($jsFile === 'leaflet-timedimension') {
+            array_push($jsFileArray, DIR . 'bower_components/leaflet-timedimension/dist/leaflet.timedimension.min.js');
         } else if ($jsFile === 'highcharts') {
             array_push($jsFileArray, DIR . 'bower_components/highcharts.com/lib/highcharts.js');
             array_push($jsFileArray, Url::templatePath() . 'js/highcharts-fa-plugin.js');

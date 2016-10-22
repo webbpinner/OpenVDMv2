@@ -1,6 +1,6 @@
 {
   "name": "highcharts",
-  "version": "4.2.6",
+  "version": "4.2.7",
   "description": "JavaScript charting framework",
   "main": "lib/highcharts.js",
   "authors": [
@@ -37,11 +37,11 @@
   ],
   "license": "SEE LICENSE IN <license.txt>",
   "homepage": "https://github.com/highslide-software/highcharts.com",
-  "_release": "4.2.6",
+  "_release": "4.2.7",
   "_resolution": {
     "type": "version",
-    "tag": "v4.2.6",
-    "commit": "3eb6b2fa72e37fb9ab9f8350710e4fb9f6fb2983"
+    "tag": "v4.2.7",
+    "commit": "f4d80da3325aeafcf392eb32136d56a226c117cc"
   },
   "_source": "https://github.com/highslide-software/highcharts.com.git",
   "_target": "~4.2.3",

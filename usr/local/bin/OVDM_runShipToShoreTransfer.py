@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2015-03-07
+#     REVISION:  2015-10-22
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -30,6 +30,8 @@
 #
 # ----------------------------------------------------------------------------------- #
 
+from __future__ import print_function
+import argparse
 import os
 import sys
 import tempfile
@@ -46,251 +48,279 @@ import grp
 import openvdm
 from random import randint
 
-
-def getShipToShoreTransfer(worker):
-    cruiseDataTransfers = worker.OVDM.getRequiredCruiseDataTransfers()
-    for cruiseDataTransfer in cruiseDataTransfers:
-        if cruiseDataTransfer['name'] == 'SSDW':
-            return cruiseDataTransfer
-    
-    return {}
+DEBUG = False
+new_worker = None
 
 
-def build_filelist(sourceDir, filters):
-
-    #print 'Filters:', json.dumps(filters, indent=2)
-    #print 'sourceDir:', sourceDir    
-    returnFiles = {'include':[], 'new':[], 'updated':[]}
-    for includeFilter in filters['includeFilter']:
-        for root, dirnames, filenames in os.walk(sourceDir):
-            for filename in filenames:
-                #print includeFilter, os.path.join(root, filename)
-                if fnmatch.fnmatch(os.path.join(root, filename), includeFilter):
-                    #print os.path.join(root, filename), "matched!"
-                    returnFiles['include'].append(os.path.join(root, filename))
-
-    returnFiles['include'] = [filename.replace(sourceDir, '', 1) for filename in returnFiles['include']]
-    #print json.dumps(returnFiles, indent=2)
-    return returnFiles
+def debugPrint(*args, **kwargs):
+    if DEBUG:
+        errPrint(*args, **kwargs)
 
 
-def build_destDirectories(destDir, files):
-    files = [filename.replace(filename, destDir + filename, 1) for filename in files]
-    #print 'DECODED Files:', json.dumps(files, indent=2)
-
-    for dirname in set(os.path.dirname(p) for p in files):
-        if not os.path.isdir(dirname):
-            #print "Creating Directory: " + dirname
-            os.makedirs(dirname)
+def errPrint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 
-def build_logfileDirPath(worker):
+def build_filelist(worker):
 
-    #print siteRoot
-    requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
-
-    for directory in requiredExtraDirectories:
-        if directory['name'] == 'Transfer Logs':
-            return worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID + '/' + directory['destDir']
-            break
-    
-    return ''
-
-
-def build_filters(worker, rawFilters):
-    
-    returnFilters = rawFilters
-    #print json.dumps(rawFilters, indent=2)
-    
-    #returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
-    returnFilters['includeFilter'] = [includeFilter.replace('{cruiseID}', worker.cruiseID) for includeFilter in returnFilters['includeFilter']]
-    #returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{cruiseID}', worker.cruiseID)
-    #returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
-    
-    #print json.dumps(returnFilters, indent=2)
-    return returnFilters
-
-
-def writeLogFile(logfileName, warehouseUser, files):
-    
-    try:
-        #print "Open MD5 Summary MD5 file"
-        Logfile = open(logfileName, 'w')
-
-        #print "Saving MD5 Summary MD5 file"
-        Logfile.write(json.dumps(files))
-
-    except IOError:
-        print "Error Saving transfer logfile"
-        return False
-
-    finally:
-        #print "Closing MD5 Summary MD5 file"
-        Logfile.close()
-        os.chown(logfileName, pwd.getpwnam(warehouseUser).pw_uid, grp.getgrnam(warehouseUser).gr_gid)
-
-    return True            
-            
-    
-def transfer_sshDestDir(worker, job):
-
-    #print "Transfer from Data Warehouse"
-    
-    #print "Building filters"
+    debugPrint("Building filters")
     rawFilters = {'includeFilter':[]}
     shipToShoreTransfers = []
     shipToShoreTransfers += worker.OVDM.getShipToShoreTransfers()
     shipToShoreTransfers += worker.OVDM.getRequiredShipToShoreTransfers()
-    #print json.dumps(shipToShoreTransfers, indent=2)
+
+    #debugPrint('shipToShoreTransfers:',json.dumps(shipToShoreTransfers, indent=2))
     
     for x in range(1, 6):
-        #print "Processing priority " + str(x) + " transfers"
         for shipToShoreTransfer in shipToShoreTransfers:
             if shipToShoreTransfer['priority'] == str(x):
                 if shipToShoreTransfer['enable'] == '1':
-                    #print json.dumps(shipToShoreTransfer, indent=2)
                     if not shipToShoreTransfer['collectionSystem'] == "0":
-                        #print "Retrieving Collection System information"
                         collectionSystem = worker.OVDM.getCollectionSystemTransfer(shipToShoreTransfer['collectionSystem'])
-                        #print json.dumps(collectionSystem, indent=2)
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + collectionSystem['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
                     elif not shipToShoreTransfer['extraDirectory'] == "0":
-                        #print "Retrieving Extra Directory information"
                         extraDirectory = worker.OVDM.getExtraDirectory(shipToShoreTransfer['extraDirectory'])
-                        #print json.dumps(extraDirectory)
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + extraDirectory['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
-                        #print json.dumps(extraDirectory, indent=2)
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
                     else:
                         shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
 
-    #print "Raw Filters:"
-    #print json.dumps(rawFilters, indent=2)
+    #debugPrint("Raw Filters:", json.dumps(rawFilters, indent=2))
     
-    filters = build_filters(worker, rawFilters)
-    #print "Proc Filters:"
-    #print json.dumps(filters, indent=2)
+    procfilters = build_filters(worker, rawFilters)
+    #debugPrint("Processed Filters:", json.dumps(rawFilters, indent=2))
 
-    sourceDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + worker.cruiseID
-    #print sourceDir
-    
-    bwLimit = worker.OVDM.getShipToShoreBWLimit()
-    bwLimitStatus = worker.OVDM.getShipToShoreBWLimitStatus()
-    bwLimitStr = '--bwlimit=10000'
-    
-    if bwLimitStatus == "On" and not bwLimit == "0":
-        #print "Setting bandwidth limit"
-        bwLimitStr = '--bwlimit=' + bwLimit
-            
-    #print "Build file list"
-    files = build_filelist(sourceDir, filters)
-    files['include'] = [ '/' + worker.cruiseID + filepath for filepath in files['include']]
-    
-    #print json.dumps(files)
-    
-    createdDirs = []
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
-    count = 1
-    fileCount = len(files['include'])
-    #print '\n'.join(files['include'])
+    returnFiles = {'include':[], 'new':[], 'updated':[]}
+    for includeFilter in procfilters['includeFilter']:
+        for root, dirnames, filenames in os.walk(cruiseDir):
+            for filename in filenames:
+                if fnmatch.fnmatch(os.path.join(root, filename), includeFilter):
+                    returnFiles['include'].append(os.path.join(root, filename))
+
+    returnFiles['include'] = [filename.replace(baseDir + '/', '', 1) for filename in returnFiles['include']]
+    return returnFiles
+
+
+def build_destDirectories(destDir, files):
+    files = [filename.replace(filename, destDir + filename, 1) for filename in files]
+
+    for dirname in set(os.path.dirname(p) for p in files):
+        if not os.path.isdir(dirname):
+            debugPrint("Creating Directory:", dirname)
+            os.makedirs(dirname)
+
+
+def build_logfileDirPath(worker):
+
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    warehouseTransferLogDir = os.path.join(cruiseDir, worker.OVDM.getRequiredExtraDirectoryByName('Transfer Logs')['destDir'])
+
+    #debugPrint('warehouseTransferLogDir', warehouseTransferLogDir)
     
-    # Create temp directory
-    tmpdir = tempfile.mkdtemp()
-    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
-        
+    return warehouseTransferLogDir
+
+
+def build_filters(worker, rawFilters):
+
+    returnFilters = rawFilters
+    returnFilters['includeFilter'] = [includeFilter.replace('{cruiseID}', worker.cruiseID) for includeFilter in returnFilters['includeFilter']]
+    return returnFilters
+
+
+def setOwnerGroupPermissions(worker, path):
+
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+
+    #debugPrint(path)
+
+    uid = pwd.getpwnam(warehouseUser).pw_uid
+    gid = grp.getgrnam(warehouseUser).gr_gid
+    # Set the file permission and ownership for the current directory
+
+    
+    if os.path.isfile(path):
+        try:
+            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0755)
+        except OSError:
+            errPrint("Unable to set file permissions for", path)
+            return False
+    elif os.path.isdir(path):
+
+        for item in os.listdir(path):
+            itempath = os.path.join(path, item)
+            if os.path.isdir(itempath):
+                try:
+                    if not setOwnerGroupPermissions(worker, itempath):
+                        return False
+                except OSError:
+                    return False
+            elif os.path.isfile(itempath):
+                try:
+                    debugPrint("Setting ownership for", itempath, "to", warehouseUser + ":" + warehouseUser)
+                    os.chown(itempath, uid, gid)
+                    os.chmod(itempath, 0644)
+                except OSError:
+                    errPrint("Unable to set file permissions for", itempath)
+                    return False
+    else:
+        errPrint("Unable to find directory or file:", path)
+        return False
+
+    return True
+
+
+def writeLogFile(worker, logfileName, fileList):
+
+    logfileDir = build_logfileDirPath(worker)
+    #debugPrint('logfileDir', logfileDir)
+    logfilePath = os.path.join(logfileDir, logfileName)
+    
     try:
-        #print "Open rsync filelist file"
-        rsyncFileListFile = open(rsyncFileListPath, 'w')
+        #print "Open MD5 Summary MD5 file"
+        Logfile = open(logfilePath, 'w')
 
-        #print "Saving rsync filelist file"
-        #print '\n'.join([worker.cruiseID + str(x) for x in files['include']])
-        rsyncFileListFile.write('\n'.join(files['include']))
+        #print "Saving MD5 Summary MD5 file"
+        Logfile.write(json.dumps(fileList))
 
     except IOError:
-        print "Error Saving temporary rsync filelist file"
-        returnVal.append({"testName": "Writing temporary rsync filelist file", "result": "Fail"})
-        rsyncFileListFile.close()
+        errPrint("Error Saving transfer logfile")
+        return False
+
+    finally:
+        #print "Closing MD5 Summary MD5 file"
+        Logfile.close()
+        setOwnerGroupPermissions(worker, logfilePath)
+
+    return True
+            
+    
+def transfer_sshDestDir(worker, job):
+
+    debugPrint("Transfer from SSH Server")
+
+    filters = {'includeFilter': '*','excludeFilter': '','ignoreFilter': ''}
+
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    
+    sourceDir = cruiseDir
+    destDir = worker.cruiseDataTransfer['destDir'].rstrip('/')
+    
+    #debugPrint("Source Dir:", sourceDir)
+    #debugPrint("Destination Dir:", destDir)
+
+    debugPrint("Build file list")
+    files = build_filelist(worker)
+        
+    # Create temp directory
+    tmpdir = tempfile.mkdtemp()
+
+    sshFileListPath = os.path.join(tmpdir, 'sshFileList.txt')
+    
+    fileIndex = 0
+    fileCount = len(files['include'])
+
+    try:
+        sshFileListFile = open(sshFileListPath, 'w')
+        sshFileListFile.write('\n'.join(files['include']))
+
+    except IOError:
+        errPrint("Error Saving temporary ssh filelist file")
+        sshFileListFile.close()
             
         # Cleanup
         shutil.rmtree(tmpdir)
             
-        return files    
+        return False
 
     finally:
-        #print "Closing rsync filelist file"
-        rsyncFileListFile.close()
-        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
+        sshFileListFile.close()
     
-    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-ti', '--partial', bwLimitStr, '-e', 'ssh -c arcfour', '--files-from=' + rsyncFileListPath, worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + worker.cruiseDataTransfer['destDir']]
+    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
-    #s = ' '
-    #print s.join(command)
+    s = ' '
+    debugPrint('Transfer Command:',s.join(command))
     
-    #print "Copying files"
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+   
     lines_iterator = iter(popen.stdout.readline, b"")
-    #print "lines interator"
     for line in lines_iterator:
-        #print(line) # yield line
+        #debugPrint('line', line.rstrip('\n'))
         if line.startswith( '<f+++++++++' ):
-            #print line.split(' ',1)[1]
-            files['new'].append(line.split(' ',1)[1])
+            filename = line.split(' ',1)[1].rstrip('\n')
+            files['new'].append(filename)
+            worker.send_job_status(job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
+            fileIndex += 1
         elif line.startswith( '<f.' ):
-            #print line.split(' ',1)[1]
-            files['updated'].append(line.split(' ',1)[1])
-        worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-        count += 1
-        
-        elapseTime = calendar.timegm(time.gmtime()) - calendar.timegm(worker.startTime)
-        if elapseTime > 3480: #58 minutes
-            worker.stopTransfer()
+            filename = line.split(' ',1)[1].rstrip('\n')
+            files['updated'].append(filename)
+            worker.send_job_status(job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
+            fileIndex += 1
             
         if worker.stop:
-            print "Stopping"
+            debugPrint("Stopping")
             break
-    
+
+#    files['new'] = [os.path.join(baseDir,filename) for filename in files['new']]
+#    files['updated'] = [os.path.join(baseDir,filename) for filename in files['updated']]
+
     # Cleanup
     shutil.rmtree(tmpdir)
-        
+
     return files
 
         
 class OVDMGearmanWorker(gearman.GearmanWorker):
 
-    def __init__(self, host_list=None):
+    def __init__(self):
         self.stop = False
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
-        self.startTime = 0
         self.cruiseID = ''
+        self.transferStartDate = ''
         self.systemStatus = ''
         self.cruiseDataTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
+    
+    def getShipToShoreTransfer(self):
+        cruiseDataTransfers = self.OVDM.getRequiredCruiseDataTransfers()
+        for cruiseDataTransfer in cruiseDataTransfers:
+            if cruiseDataTransfer['name'] == 'SSDW':
+                return cruiseDataTransfer
         
+        return {}
         
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
-        #print json.dumps(payloadObj, indent=2)
-        self.startTime = time.gmtime()
+        #debugPrint("Payload:", json.dumps(payloadObj))
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
-        self.cruiseDataTransfer = getShipToShoreTransfer(self)
+        self.cruiseDataTransfer = self.getShipToShoreTransfer()
+        
         self.cruiseID = self.OVDM.getCruiseID()
+        self.transferStartDate = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
         self.systemStatus = self.OVDM.getSystemStatus()
         
         if len(payloadObj) > 0:
+
             try:
                 payloadObj['cruiseDataTransfer']
             except KeyError:
-                print "Usings defaults"
+                self.cruiseDataTransfer = self.getShipToShoreTransfer()
             else:
-                self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
-        
+               self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
+
             try:
                 payloadObj['cruiseID']
             except KeyError:
@@ -304,74 +334,61 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.systemStatus = self.OVDM.getSystemStatus()
             else:
                 self.systemStatus = payloadObj['systemStatus']
-        
-        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " transfer started at:   " + time.strftime("%D %T", time.gmtime())
 
+        errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "transfer started at:  ", time.strftime("%D %T", time.gmtime()))
+        
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
     
     def on_job_exception(self, current_job, exc_info):
-        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " transfer failed at:    " + time.strftime("%D %T", time.gmtime())
+        errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "transfer failed at:  ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Transfer", "result": "Fail"}]))
-        self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], "Unknown Part of Transfer Failed")
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
+        self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], "Worker Crashed")
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
+        errPrint(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
-
     
-    def on_job_complete(self, current_job, job_result):
-        resultObj = json.loads(job_result)
-        
-        #if resultObj['files']['new'] or resultObj['files']['updated']:
-
-        #    jobData = {'cruiseID':'', 'cruiseDataTransferID':'', 'files':{}}
-        #    jobData['cruiseID'] = self.cruiseID
-        #    jobData['cruiseDataTransferID'] = self.cruiseDataTransfer['cruiseDataTransferID']
-
-        #    destDir = build_destDir(self).rstrip('/')
-        #    jobData['files'] = resultObj['files']
-        #    jobData['files']['new'] = [destDir + '/' + filename for filename in jobData['files']['new']]
-        #    jobData['files']['updated'] = [destDir + '/' + filename for filename in jobData['files']['updated']]
-                
-        #    gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
-            
-            #for task in self.OVDM.getTasksForHook('runCruiseDataTransfer'):
-                #print task
-            #    submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+    def on_job_complete(self, current_job, job_results):
+        resultsObj = json.loads(job_results)
         
         # If the last part of the results failed
-        if len(resultObj['parts']) > 0:
-            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                #print "...but there was an error:"
-                print json.dumps(resultObj['parts'])
-                self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], resultObj['parts'][-1]['partName'])
+        if len(resultsObj['parts']) > 0:
+            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
             else:
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
         else:
             self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
 
-        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " transfer completed at: " + time.strftime("%D %T", time.gmtime())
+        debugPrint('Job Results:', json.dumps(resultsObj['parts'], indent=2))
+
+        errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "transfer completed at:  ", time.strftime("%D %T", time.gmtime()))
             
-        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
 
 
     def after_poll(self, any_activity):
         self.stop = False
         if self.quit:
-            print "Quitting"
+            errPrint("Quitting")
             self.shutdown()
+        else:
+            self.quit = False
         return True
     
     
-    def stopTransfer(self):
+    def stopTask(self):
         self.stop = True
-        
+        debugPrint("Stopping current task...")
+
+
     def quitWorker(self):
         self.stop = True
         self.quit = True
+        debugPrint("Quitting worker...")
 
         
 def task_runShipToShoreTransfer(worker, job):
@@ -381,91 +398,86 @@ def task_runShipToShoreTransfer(worker, job):
     job_results = {'parts':[], 'files':[]}
 
     if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
-        #print "Transfer Enabled"
+        debugPrint("Transfer Enabled")
         job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
-        #print "Transfer Disabled"
-        #print "Stopping"
-        #job_results['parts'].append({"partName": "Transfer Enabled", "result": "Fail"})
+        debugPrint("Transfer Disabled")
         return json.dumps(job_results)
 
     if worker.cruiseDataTransfer['status'] != "1": #running
-        #print "Transfer is not already in-progress"
+        debugPrint("Transfer is not already in-progress")
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     else:
-        #print "Transfer is already in-progress"
-        #job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
-        #print "Stopping"
+        debugPrint("Transfer is already in-progress")
         return json.dumps(job_results)
-
-    #print json.dumps(worker.cruiseDataTransfer['cruiseDataTransferID'])
     
-    # Set transfer status to "Running"
+    #debugPrint("Set transfer status to 'Running'")
     worker.OVDM.setRunning_cruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), job.handle)
     
-    #print "Testing configuration"
+    debugPrint("Testing configuration")
     worker.send_job_status(job, 1, 10)
 
-    # First test to see if the transfer can occur 
     gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
     
     gmData = {}
     gmData['cruiseDataTransfer'] = worker.cruiseDataTransfer
-    #gmData['cruiseDataTransfer']['status'] = "1"
     gmData['cruiseID'] = worker.cruiseID
     
     completed_job_request = gm_client.submit_job("testCruiseDataTransfer", json.dumps(gmData))
     resultsObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results:', json.dumps(resultsObj, indent=2)
 
-    if resultsObj[-1]['result'] == "Pass": # Final Verdict
-        #print "Connection Test: Passed"
+    #debugPrint('Connection Test Results:', json.dumps(resultsObj['parts'], indent=2))
+
+    if resultsObj['parts'][-1]['result'] == "Pass": # Final Verdict
+        debugPrint("Connection Test: Passed")
         job_results['parts'].append({'partName': 'Connection Test', 'result': 'Pass'})
     else:
-        #print "Connection Test: Failed"
-        #print "Stopping"
+        debugPrint("Connection Test: Failed")
         job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail'})
-        #print json.dumps(job_results, indent=2)
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
     
-    #print "Transfering Data"
+    debugPrint("Start Transfer")
     if  worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
         job_results['files'] = transfer_sshDestDir(worker, job)
+
+        debugPrint("Transfer Complete")
+        if len(job_results['files']['new']) > 0:
+            debugPrint(len(job_results['files']['new']), 'file(s) added')
+        if len(job_results['files']['updated']) > 0:
+            debugPrint(len(job_results['files']['updated']), 'file(s) updated')
+
         job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
     else:
-        #print "Error: Unknown Transfer Type"
+        errPrint("Error: Unknown Transfer Type")
         job_results['parts'].append({"partName": "Transfer Files", "result": "Fail"})
-        #print "Stopping"
         return json.dumps(job_results)
     
-    #print "Transfer Complete"
     worker.send_job_status(job, 9, 10)
     
-    warehouseTransferLogDir = build_logfileDirPath(worker)
-    #print warehouseTransferLogDir   
-
     if job_results['files']['new'] or job_results['files']['updated']:
     
-        if os.path.isdir(warehouseTransferLogDir):
-    
-            logfileName = warehouseTransferLogDir + '/' + worker.cruiseDataTransfer['name'] + '_' + time.strftime("%Y%m%dT%H%M%SZ", worker.startTime) + '.log'
-            #print logfileName
+        debugPrint("Building Logfiles")
 
-            logOutput = {'files':{'new':[], 'updated':[]}}
-            logOutput['files']['new'] = job_results['files']['new']
-            logOutput['files']['updated'] = job_results['files']['updated']
+        warehouseTransferLogDir = build_logfileDirPath(worker)
+
+        if warehouseTransferLogDir:
+    
+            logfileName = worker.cruiseDataTransfer['name'] + '_' + worker.transferStartDate + '.log'
             
-            #print json.dumps(logOutput);
+            logContents = {'files':{'new':[], 'updated':[]}}
+            logContents['files']['new'] = job_results['files']['new']
+            logContents['files']['updated'] = job_results['files']['updated']
+            #debugPrint('logContents',logContents)
             
-            if writeLogFile(logfileName, worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'], logOutput['files']):
-                job_results['parts'].append({"partName": "Write logfile", "result": "Pass"})
+            if writeLogFile(worker, logfileName, logContents['files']):
+                job_results['parts'].append({"partName": "Write transfer logfile", "result": "Pass"})
             else:
-                job_results['parts'].append({"partName": "Write logfile", "result": "Fail"})
-                
+                job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail"})
+                return job_results
         else:
-            job_results['parts'].append({"partName": "Logfile directory", "result": "Fail"})
+            job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail"})
 
     worker.send_job_status(job, 10, 10)
     
@@ -474,23 +486,49 @@ def task_runShipToShoreTransfer(worker, job):
     return json.dumps(job_results)
 
 
-global ovdmWorker
-ovdmWorker = OVDMGearmanWorker()
+# -------------------------------------------------------------------------------------
+# Main function of the script should it be run as a stand-alone utility.
+# -------------------------------------------------------------------------------------
+def main(argv):
 
-def sigquit_handler(_signo, _stack_frame):
-    print "QUIT Signal Received"
-    ovdmWorker.stopTransfer()
+    parser = argparse.ArgumentParser(description='Handle Ship-to-Shore transfer related tasks')
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
-    
-def sigint_handler(_signo, _stack_frame):
-    print "INT Signal Received"
-    ovdmWorker.quitWorker()
-    
-    
-signal.signal(signal.SIGQUIT, sigquit_handler)
-signal.signal(signal.SIGINT, sigint_handler)
+    args = parser.parse_args()
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
 
-ovdmWorker.set_client_id('runShipToShoreTransfer.py')
-ovdmWorker.register_task("runShipToShoreTransfer", task_runShipToShoreTransfer)
+    debugPrint('Creating Worker...')
+    global new_worker
+    new_worker = OVDMGearmanWorker()
 
-ovdmWorker.work()
+    def sigquit_handler(_signo, _stack_frame):
+        errPrint("QUIT Signal Received")
+        new_worker.stopTransfer()
+
+        
+    def sigint_handler(_signo, _stack_frame):
+        errPrint("INT Signal Received")
+        new_worker.quitWorker()
+        
+        
+    signal.signal(signal.SIGQUIT, sigquit_handler)
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    new_worker.set_client_id('runShipToShoreTransfer.py')
+
+    debugPrint('Registering worker tasks...')
+    debugPrint('   Task:', 'runShipToShoreTransfer')
+    new_worker.register_task("runShipToShoreTransfer", task_runShipToShoreTransfer)
+
+    debugPrint('Waiting for jobs...')
+    new_worker.work()
+
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    main(sys.argv[1:])

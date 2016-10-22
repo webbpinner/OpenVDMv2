@@ -57,11 +57,13 @@ hooks:
     runCollectionSystemTransfer:
         - updateDataDashboard
         - updateMD5Summary
-        - postCollectionSystemTransfer
+#        - postCollectionSystemTransfer
     updateDataDashboard:
-        - postDataDashboard
+        - updateMD5Summary
+#        - postDataDashboard
     rebuildDataDashboard:
-        - postDataDashboard
+        - updateMD5Summary
+#        - postDataDashboard
 
 #    setupNewCruise:
 #    finalizeCurrentCruise:

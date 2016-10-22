@@ -538,7 +538,7 @@ class CollectionSystemTransfers extends Controller {
                 $gmc->addServer();
 
                 #submit job to Gearman, wait for results
-                $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)));
+                $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)), true);
             
                 $data['testCollectionSystemTransferName'] = $gmData['collectionSystemTransfer']->name;
             }
@@ -843,7 +843,7 @@ class CollectionSystemTransfers extends Controller {
             $gmc->addServer();
 
             #submit job to Gearman, wait for results
-            $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)));
+            $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)), true);
 
             #additional data needed for view
             $data['row'][0]->name = $_POST['name'];
@@ -919,7 +919,7 @@ class CollectionSystemTransfers extends Controller {
         $gmc->addServer();
 
         #submit job to Gearman, wait for results
-        $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)));
+        $data['testResults'] = json_decode($gmc->doNormal("testCollectionSystemTransfer", json_encode($gmData)), true);
 
         $data['title'] = 'Configuration';
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();

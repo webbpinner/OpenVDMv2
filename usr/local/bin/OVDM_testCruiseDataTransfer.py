@@ -1,4 +1,4 @@
-# ----------------------------------------------------------------------------------- #
+ # ----------------------------------------------------------------------------------- #
 #
 #         FILE:  OVDM_testCruiseDataTransfer.py
 #
@@ -9,9 +9,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-03-07
+#     REVISION:  2016-10-21
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -29,7 +29,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # ----------------------------------------------------------------------------------- #
-
+from __future__ import print_function
+import argparse
 import os
 import sys
 import tempfile
@@ -38,63 +39,84 @@ import shutil
 import json
 import time
 import subprocess
+import signal
 import openvdm
 
+DEBUG = False
+new_worker = None
 
-def test_sourceDir(worker):
-    sourceDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']+'/'+worker.cruiseID
-    if os.path.isdir(sourceDir):
-        return [{"testName": "Cruise Data Directory", "result": "Pass"}]
-    else:
-        return [{"testName": "Cruise Data Directory", "result": "Fail"}]
 
-    
-def test_localDestDir(worker):
+def debugPrint(*args, **kwargs):
+    global DEBUG
+    if DEBUG:
+        errPrint(*args, **kwargs)
 
-    returnVal = []
-    sourceDir = worker.cruiseDataTransfer['destDir']
-    
-    if os.path.isdir(sourceDir):
-        returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+
+def errPrint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def writeTest(destDir):
+    if os.path.isdir(destDir):
         try:
-            filepath = sourceDir + '/' + 'writeTest.txt'
-            filehandle = open( filepath, 'w' )
+            filepath = os.path.join(destDir, 'writeTest.txt')
+            filehandle = open(filepath, 'w')
             filehandle.close()
             os.remove(filepath)
-            returnVal.append({"testName": "Write Test", "result": "Pass"})
-        except IOError:
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
-    else:
+        except Exception as e:
+            errPrint(e)
+            errPrint("{}".format(e))
+            errPrint("IOError")
+            return False
+        else:
+            return True
+
+    return False
+
+
+def test_localDestDir(worker):
+    returnVal = []
+
+    destDir = worker.cruiseDataTransfer['destDir']
+
+    if not os.path.isdir(destDir):
         returnVal.append({"testName": "Destination Directory", "result": "Fail"})
         returnVal.append({"testName": "Write Test", "result": "Fail"})
 
+    else:
+        returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+
+        if not writeTest(destDir):
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
+        else:
+            returnVal.append({"testName": "Write Test", "result": "Pass"})
+
     return returnVal
 
-
+    
 def test_smbDestDir(worker):
     returnVal = []
 
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
-    
+ 
     command = []
     # Verify the server exists
     if worker.cruiseDataTransfer['smbUser'] == 'guest':
         command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-N']
     else:
         command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
- 
-    #s = ' '
-    #print s.join(command)
+
+    s = ' '
+    debugPrint('Connect Command:', s.join(command))
     
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     lines_iterator = iter(proc.stdout.readline, b"")
     foundServer = False
     for line in lines_iterator:
-        #print line # yield line
+        #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
-            #print "Yep"
     
     if not foundServer:
         returnVal.append({"testName": "SMB Server", "result": "Fail"})
@@ -103,20 +125,19 @@ def test_smbDestDir(worker):
         returnVal.append({"testName": "Write Test", "result": "Fail"})
     else:
         returnVal.append({"testName": "SMB Server", "result": "Pass"})
-        
+    
         # Create mountpoint
-        mntPoint = tmpdir + '/mntpoint'
+        mntPoint = os.path.join(tmpdir, 'mntpoint')
         os.mkdir(mntPoint, 0755)
 
         # Mount SMB Share
-
         if worker.cruiseDataTransfer['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' + ',domain=' + worker.cruiseDataTransfer['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']]
         else:
-            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username='+worker.cruiseDataTransfer['smbUser'] + ',password=' + worker.cruiseDataTransfer['smbPass'] + ',domain=' + worker.cruiseDataTransfer['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']]
 
-        #s = ' '
-        #print s.join(command)
+        s = ' '
+        debugPrint('Connect Command:', s.join(command))
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
@@ -128,24 +149,18 @@ def test_smbDestDir(worker):
         else:
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
-            # If mount is successful, test source directory
-            destDir = mntPoint + worker.cruiseDataTransfer['destDir'].rstrip('/')
-            if os.path.isdir(mntPoint + worker.cruiseDataTransfer['destDir']):
-                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
-                try:
-                    filepath = destDir + '/' + 'writeTest.txt'
-                    filehandle = open(filepath, 'w')
-                    filehandle.close()
-                    os.remove(filepath)
-                    returnVal.append({"testName": "Write Test", "result": "Pass"})
-                except Exception as e:
-                    print e
-                    print "{}".format(e)
-                    print "IOError"
-                    returnVal.append({"testName": "Write Test", "result": "Fail"})
-            else:
+            destDir = os.path.join(mntPoint, worker.cruiseDataTransfer['destDir'])
+            if not os.path.isdir(destDir):
                 returnVal.append({"testName": "Destination Directory", "result": "Fail"})
                 returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+            else:
+                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+
+                if not writeTest(destDir):
+                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+                else:
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
 
             # Unmount SMB Share
             subprocess.call(['sudo', 'umount', mntPoint])
@@ -157,25 +172,25 @@ def test_smbDestDir(worker):
 
 
 def test_rsyncDestDir(worker):
-
-    returnVal = []
     
+    returnVal = []
+
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
-    rsyncPasswordFilePath = tmpdir + '/' + 'passwordFile'
-    
+
+    rsyncPasswordFilePath = os.path.join(tmpdir,'passwordFile')
+
     try:
-        #print "Open Transfer Log Summary file"
         rsyncPasswordFile = open(rsyncPasswordFilePath, 'w')
 
         #print "Saving Transfer Log Summary file"
         if worker.cruiseDataTransfer['rsyncUser'] != 'anonymous':
             rsyncPasswordFile.write(worker.cruiseDataTransfer['rsyncPass'])
         else:
-            rsyncPasswordFile.write('noPasswordNeeded')                
+            rsyncPasswordFile.write('')                
 
     except IOError:
-        print "Error Saving temporary rsync password file"
+        errPrint("Error Saving temporary rsync password file")
         returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
         rsyncPasswordFile.close()
 
@@ -185,128 +200,154 @@ def test_rsyncDestDir(worker):
         return returnVal    
 
     finally:
-        #print "Closing Transfer Log Summary file"
         rsyncPasswordFile.close()
         os.chmod(rsyncPasswordFilePath, 0600)
-        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
     command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer']]
     
-    #s = ' '
-    #print s.join(command)
-
+    s = ' '
+    debugPrint('Connection Command:',s.join(command))
+    
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
 
-    if proc.returncode == 0:
+    if proc.returncode != 0:
+    	returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+    else:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + worker.cruiseDataTransfer['sourceDir']]
+        destDir = worker.cruiseDataTransfer['destDir']
 
-        #s = ' '
-        #print s.join(command)
-
+        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir]
+        
+        s = ' '
+        debugPrint('Connection Command:',s.join(command))
+    
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
-        if proc.returncode == 0:
-            returnVal.append({"testName": "Source Directory", "result": "Pass"})
+        if proc.returncode != 0:
+            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+        else:
+            returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+
+            writeTestDir = os.path.join(tmpdir, 'writeTest')
+            os.mkdir(writeTestDir)
+            writeTestFile = os.path.join(writeTestDir, 'writeTest.txt')
+            with open(writeTestFile, 'a'):
+		        os.utime(writeTestFile, None)
+
+            command = ['rsync', '-vi', '--no-motd', '--password-file=' + rsyncPasswordFilePath, '--exclude="*"', writeTestFile, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir]
             
-            command = ['sshpass', '-p', worker.cruiseDataTransfer['rsyncPass'], 'ssh', worker.cruiseDataTransfer['rsyncServer'], '-l', worker.cruiseDataTransfer['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
-            
-            #s = ' '
-            #print s.join(command)
+            s = ' '
+            debugPrint('Write Test Command:', s.join(command))
 
             proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            proc.communicate()
+            out, err = proc.communicate()
 
-            if proc.returncode == 0:
-                returnVal.append({"testName": "Write Test", "result": "Pass"})
+            #if out:
+            #    debugPrint('Out:', out)
+            if err:
+                errPrint('Err:', err)
+
+            if proc.returncode != 0:
+            	returnVal.append({"testName": "Write Test", "result": "Fail"})
                 
-                command = ['sshpass', '-p', worker.cruiseDataTransfer['rsyncPass'], 'ssh', worker.cruiseDataTransfer['rsyncServer'], '-l', worker.cruiseDataTransfer['rsyncUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
+            else:
+
+            	os.remove(writeTestFile)
+
+                command = ['rsync', '-vir', '--no-motd', '--password-file=' + rsyncPasswordFilePath, '--delete', writeTestDir + '/', 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir]
             
-                #s = ' '
-                #print s.join(command)
+                s = ' '
+                debugPrint('Delete Test file Command:', s.join(command))
 
                 proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-                proc.communicate()
+                out, err = proc.communicate()
 
-            else:
-                returnVal.append({"testName": "Write Test", "result": "Fail"})
-        else:
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
-    else:
-        returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
-        returnVal.append({"testName": "Source Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
+                #if out:
+                #    debugPrint('Out:', out)
+                if err:
+                    errPrint('Err:', err)
+
+                if proc.returncode != 0:
+                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+                else:
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
 
     # Cleanup
-        shutil.rmtree(tmpdir)
-
-    #print json.dumps(returnVal, indent=2)
+    shutil.rmtree(tmpdir)
+        
     return returnVal
 
 
 def test_sshDestDir(worker):
-
+    
     returnVal = []
-    
-    # Connect to SSH Server
-    
-    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls'];
-    
-    #s = ' '
-    #print s.join(command)
 
+    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
+    
+    s = ' '
+    debugPrint('Connection Command:', s.join(command))
+    
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
 
-    if proc.returncode == 0:
+    if proc.returncode != 0:
+        returnVal.append({"testName": "SSH Connection", "result": "Fail"})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
+    else:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
-        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', worker.cruiseDataTransfer['destDir']]
-        
-        #s = ' '
-        #print s.join(command)
+        destDir = worker.cruiseDataTransfer['destDir']
 
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', destDir]
+        
+        s = ' '
+        debugPrint('Connection Command:', s.join(command))
+    
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
-        if proc.returncode == 0:
+        if proc.returncode != 0:
+            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+            returnVal.append({"testName": "Write Test", "result": "Fail"})
+        else:
             returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+
+            command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + os.path.join(destDir, 'writeTest.txt')]
             
-            command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
-            
-            #s = ' '
-            #print s.join(command)
+            s = ' '
+            debugPrint('Write Test Command:', s.join(command))
 
             proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             proc.communicate()
 
-            if proc.returncode == 0:
-                returnVal.append({"testName": "Write Test", "result": "Pass"})
-        
-                command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + worker.cruiseDataTransfer['destDir'] + '/writeTest.txt']
+            if proc.returncode != 0:
+            	returnVal.append({"testName": "Write Test", "result": "Fail"})
+                
+            else:                
+                command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + os.path.join(destDir, 'writeTest.txt')]
             
-                #s = ' '
-                #print s.join(command)
+                s = ' '
+                debugPrint('Delete Test file Command:', s.join(command))
 
                 proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
                 proc.communicate()
-            
-            else:
-                returnVal.append({"testName": "Write Test", "result": "Fail"})
 
-        else:
-            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
+                if proc.returncode != 0:
+                    returnVal.append({"testName": "Write Test", "result": "Fail"})
 
-    else:
-        returnVal.append({"testName": "SSH Connection", "result": "Fail"})
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
-
+                else:
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
+        
     #print json.dumps(returnVal, indent=2)
     return returnVal
 
@@ -317,13 +358,10 @@ def test_nfsDestDir(worker):
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
     
-    command = []
-
-    # Verify the server exists
     command = ['rpcinfo', '-s', worker.cruiseDataTransfer['nfsServer'].split(":")[0]]
     
-    #s = ' '
-    #print s.join(command)
+    s = ' '
+    debugPrint('Connection Command:', s.join(command))
     
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     lines_iterator = iter(proc.stdout.readline, b"")
@@ -346,19 +384,21 @@ def test_nfsDestDir(worker):
         returnVal.append({"testName": "NFS Server", "result": "Fail"})
         returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})        
         returnVal.append({"testName": "Destination Directory", "result": "Fail"})
+        returnVal.append({"testName": "Write Test", "result": "Fail"})
+
     else:
         returnVal.append({"testName": "NFS Server", "result": "Pass"})
-        
+    
         # Create mountpoint
-        mntPoint = tmpdir + '/mntpoint'
+        mntPoint = os.path.join(tmpdir, 'mntpoint')
         os.mkdir(mntPoint, 0755)
 
         # Mount NFS Share
 
-        command = ['sudo', 'mount', '-t', 'nfs', worker.cruiseDataTransfer['nfsServer'], mntPoint, '-o', 'rw' + ',vers=2' + ',hard' + ',intr']
+        command = ['sudo', 'mount', '-t', 'nfs', worker.cruiseDataTransfer['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
 
-        #s = ' '
-        #print s.join(command)
+        s = ' '
+        debugPrint('Connection Command:', s.join(command))
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
@@ -367,27 +407,23 @@ def test_nfsDestDir(worker):
             returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})
             returnVal.append({"testName": "Destination Directory", "result": "Fail"})
             returnVal.append({"testName": "Write Test", "result": "Fail"})
+
         else:
             returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
 
             # If mount is successful, test source directory
-            destDir = mntPoint+worker.cruiseDataTransfer['destDir'].rstrip('/')
-            if os.path.isdir(mntPoint+worker.cruiseDataTransfer['destDir']):
-                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
-                try:
-                    filepath = destDir + '/' + 'writeTest.txt'
-                    filehandle = open(filepath, 'w')
-                    filehandle.close()
-                    os.remove(filepath)
-                    returnVal.append({"testName": "Write Test", "result": "Pass"})
-                except Exception as e:
-                    print e
-                    print "{}".format(e)
-                    print "IOError"
-                    returnVal.append({"testName": "Write Test", "result": "Fail"})
-            else:
+            destDir = os.path.join(mntPoint, worker.cruiseDataTransfer['destDir'])
+            if not os.path.isdir(destDir):
                 returnVal.append({"testName": "Destination Directory", "result": "Fail"})
                 returnVal.append({"testName": "Write Test", "result": "Fail"})
+
+            else:
+                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
+
+                if not writeTest(destDir):
+                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+                else:
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
 
             # Unmount SMB Share
             subprocess.call(['sudo', 'umount', mntPoint])
@@ -398,110 +434,188 @@ def test_nfsDestDir(worker):
     return returnVal
 
 
+def test_sourceDir(worker):
+
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    sourceDir = cruiseDir
+    
+    if os.path.isdir(sourceDir):
+        return [{"testName": "Source Directory", "result": "Pass"}]
+    else:
+        return [{"testName": "Source Directory", "result": "Fail"}]
+
+    
 class OVDMGearmanWorker(gearman.GearmanWorker):
 
     def __init__(self):
+        self.stop = False
+        self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
-        self.systemStatus = ''
+#        self.cruiseStartDate = ''
+#        self.systemStatus = ''
         self.startTime = time.gmtime(0)
-        self.cruiseDataTransfer = {}
+        self.CruiseDataTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
-    
-    
+        
+        
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
-        self.startTime = time.gmtime()
+#        self.startTime = time.gmtime()
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
-        
-        try:
-            self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
-        except KeyError:
-            self.cruiseDataTransfer = {'cruiseDataTransferID':'0'}
-        
-        self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
-        
-        try:
-            payloadObj['cruiseID']
-        except KeyError:
-            self.cruiseID = self.OVDM.getCruiseID()
-        else:
-            self.cruiseID = payloadObj['cruiseID']
-            
-        #print "Set transfer test status to 'Running'"
-        if self.cruiseDataTransfer['cruiseDataTransferID'] != '0':
+        self.cruiseID = self.OVDM.getCruiseID()
+
+        if len(payloadObj) > 0:        
+            try:
+                payloadObj['cruiseDataTransfer']['cruiseDataTransferID']
+            except KeyError:
+                self.cruiseDataTransfer = None
+            else:
+                self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
+                    
+            try:
+                payloadObj['cruiseID']
+            except KeyError:
+                self.cruiseID = self.OVDM.getCruiseID()
+            else:
+                self.cruiseID = payloadObj['cruiseID']
+                
+        if self.cruiseDataTransfer != None:
             self.OVDM.setRunning_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
         
-        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test started at:   " + time.strftime("%D %T", self.startTime)
+        errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test started at:  ", time.strftime("%D %T", time.gmtime()))
 
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
-    
     def on_job_exception(self, current_job, exc_info):
-        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test failed at:     " + time.strftime("%D %T", time.gmtime())
+        errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test failed at:    ", time.strftime("%D %T", time.gmtime()))
+        
         self.send_job_data(current_job, json.dumps([{"testName": "Unknown Testing Process", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
         
-        if self.cruiseDataTransfer['cruiseDataTransferID'] != '0':
-            self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'])
+        if self.cruiseDataTransfer['cruiseDataTransferID'] != None:
+            self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], "Worker Crashed")
         
-        print exc_info
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        errPrint(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     
-    def on_job_complete(self, current_job, job_result):
-        print "Job: " + current_job.handle + ", " + self.cruiseDataTransfer['name'] + " connection test ended at:     " + time.strftime("%D %T", time.gmtime())
-        #print json.dumps(job_result)
-        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
+    def on_job_complete(self, current_job, job_results):
+        resultsObj = json.loads(job_results)
+        debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
+
+        errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test ended at:    ", time.strftime("%D %T", time.gmtime()))
+
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
 
     
     def after_poll(self, any_activity):
-        # Return True if you want to continue polling, replaces callback_fxn
+        self.stop = False
+        if self.quit:
+            errPrint("Quitting")
+            self.shutdown()
+        else:
+            self.quit = False
         return True
+
+
+    def stopTask(self):
+        self.stop = True
+        debugPrint("Stopping current task...")
+
+
+    def quitWorker(self):
+        self.stop = True
+        self.quit = True
+        debugPrint("Quitting worker...")
 
     
 def task_testCruiseDataTransfer(worker, job):
-    worker.send_job_status(job, 1, 4)
 
-    job_results = []
+    job_results = {'parts':[]}
+
+    worker.send_job_status(job, 1, 4)
     
-#    print "Test Source Directory"
-    job_results += test_sourceDir(worker)
+    debugPrint("Test Source Directory")
+    job_results['parts'] = test_sourceDir(worker)
+
     worker.send_job_status(job, 2, 4)
 
-#    print "Test Destination Directory"
+    debugPrint("Test Destination Directory")
     if worker.cruiseDataTransfer['transferType'] == "1": # Local Directory
-        job_results += test_localDestDir(worker)
+        job_results['parts'] += test_localDestDir(worker)
     elif  worker.cruiseDataTransfer['transferType'] == "2": # Rsync Server
-        job_results += test_rsyncDestDir(worker)
-    elif  worker.cruiseDataTransfer['transferType'] == "3": # SMB Server
-        job_results += test_smbDestDir(worker)
+        job_results['parts'] += test_rsyncDestDir(worker)
+    elif  worker.cruiseDataTransfer['transferType'] == "3": # SMB Share
+        job_results['parts'] += test_smbDestDir(worker)
     elif  worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
-        job_results += test_sshDestDir(worker)
-    elif  worker.cruiseDataTransfer['transferType'] == "5": # NFS Server
-        job_results += test_nfsDestDir(worker)
-        
-    #print json.dumps(job_results)
-    
-    worker.send_job_status(job, 3, 4)
+        job_results['parts'] += test_sshDestDir(worker)
+    elif  worker.cruiseDataTransfer['transferType'] == "5": # NFS Server/Path
+        job_results['parts'] += test_nfsDestDir(worker)
 
+    worker.send_job_status(job, 3, 4)
+        
     verdict = "Pass"
-    for test in job_results:
+    for test in job_results['parts']:
         if test['result'] == "Fail":
             verdict = "Fail"
 
-    if worker.cruiseDataTransfer['cruiseDataTransferID'] != '0':
+    if worker.cruiseDataTransfer['cruiseDataTransferID'] != None:
         if verdict == "Pass":
             worker.OVDM.clearError_cruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'], worker.cruiseDataTransfer['status'])
         else:
             worker.OVDM.setError_cruiseDataTransferTest(worker.cruiseDataTransfer['cruiseDataTransferID'])
-        
-    job_results.append({"testName": "Final Verdict", "result": verdict})
+
+    job_results['parts'].append({"testName": "Final Verdict", "result": verdict})
     worker.send_job_status(job, 4, 4)
 
     return json.dumps(job_results)
 
-new_worker = OVDMGearmanWorker()
-new_worker.set_client_id('testCruiseDataTransfer.py')
-new_worker.register_task("testCruiseDataTransfer", task_testCruiseDataTransfer)
-new_worker.work()
+
+# -------------------------------------------------------------------------------------
+# Main function of the script should it be run as a stand-alone utility.
+# -------------------------------------------------------------------------------------
+def main(argv):
+
+    parser = argparse.ArgumentParser(description='Handle cruise data transfer connection test related tasks')
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+
+    args = parser.parse_args()
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
+
+    debugPrint('Creating Worker...')
+    global new_worker
+    new_worker = OVDMGearmanWorker()
+
+    debugPrint('Defining Signal Handlers...')
+    def sigquit_handler(_signo, _stack_frame):
+        errPrint("QUIT Signal Received")
+        new_worker.stopTask()
+
+    def sigint_handler(_signo, _stack_frame):
+        errPrint("INT Signal Received")
+        new_worker.quitWorker()
+
+    signal.signal(signal.SIGQUIT, sigquit_handler)
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    new_worker.set_client_id('testCruiseDataTransfer.py')
+
+    debugPrint('Registering worker tasks...')
+    debugPrint('   Task:', 'testCruiseDataTransfer')
+    new_worker.register_task("testCruiseDataTransfer", task_testCruiseDataTransfer)
+
+    debugPrint('Waiting for jobs...')
+    new_worker.work()
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    main(sys.argv[1:])

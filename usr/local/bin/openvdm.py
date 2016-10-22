@@ -144,7 +144,7 @@ class OpenVDM():
             if extraDirectory['name'] == extraDirectoryName:
                 return extraDirectory
             
-        return
+        return False
     
     def getExtraDirectories(self):
         
@@ -169,7 +169,7 @@ class OpenVDM():
             if extraDirectory['name'] == extraDirectoryName:
                 return extraDirectory
             
-        return
+        return False
     
     
     def getRequiredExtraDirectories(self):
@@ -275,7 +275,7 @@ class OpenVDM():
             if collectionSystemTransfer['name'] == collectionSystemTransferName:
                 return collectionSystemTransfer
         
-        return
+        return False
     
     def getCruiseDataTransfers(self):
 
@@ -301,13 +301,13 @@ class OpenVDM():
         return returnVal[0]
     
     
-    def sendMsg(self, message):
-    
+    def sendMsg(self, messageTitle, messageBody=''):
+
         url = self.config['siteRoot'] + 'api/messages/newMessage'
-        payload = {'message': message}
+        payload = {'messageTitle': messageTitle, 'messageBody':messageBody}
         r = requests.post(url, data=payload)
-    
-    
+        return r.text
+
     def clearError_collectionSystemTransfer(self, collectionSystemTransferID, jobStatus):
 
         if jobStatus == "3":
@@ -339,25 +339,23 @@ class OpenVDM():
         r = requests.get(url)
     
         collectionSystemTransferName = self.getCollectionSystemTransfer(collectionSystemTransferID)['name']
-        message = collectionSystemTransferName + ' Data Transfer failed'
         
-        if reason != '':
-            message += ': ' + reason
+        title = collectionSystemTransferName + ' Data Transfer failed'
             
-        self.sendMsg(message)
+        self.sendMsg(title, reason)
     
     
-    def setError_collectionSystemTransferTest(self, collectionSystemTransferID, message = False):
+    def setError_collectionSystemTransferTest(self, collectionSystemTransferID, reason=''):
 
         # Set Error for current tranfer test in DB via API
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/setErrorCollectionSystemTransfer/' + collectionSystemTransferID
         r = requests.get(url)
         
-        #if asked, send message
-        if message:
-            collectionSystemTransferName = self.getCollectionSystemTransfer(collectionSystemTransferID)['name']
-            message = collectionSystemTransferName + ' Connection Test failed'
-            self.sendMsg(message)
+        collectionSystemTransferName = self.getCollectionSystemTransfer(collectionSystemTransferID)['name']
+        
+        title = collectionSystemTransferName + ' Connection test failed'
+            
+        self.sendMsg(title, reason)
 
     
     def setError_cruiseDataTransfer(self, cruiseDataTransferID, reason=''):
@@ -367,25 +365,21 @@ class OpenVDM():
         r = requests.get(url)
     
         cruiseDataTransferName = self.getCruiseDataTransfer(cruiseDataTransferID)['name']
-        message = cruiseDataTransferName + ' Data Transfer failed'
+        title = cruiseDataTransferName + ' Data Transfer failed'
         
-        if reason != '':
-            message += ': ' + reason
-            
-        self.sendMsg(message)
+        self.sendMsg(title, reason)
         
         
-    def setError_cruiseDataTransferTest(self, cruiseDataTransferID, message = False):
+    def setError_cruiseDataTransferTest(self, cruiseDataTransferID, reason = ''):
 
         # Set Error for current tranfer test in DB via API
         url = self.config['siteRoot'] + 'api/cruiseDataTransfers/setErrorCruiseDataTransfer/' + cruiseDataTransferID
         r = requests.get(url)
         
-        #if asked, send message
-        if message:
-            cruiseDataTransferName = self.getCruiseDataTransfer(cruiseDataTransferID)['name']
-            message = cruiseDataTransferName + ' Connection Test failed'
-            self.sendMsg(message)
+        cruiseDataTransferName = self.getCruiseDataTransfer(cruiseDataTransferID)['name']
+        title = cruiseDataTransferName + ' Connection test failed'
+           
+        self.sendMsg(title, reason)
         
             
     def setError_task(self, taskID, reason=''):
@@ -394,12 +388,11 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/tasks/setErrorTask/' + taskID
         r = requests.get(url)
     
-        taskName = self.getTask(taskID)['name']
-        message = taskName + ' failed'
+        taskName = self.getTask(taskID)['longName']
+        title = taskName + ' failed'
         
-        if reason != '':
-            message += ': ' + reason
-    
+        self.sendMsg(title, reason)
+        
     
     def setIdle_collectionSystemTransfer(self, collectionSystemTransferID):
 

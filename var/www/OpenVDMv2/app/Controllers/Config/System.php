@@ -475,7 +475,7 @@ class System extends Controller {
         $gmc->addServer();
 
         #submit job to Gearman, wait for results
-        $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)));
+        $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)), true);
         
         # update collectionSystemTransfer status if needed
         #if(strcmp($data['testResults'][sizeof($data['testResults'])-1]->result, "Fail") === 0) {

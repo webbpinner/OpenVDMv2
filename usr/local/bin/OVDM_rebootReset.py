@@ -12,9 +12,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.2
 #      CREATED:  2015-06-22
-#     REVISION:  2016-03-07
+#     REVISION:  2016-10-20
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
 #
@@ -36,7 +36,11 @@
 import sys
 import time
 import openvdm
-    
+
+
+# -------------------------------------------------------------------------------------
+# Main function of the script should it be run as a stand-alone utility.
+# -------------------------------------------------------------------------------------
 def main(argv):
     
     openVDM = openvdm.OpenVDM()
@@ -64,5 +68,9 @@ def main(argv):
 
     openVDM.clearGearmanJobsFromDB()
 
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
 if __name__ == "__main__":
     main(sys.argv[1:])
