@@ -49,7 +49,13 @@ customTaskLookup = [
         "taskID": "0",
         "name": "createCruiseDirectory",
         "longName": "Creating Cruise Directory",
+    },
+    {
+        "taskID": "0",
+        "name": "setCruiseDataDirectoryPermissions",
+        "longName": "Setting CruiseData Directory Permissions",
     }
+
 ]
 
 DEBUG = False
@@ -148,6 +154,21 @@ def setOwnerGroupPermissions(worker, path):
                     return False
     return True
 
+def lockdown_directory(worker):
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir,worker.cruiseID)
+
+    dirContents = [ os.path.join(baseDir,f) for f in os.listdir(baseDir)]
+    files = filter(os.path.isfile, dirContents)
+    for file in files:
+        os.chmod(file, 0600)
+    
+    directories = filter(os.path.isdir, dirContents)
+    for directory in directories:
+        if not directory == cruiseDir:
+            os.chmod(directory, 0700)
+
+
     
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
@@ -220,20 +241,22 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
     
     def on_job_complete(self, current_job, job_results):
-        resultObj = json.loads(job_results)
+        resultsObj = json.loads(job_results)
                 
-        if len(resultObj['parts']) > 0:
-            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+        if len(resultsObj['parts']) > 0:
+            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
             else:
-                self.OVDM.setIdle_task(self.task['taskID'])
+                if int(self.task['taskID']) > 0:
+                    self.OVDM.setIdle_task(self.task['taskID'])
         else:
-            self.OVDM.setIdle_task(self.task['taskID'])
+            if int(self.task['taskID']) > 0:
+                self.OVDM.setIdle_task(self.task['taskID'])
         
-        debugPrint('Job Results:', json.dumps(resultObj, indent=2))
+        debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
             
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "completed at:", time.strftime("%D %T", time.gmtime()))
             
@@ -321,6 +344,23 @@ def task_createCruiseDirectory(worker, job):
     
     return json.dumps(job_results)
         
+
+def task_setCruiseDataDirectoryPermissions(worker, job):
+
+    job_results = {'parts':[]}
+
+    payloadObj = json.loads(job.data)
+    debugPrint('Payload:', json.dumps(payloadObj, indent=2))
+
+    worker.send_job_status(job, 5, 10)
+    
+    debugPrint("Set directory permissions")
+    lockdown_directory(worker)
+    job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
+
+    worker.send_job_status(job, 10, 10)
+    
+    return json.dumps(job_results)
 
 def task_rebuildCruiseDirectory(worker, job):
 
@@ -411,6 +451,8 @@ def main(argv):
     debugPrint('Registering worker tasks...')
     debugPrint('   Task:', 'createCruiseDirectory')
     new_worker.register_task("createCruiseDirectory", task_createCruiseDirectory)
+    debugPrint('   Task:', 'setCruiseDataDirectoryPermissions')
+    new_worker.register_task("setCruiseDataDirectoryPermissions", task_setCruiseDataDirectoryPermissions)
     debugPrint('   Task:', 'rebuildCruiseDirectory')
     new_worker.register_task("rebuildCruiseDirectory", task_rebuildCruiseDirectory)
 

@@ -266,11 +266,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 else:
                     self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
             else:
-                self.OVDM.setIdle_task(self.task['taskID'])
+                if int(self.task['taskID']) > 0:
+                    self.OVDM.setIdle_task(self.task['taskID'])
         else:
-            self.OVDM.setIdle_task(self.task['taskID'])
+            if int(self.task['taskID']) > 0:
+                self.OVDM.setIdle_task(self.task['taskID'])
         
-        debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
+        debugPrint('Job Results:', json.dumps(resultsObj['parts'], indent=2))
             
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "completed at:", time.strftime("%D %T", time.gmtime()))
             
@@ -378,8 +380,8 @@ def task_updateMD5Summary(worker, job):
         
     if row_added > 0:
         debugPrint(row_added, "row(s) added")
-    if row_added > 0:
-        debugPrint(row_added, "row(s) updated")
+    if row_updated > 0:
+        debugPrint(row_updated, "row(s) updated")
 
     worker.send_job_status(job, 85, 100)
 

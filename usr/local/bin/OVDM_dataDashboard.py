@@ -261,9 +261,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 else:
                     self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
             else:
-                self.OVDM.setIdle_task(self.task['taskID'])
+                if int(self.task['taskID']) > 0:
+                    self.OVDM.setIdle_task(self.task['taskID'])
         else:
-            self.OVDM.setIdle_task(self.task['taskID'])
+            if int(self.task['taskID']) > 0:
+                self.OVDM.setIdle_task(self.task['taskID'])
         
         debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
             
@@ -327,7 +329,7 @@ def task_updateDataDashboard(worker, job):
         job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Pass"})
     else:
         debugPrint("Processing script not found")
-        job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Fail"})
+        #job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Fail"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 10, 100)
@@ -349,6 +351,10 @@ def task_updateDataDashboard(worker, job):
     fileCount = len(fileList)
     index = 0
     for filename in fileList:
+        
+        if worker.stop:
+            break
+
         debugPrint("Processing file:", filename)
         jsonFileName = filename.split('.')[0] + '.json'
         rawFilePath = os.path.join(cruiseDir, filename)
@@ -430,7 +436,7 @@ def task_updateDataDashboard(worker, job):
 
     worker.send_job_status(job, 8, 10)
 
-    if newManifestEntries:
+    if len(newManifestEntries) > 0:
         debugPrint("Updating Manifest file:", dataDashboardManifestFilePath)
 
         row_removed = 0
@@ -451,29 +457,29 @@ def task_updateDataDashboard(worker, job):
             DashboardManifestFile.close()
             job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Pass"})
 
-        #debugPrint("DECODED - existing dashboard manifest: " + json.dumps(existingManifestEntries))
-
+        debugPrint("Entries to remove:", json.dumps(removeManifestEntries, indent=2))
         for removeEntry in removeManifestEntries:
             for idx, existingEntry in enumerate(existingManifestEntries):
                 if removeEntry['raw_data'] == existingEntry['raw_data']:
                     del existingManifestEntries[idx]
                     row_removed += 1
 
-                    if os.path.isfile(removeEntry['dd_json']):
-                        os.remove(removeEntry['dd_json'])
+                    if os.path.isfile(os.path.join(baseDir,removeEntry['dd_json'])):
+                        os.remove(os.path.join(baseDir,removeEntry['dd_json']))
                         debugPrint("Orphaned dd_json file deleted")
                     break
 
+        debugPrint("Entries to add/update:", json.dumps(newManifestEntries, indent=2))
         for newEntry in newManifestEntries:
             updated = False
             for existingEntry in existingManifestEntries:
                 if newEntry['raw_data'] == existingEntry['raw_data']:
                     updated = True
-                    job_results['files']['updated'].append(jsonFilePath.replace(cruiseDir + '/',''))
+                    job_results['files']['updated'].append(newEntry['dd_json'].replace(worker.cruiseID + '/',''))
                     break
 
             if not updated: #added
-                job_results['files']['new'].append(jsonFilePath.replace(cruiseDir + '/',''))
+                job_results['files']['new'].append(newEntry['dd_json'].replace(worker.cruiseID + '/',''))
                 existingManifestEntries.append(newEntry)
 
         if len(job_results['files']['new']):
@@ -552,6 +558,10 @@ def task_rebuildDataDashboard(worker, job):
         debugPrint(fileCount, 'file(s) to process')
 
         for filename in fileList:
+
+            if worker.stop:
+                break
+
             jsonFileName = filename.split('.')[0] + '.json'
             rawFilePath = os.path.join(collectionSystemTransferInputDir, filename)
             jsonFilePath = os.path.join(collectionSystemTransferOutputDir, jsonFileName)

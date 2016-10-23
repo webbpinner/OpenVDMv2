@@ -306,7 +306,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
     
     def on_job_complete(self, current_job, job_results):
-        resultObj = json.loads(job_results)
+        resultsObj = json.loads(job_results)
         
         jobData = {'cruiseID':'', 'self.cruiseStartDate':''}
         jobData['cruiseID'] = self.cruiseID
@@ -322,18 +322,18 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             for task in self.OVDM.getTasksForHook('finalizeCurrentCruise'):
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
-        if len(resultObj['parts']) > 0:
-            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
+        if len(resultsObj['parts']) > 0:
+            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
             else:
                 self.OVDM.setIdle_task(self.task['taskID'])
         else:
             self.OVDM.setIdle_task(self.task['taskID'])
         
-        debugPrint('Job Results:', json.dumps(resultObj, indent=2))
+        debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
             
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "completed at:", time.strftime("%D %T", time.gmtime()))
             
@@ -375,6 +375,18 @@ def task_setupNewCruise(worker, job):
     
     gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
 
+    debugPrint("Lockdown the CruiseData directory")
+    completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", job.data)
+    
+    resultObj = json.loads(completed_job_request.result)
+    
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
+    else:
+        errPrint("Failed to lockdown the CruiseData directory")
+        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail"})
+        return json.dumps(job_results)
+
     debugPrint("Creating cruise data directory")
     completed_job_request = gm_client.submit_job("createCruiseDirectory", job.data)
     
@@ -389,21 +401,6 @@ def task_setupNewCruise(worker, job):
     
     worker.send_job_status(job, 5, 10)
     
-    debugPrint("Creating Data Dashboard directory structure and manifest file")
-    completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)
-
-    resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results from rebuildDataDashboard:', json.dumps(resultObj, indent=2)
-
-    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        job_results['parts'].append({"partName": "Create Data Dashboard directory structure and manifest file", "result": "Pass"})
-    else:
-        errPrint("Failed to create Data Dashboard directory structure and/or manifest file")
-        job_results['parts'].append({"partName": "Create Data Dashboard directory structure and manifest file", "result": "Fail"})
-        return json.dumps(job_results)
-    
-    worker.send_job_status(job, 7, 10)
-    
     debugPrint("Creating MD5 summary files")
     completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
 
@@ -415,6 +412,21 @@ def task_setupNewCruise(worker, job):
     else:
         errPrint("Failed to create MD5 summary files")
         job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Fail"})
+        return json.dumps(job_results)
+    
+    worker.send_job_status(job, 7, 10)
+
+    debugPrint("Creating data dashboard directory structure and manifest file")
+    completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)
+
+    resultObj = json.loads(completed_job_request.result)
+    #print 'DECODED Results from rebuildDataDashboard:', json.dumps(resultObj, indent=2)
+
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+        job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Pass"})
+    else:
+        errPrint("Failed to create data dashboard directory structure and/or manifest file")
+        job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Fail"})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 9, 10)
