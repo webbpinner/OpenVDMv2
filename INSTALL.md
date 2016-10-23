@@ -551,6 +551,12 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
     Allow from all
     Require all granted
   </Directory>
+  
+  <IfModule mod_rewrite.c>
+    RewriteEngine on
+    RewriteRule ^/$ /OpenVDMv2/ [R]
+  </IfModule>
+          
 ```
 
 Reload Apache2
@@ -602,6 +608,7 @@ Add the following to end of the `smb.conf` file.  Set the user in `write list` t
   directory mask = 0755
   veto files = /._*/.DS_Store/
   delete veto files = yes
+  hide unreadable = yes
 
 [VisitorInformation]
   comment=Visitor Information, read-only access to guest
