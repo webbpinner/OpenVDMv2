@@ -108,12 +108,13 @@ def setOwnerGroupPermissions(worker, path):
         try:
             debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
             os.chown(path, uid, gid)
-            os.chmod(path, 0755)
+            os.chmod(path, 0644)
         except OSError:
             errPrint("Unable to set file permissions for", path)
             return False
     elif os.path.isdir(path):
-
+        os.chown(path, uid, gid)
+        os.chmod(path, 0755)
         for item in os.listdir(path):
             itempath = os.path.join(path, item)
             if os.path.isdir(itempath):
@@ -349,7 +350,7 @@ def task_updateDataDashboard(worker, job):
         return json.dumps(job_results)
 
     fileCount = len(fileList)
-    index = 0
+    fileIndex = 0
     for filename in fileList:
         
         if worker.stop:
@@ -406,19 +407,22 @@ def task_updateDataDashboard(worker, job):
                             else:
                                 errorTitle = 'Datafile Parsing error'
                                 errorBody = "Error Setting DashboardData file ownership: " + filename
-                                errPrint(errorTitle + ': ', errorBody)
+                                errPrint(errorTitle + ':', errorBody)
                                 worker.OVDM.sendMsg(errorTitle,errorBody)
                                 job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Fail"})
                         else:
                             errorTitle = 'Datafile Parsing error'
                             errorBody = "Error Writing DashboardData file: " + filename
-                            errPrint(errorTitle + ': ', errorBody)
+                            errPrint(errorTitle + ':', errorBody)
                             worker.OVDM.sendMsg(errorTitle,errorBody)
                             job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail"})
 
                         newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
             else:
-                errPrint("No JSON output recieved from file", filename)
+                errorTitle = 'No JSON output recieved from file'
+                errorBody = 'Parsing Command: ' + s.join(command)
+                errPrint(errorTitle + ': ', errorBody)
+                worker.OVDM.sendMsg(errorTitle,errorBody)
                 removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
 
                 #job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
@@ -431,8 +435,8 @@ def task_updateDataDashboard(worker, job):
             if err:
                 errPrint(err)
 
-        worker.send_job_status(job, int(10 + 70*float(index)/float(fileCount)), 100)
-        index += 1
+        worker.send_job_status(job, int(10 + 70*float(fileIndex)/float(fileCount)), 100)
+        fileIndex += 1
 
     worker.send_job_status(job, 8, 10)
 
@@ -553,83 +557,110 @@ def task_rebuildDataDashboard(worker, job):
         
         #build filelist
         fileList = build_filelist(collectionSystemTransferInputDir)
+        fileList = [os.path.join(collectionSystemTransfer['destDir'], filename) for filename in fileList]
+
+        debugPrint("FileList:", json.dumps(fileList, indent=2))
+
         fileCount = len(fileList)
         fileIndex = 0
         debugPrint(fileCount, 'file(s) to process')
 
         for filename in fileList:
-
+        
             if worker.stop:
                 break
 
+            debugPrint("Processing file:", filename)
             jsonFileName = filename.split('.')[0] + '.json'
-            rawFilePath = os.path.join(collectionSystemTransferInputDir, filename)
-            jsonFilePath = os.path.join(collectionSystemTransferOutputDir, jsonFileName)
-
-            debugPrint("Processing file: " + rawFilePath)
+            #debugPrint('jsonFileName:', jsonFileName)
+            rawFilePath = os.path.join(cruiseDir, filename)
+            #debugPrint('rawFilePath:', rawFilePath)
+            jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
+            #debugPrint('jsonFilePath:', jsonFilePath)
 
             if os.stat(rawFilePath).st_size == 0:
                 debugPrint("File is empty")
                 continue
 
-            s=' '
             command = ['python', processingScriptFilename, '--dataType', rawFilePath]
 
-            debugPrint(s.join(command))
+            s = ' '
+            debugPrint('Get Datatype Command:', s.join(command))
 
             proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             out, err = proc.communicate()
 
             if out:
                 dd_type = out.rstrip('\n')
-                debugPrint("Found to be type: " + dd_type)
+                debugPrint("Found to be type:", dd_type)
 
                 command = ['python', processingScriptFilename, rawFilePath]
 
-                debugPrint(s.join(command))
+                s = ' '
+                debugPrint('Processing Command:', s.join(command))
 
-                proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                proc = subprocess.Popen(command)
                 out, err = proc.communicate()
 
                 if out:
                     try:
+                        debugPrint("Parsing output")
                         outObj = json.loads(out)
                     except:
-                        errorTitle = 'Datafile Parsing error'
-                        errorBody = s.join(command)
-                        errPrint(errorTitle + ': ', errorBody)
+                        errorTitle = 'Error parsing output'
+                        errorBody = 'Invalid JSON output recieved from processing. Command: ' + s.join(command)
+                        errPrint(errorTitle + ':', errorBody)
                         worker.OVDM.sendMsg(errorTitle,errorBody)
-                        continue
+                        job_results['parts'].append({"partName": "Parsing JSON output " + filename, "result": "Fail"})
                     else:
                         if 'error' in outObj:
-                            errorTitle = 'Datafile Parsing error'
+                            errorTitle = 'Error processing file'
                             errorBody = outObj['error']
-                            errPrint(errorTitle + ': ', errorBody)
+                            errPrint(errorTitle + ':', errorBody)
                             worker.OVDM.sendMsg(errorTitle,errorBody)
-                        elif output_JSONDataToFile(worker, jsonFilePath, outObj):
-                            newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data":rawFilePath.replace(baseDir + '/','')})
+                            job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Fail"})
+
+                        else:
+                            #job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Pass"})
+                            if output_JSONDataToFile(worker, jsonFilePath, outObj):
+                                job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
+                                if(setOwnerGroupPermissions(worker, jsonFilePath)):
+                                    job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Pass"})
+                                else:
+                                    errorTitle = 'Error setting ownership'
+                                    errorBody = "Could not set ownership: " + filename
+                                    errPrint(errorTitle + ':', errorBody)
+                                    worker.OVDM.sendMsg(errorTitle,errorBody)
+                                    job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Fail"})
+                            else:
+                                errorTitle = 'Error writing file'
+                                errorBody = "Error Writing DashboardData file: " + filename
+                                errPrint(errorTitle + ':', errorBody)
+                                worker.OVDM.sendMsg(errorTitle,errorBody)
+
+                                job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail"})
+
+                            newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
                 else:
-                    errPrint("No JSON output recieved from file " + filename)
-                    #job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
+                    errorTitle = 'Error processing file'
+                    errorBody = 'No JSON output recieved from file. Processing Command: ' + s.join(command)
+                    errPrint(errorTitle + ':', errorBody)
+                    worker.OVDM.sendMsg(errorTitle,errorBody)
+                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
+                    
                     if err:
-                        errPrint(err)
+                        errPrint('err:', err)
+
             else:
-                debugPrint("File is of unknown datatype")
+                debugPrint("File is of unknown datatype, moving on")
+
                 if err:
-                    debugPrint(err)
+                    errPrint('err:', err)
 
-            worker.send_job_status(job, int(10 + (80*(float(collectionSystemTransferIndex) + (float(fileIndex)/float(fileCount)))/float(collectionSystemTransferCount))), 100)
-#            debugPrint(fileIndex, '/', fileCount, float(fileIndex)/float(fileCount))
-#            debugPrint(collectionSystemTransferIndex, '/', collectionSystemTransferCount, float(collectionSystemTransferIndex)/float(collectionSystemTransferCount))
-
-#            debugPrint(int(10 + (80*(float(collectionSystemTransferIndex) + (float(fileIndex)/float(fileCount)))/float(collectionSystemTransferCount))))
+            worker.send_job_status(job, int(10 + 70*float(fileIndex)/float(fileCount)), 100)
             fileIndex += 1
 
-            if worker.stop:
-                debugPrint("Stopping")
-                break
-
-        job_results['parts'].append({"partName": "Processing " + collectionSystemTransfer['name'], "result": "Pass"})
+        #job_results['parts'].append({"partName": "Processing " + collectionSystemTransfer['name'], "result": "Pass"})
 
         collectionSystemTransferIndex += 1
 

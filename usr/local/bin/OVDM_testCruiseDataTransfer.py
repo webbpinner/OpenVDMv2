@@ -474,7 +474,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseDataTransfer = None
             else:
                 self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
-                    
+                self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])                    
             try:
                 payloadObj['cruiseID']
             except KeyError:

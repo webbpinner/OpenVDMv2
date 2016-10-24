@@ -156,7 +156,8 @@ def setOwnerGroupPermissions(worker, path):
             errPrint("Unable to set file permissions for", path)
             return False
     elif os.path.isdir(path):
-
+        os.chown(path, uid, gid)
+        os.chmod(path, 0644)
         for item in os.listdir(path):
             itempath = os.path.join(path, item)
             if os.path.isdir(itempath):

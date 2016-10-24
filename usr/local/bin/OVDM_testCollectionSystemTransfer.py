@@ -365,7 +365,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.collectionSystemTransfer = None
             else:
                 self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
-                    
+                self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])    
             try:
                 payloadObj['cruiseID']
             except KeyError:

@@ -130,11 +130,14 @@ def setOwnerGroupPermissions(worker, path):
         try:
             debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
             os.chown(path, uid, gid)
-            os.chmod(path, 0755)
+            os.chmod(path, 0644)
         except OSError:
             errPrint("Unable to set file permissions for", path)
             return False
     elif os.path.isdir(path):
+        debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+        os.chown(path, uid, gid)
+        os.chmod(path, 0755)
 
         for item in os.listdir(path):
             itempath = os.path.join(path, item)
