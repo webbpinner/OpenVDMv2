@@ -189,6 +189,11 @@ Restart Supervisor:
 sudo service supervisor restart
 ```
 
+Enable Supervisor to start at boot
+```
+sudo systemctl enable supervisor
+```
+
 Verify the istallation was successful by going to <http://127.0.0.1:9001>.
 
 ###MapProxy
