@@ -100,11 +100,6 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-#Within each of these files is a section called `Dynamic Extensions`.  Most of these section is probably commented out.  #Simple add `extension=gearman.so` to the end of the section.
-
-#Restart Apache
-#`sudo service apache2 restart`
-
 ###Gearman-UI
 Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
 
@@ -447,7 +442,7 @@ From a terminal window type:
 ```
 git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 cd ~/OpenVDMv2
-git checkout -b v2.2
+git checkout v2.2
 ```
 
 ####Create OpenVDMv2 Database
