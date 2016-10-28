@@ -56,7 +56,7 @@ sudo apt-get install mysql-server
 ```
 When installing MySQL you will be prompted to provide a 'root' password.  This is different than the 'root' password for the operating system but just as important to remember. 
 
-###PHP5
+###PHP7.0
 The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
