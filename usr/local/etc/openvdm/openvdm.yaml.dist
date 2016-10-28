@@ -40,6 +40,10 @@ transferInterval: 5
 # conjunction with OpenVDM.  The required format is <server>:<port>
 gearmanServer: "localhost:4730"
 
+# Whether or not to hide all directories in the CruiseData directory other than the
+# current cruise. (Yes|No))
+showOnlyCurrentCruiseDir: No
+
 # The dashboardData section defines where the dashboardData processing scripts reside
 # and the expected suffix for each processing file.  It should include 2 directives:
 # processingScriptDir --> the full path containing the dashboardData processing scripts
@@ -57,10 +61,10 @@ hooks:
     runCollectionSystemTransfer:
         - updateDataDashboard
         - updateMD5Summary
-#        - postCollectionSystemTransfer
+        - postCollectionSystemTransfer
     updateDataDashboard:
         - updateMD5Summary
-#        - postDataDashboard
+        - postDataDashboard
     rebuildDataDashboard:
         - updateMD5Summary
 #        - postDataDashboard

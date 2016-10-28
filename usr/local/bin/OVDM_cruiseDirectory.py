@@ -160,6 +160,7 @@ def setOwnerGroupPermissions(worker, path):
 def lockdown_directory(worker):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir,worker.cruiseID)
+#    debugPrint('cruiseDir:', cruiseDir)
 
     dirContents = [ os.path.join(baseDir,f) for f in os.listdir(baseDir)]
     files = filter(os.path.isfile, dirContents)
@@ -170,6 +171,9 @@ def lockdown_directory(worker):
     for directory in directories:
         if not directory == cruiseDir:
             os.chmod(directory, 0700)
+#        else:
+#            debugPrint('Skipping:', directory)
+
 
 
     
@@ -231,11 +235,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
         if int(self.task['taskID']) > 0:
-            self.OVDM.setError_task(self.task['taskID'], "Unknown Part of Task")
+            self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
-            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Unknown Part of Task')
+            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -357,9 +361,17 @@ def task_setCruiseDataDirectoryPermissions(worker, job):
 
     worker.send_job_status(job, 5, 10)
     
-    debugPrint("Set directory permissions")
-    lockdown_directory(worker)
-    job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
+    if worker.OVDM.showOnlyCurrentCruiseDir():
+        debugPrint("Clear read permissions")
+        lockdown_directory(worker)
+        job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
+
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir,worker.cruiseID)
+    if os.path.isdir(cruiseDir):
+        debugPrint("Clear read permissions")
+        setOwnerGroupPermissions(worker, cruiseDir)
+        job_results['parts'].append({"partName": "Set Directory Permissions for current cruise", "result": "Pass"})
 
     worker.send_job_status(job, 10, 10)
     

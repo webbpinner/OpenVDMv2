@@ -41,24 +41,29 @@ class OpenVDM():
         self.config = {}
         self.config = self.parseOVDMConfig()
 
-        
+
     def parseOVDMConfig(self):
-        
+
         f = open('/usr/local/etc/openvdm/openvdm.yaml', 'r')
         return yaml.load(f.read())
-    
-    
+
+
     def clearGearmanJobsFromDB(self):
         url = self.config['siteRoot'] + 'api/gearman/clearAllJobsFromDB'
         r = requests.get(url)
         returnObj = json.loads(r.text)
 
-        
+
     def getDashboardDataProcessingScriptDir(self):
-        
+
         return self.config['dashboardData']['processingScriptDir']
 
-    
+
+    def showOnlyCurrentCruiseDir(self):
+
+        return self.config['showOnlyCurrentCruiseDir']
+
+
     def getOVDMConfig(self):
 
         url = self.config['siteRoot'] + 'api/warehouse/getCruiseConfig'

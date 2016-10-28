@@ -97,7 +97,7 @@
 # password database type you are using.  
    passdb backend = tdbsam
 
-   obey pam restrictions = yes
+   obey pam restrictions = no
 
 # This boolean parameter controls whether Samba attempts to sync the Unix
 # password with the SMB password when the encrypted SMB password in the
@@ -190,13 +190,13 @@
 # Un-comment the following (and tweak the other settings below to suit)
 # to enable the default home directory shares. This will share each
 # user's home directory as \\server\username
-;[homes]
-;   comment = Home Directories
-;   browseable = no
+[homes]
+   comment = Home Directories
+   browseable = no
 
 # By default, the home directories are exported read-only. Change the
 # next parameter to 'no' if you want to be able to write to them.
-;   read only = yes
+   read only = no
 
 # File creation mask is set to 0700 for security reasons. If you want to
 # create files with group=rw permissions, set next parameter to 0775.
@@ -258,3 +258,43 @@
 # to the drivers directory for these users to have write rights in it
 ;   write list = root, @lpadmin
 
+[CruiseData]
+  comment=Cruise Data, read-only access to guest
+  path=/vault/FTPRoot/CruiseData
+  browsable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  write list = survey
+  create mask = 0644
+  directory mask = 0755
+  veto files = /._*/.DS_Store/
+  delete veto files = yes
+  hide unreadable = yes 
+
+[VisitorInformation]
+  comment=Visitor Information, read-only access to guest
+  path=/vault/FTPRoot/VisitorInformation
+  browsable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  write list = survey
+  create mask = 0644
+  directory mask = 0755
+  veto files = /._*/.DS_Store/
+  delete veto files = yes
+
+[PublicData]
+  comment=Public Data, read/write access to all
+  path=/vault/FTPRoot/PublicData
+  browseable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  create mask = 0000
+  directory mask = 0000
+  veto files = /._*/.DS_Store/
+  delete veto files = yes
+  force create mode = 666
+  force directory mode = 777

@@ -70,8 +70,22 @@ class Main extends Controller {
             }
             
             if(!$error){
+
                 $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
                 $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
+
+                //$_warehouseModel = new \models\warehouse();
+                $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        
+                # create the gearman client
+                $gmc= new \GearmanClient();
+
+                # add the default server (localhost)
+                $gmc->addServer();
+
+                #submit job to Gearman
+                #$job_handle = $gmc->doBackground("updateCruiseDirectory", json_encode($gmData));
+                $data['jobResults'] = json_decode($gmc->doNormal("setCruiseDataDirectoryPermissions", json_encode($gmData)));
                 Session::set('message','Cruise ID Updated');
                 Url::redirect('config');
             } else {
