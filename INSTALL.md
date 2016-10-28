@@ -61,7 +61,7 @@ The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
 ```
-sudo apt-get install php7.0 php7.0-cli php7.0-mysql php7.0-dev
+sudo apt-get install php7.0 php7.0-cli php7.0-mysql php7.0-dev php7.0-zip php7.0-curl
 ```
 
 ###Apache2 Web-server
@@ -93,26 +93,11 @@ Making sure the right type and number of worker processes are available to Gearm
 To install Gearman open and terminal window and type the following commands:
 ```
 sudo apt-get install gearman-job-server libgearman-dev python-gearman
-
-
-#sudo apt-get install software-properties-common
-#sudo add-apt-repository ppa:gearman-developers/ppa
-#sudo apt-get update
-#sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman
-#sudo apt-get upgrade
 ```
 
 Restart the Gearman Job Broker
 ```
 sudo service gearman-job-server restart
-```
-
-#OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php.ini` and `/etc/php5/apache2/php.ini`.
-
-#Modifying these files requires root privledges:
-```
-#sudo nano /etc/php5/cli/php.ini
-#sudo nano /etc/php5/apache2/php.ini
 ```
 
 #Within each of these files is a section called `Dynamic Extensions`.  Most of these section is probably commented out.  #Simple add `extension=gearman.so` to the end of the section.
@@ -428,19 +413,6 @@ phpenmod yaml
 Restart apache
 ```
 service apache2 restart
-```
-
-
-```
-sudo apt-get install php-pear libyaml-dev
-sudo pear upgrade -Z Archive_Tar
-sudo pecl install yaml
-```
-
-Add the following to the end of `/etc/php5/apache2/php.ini` and `/etc/php5/cli/php.ini`
-
-```
-extension=yaml.so
 ```
 
 ####Create the Required Directories
