@@ -1,15 +1,15 @@
 [OpenVDMv2_Logo]: http://www.oceandatarat.org/wp-content/uploads/2014/11/openVDM_LogoV2_1_long.png "Open Vessel Data Managment v2" 
 
 ![OpenVDMv2_Logo]
-#Open Vessel Data Management v2.1
+#Open Vessel Data Management v2.2
 
 ##Installation Guide
-At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 14.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 14.04 LTS is used.
+At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 16.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 16.04 LTS is used.
 
 ###Operating System
 Goto <http://xubuntu.org/getxubuntu/>
 
-Download Xubuntu for your hardware.  At the time of this writing we are using 14.04.3 (32-bit)
+Download Xubuntu for your hardware.  At the time of this writing we are using 16.04.1 (64-bit)
 
 Perform the default Xubuntu install.  For these instructions the default account that is created is "Survey" and the computer name is "Warehouse".
 
@@ -18,7 +18,7 @@ A few minutes after the install completes and the computer restarts, Xubuntu wil
 Before OpenVDMv2 can be installed serveral other services and software packaged must be installed and configured.
 
 ###SSH Client/Server
-SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and other workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
+SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and collection systems workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
 To install SSH open a terminal window and type:
 ```
@@ -46,33 +46,31 @@ Initialize the username creating during the OS installation for samba.  Change t
 sudo smbpasswd -a survey
 ```
 
-###ProFTPd
-One of the ways users communicate with OpenVDMv2 is through an FTP server configured on the data warehouse.
-
-To install ProFTPd open a terminal window and type:
-```
-sudo apt-get install proftpd
-```
-
 
 ###MySQL Database Server
-All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.  OpenVDM uses the MySQL open-source database server.
+All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.
 
 To install MySQL open a terminal window and type:
 ```
 sudo apt-get install mysql-server
 ```
+When installing MySQL you will be prompted to provide a 'root' password.  This is different than the 'root' password for the operating system but just as important to remember. 
 
 ###PHP5
 The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
 ```
-sudo apt-get install php5 php5-cli php5-mysql php5-dev
+sudo apt-get install php7.0 php7.0-cli php7.0-mysql php7.0-dev
 ```
 
 ###Apache2 Web-server
 The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
+
+To install Apache open a terminal window and type:
+```
+sudo apt-get install apache2 libapache2-mod-php
+```
 
 Apache2 is installed by Xubuntu by default but an Apache2 module must be enabled.  To enable the additional module open a terminal window and type:
 ```
@@ -94,11 +92,14 @@ Making sure the right type and number of worker processes are available to Gearm
 #### Installing Gearman
 To install Gearman open and terminal window and type the following commands:
 ```
-sudo apt-get install software-properties-common
-sudo add-apt-repository ppa:gearman-developers/ppa
-sudo apt-get update
-sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman
-sudo apt-get upgrade
+sudo apt-get install gearman-job-server libgearman-dev python-gearman
+
+
+#sudo apt-get install software-properties-common
+#sudo add-apt-repository ppa:gearman-developers/ppa
+#sudo apt-get update
+#sudo apt-get install gearman-job-server libgearman-dev php5-gearman python-gearman
+#sudo apt-get upgrade
 ```
 
 Restart the Gearman Job Broker
@@ -106,43 +107,18 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php.ini` and `/etc/php5/apache2/php.ini`.
+#OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php.ini` and `/etc/php5/apache2/php.ini`.
 
-Modifying these files requires root privledges:
+#Modifying these files requires root privledges:
 ```
-sudo nano /etc/php5/cli/php.ini
-sudo nano /etc/php5/apache2/php.ini
-```
-
-Within each of these files is a section called `Dynamic Extensions`.  Most of these section is probably commented out.  Simple add `extension=gearman.so` to the end of the section.
-
-Restart Apache
-`sudo service apache2 restart`
-
-#### Installing Supervisor
-To install Supervisor open and terminal window and type the following command:
-```
-sudo apt-get install supervisor
+#sudo nano /etc/php5/cli/php.ini
+#sudo nano /etc/php5/apache2/php.ini
 ```
 
-Add the following lines to `/etc/supervisor/supervisor.conf`:
+#Within each of these files is a section called `Dynamic Extensions`.  Most of these section is probably commented out.  #Simple add `extension=gearman.so` to the end of the section.
 
-```
-[inet_http_server]
-port = 9001
-```
-
-Editing this file will require root privledges.
-```
-sudo nano /etc/supervisor/supervisor.conf
-```
-
-Restart Supervisor:
-```
-sudo service supervisor restart
-```
-
-Verify the istallation was successful by going to <http://127.0.0.1:9001>.
+#Restart Apache
+#`sudo service apache2 restart`
 
 ###Gearman-UI
 Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
@@ -209,6 +185,31 @@ sudo service apache2 reload
 ```
 
 Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui>
+
+#### Installing Supervisor
+To install Supervisor open and terminal window and type the following command:
+```
+sudo apt-get install supervisor
+```
+
+Add the following lines to `/etc/supervisor/supervisor.conf`:
+
+```
+[inet_http_server]
+port = 9001
+```
+
+Editing this file will require root privledges.
+```
+sudo nano /etc/supervisor/supervisor.conf
+```
+
+Restart Supervisor:
+```
+sudo service supervisor restart
+```
+
+Verify the istallation was successful by going to <http://127.0.0.1:9001>.
 
 ###MapProxy
 In order to add GIS capability to OpenVDMv2 without eccessive requests to the internet for baselayer tiles a map tile proxy needs to be installed.
@@ -367,6 +368,69 @@ Verify the installation works by going to: <http://127.0.0.1/mapproxy/demo/>
 ###OpenVDMv2
 
 ####Install the dependencies
+
+####Installing the gearman php module
+The gearman extension team at pecl has not yet updated the gearman php module to work with php7.0.  Luckily the open-source community has come to the rescue.
+
+Download the module
+```
+git clone git clone https://github.com/wcgallego/pecl-gearman.git ~/pecl-gearman
+```
+
+Build the module
+```
+cd ~/pecl-gearman
+phpize
+./configure
+make
+make install
+```
+
+Create the file `/etc/php/7.0/mods-available/gearman.ini`
+
+Copy the following into `gearman.ini`
+```
+; configuration for php common module
+; priority=20
+extension=gearman.so
+```
+
+Enable the new module
+```
+phpenmod gearman
+```
+
+Restart apache
+```
+service apache2 restart
+```
+
+####Installing the yaml php module
+```
+sudo apt-get install libyaml-dev
+pecl install yaml-2.0.0
+```
+
+Create the file `/etc/php/7.0/mods-available/yaml.ini`
+
+Copy the following into `gearman.ini`
+```
+; configuration for php common module
+; priority=20
+extension=yaml.so
+```
+
+Enable the new module
+```
+phpenmod yaml
+```
+
+Restart apache
+```
+service apache2 restart
+```
+
+
 ```
 sudo apt-get install php-pear libyaml-dev
 sudo pear upgrade -Z Archive_Tar
