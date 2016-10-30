@@ -1,0 +1,178 @@
+# =================================================================================== #
+#
+#         FILE:  SCS_dashboardData.py
+#
+#        USAGE:  SCS_dashboardData.py [-h] [--dataType] <dataFile>
+#
+#  DESCRIPTION:  This python script interprets raw files created by the SCS Data
+#                Acquision System.  Depending on the command-line arguments, the script
+#                returns the data type of the file or a sub-sampled and json-formatted
+#                version of the original file to stdout.  The json-formatted file is
+#                used by OpenVDM as part of it's Data dashboard. 
+#
+#      OPTIONS:  [-h] Return the help message.
+#                [--dataType] Return the datatype of the file as defined in the
+#                    fileTypeFilter array.
+#                <dataFile> Full or relative path of the data file to process.
+#
+# REQUIREMENTS:  python2.7, Python Modules: sys, os, time, argparse, json, fnmatch, csv
+#
+#         BUGS:
+#        NOTES:
+#       AUTHOR:  Webb Pinner
+#      COMPANY:  Capable Solutions
+#      VERSION:  1.0
+#      CREATED:  2016-10-23
+#     REVISION:  
+#
+# LICENSE INFO:  Open Vessel Data Management 2.2 (OpenVDMv2) Copyright (C) 2016 Capable
+#                Solutions
+#
+#    This program is free software: you can redistribute it and/or modify it under the
+#    terms of the GNU General Public License as published by the Free Software
+#    Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful, but WITHOUT ANY
+#    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+#    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License #    along with
+#    this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =================================================================================== #
+
+from __future__ import print_function
+import sys
+import os
+import time
+import argparse
+import json
+import fnmatch
+import csv
+import subprocess
+
+SCRIPT_DIR = '/usr/local/bin/OVDM_dashboardDataScripts/'
+
+# -------------------------------------------------------------------------------------
+# This array defines the various dataTypes collected by SCS and the cooresponding file
+# regex expression.
+# -------------------------------------------------------------------------------------
+fileTypeFilters = [
+    {"dataType":"twind",      "regex": "*METOC/TrueWind-RAW_*.Raw"},
+    {"dataType":"tsg",        "regex": "*METOC/TSG-RAW_*.Raw"},
+    {"dataType":"met",        "regex": "*METOC/MET-M01_*.Raw"},
+    {"dataType":"svp",        "regex": "*METOC/Sound-Velocity-Probe_*.Raw"},
+    {"dataType":"gga-posmv",  "regex": "*NAV/POSMV-GGA_*.Raw"},
+#    {"dataType":"rov-hdt",   "regex": "*COM29-Subastian-Gyro-HDT-RAW*.Raw"},
+]
+
+DEBUG = False
+
+
+def debugPrint(*args, **kwargs):
+    if DEBUG:
+        errPrint(*args, **kwargs)
+
+def errPrint(*args, **kwargs):
+        print(*args, file=sys.stderr, **kwargs)
+
+# -------------------------------------------------------------------------------------
+# Function to determine the datatype of the raw datafile.  If the datatype can not be
+# determined, the function returns false
+# -------------------------------------------------------------------------------------
+def getDataType(filePath):
+
+    for fileTypeFilter in fileTypeFilters:
+        if fnmatch.fnmatch(filePath, fileTypeFilter['regex']):
+            return fileTypeFilter['dataType']
+
+    return False
+    
+# -------------------------------------------------------------------------------------
+# Function to process the raw datafile and return a json-formatted representation.  If
+# the datatype can not be determined, the function returns false.  With collection 
+# systems that contain multiple dataTypes, this function may route the raw datafile to
+# a dataType-specific processing sub-routine. 
+# -------------------------------------------------------------------------------------
+def getJsonObj(filePath):
+
+    dataType = getDataType(filePath)
+    debugPrint('DataType:', dataType)
+
+    #global DEBUG
+
+    if dataType == 'twind':
+        command = ['python', SCRIPT_DIR + 'twind_parser.py']
+    elif dataType == 'tsg':
+        command = ['python', SCRIPT_DIR + 'tsg_parser.py']
+    elif dataType == 'met':
+        command = ['python', SCRIPT_DIR + 'met_parser.py']
+    elif dataType == 'svp':
+        command = ['python', SCRIPT_DIR + 'svp_parser.py']
+    elif dataType == 'gga-posmv':
+        command = ['python', SCRIPT_DIR + 'gga_parser.py']
+    else:
+	debugPrint("Unmatched datatype")
+        return False
+
+    if DEBUG:
+        command.append('-d')
+
+    command.append(filePath)
+
+    s = ' '
+    debugPrint('Command: ' + s.join(command))
+
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
+    debugPrint('Err:',err)
+
+    if out:
+        return json.loads(out)
+
+    return {'error': 'Unknown parsing error in ' + filePath + ' occurred<br>Command: ' + s.join(command)}
+
+
+# -------------------------------------------------------------------------------------
+# Main function of the script should it be run as a stand-alone utility.
+# -------------------------------------------------------------------------------------
+def main(argv):
+
+    parser = argparse.ArgumentParser(description='SCS dataDashboard Processing Utilty')
+    parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
+    parser.add_argument('--dataType', action='store_true', help='return the dataType of the file')
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+
+    args = parser.parse_args()
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
+
+    if not os.path.isfile(args.dataFile):
+        sys.stderr.write('ERROR: File not found\n')
+        sys.exit(1)
+    elif os.stat(args.dataFile).st_size == 0:
+        sys.stderr.write('File is empty')
+        sys.exit(0)
+
+    if args.dataType:
+        dataType = getDataType(args.dataFile)
+        if dataType:
+            print(dataType)
+            sys.exit(0)
+        else:
+            sys.exit(1)
+    else:
+        jsonObj = getJsonObj(args.dataFile)
+        if jsonObj:
+            print(json.dumps(jsonObj))
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    main(sys.argv[1:])
