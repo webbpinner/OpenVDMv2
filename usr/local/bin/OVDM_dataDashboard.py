@@ -11,9 +11,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-19
+#     REVISION:  2016-10-30
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2016
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -427,7 +428,7 @@ def task_updateDataDashboard(worker, job):
 
                 #job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
                 if err:
-                    errPrint(err)
+                    errPrint('Err:',err)
         else:
             debugPrint("File is of unknown datatype")
             removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data":rawFilePath.replace(baseDir + '/','')})
@@ -599,7 +600,7 @@ def task_rebuildDataDashboard(worker, job):
                 s = ' '
                 debugPrint('Processing Command:', s.join(command))
 
-                proc = subprocess.Popen(command)
+                proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
                 out, err = proc.communicate()
 
                 if out:

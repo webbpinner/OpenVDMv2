@@ -8,11 +8,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.1rc
+#      VERSION:  2.2
 #      CREATED:  2016-02-02
-#     REVISION:  2016-03-07
+#     REVISION:  2016-10-30
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2016
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -50,8 +51,8 @@ showOnlyCurrentCruiseDir: No
 # processingScriptSuffix --> the suffix appended to dashboardData processing scripts
 #     i.e. with SCS_dataDashboard.py the suffix is _dataDashboard.py
 dashboardData:
-    processingScriptDir: "/usr/local/bin/OVDM_dataProcessingScripts"
-    processingScriptSuffix: "_dataDashboard.py"
+    processingScriptDir: "/usr/local/bin/OVDM_dashboardDataScripts"
+    processingScriptSuffix: "_dashboardData.py"
 
 # The hooks section contains any additional Gearman tasks that should be performed
 # after the successful completion of the primary OpenVDM Gearman task.  Any subsequent
@@ -68,6 +69,5 @@ hooks:
     rebuildDataDashboard:
         - updateMD5Summary
 #        - postDataDashboard
-
 #    setupNewCruise:
 #    finalizeCurrentCruise:

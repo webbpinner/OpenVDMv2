@@ -38,6 +38,7 @@ class shipToShoreTransfers extends Controller {
         
         $output = array();
 
+	$data = array("0" => "");
         foreach($collectionSystemTransfers as $row){
             $data[$row->collectionSystemTransferID] = $row->name;
         }
@@ -46,9 +47,11 @@ class shipToShoreTransfers extends Controller {
         $output['name'] = "collectionSystemTransfer";
         $output['class'] = "form-control";
         
+        var_dump($output['data']);
         if(isset($selectedCollectionSystemTransferID)) {
             $output['value'] = $selectedCollectionSystemTransferID;
         }
+	var_dump($output['data'][1]);
         return $output;
     }
     
@@ -58,6 +61,7 @@ class shipToShoreTransfers extends Controller {
         
         $output = array();
 
+        $data = array("0" => "");
         foreach($extraDirectories as $row){
             $data[$row->extraDirectoryID] = $row->name;
         }

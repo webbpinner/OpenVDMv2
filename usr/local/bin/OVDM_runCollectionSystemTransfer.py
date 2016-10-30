@@ -11,9 +11,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-20
+#     REVISION:  2016-10-30
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2016
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -192,13 +193,13 @@ def build_rsyncFilelist(worker, sourceDir):
                             break
                 if not include:
                     #print "exclude"
-                    returnFiles['exclude'].append(filename)        
+                    returnFiles['exclude'].append(filename)
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
 
-    #print 'DECODED returnFiles:', json.dumps(returnFiles, indent=2)  
-    
+    #debugPrint('returnFiles:', json.dumps(returnFiles, indent=2))
+
     return returnFiles
 
 
@@ -214,7 +215,8 @@ def build_sshFilelist(worker, sourceDir):
     #print threshold_time
     rsyncFileList = ''
     
-    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
+    #command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
+    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     
     #s = ' '
     #print s.join(command)
@@ -268,8 +270,8 @@ def build_sshFilelist(worker, sourceDir):
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
 
-    #print 'DECODED returnFiles:', json.dumps(returnFiles, indent=2)  
-    
+    #debugPrint('returnFiles:', json.dumps(returnFiles, indent=2))
+
     return returnFiles
 
 
@@ -708,7 +710,8 @@ def transfer_sshSourceDir(worker, job):
     finally:
         sshFileListFile.close()
     
-    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+    #command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:',s.join(command))

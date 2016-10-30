@@ -11,9 +11,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-22
+#     REVISION:  2016-10-30
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2016
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

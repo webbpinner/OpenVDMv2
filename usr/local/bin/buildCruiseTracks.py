@@ -30,9 +30,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  1.0
 #      CREATED:  2016-03-06
-#     REVISION:  2016-03-07
+#     REVISION:  2016-10-30
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management v2.2 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2016
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -49,6 +50,7 @@
 #
 # ----------------------------------------------------------------------------------- #
 
+from __future__ import print_function
 import os
 import sys
 import pwd
@@ -61,6 +63,37 @@ import subprocess
 import glob
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 import openvdm
+
+DEBUG = False
+
+AllGPSSources = [
+    {
+        "CollectionSystem":"SCS",
+        "GPSSources": [
+            {
+                "device":"POSMV",
+                "regex":"NAV/POSMV-GGA_*.json"
+            },
+            {
+                "device":"CNAV",
+                "regex":"NAV/CNAV-GGA_*.json"
+            }
+        ]
+    }
+]    
+
+tracklineDirectoryName = 'Tracklines'
+
+
+def debugPrint(*args, **kwargs):
+    global DEBUG
+    if DEBUG:
+        errPrint(*args, **kwargs)
+
+
+def errPrint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 
 # -------------------------------------------------------------------------------------
 # Function to combine all the geoJSON-formatted files listed in the 'files' array
@@ -84,7 +117,8 @@ def combineGeoJsonFiles(files, cruiseID, deviceName):
                     "coordinates":[]
                 },
                 "properties": {
-                    "name": cruiseID + '_' + deviceName
+                    "name": cruiseID + '_' + deviceName,
+                    "coordTimes":[]
                 }
             }
         ]
@@ -103,11 +137,12 @@ def combineGeoJsonFiles(files, cruiseID, deviceName):
                 #print geoJsonObj['geodata']['coordinates']
 
                 combinedGeoJsonObj['features'][0]['geometry']['coordinates'] += geoJsonObj['visualizerData'][0]['features'][0]['geometry']['coordinates']
+                combinedGeoJsonObj['features'][0]['properties']['coordTimes'] += geoJsonObj['visualizerData'][0]['features'][0]['properties']['coordTimes']
 
 
             # If the file cannot be processed return false.
             except:
-                print "ERROR: Could not proccess file: " + file
+                errPrint("ERROR: Could not proccess file: ", file)
                 return False
 
             # Close the raw datafile
@@ -168,6 +203,7 @@ def convToKML(geoJSONObj):
 # -------------------------------------------------------------------------------------
 def writeToFile(contents, filename, user):
     try:
+        debugPrint('Saving', filename)
         fileObj = open(filename, 'w')
         fileObj.write(contents)
 
@@ -206,91 +242,74 @@ def main(argv):
     # i.e.           Raw Files: /cruiseID/SCS/NAV/POSMV-GGA_*.Raw
     #      DashboardData Files: /cruiseID/OpenVDM/DashboardData/SCS/NAV/POSMV-GGA_*.json
     #
-    AllGPSSources = [
-        {
-            "CollectionSystem":"SCS",
-            "GPSSources": [
-                {
-                    "device":"POSMV",
-                    "regex":"NAV/POSMV-GGA_*.json"
-                },
-                {
-                    "device":"CNAV",
-                    "regex":"NAV/CNAV-GGA_*.json"
-                }
-            ]
-        }
-    ]    
     
     # Define the command-line structure
     parser = argparse.ArgumentParser(description='build cruise tracklines post-dashboard processing')
     parser.add_argument('-c', dest='cruiseID', metavar='cruiseID', help='the cruiseID to process')
     parser.add_argument('collectionSystem', help='json-formatted array of files to NOT include for processing')
-    
-    # Process the command-line argumants
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+
     args = parser.parse_args()
-    
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
+
+
     # build an OpenVDM object
     openVDM = openvdm.OpenVDM()
     
-    # define the cruiseID as the current cruiseID
-    cruiseID = openVDM.getCruiseID()
+    # Process the command-line argumants
+    args = parser.parse_args()    
+    
+    # Retrieve the information for the collection system defined in the command-line argument
+    collectionSystem = openVDM.getCollectionSystemTransferByName(args.collectionSystem)
+    if not collectionSystem:
+        errPrint("ERROR: Collection System: '" + args.collectionSystem + "' not found!")
+        return -1
 
+    cruiseID = openVDM.getCruiseID()
     # if a cruiseID was declared in the command-line aruments, redefine the cruiseID variable
     if not args.cruiseID is None:
-        print "Setting CruiseID to " + args.cruiseID
-        cruiseID = args.cruiseID        
+        debugPrint("Setting CruiseID to", args.cruiseID)
+        cruiseID = args.cruiseID
     
     # Retrieve the shipboard data warehouse configuration
     shipboardDataWarehouseConfig = openVDM.getShipboardDataWarehouseConfig()
 
     # Construct the full path to the cruise data directory 
-    cruiseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] + '/' + cruiseID
+    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, cruiseID)
     
     # Verify the cruise data directory exists
     if not os.path.isdir(cruiseDir):
-        print "ERROR: Cruise Data Directory: '" + cruiseDir + "' not found!"
+        errPrint("ERROR: Cruise Data Directory:", cruiseDir, "not found!")
         return -1
-    
-    # Retrieve the information for the collection system defined in the command-line argument
-    collectionSystem = openVDM.getCollectionSystemTransferByName(args.collectionSystem)
-    
-    if not collectionSystem:
-        print "ERROR: Collection System: '" + args.collectionSystem + "' not found!"
-        return -1
-    
+
     #get the name of the Products directory
-    productsDirectory = openVDM.getExtraDirectoryByName('Products')
-    if not productsDirectory:
-        print "ERROR: 'Products' directory not found!"
+    tracklineDirectory = openVDM.getExtraDirectoryByName(tracklineDirectoryName)
+    if not tracklineDirectory:
+        errPrint("ERROR: \"" + tracklineDirectoryName + "\" directory information not found!")
         return -1
     else:
+        tracklineDir = os.path.join(cruiseDir, tracklineDirectory['destDir'])
         # Verify the Products directory exists
-        if not os.path.isdir(cruiseDir + '/' + productsDirectory['destDir']):
-            print "ERROR: Products Directory: '" + cruiseDir + '/' + productsDirectory['destDir'] + "' not found!"
+        if not os.path.isdir(tracklineDir):
+            errPrint("ERROR: Trackline Directory: \"" + tracklineDir + "\" not found!")
             return -1
-
 
     #get the name of the Dashboard Data directory
     dashboardDataDirectory = openVDM.getRequiredExtraDirectoryByName('Dashboard Data')
-    if not dashboardDataDirectory:
-        print "ERROR: 'Dashboard Data' directory not found!"
+    dashboardDataDir = os.path.join(cruiseDir, dashboardDataDirectory['destDir'])
+    collectionSystemDashboardDataDir = os.path.join(dashboardDataDir, collectionSystem['destDir'])
+
+    if not os.path.isdir(dashboardDataDir):
+        errPrint("ERROR: 'Dashboard Data' directory not found!")
         return -1
     else:
-        # Verify the Dashboard Data directory for the specified collection system exists
-        if not os.path.isdir(cruiseDir + '/' + dashboardDataDirectory['destDir'] + '/' + collectionSystem['destDir']):
-            print "ERROR: Dashboard Data Directory for " + args.collectionSystem + ": '" + cruiseDir + '/' + dashboardDataDirectory['destDir'] + '/' + collectionSystem['destDir'] + "' not found!"
+        if not os.path.isdir(collectionSystemDashboardDataDir):
+            errPrint("ERROR: Dashboard Data Directory for " + args.collectionSystem + ": '" + collectionSystemDashboardDataDir + "' not found!")
             return -1
-
-        
-    # Create the Tracklines directory within Products directory if it does not already exist.
-    # If the directory needs to be created, also set the ownership permissions
-    try:
-        os.mkdir(cruiseDir + '/' + productsDirectory['destDir'] + '/Tracklines', 0755)
-        os.chown(cruiseDir + '/' + productsDirectory['destDir'] + '/Tracklines', pwd.getpwnam(shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']).pw_uid, grp.getgrnam(shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']).gr_gid)
-        
-    except OSError:
-        print "Tracklines directory already exists"
     
     # Loop through the AllGPSSources object
     for GPSSources in AllGPSSources:
@@ -300,10 +319,10 @@ def main(argv):
     
             #Build a geoJSON and kml cruisetrack for each GGA Device
             for GPSSource in GPSSources['GPSSources']:
-                print "Processing " + GPSSource['device']
+                debugPrint("Processing ", GPSSource['device'])
                 
                 # Build the list of files coorsponding to the current device based on the regex provided
-                files = glob.glob(cruiseDir + '/' + dashboardDataDirectory['destDir'] + '/' + collectionSystem['destDir'] + '/' + GPSSource['regex'])
+                files = glob.glob(collectionSystemDashboardDataDir.rstrip('/') + '/' + GPSSource['regex'])
                 
                 # Combind the geoJSON objects
                 combineGeoJsonObj = combineGeoJsonFiles(files, cruiseID, GPSSource['device'])
@@ -316,10 +335,10 @@ def main(argv):
                 if combineGeoJsonObj is not None:
 
                     # Save the combined geoJSON object to file 
-                    writeToFile(json.dumps(combineGeoJsonObj), cruiseDir + '/' + productsDirectory['destDir'] + '/' + 'Tracklines' + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.json', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
+                    writeToFile(json.dumps(combineGeoJsonObj), tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.json', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
                 
                     # Convert the combined geoJSON object to kml and save to file 
-                    writeToFile(convToKML(combineGeoJsonObj), cruiseDir + '/' + productsDirectory['destDir'] + '/' + 'Tracklines' + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.kml', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
+                    writeToFile(convToKML(combineGeoJsonObj), tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.kml', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
             
             # No need to proceed to another collectionSystem
             break

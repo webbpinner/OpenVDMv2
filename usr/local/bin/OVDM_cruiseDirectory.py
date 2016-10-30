@@ -12,9 +12,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-03-07
+#     REVISION:  2016-10-30
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDM) Copyright (C) 2016  Webb Pinner
+# LICENSE INFO: Open Vessel Data Management v2.2 (OpenVDMv2)
+#               Copyright (C) OceanDataRat 2016
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -111,7 +112,7 @@ def create_directories(worker, directoryList):
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 errPrint("Unable to create directory:", directory)
-                return False        
+                return False
     return True
 
 
@@ -125,7 +126,7 @@ def setOwnerGroupPermissions(worker, path):
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
-    
+
     if os.path.isfile(path):
         try:
             debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
@@ -166,7 +167,7 @@ def lockdown_directory(worker):
     files = filter(os.path.isfile, dirContents)
     for file in files:
         os.chmod(file, 0600)
-    
+
     directories = filter(os.path.isdir, dirContents)
     for directory in directories:
         if not directory == cruiseDir:
@@ -176,9 +177,9 @@ def lockdown_directory(worker):
 
 
 
-    
+
 class OVDMGearmanWorker(gearman.GearmanWorker):
-    
+
     def __init__(self, host_list=None):
         self.stop = False
         self.quit = False
@@ -187,15 +188,15 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = {}
         self.task = None
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
-        
-    
+
+
     def get_task(self, current_job):
         tasks = self.OVDM.getTasks()
         for task in tasks:
             if task['name'] == current_job.task:
                 self.task = task
                 return True
-        
+
         for task in customTaskLookup:
             if task['name'] == current_job.task:
                 self.task = task
@@ -204,12 +205,12 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.task = None
         return False
 
-    
+
     def on_job_execute(self, current_job):
         self.get_task(current_job)
         payloadObj = json.loads(current_job.data)
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
-        
+
         self.cruiseID = self.OVDM.getCruiseID()
         self.cruiseStartDate = self.OVDM.getCruiseStartDate()
         self.systemStatus = self.OVDM.getSystemStatus()
@@ -220,36 +221,36 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
-                
+
         if int(self.task['taskID']) > 0:
 
             self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
 #        else:
 #            self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
-            
+
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "started at:  ", time.strftime("%D %T", time.gmtime()))
 
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
-            
+
 
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
-        
+
         self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
         if int(self.task['taskID']) > 0:
             self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
             self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
-        
+
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         errPrint(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
-    
+
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
-                
+
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
@@ -262,14 +263,14 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         else:
             if int(self.task['taskID']) > 0:
                 self.OVDM.setIdle_task(self.task['taskID'])
-        
+
         debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
-            
+
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "completed at:", time.strftime("%D %T", time.gmtime()))
-            
+
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
 
-    
+
     def after_poll(self, any_activity):
         self.stop = False
         self.task = None
@@ -278,13 +279,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         else:
             self.quit = False
         return True
-    
-    
+
+
     def stopTask(self):
         self.stop = True
         debugPrint("Stopping current task...")
 
-    
+
     def quitWorker(self):
         self.stop = True
         self.quit = True
@@ -297,9 +298,9 @@ def task_createCruiseDirectory(worker, job):
 
     payloadObj = json.loads(job.data)
     debugPrint('Payload:', json.dumps(payloadObj, indent=2))
-    
+
     worker.send_job_status(job, 1, 10)
-    
+
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
@@ -311,7 +312,7 @@ def task_createCruiseDirectory(worker, job):
         job_results['parts'].append({"partName": "Verify Base Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
-            
+
     if not os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Pass"})
     else:
@@ -323,16 +324,16 @@ def task_createCruiseDirectory(worker, job):
 
     directoryList = build_directorylist(worker)
     debugPrint('Directory List:', json.dumps(directoryList, indent=2))
-    
+
     if len(directoryList) > 0:
         job_results['parts'].append({"partName": "Build Directory List", "result": "Pass"})
     else:
         errPrint("Directory list is empty")
         job_results['parts'].append({"partName": "Build Directory List", "result": "Fail"})
         return json.dumps(job_results)
-    
+
     worker.send_job_status(job, 5, 10)
-    
+
     if create_directories(worker, directoryList):
         job_results['parts'].append({"partName": "Create Directories", "result": "Pass"})
     else:
@@ -340,7 +341,7 @@ def task_createCruiseDirectory(worker, job):
         job_results['parts'].append({"partName": "Create Directories", "result": "Fail"})
 
     worker.send_job_status(job, 7, 10)
-        
+
     if setOwnerGroupPermissions(worker, cruiseDir):
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
@@ -348,9 +349,9 @@ def task_createCruiseDirectory(worker, job):
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail"})
 
     worker.send_job_status(job, 10, 10)
-    
+
     return json.dumps(job_results)
-        
+
 
 def task_setCruiseDataDirectoryPermissions(worker, job):
 
@@ -360,7 +361,7 @@ def task_setCruiseDataDirectoryPermissions(worker, job):
     debugPrint('Payload:', json.dumps(payloadObj, indent=2))
 
     worker.send_job_status(job, 5, 10)
-    
+
     if worker.OVDM.showOnlyCurrentCruiseDir():
         debugPrint("Clear read permissions")
         lockdown_directory(worker)
@@ -373,8 +374,9 @@ def task_setCruiseDataDirectoryPermissions(worker, job):
         setOwnerGroupPermissions(worker, cruiseDir)
         job_results['parts'].append({"partName": "Set Directory Permissions for current cruise", "result": "Pass"})
 
+    job_results['parts'].append({"partName": "Set CruiseData Directory Permissions", "result": "Pass"})
     worker.send_job_status(job, 10, 10)
-    
+
     return json.dumps(job_results)
 
 def task_rebuildCruiseDirectory(worker, job):

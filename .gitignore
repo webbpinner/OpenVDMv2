@@ -3,8 +3,10 @@
 /var/www/OpenVDMv2/errorlog.html
 /var/www/OpenVDMv2/app/Core/Config.php
 /var/www/OpenVDMv2/app/templates/default/js/dataDashboardMainCustom.js
+/usr/local/etc/openvdm/postDataDashboard.yaml
+/usr/local/etc/openvdm/postCollectionSystemTransfer.yaml
 /usr/local/etc/openvdm/datadashboard.yaml
 /usr/local/etc/openvdm/openvdm.yaml
-/usr/local/bin/OVDM_dataProcessingScripts/EM302_dataDashboard.py
-/usr/local/bin/OVDM_dataProcessingScripts/SCS_dataDashboard.py
+/usr/local/bin/OVDM_dashboardDataScripts/EM302_dataDashboard.py
+/usr/local/bin/OVDM_dashboardDataScripts/SCS_dataDashboard.py
 composer.lock
