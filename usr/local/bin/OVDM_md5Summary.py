@@ -11,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-30
+#     REVISION:  2016-11-08
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2016
@@ -104,12 +104,32 @@ def build_hashes(worker, job, fileList):
         #print filename
         if filesizeLimitStatus == 'On' and not filesizeLimit == '0':
             if os.stat(os.path.join(baseDir, filename)).st_size < int(filesizeLimit) * 1000000:
-                hashes.append({'hash': hashlib.md5(os.path.join(baseDir, filename)).hexdigest(), 'filename': filename})
+                #debugPrint("Building Hash for:", os.path.join(baseDir, filename))
+                with open(os.path.join(baseDir, filename)) as file_to_check:
+
+                    # read contents of the file
+                    data = file_to_check.read()    
+
+                    # pipe contents of the file through
+                    hashes.append({'hash': hashlib.md5(data).hexdigest(), 'filename': filename})
+
+                # here's how you get the md5 of the file name... not too useful but was a funny bug caught by Bob Arko.
+                #hashes.append({'hash': hashlib.md5(os.path.join(baseDir, filename)).hexdigest(), 'filename': filename})
             else:
-                #print 'Skipping File: ' + filename
+                #debugPrint("Skipping Hash for:", os.path.join(baseDir, filename))
                 hashes.append({'hash': '********************************', 'filename': filename})
         else:
-            hashes.append({'hash': hashlib.md5(os.path.join(baseDir, filename)).hexdigest(), 'filename': filename})
+            #debugPrint("Building Hash for:", os.path.join(baseDir, filename))
+            with open(os.path.join(baseDir, filename)) as file_to_check:
+
+                # read contents of the file
+                data = file_to_check.read()    
+
+                # pipe contents of the file through
+                hashes.append({'hash': hashlib.md5(data).hexdigest(), 'filename': filename})
+
+            # here's how you get the md5 of the file name... not too useful but was a funny bug caught by Bob Arko.
+            #hashes.append({'hash': hashlib.md5(os.path.join(baseDir, filename)).hexdigest(), 'filename': filename})
 
         worker.send_job_status(job, int(20 + 60*float(index)/float(fileCount)), 100)
 
@@ -118,6 +138,7 @@ def build_hashes(worker, job, fileList):
             break
 
         index += 1
+    #debugPrint("Finished building hashes")
 
     return hashes
 
@@ -171,7 +192,16 @@ def build_MD5Summary_MD5(worker):
 
     md5SummaryFilepath = os.path.join(cruiseDir, md5SummaryFN)
     md5SummaryMD5Filepath = os.path.join(cruiseDir, md5SummaryMD5FN)
-    md5SummaryMD5Hash = hashlib.md5(md5SummaryFilepath).hexdigest()
+    with open(md5SummaryFilepath) as file_to_check:
+
+        # read contents of the file
+        data = file_to_check.read()    
+
+        # pipe contents of the file through
+        md5SummaryMD5Hash = hashlib.md5(data).hexdigest()
+
+        # here's how you get the md5 of the file name... not too useful but was a funny bug caught by Bob Arko.
+        #md5SummaryMD5Hash = hashlib.md5(md5SummaryFilepath).hexdigest()
     
     try:
         #debugPrint("Opening MD5 Summary MD5 file")
@@ -444,6 +474,7 @@ def task_rebuildMD5Summary(worker, job):
 
     debugPrint("Building hashes")
     newHashes = build_hashes(worker, job, fileList)
+    #debugPrint("Hashes:", json.dumps(newHashes, indent=2))
     
     worker.send_job_status(job, 8, 10)
     
@@ -452,9 +483,14 @@ def task_rebuildMD5Summary(worker, job):
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Pass"})
-                
+
+    worker.send_job_status(job, 85, 100)
+
+    debugPrint("Sorting Hashes")   
     sortedHashes = sorted(newHashes, key=lambda hashes: hashes['filename'])
     
+    worker.send_job_status(job, 9, 10)
+
     debugPrint("Building MD5 Summary file")
     try:
         #debugPrint("Saving new MD5 Summary file")
@@ -474,7 +510,7 @@ def task_rebuildMD5Summary(worker, job):
         setOwnerGroupPermissions(worker, md5SummaryFilepath)
         job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
     
-    worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 95, 100)
 
     debugPrint("Building MD5 Summary MD5 file")
     if build_MD5Summary_MD5(worker):
