@@ -374,7 +374,7 @@ cd ~/pecl-gearman
 phpize
 ./configure
 make
-make install
+sudo make install
 ```
 
 Create the file `/etc/php/7.0/mods-available/gearman.ini`
@@ -388,12 +388,12 @@ extension=gearman.so
 
 Enable the new module
 ```
-phpenmod gearman
+sudo phpenmod gearman
 ```
 
 Restart apache
 ```
-service apache2 restart
+sudo service apache2 restart
 ```
 
 ####Installing the yaml php module
@@ -413,12 +413,12 @@ extension=yaml.so
 
 Enable the new module
 ```
-phpenmod yaml
+sudo phpenmod yaml
 ```
 
 Restart apache
 ```
-service apache2 restart
+sudo service apache2 restart
 ```
 
 ####Create the Required Directories
@@ -688,3 +688,12 @@ sudo service samba restart
 At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure data dashboard collection system transfers, cruise data transfers and the shoreside data warehouse.
 
 To access the OpenVDM web-application goto: <http://127.0.0.1/OpenVDMv2/>
+The default username/passwd is admin/demo
+
+#### Set the controlling username
+Goto <http://127.0.0.1/OpenVDMv2/config> and login
+Goto <http://192.168.1.125/OpenVDMv2/config/system> and scroll down to the bottom of the page.
+In the "Data Warehouses" section Click "Edit" next to Shipboard Data Warehouse (SBDW)
+Set the Server Username to match the user that was created for the data warehouse, in this guide the username was 'survey'
+
+
