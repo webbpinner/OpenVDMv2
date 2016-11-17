@@ -363,10 +363,12 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             try:
                 payloadObj['collectionSystemTransfer']['collectionSystemTransferID']
             except KeyError:
-                self.collectionSystemTransfer = None
+                debugPrint("Just testing a transfer configuration")
+                self.collectionSystemTransfer = payloadObj['collectionSystemTransfer']
+                self.collectionSystemTransfer['collectionSystemTransferID'] = None
             else:
                 self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
-                self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])    
+                self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
             try:
                 payloadObj['cruiseID']
             except KeyError:
@@ -374,7 +376,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             else:
                 self.cruiseID = payloadObj['cruiseID']
                 
-        if self.collectionSystemTransfer != None:
+        if self.collectionSystemTransfer['collectionSystemTransferID'] != None:
             self.OVDM.setRunning_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
         
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "connection test started at:  ", time.strftime("%D %T", time.gmtime()))
