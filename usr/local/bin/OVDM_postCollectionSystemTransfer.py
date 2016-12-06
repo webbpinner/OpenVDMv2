@@ -11,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2016-02-09
-#     REVISION:  2016-03-04
+#     REVISION:  2016-12-6
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2016
@@ -30,6 +30,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # ----------------------------------------------------------------------------------- #
+from __future__ import print_function
+import argparse
 import os
 import sys
 import gearman
@@ -42,44 +44,65 @@ import subprocess
 import yaml
 import openvdm
 
-taskLookup = {
-    "postCollectionSystemTransfer": "Post Collection System Transfer"
-}
+
+customTaskLookup = [
+    {
+        "taskID": "0",
+        "name": "postCollectionSystemTransfer",
+        "longName": "Post Collection System Transfer",
+    }
+]
 
 commandFile = '/usr/local/etc/openvdm/postCollectionSystemTransfer.yaml'
 
+DEBUG = False
+new_worker = None
+
+
+def debugPrint(*args, **kwargs):
+    global DEBUG
+    if DEBUG:
+        errPrint(*args, **kwargs)
+
+
+def errPrint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def getCommands(worker):
-    
+
     try:
         f = open(commandFile, 'r')
         collectionSystemCommands = yaml.load(f.read())
         f.close()
     except:
-        print "ERROR: Could not process configuration file: " + commandFile + "!"
+        errPrint("ERROR: Could not process configuration file:", commandFile + "!")
         return None
     
-    #print "New Files: " + "'" + json.dumps(worker.files['new']) + "'"
-    #print "Updated Files: " + json.dumps(worker.files['updated'])
-    for collectionSystemCommand in collectionSystemCommands:
-        if collectionSystemCommand['collectionSystemTransferName'] == worker.collectionSystemTransfer['name']:
-            #print json.dumps(collectionSystemCommand)
-            returnCommandList = collectionSystemCommand['commandList']
-            #print json.dumps(returnCommandList) 
-            for command in returnCommandList:
-                #print json.dumps(command)
-                #print "Replacing cruiseID"
-                command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
-                #print "Replacing collectionSystemTransferID"
-                command['command'] = [arg.replace('{collectionSystemTransferID}', worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
-                #print "Replacing collectionSystemTransferName"
-                command['command'] = [arg.replace('{collectionSystemTransferName}', worker.collectionSystemTransfer['name']) for arg in command['command']]
-                #print "Replacing newFiles"
-                command['command'] = [arg.replace('{newFiles}', "'" + json.dumps(worker.files['new']) + "'") for arg in command['command']]
-                #print "Replacing updatedFiles"
-                command['command'] = [arg.replace('{updatedFiles}', "'" + json.dumps(worker.files['updated']) + "'" ) for arg in command['command']]
-                
-            #print json.dumps(returnCommandList) 
-            return returnCommandList
+    if collectionSystemCommands:
+        debugPrint("commands to process")
+        for collectionSystemCommand in collectionSystemCommands:
+            if collectionSystemCommand['collectionSystemTransferName'] == worker.collectionSystemTransfer['name']:
+                #debugPrint('CollectionSystem Command:',json.dumps(collectionSystemCommand))
+                returnCommandList = collectionSystemCommand['commandList']
+                debugPrint(json.dumps(returnCommandList))
+                for command in returnCommandList:
+                    debugPrint("Raw Command:", json.dumps(command))
+                    #print "Replacing cruiseID"
+                    command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
+                    #print "Replacing collectionSystemTransferID"
+                    command['command'] = [arg.replace('{collectionSystemTransferID}', worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
+                    #print "Replacing collectionSystemTransferName"
+                    command['command'] = [arg.replace('{collectionSystemTransferName}', worker.collectionSystemTransfer['name']) for arg in command['command']]
+                    #print "Replacing newFiles"
+                    command['command'] = [arg.replace('{newFiles}', "'" + json.dumps(worker.files['new']) + "'") for arg in command['command']]
+                    #print "Replacing updatedFiles"
+                    command['command'] = [arg.replace('{updatedFiles}', "'" + json.dumps(worker.files['updated']) + "'" ) for arg in command['command']]
+                    
+                debugPrint("Processed Command:", json.dumps(returnCommandList))
+                return returnCommandList
+    else:
+        debugPrint('Command list file is empty')
 
     return []
     
@@ -90,20 +113,20 @@ def runCommands(commands, worker):
     
         try:
             s = ' '
-            print "Executing: " + s.join(command['command'])
+            debugPrint("Executing:", s.join(command['command']))
             proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             out, err = proc.communicate()            
             
             if len(out) > 0:
-                print "stdout:"
-                print out
+                debugPrint("stdout:")
+                debugPrint(out)
                 
             if len(err) > 0:
-                print "stderr:"
-                print err
+                errPrint("stderr:")
+                errPrint(err)
 
         except:
-            print "Error executing the: " + command['name'] + " script: ", s.join(command['command'])
+            errPrint("Error executing the: " + command['name'] + " script: ", s.join(command['command']))
             worker.OVDM.sendMsg("Error executing postCollectionSystemTransfer script", command['name'])
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -115,22 +138,42 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.cruiseID = ''
         self.collectionSystemTransfer = {}
         self.files = {}
+        self.shipboardDataWarehouseConfig = {}
+        self.task = None
+
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
-    
+
+    def get_task(self, current_job):
+        tasks = self.OVDM.getTasks()
+        for task in tasks:
+            if task['name'] == current_job.task:
+                self.task = task
+                return True
+        
+        for task in customTaskLookup:
+            if task['name'] == current_job.task:
+                self.task = task
+                return True
+
+        self.task = None
+        return False
 
     def on_job_execute(self, current_job):
+        self.get_task(current_job)
         payloadObj = json.loads(current_job.data)
-        #print payloadObj
-        self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])
-        
-        if len(payloadObj) > 1:
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+
+        self.cruiseID = self.OVDM.getCruiseID()
+        if len(payloadObj) > 0:
             try:
                 payloadObj['cruiseID']
             except KeyError:
-                self.cruiseID = self.OVDM.getCruiseID()
+            	debugPrint("Using current CruiseID")
             else:
                 self.cruiseID = payloadObj['cruiseID']
-            
+                debugPrint('Setting cruiseID to:', self.cruiseID)
+
+        if len(payloadObj) > 0:
             try:
                 payloadObj['files']
             except KeyError:
@@ -140,41 +183,60 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 }
             else:
                 self.files = payloadObj['files']
+
+        if int(self.task['taskID']) > 0:
+
+            self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
+        else:
+            self.OVDM.trackGearmanJob(self.task['longName'], os.getpid(), current_job.handle)
     
-        self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
-            
-        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " started at:   " + time.strftime("%D %T", time.gmtime())
+        errPrint("Job:", current_job.handle + ",", self.task['longName'], "started at:  ", time.strftime("%D %T", time.gmtime()))
+
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
             
 
     def on_job_exception(self, current_job, exc_info):
-        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " failed at:    " + time.strftime("%D %T", time.gmtime())
+        errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
-        self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', 'Unknown Part of Task')
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
+        if int(self.task['taskID']) > 0:
+            self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
+        else:
+            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        print(exc_type, fname, exc_tb.tb_lineno)
+        errPrint(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     
-    def on_job_complete(self, current_job, job_result):
-        resultObj = json.loads(job_result)
-        
-        if len(resultObj['parts']) > 0:
-            if resultObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                    self.OVDM.sendMsg(taskLookup[current_job.task] + ' failed', resultObj['parts'][-1]['partName'])
-        print "Job: " + current_job.handle + ", " + taskLookup[current_job.task] + " completed at: " + time.strftime("%D %T", time.gmtime())
-            
-        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_result)
+    def on_job_complete(self, current_job, job_results):
+        resultsObj = json.loads(job_results)
 
+        if len(resultsObj['parts']) > 0:
+            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                if int(self.task['taskID']) > 0:
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
+                else:
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
+            else:
+                if int(self.task['taskID']) > 0:
+                    self.OVDM.setIdle_task(self.task['taskID'])
+        else:
+            if int(self.task['taskID']) > 0:
+                self.OVDM.setIdle_task(self.task['taskID'])
+        
+        debugPrint('Job Results:', json.dumps(resultsObj['parts'], indent=2))
+
+        errPrint("Job:", current_job.handle + ",", self.task['longName'], "completed at:", time.strftime("%D %T", time.gmtime()))
+            
+        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
     
     def after_poll(self, any_activity):
         self.stop = False
         self.taskID = '0'
         if self.quit:
-            print "Quitting"
+            errPrint("Quitting")
             self.shutdown()
         else:
             self.quit - False
@@ -183,16 +245,21 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def stopTask(self):
         self.stop = True
+        debugPrint("Stopping current task...")
 
         
     def quitWorker(self):
         self.stop = True
         self.quit = True
+        debugPrint("Quitting worker...")
 
         
 def task_postCollectionSystemTransfer(worker, job):
 
     job_results = {'parts':[]}
+
+    payloadObj = json.loads(job.data)
+    debugPrint('Payload:', json.dumps(payloadObj, indent=2))
     
     worker.send_job_status(job, 1, 10)
     
@@ -206,41 +273,69 @@ def task_postCollectionSystemTransfer(worker, job):
     #print "Get Commands"
     commandsForCollectionSystem = getCommands(worker)
     
-    if commandsForCollectionSystem is None:
+    if commandsForCollectionSystem == None:
         job_results['parts'].append({"partName": "Get Commands", "result": "Fail"})
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
+        debugPrint("Commands:", json.dumps(commandsForCollectionSystem, indent=2))
+        if len(commandsForCollectionSystem) == 0:
+            #debugPrint("Nothing to do")
+            return json.dumps(job_results)
     
     worker.send_job_status(job, 3, 10)
 
-    #print "Run Commands"
+    debugPrint("Run Commands")
     runCommands(commandsForCollectionSystem, worker)
 
-    #print "done"
+    debugPrint("done")
     
     worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)   
 
 
-global new_worker
-new_worker = OVDMGearmanWorker()
+# -------------------------------------------------------------------------------------
+# Main function of the script should it be run as a stand-alone utility.
+# -------------------------------------------------------------------------------------
+def main(argv):
 
+    parser = argparse.ArgumentParser(description='Handle MD5 Summary related tasks')
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
-def sigquit_handler(_signo, _stack_frame):
-    print "Stopping"
-    new_worker.stopTask()
+    args = parser.parse_args()
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
 
-    
-def sigint_handler(_signo, _stack_frame):
-    print "Quitting"
-    new_worker.quitWorker()
-    
-    
-signal.signal(signal.SIGQUIT, sigquit_handler)
-signal.signal(signal.SIGINT, sigint_handler)
+    debugPrint('Creating Worker...')
+    global new_worker
+    new_worker = OVDMGearmanWorker()
 
-new_worker.set_client_id('postCollectionSystemTransfer.py')
-new_worker.register_task("postCollectionSystemTransfer", task_postCollectionSystemTransfer)
-new_worker.work()
+    debugPrint('Defining Signal Handlers...')
+    def sigquit_handler(_signo, _stack_frame):
+        errPrint("QUIT Signal Received")
+        new_worker.stopTask()
+
+    def sigint_handler(_signo, _stack_frame):
+        errPrint("INT Signal Received")
+        new_worker.quitWorker()
+
+    signal.signal(signal.SIGQUIT, sigquit_handler)
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    new_worker.set_client_id('postCollectionSystemTransfer.py')
+
+    debugPrint('Registering worker tasks...')
+    debugPrint('   Task:', 'postCollectionSystemTransfer')
+    new_worker.register_task("postCollectionSystemTransfer", task_postCollectionSystemTransfer)
+
+    debugPrint('Waiting for jobs...')
+    new_worker.work()
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    main(sys.argv[1:])

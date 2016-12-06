@@ -66,10 +66,16 @@ def errPrint(*args, **kwargs):
 def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
-    #debugPrint('cruiseStartDate', worker.cruiseStartDate)
+    staleness = int(worker.collectionSystemTransfer['staleness']) * 60 #5 Mintues
+    threshold_time = time.time() - staleness
+
+    debugPrint('cruiseStartDate', worker.cruiseStartDate)
+
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
-    #print cruiseStart_time
+
+    debugPrint("Start:", cruiseStart_time)
+    debugPrint("Threshold:", threshold_time)
+    
     filters = build_filters(worker)
     
     for root, dirnames, filenames in os.walk(sourceDir):
@@ -99,8 +105,9 @@ def build_filelist(worker, sourceDir):
                                 returnFiles['include'].append(os.path.join(root, filename))
                             #else:
                                 #debugPrint("Ignored because of time")
+                            
                             include = True
-                            break
+
                 if not include:
                     returnFiles['exclude'].append(os.path.join(root, filename))
 
@@ -115,13 +122,16 @@ def build_rsyncFilelist(worker, sourceDir):
     #print "Build file list"
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
-#    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    staleness = int(worker.collectionSystemTransfer['staleness']) * 60
+    threshold_time = time.time() - staleness # 5 minutes
+    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S") 
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
+    
+    debugPrint("Threshold:",threshold_time)
+    debugPrint("Start:",cruiseStart_time)
+
     filters = build_filters(worker)
 
-    #print threshold_time
-    #rsyncFileList = ''
-    
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
     rsyncPasswordFilePath = os.path.join(tmpdir, 'passwordFile')
@@ -157,12 +167,9 @@ def build_rsyncFilelist(worker, sourceDir):
         
     #print "rsyncFileListOut: " + rsyncFileList
     
-    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
-    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
-    
     for line in rsyncFileList.splitlines():
         #debugPrint('line:', line.rstrip('\n'))
-        fileOrDir, size, mdate, mtime, filename = line.split()
+        fileOrDir, size, mdate, mtime, filename = line.split(None, 4)
         if fileOrDir.startswith('-'):
             exclude = False
             ignore = False
@@ -185,12 +192,15 @@ def build_rsyncFilelist(worker, sourceDir):
                         if not exclude:
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                            #print "file_mod_time_SECS: " + str(file_mod_time_SECS)
+                            #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
                             if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
-                                #print "include"
+                                #debugPrint("include")
                                 returnFiles['include'].append(filename)
+                            #else:
+                                #debugPrint("Skipped for time reasons")
+
                             include = True
-                            break
+
                 if not include:
                     #print "exclude"
                     returnFiles['exclude'].append(filename)
@@ -208,31 +218,33 @@ def build_sshFilelist(worker, sourceDir):
     #print "Build file list"
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+
+    staleness = int(worker.collectionSystemTransfer['staleness']) * 60
     threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
+    
+    debugPrint("Threshold:",threshold_time)
+    debugPrint("Start:",cruiseStart_time)
+
     filters = build_filters(worker)
     
-    #print threshold_time
     rsyncFileList = ''
     
-    #command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     
-    #s = ' '
-    #print s.join(command)
+    s = ' '
+    debugPrint("Command:",s.join(command))
         
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     rsyncFileList = out
         
-    #print "rsyncFileListOut: " + rsyncFileList
-    
-    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
-    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
-    
+    #debugPrint("rsyncFileListOut:", + rsyncFileList)
+        
     for line in rsyncFileList.splitlines():
-        #print line
-        fileOrDir, size, mdate, mtime, name = line.split()
+        #debugPrint("line:", line)
+        fileOrDir, size, mdate, mtime, name = line.split(None, 4)
         if fileOrDir.startswith('-'):
             filename = name
             #print name
@@ -257,14 +269,17 @@ def build_sshFilelist(worker, sourceDir):
                         if not exclude:
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                            #print "file_mod_time_SECS: " + str(file_mod_time_SECS)
+                            #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
                             if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
-                                #print "include"
+                                #debugPrint("include")
                                 returnFiles['include'].append(filename)
+                            #else:
+                                #debugPrint("Skipped for time reasons")
+
                             include = True
-                            break
+
                 if not include:
-                    #print "exclude"
+                    #debugPrint("exclude")
                     returnFiles['exclude'].append(filename)        
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
@@ -919,7 +934,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         # If the last part of the results failed
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+                if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
+                    self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
             else:
                 self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
         else:
@@ -965,6 +981,14 @@ def task_runCollectionSystemTransfer(worker, job):
     collectionSystemDestDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
     collectionSystemSourceDir = build_sourceDir(worker).rstrip('/')
     
+    if worker.collectionSystemTransfer['status'] != "1": #not running
+        debugPrint("Transfer is not already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
+    else:
+        debugPrint("Transfer is already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+        return json.dumps(job_results)
+        
     if worker.collectionSystemTransfer['enable'] == "1" and worker.systemStatus == "On":
         debugPrint("Transfer Enabled")
         job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
@@ -972,13 +996,6 @@ def task_runCollectionSystemTransfer(worker, job):
         debugPrint("Transfer Disabled")
         return json.dumps(job_results)
     
-    if worker.collectionSystemTransfer['status'] != "1": #not running
-        debugPrint("Transfer is not already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
-    else:
-        debugPrint("Transfer is already in-progress")
-        return json.dumps(job_results)
-        
     #debugPrint("Setting transfer status to 'Running'")
     worker.OVDM.setRunning_collectionSystemTransfer(worker.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), job.handle)
         
@@ -1067,20 +1084,20 @@ def task_runCollectionSystemTransfer(worker, job):
             job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail"})
             return job_results
             
-    if job_results['files']['exclude']:
-        # Format exclude files for transfer log
-        job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
-        
-        logfileName = worker.collectionSystemTransfer['name'] + '_Exclude.log'
-        #print filenameErrorLogfileName
-        logContents = {'files':{'exclude':[]}}
-        logContents['files']['exclude'] = job_results['files']['exclude']
+    #if job_results['files']['exclude']:
+    # Format exclude files for transfer log
+    job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
+    
+    logfileName = worker.collectionSystemTransfer['name'] + '_Exclude.log'
+    #print filenameErrorLogfileName
+    logContents = {'files':{'exclude':[]}}
+    logContents['files']['exclude'] = job_results['files']['exclude']
 
-        if writeLogFile(worker, logfileName, logContents['files']):
-            job_results['parts'].append({"partName": "Write exclude logfile", "result": "Pass"})
-        else:
-            job_results['parts'].append({"partName": "Write exclude logfile", "result": "Fail"})
-            return job_results
+    if writeLogFile(worker, logfileName, logContents['files']):
+        job_results['parts'].append({"partName": "Write exclude logfile", "result": "Pass"})
+    else:
+        job_results['parts'].append({"partName": "Write exclude logfile", "result": "Fail"})
+        return job_results
 
     worker.send_job_status(job, 10, 10)
     

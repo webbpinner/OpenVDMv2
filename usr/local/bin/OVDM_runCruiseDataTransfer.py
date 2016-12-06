@@ -11,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-30
+#     REVISION:  2016-12-06
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2016
@@ -575,7 +575,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         # If the last part of the results failed
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
+                if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
+                    self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
             else:
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
         else:
@@ -616,18 +617,19 @@ def task_runCruiseDataTransfer(worker, job):
     
     job_results = {'parts':[], 'files':[]}
 
-    if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
-        debugPrint("Transfer Enabled")
-        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
-    else:
-        debugPrint("Transfer Disabled")
-        return json.dumps(job_results)
-
     if worker.cruiseDataTransfer['status'] != "1": #running
         debugPrint("Transfer is not already in-progress")
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     else:
         debugPrint("Transfer is already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+        return json.dumps(job_results)
+
+    if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
+        debugPrint("Transfer Enabled")
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
+    else:
+        debugPrint("Transfer Disabled")
         return json.dumps(job_results)
 
     #debugPrint("Set transfer status to 'Running'")

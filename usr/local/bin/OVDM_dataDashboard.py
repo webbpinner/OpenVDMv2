@@ -358,7 +358,7 @@ def task_updateDataDashboard(worker, job):
             break
 
         debugPrint("Processing file:", filename)
-        jsonFileName = filename.split('.')[0] + '.json'
+        jsonFileName = os.path.splitext(filename)[0] + '.json'
         rawFilePath = os.path.join(cruiseDir, filename)
         jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
 
@@ -572,7 +572,7 @@ def task_rebuildDataDashboard(worker, job):
                 break
 
             debugPrint("Processing file:", filename)
-            jsonFileName = filename.split('.')[0] + '.json'
+            jsonFileName = os.path.splitext(filename)[0] + '.json'
             #debugPrint('jsonFileName:', jsonFileName)
             rawFilePath = os.path.join(cruiseDir, filename)
             #debugPrint('rawFilePath:', rawFilePath)

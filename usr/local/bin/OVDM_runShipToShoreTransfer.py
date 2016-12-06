@@ -78,16 +78,16 @@ def build_filelist(worker):
                 if shipToShoreTransfer['enable'] == '1':
                     if not shipToShoreTransfer['collectionSystem'] == "0":
                         collectionSystem = worker.OVDM.getCollectionSystemTransfer(shipToShoreTransfer['collectionSystem'])
-                        shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
+                        shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(',')
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + collectionSystem['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
                     elif not shipToShoreTransfer['extraDirectory'] == "0":
                         extraDirectory = worker.OVDM.getExtraDirectory(shipToShoreTransfer['extraDirectory'])
-                        shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
+                        shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(',')
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + extraDirectory['destDir'] + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
                     else:
-                        shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(' ')
+                        shipToShoreFilters = shipToShoreTransfer['includeFilter'].split(',')
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
 
@@ -360,7 +360,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         # If the last part of the results failed
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
+                if resultsObj['parts'][-1]['partName'] != 'Transfer In-Progress': # only if the part names are not these is there a problem
+                    self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
             else:
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
         else:
@@ -400,18 +401,19 @@ def task_runShipToShoreTransfer(worker, job):
 
     job_results = {'parts':[], 'files':[]}
 
-    if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
-        debugPrint("Transfer Enabled")
-        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
-    else:
-        debugPrint("Transfer Disabled")
-        return json.dumps(job_results)
-
     if worker.cruiseDataTransfer['status'] != "1": #running
         debugPrint("Transfer is not already in-progress")
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     else:
         debugPrint("Transfer is already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+        return json.dumps(job_results)
+
+    if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
+        debugPrint("Transfer Enabled")
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
+    else:
+        debugPrint("Transfer Disabled")
         return json.dumps(job_results)
     
     #debugPrint("Set transfer status to 'Running'")
