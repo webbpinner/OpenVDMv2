@@ -446,8 +446,6 @@ sudo chown -R survey:survey /vault/FTPRoot/*
 From a terminal window type:
 ```
 git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
-cd ~/OpenVDMv2
-git checkout v2.2
 ```
 
 ####Create OpenVDMv2 Database
