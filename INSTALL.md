@@ -201,7 +201,7 @@ In order to add GIS capability to OpenVDMv2 without eccessive requests to the in
 
 Install the dependencies
 ```
-sudo apt-get install python-pip python-imaging python-yaml libproj0 libgeos-dev python-lxml libgdal-dev python-shapely
+sudo apt-get install python-pip python-imaging python-yaml libgeos-dev python-lxml libgdal-dev python-shapely
 ```
 
 Install MapProxy
