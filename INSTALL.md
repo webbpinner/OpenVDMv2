@@ -69,7 +69,7 @@ The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Serve
 
 To install Apache open a terminal window and type:
 ```
-sudo apt-get install apache2 libapache2-mod-php
+sudo apt-get install apache2 libapache2-mod-php7.0
 ```
 
 Apache2 is installed by Xubuntu by default but an Apache2 module must be enabled.  To enable the additional module open a terminal window and type:
