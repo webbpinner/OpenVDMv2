@@ -101,8 +101,6 @@ def setOwnerGroupPermissions(worker, path):
 
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
-    # Set the file permission and ownership for the current directory
-
     
     if os.path.isfile(path):
         try:
@@ -145,8 +143,7 @@ def build_filelist(worker, sourceDir):
             returnFiles['include'].append(os.path.join(root, filename))
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
-    #returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
-
+    
     return returnFiles
 
 def transfer_PublicDataDir(worker, job):
@@ -175,7 +172,6 @@ def transfer_PublicDataDir(worker, job):
 
     except IOError:
         errPrint("Error Saving temporary rsync filelist file")
-        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
         rsyncFileListFile.close()
             
         # Cleanup
@@ -185,12 +181,9 @@ def transfer_PublicDataDir(worker, job):
 
     finally:
         rsyncFileListFile.close()
-        #returnVal.append({"testName": "Writing temporary rsync password file", "result": "Pass"})
     
     command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, publicDataDir + '/', scienceDir]
-    
-    #s = ' '
-    #print s.join(command)
+    debugPrint("Command:", ' '.join(command))
     
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
     lines_iterator = iter(popen.stdout.readline, b"")
@@ -295,7 +288,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail"}]))
         if int(self.task['taskID']) > 0:
             self.OVDM.setError_task(self.task['taskID'], "Unknown Part of Task")
         else:
@@ -493,7 +486,7 @@ def task_finalizeCurrentCruise(worker, job):
 
     for collectionSystemTransfer in collectionSystemTransfers:
 
-    	debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
+        debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
         gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
         
         collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )

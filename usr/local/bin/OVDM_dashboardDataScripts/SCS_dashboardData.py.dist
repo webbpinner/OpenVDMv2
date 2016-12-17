@@ -58,12 +58,11 @@ SCRIPT_DIR = '/usr/local/bin/OVDM_dashboardDataScripts/'
 # regex expression.
 # -------------------------------------------------------------------------------------
 fileTypeFilters = [
-    {"dataType":"twind",      "regex": "*METOC/TrueWind-RAW_*.Raw"},
-    {"dataType":"tsg",        "regex": "*METOC/TSG-RAW_*.Raw"},
-    {"dataType":"met",        "regex": "*METOC/MET-M01_*.Raw"},
-    {"dataType":"svp",        "regex": "*METOC/Sound-Velocity-Probe_*.Raw"},
-    {"dataType":"gga-posmv",  "regex": "*NAV/POSMV-GGA_*.Raw"},
-#    {"dataType":"rov-hdt",   "regex": "*COM29-Subastian-Gyro-HDT-RAW*.Raw"},
+    {"dataType":"twind",     "regex": "*METOC/TrueWind-RAW_*.Raw",          "command": ['python', SCRIPT_DIR + 'twind_parser.py']},
+    {"dataType":"tsg",       "regex": "*METOC/TSG-RAW_*.Raw",               "command": ['python', SCRIPT_DIR + 'tsg_parser.py']},
+    {"dataType":"met",       "regex": "*METOC/MET-M01_*.Raw",               "command": ['python', SCRIPT_DIR + 'met_parser.py']},
+    {"dataType":"svp",       "regex": "*METOC/Sound-Velocity-Probe_*.Raw",  "command": ['python', SCRIPT_DIR + 'svp_parser.py']},
+    {"dataType":"gga-posmv", "regex": "*NAV/POSMV-GGA_*.Raw",               "command": ['python', SCRIPT_DIR + 'gga_parser.py']},
 ]
 
 DEBUG = False
@@ -87,6 +86,20 @@ def getDataType(filePath):
             return fileTypeFilter['dataType']
 
     return False
+
+
+# -------------------------------------------------------------------------------------
+# Function to determine the command to run against a raw datafile to produce the
+# dashboardData.  If the command can not be determined, the function returns false
+# -------------------------------------------------------------------------------------
+def getCommandByFile(filePath):
+
+    for fileTypeFilter in fileTypeFilters:
+        if fnmatch.fnmatch(filePath, fileTypeFilter['regex']):
+            return fileTypeFilter['command']
+
+    return False
+
     
 # -------------------------------------------------------------------------------------
 # Function to process the raw datafile and return a json-formatted representation.  If
@@ -96,23 +109,9 @@ def getDataType(filePath):
 # -------------------------------------------------------------------------------------
 def getJsonObj(filePath):
 
-    dataType = getDataType(filePath)
-    debugPrint('DataType:', dataType)
-
-    #global DEBUG
-
-    if dataType == 'twind':
-        command = ['python', SCRIPT_DIR + 'twind_parser.py']
-    elif dataType == 'tsg':
-        command = ['python', SCRIPT_DIR + 'tsg_parser.py']
-    elif dataType == 'met':
-        command = ['python', SCRIPT_DIR + 'met_parser.py']
-    elif dataType == 'svp':
-        command = ['python', SCRIPT_DIR + 'svp_parser.py']
-    elif dataType == 'gga-posmv':
-        command = ['python', SCRIPT_DIR + 'gga_parser.py']
-    else:
-	debugPrint("Unmatched datatype")
+    command = getCommandByFile(filePath)
+    
+    if not command:
         return False
 
     if DEBUG:
@@ -129,7 +128,7 @@ def getJsonObj(filePath):
 
     if out:
         return json.loads(out)
-
+    
     return {'error': 'Unknown parsing error in ' + filePath + ' occurred<br>Command: ' + s.join(command)}
 
 

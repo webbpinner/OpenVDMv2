@@ -464,7 +464,6 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
-#        self.startTime = time.gmtime()
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         self.cruiseID = self.OVDM.getCruiseID()
 
@@ -493,7 +492,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test failed at:    ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"testName": "Unknown Testing Process", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
         
         if self.cruiseDataTransfer['cruiseDataTransferID'] != None:
             self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], "Worker Crashed")
@@ -506,6 +505,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
+
         debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
 
         errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test ended at:    ", time.strftime("%D %T", time.gmtime()))

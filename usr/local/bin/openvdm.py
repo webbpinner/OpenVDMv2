@@ -35,6 +35,8 @@ import yaml
 import json
 import datetime
 
+configFile = '/usr/local/etc/openvdm/openvdm.yaml'
+
 class OpenVDM():
 
     def __init__(self):
@@ -45,7 +47,7 @@ class OpenVDM():
 
     def parseOVDMConfig(self):
 
-        f = open('/usr/local/etc/openvdm/openvdm.yaml', 'r')
+        f = open(configFile, 'r')
         return yaml.load(f.read())
 
 
