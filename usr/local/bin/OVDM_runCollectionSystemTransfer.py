@@ -906,7 +906,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "transfer failed at:   ", time.strftime("%D %T", time.gmtime()))
         
         self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
-        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], "Worker crashed")
+        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], 'Reason: Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -935,7 +935,10 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
-                    self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
+                    for test in resultsObj['parts']:
+                        if test['result'] == "Fail":
+                            self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], 'Reason: ' +  test['partName'])
+                            break
             else:
                 self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
         else:

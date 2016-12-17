@@ -387,8 +387,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
         self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
         
-        if self.collectionSystemTransfer['collectionSystemTransferID'] != None:
-            self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'])
+        self.OVDM.sendMsg(current_job.handle, 'Worker crashed testing ' + self.collectionSystemTransfer['name'])
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -400,6 +399,17 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         resultsObj = json.loads(job_results)
 
         debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
+
+        if self.collectionSystemTransfer['collectionSystemTransferID'] != None: # collectionSystemTransferID == None would be testing a new, unsaved config
+            if resultsObj['parts'][-1]['result'] == "Fail":
+                for test in resultsObj['parts']:
+                    if test['result'] == "Fail":
+                        self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], 'Reason: ' + test['testName'])
+                        break
+            else:
+                self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
+
+
 
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "connection test ended at:    ", time.strftime("%D %T", time.gmtime()))
 
@@ -455,12 +465,6 @@ def task_testCollectionSystemTransfer(worker, job):
     for test in job_results['parts']:
         if test['result'] == "Fail":
             verdict = "Fail"
-
-    if worker.collectionSystemTransfer['collectionSystemTransferID'] != None:
-        if verdict == "Pass":
-            worker.OVDM.clearError_collectionSystemTransfer(worker.collectionSystemTransfer['collectionSystemTransferID'], worker.collectionSystemTransfer['status'])
-        else:
-            worker.OVDM.setError_collectionSystemTransferTest(worker.collectionSystemTransfer['collectionSystemTransferID'])
 
     job_results['parts'].append({"testName": "Final Verdict", "result": verdict})
     worker.send_job_status(job, 4, 4)
