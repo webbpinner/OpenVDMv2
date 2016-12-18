@@ -9,5 +9,5 @@ sudo rsync -avi --exclude="errorlog.html" --exclude=".htaccess" --exclude="Confi
 
 # Scripts
 sudo rsync -avi --exclude="OVDM_dashboardDataScripts" /usr/local/bin/OVDM_* ../usr/local/bin/
+sudo rsync -avi /usr/local/bin/openvdm.py ../usr/local/bin/
 sudo rsync -avi /usr/local/bin/OVDM_dashboardDataScripts/*.dist ../usr/local/bin/OVDM_dashboardDataScripts
-
