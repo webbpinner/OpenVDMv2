@@ -107,6 +107,7 @@ Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it 
 
 From a terminal window type:
 ```
+cd ~
 sudo apt-get install curl
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
@@ -121,6 +122,7 @@ sudo npm install -g bower
 ####Install Gearman-UI
 Download the code from GitHub
 ```
+cd ~
 sudo apt-get install git
 git clone git://github.com/gaspaio/gearmanui.git ~/gearman-ui
 ```
@@ -135,7 +137,7 @@ cp config.yml.dist config.yml
 
 Move the site to where Apache2 can access it.
 ```
-cd
+cd ~
 sudo mv gearman-ui /var/www/
 sudo chown -R root:root /var/www/gearman-ui
 ```
@@ -147,16 +149,16 @@ sudo nano /etc/apache2/sites-available/000-default.conf
 
 Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
 ```
-  Alias /gearman-ui /var/www/gearman-ui/web
-  <Directory "/var/www/gearman-ui/web">
-    <IfModule mod_rewrite.c>
-      Options -MultiViews
-      RewriteEngine On
-      RewriteBase /gearman-ui/
-      RewriteCond %{REQUEST_FILENAME} !-f
-      RewriteRule ^ index.php [QSA,L]
-    </IfModule>
-  </Directory>
+Alias /gearman-ui /var/www/gearman-ui/web
+<Directory "/var/www/gearman-ui/web">
+  <IfModule mod_rewrite.c>
+    Options -MultiViews
+    RewriteEngine On
+    RewriteBase /gearman-ui/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [QSA,L]
+  </IfModule>
+</Directory>
 ```
 
 Reload Apache2
@@ -211,7 +213,7 @@ sudo pip install MapProxy
 
 Build the initial configuration
 ```
-cd
+cd ~
 mapproxy-util create -t base-config mapproxy
 ```
 
@@ -365,6 +367,7 @@ The gearman extension team at pecl has not yet updated the gearman php module to
 
 Download the module
 ```
+cd ~
 git clone https://github.com/wcgallego/pecl-gearman.git ~/pecl-gearman
 ```
 
@@ -445,6 +448,7 @@ sudo chown -R survey:survey /vault/FTPRoot/*
 
 From a terminal window type:
 ```
+cd ~
 git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
