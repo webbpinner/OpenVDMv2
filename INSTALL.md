@@ -690,7 +690,7 @@ Add the following to end of the `smb.conf` file.  Set the user in `write list` t
 
 Restart the Samba service
 ```
-sudo service samba restart
+sudo systemctl restart samba-ad-dc.service
 ```
 
 At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure data dashboard collection system transfers, cruise data transfers and the shoreside data warehouse.
