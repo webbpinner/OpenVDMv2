@@ -445,7 +445,7 @@ For the purposes of these installation instructions the parent folder for **FTPR
 ```
 sudo mkdir -p /vault/FTPRoot/CruiseData
 sudo mkdir -p /vault/FTPRoot/PublicData
-sudo mkdir -p /vault/FTPRoot/VistorInformation
+sudo mkdir -p /vault/FTPRoot/VisitorInformation
 sudo chmod -R 777 /vault/FTPRoot/PublicData
 sudo chown -R survey:survey /vault/FTPRoot/*
 ```
