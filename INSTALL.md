@@ -405,7 +405,7 @@ sudo service apache2 restart
 ####Installing the yaml php module
 ```
 sudo apt-get install libyaml-dev
-pecl install yaml-2.0.0
+sudo pecl install yaml-2.0.0
 ```
 
 Create the file `/etc/php/7.0/mods-available/yaml.ini`
