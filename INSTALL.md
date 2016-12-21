@@ -544,7 +544,7 @@ define('DIR', '/OpenVDMv2/');
 /*
  * Define path on webserver that contains cruise data
  */
-define('CRUISEDATA_BASEDIR', '/mnt/vault/FTPRoot/CruiseData');
+define('CRUISEDATA_BASEDIR', '/vault/FTPRoot/CruiseData');
 ```
 
  - Set the access creditials for the MySQL database.  Look for the following lines and modify them to fit the actual database name (`DB_NAME`), database username (`DB_USER`), and database user password (`DB_PASS`).
@@ -582,8 +582,8 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
     RewriteRule ^/$ /OpenVDMv2/ [R]
   </IfModule>
 
-  Alias /CruiseData/ /mnt/vault/FTPRoot/CruiseData/
-  <Directory "/mnt/vault/FTPRoot/CruiseData">
+  Alias /CruiseData/ /vault/FTPRoot/CruiseData/
+  <Directory "/vault/FTPRoot/CruiseData">
     AllowOverride None
     Options +Indexes -FollowSymLinks +MultiViews
     Order allow,deny
@@ -591,8 +591,8 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
     Require all granted
   </Directory>
   
-  Alias /PublicData/ /mnt/vault/FTPRoot/PublicData/
-  <Directory "/mnt/vault/FTPRoot/PublicData">
+  Alias /PublicData/ /vault/FTPRoot/PublicData/
+  <Directory "/vault/FTPRoot/PublicData">
     AllowOverride None
     Options +Indexes -FollowSymLinks +MultiViews
     Order allow,deny
@@ -600,8 +600,8 @@ Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
     Require all granted
   </Directory>
 
-  Alias /VisitorInformation/ /mnt/vault/FTPRoot/VisitorInformation/
-  <Directory "/mnt/vault/FTPRoot/VisitorInformation">
+  Alias /VisitorInformation/ /vault/FTPRoot/VisitorInformation/
+  <Directory "/vault/FTPRoot/VisitorInformation">
     AllowOverride None
     Options +Indexes -FollowSymLinks +MultiViews
     Order allow,deny
@@ -649,7 +649,7 @@ Add the following to end of the `smb.conf` file.  Set the user in `write list` t
 ```
 [CruiseData]
   comment=Cruise Data, read-only access to guest
-  path=/mnt/vault/FTPRoot/CruiseData
+  path=/vault/FTPRoot/CruiseData
   browsable = yes
   public = yes
   guest ok = yes
@@ -657,12 +657,12 @@ Add the following to end of the `smb.conf` file.  Set the user in `write list` t
   write list = survey
   create mask = 0644
   directory mask = 0755
-  veto files = /._*/.DS_Store/
+  veto files = /._*/.DS_Store/.Trashes*/
   delete veto files = yes
 
 [VisitorInformation]
   comment=Visitor Information, read-only access to guest
-  path=/mnt/vault/FTPRoot/VisitorInformation
+  path=/vault/FTPRoot/VisitorInformation
   browsable = yes
   public = yes
   guest ok = yes
@@ -670,19 +670,19 @@ Add the following to end of the `smb.conf` file.  Set the user in `write list` t
   write list = survey
   create mask = 0644
   directory mask = 0755
-  veto files = /._*/.DS_Store/
+  veto files = /._*/.DS_Store/.Trashes*/
   delete veto files = yes
 
 [PublicData]
   comment=Public Data, read/write access to all
-  path=/mnt/vault/FTPRoot/PublicData
+  path=/vault/FTPRoot/PublicData
   browseable = yes
   public = yes
   guest ok = yes
   writable = yes
   create mask = 0000
   directory mask = 0000
-  veto files = /._*/.DS_Store/
+  veto files = /._*/.DS_Store/.Trashes*/
   delete veto files = yes
   force create mode = 666
   force directory mode = 777
