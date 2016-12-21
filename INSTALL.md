@@ -409,6 +409,9 @@ sudo pecl install yaml-2.0.0
 ```
 
 Create the file `/etc/php/7.0/mods-available/yaml.ini`
+```
+sudo nano /etc/php/7.0/mods-available/yaml.ini
+```
 
 Copy the following into `gearman.ini`
 ```
