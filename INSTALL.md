@@ -381,6 +381,9 @@ sudo make install
 ```
 
 Create the file `/etc/php/7.0/mods-available/gearman.ini`
+```
+sudo nano /etc/php/7.0/mods-available/gearman.ini
+```
 
 Copy the following into `gearman.ini`
 ```
