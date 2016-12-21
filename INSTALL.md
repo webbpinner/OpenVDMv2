@@ -181,7 +181,7 @@ port = 9001
 
 Editing this file will require root privledges.
 ```
-sudo nano /etc/supervisor/supervisor.conf
+sudo nano /etc/supervisor/supervisord.conf
 ```
 
 Restart Supervisor:
