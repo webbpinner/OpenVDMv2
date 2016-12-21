@@ -172,7 +172,7 @@ To install Supervisor open and terminal window and type the following command:
 sudo apt-get install supervisor
 ```
 
-Add the following lines to `/etc/supervisor/supervisor.conf`:
+Add the following lines to `/etc/supervisor/supervisord.conf`:
 
 ```
 [inet_http_server]
