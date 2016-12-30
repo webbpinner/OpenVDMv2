@@ -2,13 +2,14 @@
 #
 #         FILE:  tsg_parser.py
 #
-#        USAGE:  tsg_parser.py [-h] <dataFile>
+#        USAGE:  tsg_parser.py [-h] [-c] <dataFile>
 #
 #  DESCRIPTION:  Parse the supplied CSV-formtted Thermosalinigraph file (w/ SCS formatted timestamp)
 #                and return the json-formatted string used by OpenVDM as part of it's
 #                Data dashboard. 
 #
 #      OPTIONS:  [-h] Return the help message.
+#                [-c] Use CSVkit to clean the datafile prior to processing
 #                <dataFile> Full or relative path of the data file to process.
 #
 # REQUIREMENTS:  python2.7, Python Modules: sys, os, argparse, json, pandas
@@ -19,10 +20,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  1.0
 #      CREATED:  2016-08-29
-#     REVISION:  2016-10-30
+#     REVISION:  2016-12-29
 #
 # LICENSE INFO:  Open Vessel Data Management v2.2 (OpenVDMv2)
-#                Copyright (C) 2016 OceanDataRat.org
+#                Copyright (C) 2017 OceanDataRat.org
 #
 #        NOTES:  Requires Pandas v0.18 or higher
 #
@@ -52,9 +53,9 @@ import shutil
 import csv
 from itertools import (takewhile,repeat)
 
-#	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-#	statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
-#	qualityTestObj = {"testName": "", "results": ""}
+# visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+# statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
+# qualityTestObj = {"testName": "", "results": ""}
 
 RAW_COLUMNS = ['date','time','Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)']
 PROC_COLUMNS = ['date_time','Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)']
@@ -65,196 +66,203 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 RESAMPLE_INTERVAL = '1T' # 1 minute
 
 DEBUG = False
+CSVKIT = False
 
 def debugPrint(*args, **kwargs):
-	if DEBUG:
-		errPrint(*args, **kwargs)
+    if DEBUG:
+        errPrint(*args, **kwargs)
 
 def errPrint(*args, **kwargs):
-	    print(*args, file=sys.stderr, **kwargs)
+        print(*args, file=sys.stderr, **kwargs)
 
 
 def rawincount(filename):
-	f = open(filename, 'rb')
-	bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
-	return sum( buf.count(b'\n') for buf in bufgen )
+    f = open(filename, 'rb')
+    bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
 
 def csvCleanup(filepath):
 
-	command = ['csvclean', filepath]
-	errors = 0
+    command = ['csvclean', filepath]
+    errors = 0
 
-	s = ' '
-	debugPrint(s.join(command))
+    s = ' '
+    debugPrint(s.join(command))
 
-	proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-	out, err = proc.communicate()
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
 
-	(dirname, basename) = os.path.split(filepath)
+    (dirname, basename) = os.path.split(filepath)
 
-	debugPrint("Dirname:" + dirname)
-	debugPrint("Basename:" + basename)
+    debugPrint("Dirname:" + dirname)
+    debugPrint("Basename:" + basename)
 
-	outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
-	errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
+    outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
+    errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
 
-	debugPrint("Outfile: " + outfile)
-	debugPrint("Errfile: " + errfile)
+    debugPrint("Outfile: " + outfile)
+    debugPrint("Errfile: " + errfile)
 
-	if os.path.isfile(errfile):
-		errors = rawincount(errfile)-1
+    if os.path.isfile(errfile):
+        errors = rawincount(errfile)-1
 
-	return (errors, outfile)
+    return (errors, outfile)
 
 
 def parseFile(filePath):
-	output = {}
-	output['visualizerData'] = []
-	output['qualityTests'] = []
-	output['stats'] = []
+    output = {}
+    output['visualizerData'] = []
+    output['qualityTests'] = []
+    output['stats'] = []
 
-	tmpdir = tempfile.mkdtemp()
-	shutil.copy(filePath, tmpdir)
-	(errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+    tmpdir = tempfile.mkdtemp()
 
-	debugPrint("Errors:", errors)
+    outfile = filePath
+    errors = 0
 
-	rawIntoDf = {
-		'date_time':[],
-		'Internal_Temp_(C)':[],
-		'Conductivity_(S/m)':[],
-		'Salinity_(PSU)':[],
-		'Sound_Velocity_(m/s)':[],
-		'External_Temp_(C)':[],
-	}
+    if CSVKIT:
+        shutil.copy(filePath, tmpdir)
+        (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+        debugPrint('Error: ', errors)
 
-	csvfile = open(outfile, 'r')
-	reader = csv.DictReader( csvfile, RAW_COLUMNS)
+    debugPrint("Errors:", errors)
 
-	for line in reader:
+    rawIntoDf = {
+        'date_time':[],
+        'Internal_Temp_(C)':[],
+        'Conductivity_(S/m)':[],
+        'Salinity_(PSU)':[],
+        'Sound_Velocity_(m/s)':[],
+        'External_Temp_(C)':[],
+    }
 
-		try:
+    csvfile = open(outfile, 'r')
+    reader = csv.DictReader( csvfile, RAW_COLUMNS)
 
-			line_date_time = line['date'] + ' ' + line['time']
+    for line in reader:
 
-			line_int_temp = float(line['Internal_Temp_(C)'].split('=')[1].lstrip(' '))
-			line_cont = float(line['Conductivity_(S/m)'].split('=')[1].lstrip(' '))
-			line_sal = float(line['Salinity_(PSU)'].split('=')[1].lstrip(' '))
-			line_sv = float(line['Sound_Velocity_(m/s)'].split('=')[1].lstrip(' '))
-			line_ext_temp = float(line['External_Temp_(C)'].split('=')[1].lstrip(' '))
+        try:
 
-		except:
+            line_date_time = line['date'] + ' ' + line['time']
 
-			debugPrint('Parsing error: ',line)
-			#debugPrint(line['Internal_Temp_(C)'].split('=')[1].lstrip(' '))
-			#debugPrint(line['Conductivity_(S/m)'].split('=')[1].lstrip(' '))
-			#debugPrint(line['Salinity_(PSU)'].split('=')[1].lstrip(' '))
-			#debugPrint(line['Sound_Velocity_(m/s)'].split('=')[1].lstrip(' '))
-			#debugPrint(line['External_Temp_(C)'].split('=')[1].lstrip(' '))
-			errors += 1
+            line_int_temp = float(line['Internal_Temp_(C)'].split('=')[1].lstrip(' '))
+            line_cont = float(line['Conductivity_(S/m)'].split('=')[1].lstrip(' '))
+            line_sal = float(line['Salinity_(PSU)'].split('=')[1].lstrip(' '))
+            line_sv = float(line['Sound_Velocity_(m/s)'].split('=')[1].lstrip(' '))
+            line_ext_temp = float(line['External_Temp_(C)'].split('=')[1].lstrip(' '))
 
-		else:
-			rawIntoDf['date_time'].append(line_date_time)
-			rawIntoDf['Internal_Temp_(C)'].append(line_int_temp)
-			rawIntoDf['Conductivity_(S/m)'].append(line_cont)
-			rawIntoDf['Salinity_(PSU)'].append(line_sal)
-			rawIntoDf['Sound_Velocity_(m/s)'].append(line_sv)
-			rawIntoDf['External_Temp_(C)'].append(line_ext_temp)
+        except:
 
-	shutil.rmtree(tmpdir)
+            debugPrint('Parsing error: ',line)
+            #debugPrint(line['Internal_Temp_(C)'].split('=')[1].lstrip(' '))
+            #debugPrint(line['Conductivity_(S/m)'].split('=')[1].lstrip(' '))
+            #debugPrint(line['Salinity_(PSU)'].split('=')[1].lstrip(' '))
+            #debugPrint(line['Sound_Velocity_(m/s)'].split('=')[1].lstrip(' '))
+            #debugPrint(line['External_Temp_(C)'].split('=')[1].lstrip(' '))
+            errors += 1
 
-	if len(rawIntoDf['date_time']) == 0:
-		errPrint("No Input")
-		return None
+        else:
+            rawIntoDf['date_time'].append(line_date_time)
+            rawIntoDf['Internal_Temp_(C)'].append(line_int_temp)
+            rawIntoDf['Conductivity_(S/m)'].append(line_cont)
+            rawIntoDf['Salinity_(PSU)'].append(line_sal)
+            rawIntoDf['Sound_Velocity_(m/s)'].append(line_sv)
+            rawIntoDf['External_Temp_(C)'].append(line_ext_temp)
 
-	df_proc = pd.DataFrame(rawIntoDf)
+    shutil.rmtree(tmpdir)
 
-	df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
+    if len(rawIntoDf['date_time']) == 0:
+        errPrint("No Input")
+        return None
 
-	df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
+    df_proc = pd.DataFrame(rawIntoDf)
 
-	rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
-	output['stats'].append(rowValidityStat)
+    df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
-	intTempStat = {'statName': 'Internal. Temp Bounds','statUnit': 'C', 'statType':'bounds', 'statData':[round(df_proc['Internal_Temp_(C)'].min(),3), round(df_proc['Internal_Temp_(C)'].max(),3)]}
-	output['stats'].append(intTempStat)
+    df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
 
-	contStat = {'statName': 'Conductivity','statUnit': 'S/m', 'statType':'bounds', 'statData':[round(df_proc['Conductivity_(S/m)'].min(),3), round(df_proc['Conductivity_(S/m)'].max(),3)]}
-	output['stats'].append(contStat)
+    rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
+    output['stats'].append(rowValidityStat)
 
-	salStat = {'statName': 'Salinity','statUnit': 'PSU', 'statType':'bounds', 'statData':[round(df_proc['Salinity_(PSU)'].min(),3), round(df_proc['Salinity_(PSU)'].max(),3)]}
-	output['stats'].append(salStat)
+    intTempStat = {'statName': 'Internal. Temp Bounds','statUnit': 'C', 'statType':'bounds', 'statData':[round(df_proc['Internal_Temp_(C)'].min(),3), round(df_proc['Internal_Temp_(C)'].max(),3)]}
+    output['stats'].append(intTempStat)
 
-	svTempStat = {'statName': 'Sound Velocity','statUnit': 'm/s', 'statType':'bounds', 'statData':[round(df_proc['Sound_Velocity_(m/s)'].min(),3), round(df_proc['Sound_Velocity_(m/s)'].max(),3)]}
-	output['stats'].append(svTempStat)
+    contStat = {'statName': 'Conductivity','statUnit': 'S/m', 'statType':'bounds', 'statData':[round(df_proc['Conductivity_(S/m)'].min(),3), round(df_proc['Conductivity_(S/m)'].max(),3)]}
+    output['stats'].append(contStat)
 
-	extTempStat = {'statName': 'External. Temp Bounds','statUnit': 'C', 'statType':'bounds', 'statData':[round(df_proc['External_Temp_(C)'].min(),3), round(df_proc['External_Temp_(C)'].max(),3)]}
-	output['stats'].append(extTempStat)
+    salStat = {'statName': 'Salinity','statUnit': 'PSU', 'statType':'bounds', 'statData':[round(df_proc['Salinity_(PSU)'].min(),3), round(df_proc['Salinity_(PSU)'].max(),3)]}
+    output['stats'].append(salStat)
 
-	temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
-	output['stats'].append(temporalStat)
+    svTempStat = {'statName': 'Sound Velocity','statUnit': 'm/s', 'statType':'bounds', 'statData':[round(df_proc['Sound_Velocity_(m/s)'].min(),3), round(df_proc['Sound_Velocity_(m/s)'].max(),3)]}
+    output['stats'].append(svTempStat)
 
-	deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
-	output['stats'].append(deltaTStat)
+    extTempStat = {'statName': 'External. Temp Bounds','statUnit': 'C', 'statType':'bounds', 'statData':[round(df_proc['External_Temp_(C)'].min(),3), round(df_proc['External_Temp_(C)'].max(),3)]}
+    output['stats'].append(extTempStat)
 
-	deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
-	output['stats'].append(deltaTValidityStat)
+    temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
+    output['stats'].append(temporalStat)
 
-	rowQualityTest = {"testName": "Rows", "results": "Passed"}
-	if rowValidityStat['statData'][1] > 0:
-		if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
-			rowQualityTest['results'] = "Failed"
-		else:
-			rowQualityTest['results'] = "Warning"
-	output['qualityTests'].append(rowQualityTest)
+    deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
+    output['stats'].append(deltaTStat)
 
-	deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
-	if deltaTValidityStat['statData'][1] > 0:
-		if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
-			deltaTQualityTest['results'] = "Failed"
-		else:
-			deltaTQualityTest['results'] = "Warning"
-	output['qualityTests'].append(deltaTQualityTest)
+    deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
+    output['stats'].append(deltaTValidityStat)
 
-	df_crop = df_proc[CROP_COLUMNS]
+    rowQualityTest = {"testName": "Rows", "results": "Passed"}
+    if rowValidityStat['statData'][1] > 0:
+        if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
+            rowQualityTest['results'] = "Failed"
+        else:
+            rowQualityTest['results'] = "Warning"
+    output['qualityTests'].append(rowQualityTest)
 
-	df_crop = df_crop.set_index('date_time')
+    deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
+    if deltaTValidityStat['statData'][1] > 0:
+        if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
+            deltaTQualityTest['results'] = "Failed"
+        else:
+            deltaTQualityTest['results'] = "Warning"
+    output['qualityTests'].append(deltaTQualityTest)
 
-	df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
+    df_crop = df_proc[CROP_COLUMNS]
 
-	df_crop = df_crop.reset_index()
+    df_crop = df_crop.set_index('date_time')
 
-	decimals = pd.Series([4,5,4,3,4], index=['Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)'])
-	df_crop = df_crop.round(decimals)
-	
-	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+    df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','Internal_Temp_(C)']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'C'
-	visualizerDataObj['label'] = 'Internal Temp'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    df_crop = df_crop.reset_index()
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','Conductivity_(S/m)']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'S/m'
-	visualizerDataObj['label'] = 'Conductivity'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    decimals = pd.Series([4,5,4,3,4], index=['Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)'])
+    df_crop = df_crop.round(decimals)
+    
+    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','Salinity_(PSU)']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'PSU'
-	visualizerDataObj['label'] = 'Salinity'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Internal_Temp_(C)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'C'
+    visualizerDataObj['label'] = 'Internal Temp'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','Sound_Velocity_(m/s)']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'm/s'
-	visualizerDataObj['label'] = 'Sound Velocity'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Conductivity_(S/m)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'S/m'
+    visualizerDataObj['label'] = 'Conductivity'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','External_Temp_(C)']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'C'
-	visualizerDataObj['label'] = 'External Temp'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Salinity_(PSU)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'PSU'
+    visualizerDataObj['label'] = 'Salinity'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
 
-	return output
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Sound_Velocity_(m/s)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'm/s'
+    visualizerDataObj['label'] = 'Sound Velocity'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','External_Temp_(C)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'C'
+    visualizerDataObj['label'] = 'External Temp'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    return output
 
 # -------------------------------------------------------------------------------------
 # Main function of the script should it be run as a stand-alone utility.
@@ -264,12 +272,18 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Parse TSG data')
     parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser.add_argument('-c', '--csvkit', action='store_true', help=' clean datafile using CSVKit')
 
     args = parser.parse_args()
     if args.debug:
         global DEBUG
         DEBUG = True
         debugPrint("Running in debug mode")
+
+    if args.csvkit:
+        global CSVKIT
+        CSVKIT = True
+        debugPrint("Using CSVKit to clean data file prior to processing")
 
     if not os.path.isfile(args.dataFile):
         sys.stderr.write('ERROR: File not found\n')

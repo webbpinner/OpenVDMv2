@@ -2,13 +2,14 @@
 #
 #         FILE:  svp_parser.py
 #
-#        USAGE:  svp_parser.py [-h] <dataFile>
+#        USAGE:  svp_parser.py [-h] [-c] <dataFile>
 #
 #  DESCRIPTION:  Parse the supplied CSV-formtted Sound Velocity Profile file (w/ SCS formatted timestamp)
 #                and return the json-formatted string used by OpenVDM as part of it's
 #                Data dashboard. 
 #
 #      OPTIONS:  [-h] Return the help message.
+#                [-c] Use CSVkit to clean the datafile prior to processing
 #                <dataFile> Full or relative path of the data file to process.
 #
 # REQUIREMENTS:  python2.7, Python Modules: sys, os, argparse, json, pandas
@@ -19,10 +20,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  1.0
 #      CREATED:  2016-08-29
-#     REVISION:  2016-10-30
+#     REVISION:  2016-12-29
 #
 # LICENSE INFO:  Open Vessel Data Management v2.2 (OpenVDMv2)
-#                Copyright (C) 2016 OceanDataRat.org
+#                Copyright (C) 2017 OceanDataRat.org
 #
 #        NOTES:  Requires Pandas v0.18 or higher
 #
@@ -52,9 +53,9 @@ import shutil
 import csv
 from itertools import (takewhile,repeat)
 
-#	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-#	statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
-#	qualityTestObj = {"testName": "", "results": ""}
+# visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+# statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
+# qualityTestObj = {"testName": "", "results": ""}
 
 RAW_COLUMNS = ['date','time','Sound_Speed_(m/s)']
 PROC_COLUMNS = ['date_time','Sound_Speed_(m/s)']
@@ -65,146 +66,151 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 RESAMPLE_INTERVAL = '1T' # 1 minute
 
 DEBUG = False
+CSVKIT = False
 
 def debugPrint(*args, **kwargs):
-	if DEBUG:
-		errPrint(*args, **kwargs)
+    if DEBUG:
+        errPrint(*args, **kwargs)
 
 def errPrint(*args, **kwargs):
-	    print(*args, file=sys.stderr, **kwargs)
+        print(*args, file=sys.stderr, **kwargs)
 
 
 def rawincount(filename):
-	f = open(filename, 'rb')
-	bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
-	return sum( buf.count(b'\n') for buf in bufgen )
+    f = open(filename, 'rb')
+    bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
 
 def csvCleanup(filepath):
 
-	command = ['csvclean', filepath]
-	errors = 0
+    command = ['csvclean', filepath]
+    errors = 0
 
-	s = ' '
-	debugPrint(s.join(command))
+    s = ' '
+    debugPrint(s.join(command))
 
-	proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-	out, err = proc.communicate()
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
 
-	(dirname, basename) = os.path.split(filepath)
+    (dirname, basename) = os.path.split(filepath)
 
-	debugPrint("Dirname:" + dirname)
-	debugPrint("Basename:" + basename)
+    debugPrint("Dirname:" + dirname)
+    debugPrint("Basename:" + basename)
 
-	outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
-	errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
+    outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
+    errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
 
-	debugPrint("Outfile: " + outfile)
-	debugPrint("Errfile: " + errfile)
+    debugPrint("Outfile: " + outfile)
+    debugPrint("Errfile: " + errfile)
 
-	if os.path.isfile(errfile):
-		errors = rawincount(errfile)-1
+    if os.path.isfile(errfile):
+        errors = rawincount(errfile)-1
 
-	return (errors, outfile)
+    return (errors, outfile)
 
 
 def parseFile(filePath):
-	output = {}
-	output['visualizerData'] = []
-	output['qualityTests'] = []
-	output['stats'] = []
+    output = {}
+    output['visualizerData'] = []
+    output['qualityTests'] = []
+    output['stats'] = []
 
-	tmpdir = tempfile.mkdtemp()
-	shutil.copy(filePath, tmpdir)
-	(errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+    tmpdir = tempfile.mkdtemp()
 
-	debugPrint("Errors:", errors)
+    outfile = filePath
+    errors = 0
 
-	rawIntoDf = {
-		'date_time':[],
-		'Sound_Speed_(m/s)':[],
-	}
+    if CSVKIT:
+        shutil.copy(filePath, tmpdir)
+        (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+        debugPrint('Error: ', errors)
 
-	csvfile = open(outfile, 'r')
-	reader = csv.DictReader( csvfile, RAW_COLUMNS)
+    rawIntoDf = {
+        'date_time':[],
+        'Sound_Speed_(m/s)':[],
+    }
 
-	for line in reader:
+    csvfile = open(outfile, 'r')
+    reader = csv.DictReader( csvfile, RAW_COLUMNS)
 
-		try:
+    for line in reader:
 
-			line_date_time = line['date'] + ' ' + line['time']
+        try:
 
-			line_sound_speed = float(line['Sound_Speed_(m/s)'])
+            line_date_time = line['date'] + ' ' + line['time']
 
-		except:
+            line_sound_speed = float(line['Sound_Speed_(m/s)'])
 
-			debugPrint('Parsing error: ',line)
-			errors += 1
+        except:
 
-		else:
-			rawIntoDf['date_time'].append(line_date_time)
-			rawIntoDf['Sound_Speed_(m/s)'].append(line_sound_speed)
+            debugPrint('Parsing error: ',line)
+            errors += 1
 
-	shutil.rmtree(tmpdir)
+        else:
+            rawIntoDf['date_time'].append(line_date_time)
+            rawIntoDf['Sound_Speed_(m/s)'].append(line_sound_speed)
 
-	if len(rawIntoDf['date_time']) == 0:
-		errPrint("No Input")
-		return None
+    shutil.rmtree(tmpdir)
 
-	df_proc = pd.DataFrame(rawIntoDf)
+    if len(rawIntoDf['date_time']) == 0:
+        errPrint("No Input")
+        return None
 
-	df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
+    df_proc = pd.DataFrame(rawIntoDf)
 
-	df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
+    df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
-	rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
-	output['stats'].append(rowValidityStat)
+    df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
 
-	soundSpeedStat = {'statName': 'Sound Spd Bounds','statUnit': 'm/s', 'statType':'bounds', 'statData':[round(df_proc['Sound_Speed_(m/s)'].min(),3), round(df_proc['Sound_Speed_(m/s)'].max(),3)]}
-	output['stats'].append(soundSpeedStat)
+    rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
+    output['stats'].append(rowValidityStat)
 
-	temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
-	output['stats'].append(temporalStat)
+    soundSpeedStat = {'statName': 'Sound Spd Bounds','statUnit': 'm/s', 'statType':'bounds', 'statData':[round(df_proc['Sound_Speed_(m/s)'].min(),3), round(df_proc['Sound_Speed_(m/s)'].max(),3)]}
+    output['stats'].append(soundSpeedStat)
 
-	deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
-	output['stats'].append(deltaTStat)
+    temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
+    output['stats'].append(temporalStat)
 
-	deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
-	output['stats'].append(deltaTValidityStat)
+    deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
+    output['stats'].append(deltaTStat)
 
-	rowQualityTest = {"testName": "Rows", "results": "Passed"}
-	if rowValidityStat['statData'][1] > 0:
-		if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
-			rowQualityTest['results'] = "Failed"
-		else:
-			rowQualityTest['results'] = "Warning"
-	output['qualityTests'].append(rowQualityTest)
+    deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
+    output['stats'].append(deltaTValidityStat)
 
-	deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
-	if deltaTValidityStat['statData'][1] > 0:
-		if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
-			deltaTQualityTest['results'] = "Failed"
-		else:
-			deltaTQualityTest['results'] = "Warning"
-	output['qualityTests'].append(deltaTQualityTest)
+    rowQualityTest = {"testName": "Rows", "results": "Passed"}
+    if rowValidityStat['statData'][1] > 0:
+        if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
+            rowQualityTest['results'] = "Failed"
+        else:
+            rowQualityTest['results'] = "Warning"
+    output['qualityTests'].append(rowQualityTest)
 
-	df_crop = df_proc[CROP_COLUMNS]
+    deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
+    if deltaTValidityStat['statData'][1] > 0:
+        if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
+            deltaTQualityTest['results'] = "Failed"
+        else:
+            deltaTQualityTest['results'] = "Warning"
+    output['qualityTests'].append(deltaTQualityTest)
 
-	df_crop = df_crop.set_index('date_time')
+    df_crop = df_proc[CROP_COLUMNS]
 
-	df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
+    df_crop = df_crop.set_index('date_time')
 
-	df_crop = df_crop.reset_index()
+    df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
 
-	decimals = pd.Series([2, 1], index=['Sound_Speed_(m/s)','Sound_Direction_(deg, Relative to Bow)'])
-	df_crop = df_crop.round(decimals)
-	
-	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','Sound_Speed_(m/s)']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'm/s'
-	visualizerDataObj['label'] = 'Sound Spd'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    df_crop = df_crop.reset_index()
 
-	return output
+    decimals = pd.Series([2, 1], index=['Sound_Speed_(m/s)','Sound_Direction_(deg, Relative to Bow)'])
+    df_crop = df_crop.round(decimals)
+    
+    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Sound_Speed_(m/s)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'm/s'
+    visualizerDataObj['label'] = 'Sound Spd'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    return output
 
 # -------------------------------------------------------------------------------------
 # Main function of the script should it be run as a stand-alone utility.
@@ -214,12 +220,18 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Parse SVP data')
     parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser.add_argument('-c', '--csvkit', action='store_true', help=' clean datafile using CSVKit')
 
     args = parser.parse_args()
     if args.debug:
         global DEBUG
         DEBUG = True
         debugPrint("Running in debug mode")
+
+    if args.csvkit:
+        global CSVKIT
+        CSVKIT = True
+        debugPrint("Using CSVKit to clean data file prior to processing")
 
     if not os.path.isfile(args.dataFile):
         sys.stderr.write('ERROR: File not found\n')

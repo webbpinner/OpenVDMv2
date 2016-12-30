@@ -264,12 +264,12 @@ LOCK TABLES `OVDM_Links` WRITE;
 
 INSERT INTO `OVDM_Links` (`linkID`, `name`, `url`, `enable`, `private`)
 VALUES
-	(1,'Supervisord','http://127.0.0.1:9001',1,1),
-	(2,'Gearman','http://127.0.0.1/gearman-ui/',1,1),
-	(3,'Cruise Data','http://127.0.0.1/CruiseData/{cruiseID}/',1,0),
-	(4,'Public Data','http://127.0.0.1/PublicData/',1,0),
-	(5,'Visitor Information','http://127.0.0.1/VisitorInformation/',1,0),
-	(6,'MapProxy','http://127.0.0.1/mapproxy/demo/',1,0);
+	(1,'Supervisord','http://{hostIP}:9001',1,1),
+	(2,'Gearman','http://{hostIP}/gearman-ui/',1,1),
+	(3,'Cruise Data','http://{hostIP}/CruiseData/{cruiseID}/',1,0),
+	(4,'Public Data','http://{hostIP}/PublicData/',1,0),
+	(5,'Visitor Information','http://{hostIP}/VisitorInformation/',1,0),
+	(6,'MapProxy','http://{hostIP}/mapproxy/demo/',1,0);
 
 /*!40000 ALTER TABLE `OVDM_Links` ENABLE KEYS */;
 UNLOCK TABLES;

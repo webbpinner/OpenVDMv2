@@ -88,18 +88,18 @@ class DashboardData extends Model {
     public function getDashboardObjectsByTypes($dataType) {
 
         $dataObjects = array();
-
-        foreach ($this->_manifestObj as $manifestItem) {
-            foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
-                if (strcmp($manifestItemKey, 'type') === 0){
-                    if(strcmp($manifestItemValue, $dataType) === 0) {
-                        $dataObjects[] = $manifestItem;
-                        continue;
+        if(sizeof($this->_manifestObj) > 0) {
+            foreach ($this->_manifestObj as $manifestItem) {
+                foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
+                    if (strcmp($manifestItemKey, 'type') === 0){
+                        if(strcmp($manifestItemValue, $dataType) === 0) {
+                            $dataObjects[] = $manifestItem;
+                            continue;
+                        }
                     }
                 }
             }
         }
-        
 
         if(sizeof($dataObjects) > 0) {
             $sortArray = array();

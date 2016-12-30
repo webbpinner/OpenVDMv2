@@ -2,7 +2,7 @@
 #
 #         FILE:  vtg_parser.py
 #
-#        USAGE:  vtg_parser.py [-h] <dataFile>
+#        USAGE:  vtg_parser.py [-h] [-c] <dataFile>
 #
 #  DESCRIPTION:  Parse the supplied NMEA-formtted VTG file (w/ SCS formatted timestamp)
 #                and return the json-formatted string used by OpenVDM as part of it's
@@ -19,10 +19,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  1.0
 #      CREATED:  2016-08-29
-#     REVISION:  2016-10-30
+#     REVISION:  2016-12-29
 #
 # LICENSE INFO:  Open Vessel Data Management v2.2 (OpenVDMv2)
-#                Copyright (C) 2016 OceanDataRat.org
+#                Copyright (C) 2017 OceanDataRat.org
 #
 #        NOTES:  Requires Pandas v0.18 or higher
 #
@@ -52,9 +52,9 @@ import shutil
 import csv
 from itertools import (takewhile,repeat)
 
-#	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-#	statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
-#	qualityTestObj = {"testName": "", "results": ""}
+# visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+# statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
+# qualityTestObj = {"testName": "", "results": ""}
 
 RAW_COLUMNS = ['date','time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum']
 PROC_COLUMNS = ['date_time','cog_t','cog_m','sog_kts','sog_kph']
@@ -71,213 +71,220 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 RESAMPLE_INTERVAL = '1T' # 1 minute
 
 DEBUG = False
+CSVKIT = False
 
 def debugPrint(*args, **kwargs):
-	if DEBUG:
-		errPrint(*args, **kwargs)
+    if DEBUG:
+        errPrint(*args, **kwargs)
 
 def errPrint(*args, **kwargs):
-	    print(*args, file=sys.stderr, **kwargs)
+        print(*args, file=sys.stderr, **kwargs)
 
 
 def rawincount(filename):
-	f = open(filename, 'rb')
-	bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
-	return sum( buf.count(b'\n') for buf in bufgen )
+    f = open(filename, 'rb')
+    bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
 
 def csvCleanup(filepath):
 
-	command = ['csvclean', filepath]
-	errors = 0
-	
-	s = ' '
-	debugPrint(s.join(command))
-	
-	proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-	out, err = proc.communicate()
+    command = ['csvclean', filepath]
+    errors = 0
+    
+    s = ' '
+    debugPrint(s.join(command))
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
 
-	(dirname, basename) = os.path.split(filepath)
-	
-	debugPrint("Dirname:" + dirname)
-	debugPrint("Basename:" + basename)
+    (dirname, basename) = os.path.split(filepath)
+    
+    debugPrint("Dirname:" + dirname)
+    debugPrint("Basename:" + basename)
 
-	outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
-	errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
-	
-	debugPrint("Outfile: " + outfile)
-	debugPrint("Errfile: " + errfile)
+    outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
+    errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
+    
+    debugPrint("Outfile: " + outfile)
+    debugPrint("Errfile: " + errfile)
 
-	if os.path.isfile(errfile):
-		errors = rawincount(errfile)-1
+    if os.path.isfile(errfile):
+        errors = rawincount(errfile)-1
 
-	return (errors, outfile)
+    return (errors, outfile)
 
 def parseFile(filePath):
-	output = {}
-	output['visualizerData'] = []
-	output['qualityTests'] = []
-	output['stats'] = []
+    output = {}
+    output['visualizerData'] = []
+    output['qualityTests'] = []
+    output['stats'] = []
 
-	tmpdir = tempfile.mkdtemp()
-	shutil.copy(filePath, tmpdir)
-	(errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+    tmpdir = tempfile.mkdtemp()
 
-	rawIntoDf = {'date_time':[],'cog_t':[],'cog_m':[],'sog_kts':[],'sog_kph':[]}
+    outfile = filePath
+    errors = 0
 
-	csvfile = open(outfile, 'r')
-	reader = csv.DictReader( csvfile, RAW_COLUMNS)
+    if CSVKIT:
+        shutil.copy(filePath, tmpdir)
+        (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+        debugPrint('Error: ', errors)
 
-	for line in reader:
-		
-		try:
+    rawIntoDf = {'date_time':[],'cog_t':[],'cog_m':[],'sog_kts':[],'sog_kph':[]}
 
-			line_date_time = line['date'] + ' ' + line['time']
+    csvfile = open(outfile, 'r')
+    reader = csv.DictReader( csvfile, RAW_COLUMNS)
 
-			line_cog_t = float(line['cog_t'])
-			line_cog_m = float(line['cog_m'])
-			line_sog_kts = float(line['sog_kts'])
-			line_sog_kph = float(line['sog_kph'])
+    for line in reader:
+        
+        try:
 
-		except:
+            line_date_time = line['date'] + ' ' + line['time']
 
-			debugPrint('Parsing error: ',line)
-			errors += 1
+            line_cog_t = float(line['cog_t'])
+            line_cog_m = float(line['cog_m'])
+            line_sog_kts = float(line['sog_kts'])
+            line_sog_kph = float(line['sog_kph'])
 
-		else:
-			rawIntoDf['date_time'].append(line_date_time)
-			rawIntoDf['cog_t'].append(line_cog_t)
-			rawIntoDf['cog_m'].append(line_cog_m)
-			rawIntoDf['sog_kts'].append(line_sog_kts)
-			rawIntoDf['sog_kph'].append(line_sog_kph)
+        except:
 
-	shutil.rmtree(tmpdir)
+            debugPrint('Parsing error: ',line)
+            errors += 1
 
-	if len(rawIntoDf['date_time']) == 0:
-		return None
+        else:
+            rawIntoDf['date_time'].append(line_date_time)
+            rawIntoDf['cog_t'].append(line_cog_t)
+            rawIntoDf['cog_m'].append(line_cog_m)
+            rawIntoDf['sog_kts'].append(line_sog_kts)
+            rawIntoDf['sog_kph'].append(line_sog_kph)
 
-	df_proc = pd.DataFrame(rawIntoDf)
+    shutil.rmtree(tmpdir)
 
-	df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
+    if len(rawIntoDf['date_time']) == 0:
+        return None
 
-	df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
+    df_proc = pd.DataFrame(rawIntoDf)
 
-	rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
-	output['stats'].append(rowValidityStat)
+    df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
-	cog_tStat = {'statName': 'COG True Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['cog_t'].min(),3), round(df_proc['cog_t'].max(),3)]}
-	output['stats'].append(cog_tStat)
+    df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
 
-	cog_tValidityStat = {'statName':'COG True Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['cog_t'] >= MIN_COG) & (df_proc['cog_t'] <= MAX_COG)]),len(df_proc[(df_proc['cog_t'] < MIN_COG) & (df_proc['cog_t'] > MAX_COG)])]}
-	output['stats'].append(cog_tValidityStat)
+    rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
+    output['stats'].append(rowValidityStat)
 
-	cog_mStat = {'statName': 'COG Mag Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['cog_m'].min(),3), round(df_proc['cog_m'].max(),3)]}
-	output['stats'].append(cog_mStat)
+    cog_tStat = {'statName': 'COG True Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['cog_t'].min(),3), round(df_proc['cog_t'].max(),3)]}
+    output['stats'].append(cog_tStat)
 
-	cog_mValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['cog_m'] >= MIN_COG) & (df_proc['cog_m'] <= MAX_COG)]),len(df_proc[(df_proc['cog_m'] < MIN_COG) & (df_proc['cog_m'] > MAX_COG)])]}
-	output['stats'].append(cog_mValidityStat)
+    cog_tValidityStat = {'statName':'COG True Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['cog_t'] >= MIN_COG) & (df_proc['cog_t'] <= MAX_COG)]),len(df_proc[(df_proc['cog_t'] < MIN_COG) & (df_proc['cog_t'] > MAX_COG)])]}
+    output['stats'].append(cog_tValidityStat)
 
-	sog_ktsStat = {'statName': 'SOG Knots Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['sog_kts'].min(),3), round(df_proc['sog_kts'].max(),3)]}
-	output['stats'].append(sog_ktsStat)
+    cog_mStat = {'statName': 'COG Mag Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['cog_m'].min(),3), round(df_proc['cog_m'].max(),3)]}
+    output['stats'].append(cog_mStat)
 
-	sog_ktsValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['sog_kts'] <= MAX_SOG_KTS)]),len(df_proc[(df_proc['sog_kts'] > MAX_SOG_KTS)])]}
-	output['stats'].append(sog_ktsValidityStat)
+    cog_mValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['cog_m'] >= MIN_COG) & (df_proc['cog_m'] <= MAX_COG)]),len(df_proc[(df_proc['cog_m'] < MIN_COG) & (df_proc['cog_m'] > MAX_COG)])]}
+    output['stats'].append(cog_mValidityStat)
 
-	sog_kphStat = {'statName': 'SOG Knots Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['sog_kph'].min(),3), round(df_proc['sog_kph'].max(),3)]}
-	output['stats'].append(sog_kphStat)
+    sog_ktsStat = {'statName': 'SOG Knots Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['sog_kts'].min(),3), round(df_proc['sog_kts'].max(),3)]}
+    output['stats'].append(sog_ktsStat)
 
-	sog_kphValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['sog_kph'] <= MAX_SOG_KPH)]),len(df_proc[(df_proc['sog_kph'] > MAX_SOG_KPH)])]}
-	output['stats'].append(sog_kphValidityStat)
+    sog_ktsValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['sog_kts'] <= MAX_SOG_KTS)]),len(df_proc[(df_proc['sog_kts'] > MAX_SOG_KTS)])]}
+    output['stats'].append(sog_ktsValidityStat)
 
-	temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
-	output['stats'].append(temporalStat)
+    sog_kphStat = {'statName': 'SOG Knots Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['sog_kph'].min(),3), round(df_proc['sog_kph'].max(),3)]}
+    output['stats'].append(sog_kphStat)
 
-	deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
-	output['stats'].append(deltaTStat)
+    sog_kphValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['sog_kph'] <= MAX_SOG_KPH)]),len(df_proc[(df_proc['sog_kph'] > MAX_SOG_KPH)])]}
+    output['stats'].append(sog_kphValidityStat)
 
-	deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
-	output['stats'].append(deltaTValidityStat)
+    temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
+    output['stats'].append(temporalStat)
 
-	rowQualityTest = {"testName": "Rows", "results": "Passed"}
-	if rowValidityStat['statData'][1] > 0:
-		if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
-			rowQualityTest['results'] = "Failed"
-		else:
-			rowQualityTest['results'] = "Warning"
-	output['qualityTests'].append(rowQualityTest)
+    deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
+    output['stats'].append(deltaTStat)
 
-	deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
-	if deltaTValidityStat['statData'][1] > 0:
-		if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
-			deltaTQualityTest['results'] = "Failed"
-		else:
-			deltaTQualityTest['results'] = "Warning"
-	output['qualityTests'].append(deltaTQualityTest)
+    deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
+    output['stats'].append(deltaTValidityStat)
 
-	cog_tQualityTest = {"testName": "COG, True", "results": "Passed"}
-	if cog_tValidityStat['statData'][1] > 0:
-		if cog_tValidityStat['statData'][1]/len(df_proc) > .10:
-			cog_tQualityTest['results'] = "Failed"
-		else:
-			cog_tQualityTest['results'] = "Warning"
-	output['qualityTests'].append(cog_tQualityTest)
+    rowQualityTest = {"testName": "Rows", "results": "Passed"}
+    if rowValidityStat['statData'][1] > 0:
+        if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
+            rowQualityTest['results'] = "Failed"
+        else:
+            rowQualityTest['results'] = "Warning"
+    output['qualityTests'].append(rowQualityTest)
 
-	cog_mQualityTest = {"testName": "COG ,Magnetic", "results": "Passed"}
-	if cog_mValidityStat['statData'][1] > 0:
-		if cog_mValidityStat['statData'][1]/len(df_proc) > .10:
-			cog_mQualityTest['results'] = "Failed"
-		else:
-			cog_mQualityTest['results'] = "Warning"
-	output['qualityTests'].append(cog_mQualityTest)
+    deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
+    if deltaTValidityStat['statData'][1] > 0:
+        if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
+            deltaTQualityTest['results'] = "Failed"
+        else:
+            deltaTQualityTest['results'] = "Warning"
+    output['qualityTests'].append(deltaTQualityTest)
 
-	sog_ktsQualityTest = {"testName": "SOG, Knots", "results": "Passed"}
-	if sog_ktsValidityStat['statData'][1] > 0:
-		if sog_ktsValidityStat['statData'][1]/len(df_proc) > .10:
-			sog_ktsQualityTest['results'] = "Failed"
-		else:
-			sog_ktsQualityTest['results'] = "Warning"
-	output['qualityTests'].append(sog_ktsQualityTest)
+    cog_tQualityTest = {"testName": "COG, True", "results": "Passed"}
+    if cog_tValidityStat['statData'][1] > 0:
+        if cog_tValidityStat['statData'][1]/len(df_proc) > .10:
+            cog_tQualityTest['results'] = "Failed"
+        else:
+            cog_tQualityTest['results'] = "Warning"
+    output['qualityTests'].append(cog_tQualityTest)
 
-	sog_kphQualityTest = {"testName": "SOG, kph", "results": "Passed"}
-	if sog_kphValidityStat['statData'][1] > 0:
-		if sog_kphValidityStat['statData'][1]/len(df_proc) > .10:
-			sog_kphQualityTest['results'] = "Failed"
-		else:
-			sog_kphQualityTest['results'] = "Warning"
-	output['qualityTests'].append(sog_kphQualityTest)
+    cog_mQualityTest = {"testName": "COG ,Magnetic", "results": "Passed"}
+    if cog_mValidityStat['statData'][1] > 0:
+        if cog_mValidityStat['statData'][1]/len(df_proc) > .10:
+            cog_mQualityTest['results'] = "Failed"
+        else:
+            cog_mQualityTest['results'] = "Warning"
+    output['qualityTests'].append(cog_mQualityTest)
 
-	df_crop = df_proc[CROP_COLUMNS]
+    sog_ktsQualityTest = {"testName": "SOG, Knots", "results": "Passed"}
+    if sog_ktsValidityStat['statData'][1] > 0:
+        if sog_ktsValidityStat['statData'][1]/len(df_proc) > .10:
+            sog_ktsQualityTest['results'] = "Failed"
+        else:
+            sog_ktsQualityTest['results'] = "Warning"
+    output['qualityTests'].append(sog_ktsQualityTest)
 
-	df_crop = df_crop.set_index('date_time')
+    sog_kphQualityTest = {"testName": "SOG, kph", "results": "Passed"}
+    if sog_kphValidityStat['statData'][1] > 0:
+        if sog_kphValidityStat['statData'][1]/len(df_proc) > .10:
+            sog_kphQualityTest['results'] = "Failed"
+        else:
+            sog_kphQualityTest['results'] = "Warning"
+    output['qualityTests'].append(sog_kphQualityTest)
 
-	df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
+    df_crop = df_proc[CROP_COLUMNS]
 
-	df_crop = df_crop.reset_index()
+    df_crop = df_crop.set_index('date_time')
 
-	decimals = pd.Series([3, 3, 3, 3], index=['cog_t','cog_m', 'sog_kts', 'sog_kph'])
-	df_crop = df_crop.round(decimals)
+    df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
 
-	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','cog_t']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'deg'
-	visualizerDataObj['label'] = 'COG, True'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    df_crop = df_crop.reset_index()
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','cog_m']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'deg'
-	visualizerDataObj['label'] = 'COG, Magnetic'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-	
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','sog_kts']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'kts'
-	visualizerDataObj['label'] = 'SOG, kts'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    decimals = pd.Series([3, 3, 3, 3], index=['cog_t','cog_m', 'sog_kts', 'sog_kph'])
+    df_crop = df_crop.round(decimals)
 
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','sog_kph']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'kph'
-	visualizerDataObj['label'] = 'SOG, kph'
-	output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','cog_t']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'deg'
+    visualizerDataObj['label'] = 'COG, True'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
 
-	return output
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','cog_m']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'deg'
+    visualizerDataObj['label'] = 'COG, Magnetic'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+    
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','sog_kts']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'kts'
+    visualizerDataObj['label'] = 'SOG, kts'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','sog_kph']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'kph'
+    visualizerDataObj['label'] = 'SOG, kph'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    return output
 
 # -------------------------------------------------------------------------------------
 # Main function of the script should it be run as a stand-alone utility.
@@ -287,12 +294,18 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Parse NMEA HPR data')
     parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser.add_argument('-c', '--csvkit', action='store_true', help=' clean datafile using CSVKit')
 
     args = parser.parse_args()
     if args.debug:
         global DEBUG
         DEBUG = True
         debugPrint("Running in debug mode")
+
+    if args.csvkit:
+        global CSVKIT
+        CSVKIT = True
+        debugPrint("Using CSVKit to clean data file prior to processing")
 
     if not os.path.isfile(args.dataFile):
         sys.stderr.write('ERROR: File not found\n')

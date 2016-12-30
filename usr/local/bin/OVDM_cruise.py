@@ -224,6 +224,14 @@ def clear_publicDataDir(worker):
                 errPrint("Directory", dirPath, "is not empty and will not be removed")
                 returnObj = False
 
+        for pdFile in pdFiles:
+            filePath = os.path.join(root, pdFile)
+            try:
+                os.remove(filePath)
+            except OSError:
+                errPrint("File", filePath, "could not be removed")
+                returnObj = False
+
     return returnObj
 
     

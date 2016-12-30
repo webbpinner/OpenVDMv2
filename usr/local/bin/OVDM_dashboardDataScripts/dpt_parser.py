@@ -2,13 +2,14 @@
 #
 #         FILE:  dpt_parser.py
 #
-#        USAGE:  dpt_parser.py [-h] <dataFile>
+#        USAGE:  dpt_parser.py [-h] [-c] <dataFile>
 #
 #  DESCRIPTION:  Parse the supplied NMEA-formtted DPT file (w/ SCS formatted timestamp)
 #                and return the json-formatted string used by OpenVDM as part of it's
 #                Data dashboard. 
 #
 #      OPTIONS:  [-h] Return the help message.
+#                [-c] Use CSVkit to clean the datafile prior to processing
 #                <dataFile> Full or relative path of the data file to process.
 #
 # REQUIREMENTS:  python2.7, Python Modules: sys, os, argparse, json, pandas
@@ -22,7 +23,7 @@
 #     REVISION:  2016-10-30
 #
 # LICENSE INFO:  Open Vessel Data Management v2.2 (OpenVDMv2)
-#                Copyright (C) 2016 OceanDataRat.org
+#                Copyright (C) 2017 OceanDataRat.org
 #
 #        NOTES:  Requires Pandas v0.18 or higher
 #
@@ -52,9 +53,9 @@ import shutil
 import csv
 from itertools import (takewhile,repeat)
 
-#	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-#	statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
-#	qualityTestObj = {"testName": "", "results": ""}
+# visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+# statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
+# qualityTestObj = {"testName": "", "results": ""}
 
 RAW_COLUMNS = ['date','time','hdr','depth','???','checksum']
 PROC_COLUMNS = ['date_time','depth']
@@ -67,177 +68,188 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 RESAMPLE_INTERVAL = '1T' # 1 minute
 
 DEBUG = False
+CSVKIT = False
 
 def debugPrint(*args, **kwargs):
-	if DEBUG:
-		errPrint(*args, **kwargs)
+    if DEBUG:
+        errPrint(*args, **kwargs)
 
 def errPrint(*args, **kwargs):
-	    print(*args, file=sys.stderr, **kwargs)
+        print(*args, file=sys.stderr, **kwargs)
 
 def rawincount(filename):
-	f = open(filename, 'rb')
-	bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
-	return sum( buf.count(b'\n') for buf in bufgen )
+    f = open(filename, 'rb')
+    bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
+    return sum( buf.count(b'\n') for buf in bufgen )
 
 def csvCleanup(filepath):
 
-	command = ['csvclean', filepath]
-	errors = 0
-	
-	s = ' '
-	debugPrint(s.join(command))
-	
-	proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-	out, err = proc.communicate()
+    command = ['csvclean', filepath]
+    errors = 0
+    
+    s = ' '
+    debugPrint(s.join(command))
+    
+    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    out, err = proc.communicate()
 
-	(dirname, basename) = os.path.split(filepath)
-	debugPrint("Dirname:" + dirname)
-	debugPrint("Basename:" + basename)
+    (dirname, basename) = os.path.split(filepath)
+    debugPrint("Dirname:" + dirname)
+    debugPrint("Basename:" + basename)
 
-	outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
-	errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
-	
-	debugPrint("Outfile: " + outfile)
-	debugPrint("Errfile: " + errfile)
-	if os.path.isfile(errfile):
-		errors = rawincount(errfile)-1
+    outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
+    errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
+    
+    debugPrint("Outfile: " + outfile)
+    debugPrint("Errfile: " + errfile)
+    if os.path.isfile(errfile):
+        errors = rawincount(errfile)-1
 
-	return (errors, outfile)
+    return (errors, outfile)
 
-	debugPrint("Errors: " + errors)
+    debugPrint("Errors: " + errors)
 
 def parseFile(filePath):
-	output = {}
-	output['visualizerData'] = []
-	output['qualityTests'] = []
-	output['stats'] = []
+    output = {}
+    output['visualizerData'] = []
+    output['qualityTests'] = []
+    output['stats'] = []
 
-	tmpdir = tempfile.mkdtemp()
-	shutil.copy(filePath, tmpdir)
-	(errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+    tmpdir = tempfile.mkdtemp()
 
-	debugPrint('Error: ', errors)
+    outfile = filePath
+    errors = 0
 
-	rawIntoDf = {'date_time':[],'depth':[]}
+    if CSVKIT:
+        shutil.copy(filePath, tmpdir)
+        (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
+        debugPrint('Error: ', errors)
 
-	csvfile = open(outfile, 'r')
-	reader = csv.DictReader( csvfile, RAW_COLUMNS)
+    rawIntoDf = {'date_time':[],'depth':[]}
 
-	for line in reader:
-		
-		try:
+    csvfile = open(outfile, 'r')
+    reader = csv.DictReader( csvfile, RAW_COLUMNS)
 
-			line_date_time = line['date'] + ' ' + line['time']
+    for line in reader:
+        
+        try:
 
-			line_depth = float(line['depth'])
+            line_date_time = line['date'] + ' ' + line['time']
 
-		except:
+            line_depth = float(line['depth'])
 
-			debugPrint('Parsing error: ',line)
-			errors += 1
+        except:
 
-		else:
-			rawIntoDf['date_time'].append(line_date_time)
-			rawIntoDf['depth'].append(line_depth)
+            debugPrint('Parsing error: ',line)
+            errors += 1
 
-	shutil.rmtree(tmpdir)
+        else:
+            rawIntoDf['date_time'].append(line_date_time)
+            rawIntoDf['depth'].append(line_depth)
 
-	if len(rawIntoDf['date_time']) == 0:
-		return None
+    shutil.rmtree(tmpdir)
 
-	df_proc = pd.DataFrame(rawIntoDf)
+    if len(rawIntoDf['date_time']) == 0:
+        return None
 
-	df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
+    df_proc = pd.DataFrame(rawIntoDf)
 
-	df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
+    df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
-	rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
-	output['stats'].append(rowValidityStat)
+    df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
 
-	depthStat = {'statName': 'Depth Bounds','statUnit': 'm', 'statType':'bounds', 'statData':[round(df_proc.depth.min(),3), round(df_proc.depth.max(),3)]}
-	output['stats'].append(depthStat)
+    rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
+    output['stats'].append(rowValidityStat)
 
-	depthValidityStat = {'statName':'Depth Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['depth'] >= MIN_DEPTH)]),len(df_proc[(df_proc['depth'] < MIN_DEPTH)])]}
-	output['stats'].append(depthValidityStat)
+    depthStat = {'statName': 'Depth Bounds','statUnit': 'm', 'statType':'bounds', 'statData':[round(df_proc.depth.min(),3), round(df_proc.depth.max(),3)]}
+    output['stats'].append(depthStat)
 
-	temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
-	output['stats'].append(temporalStat)
+    depthValidityStat = {'statName':'Depth Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['depth'] >= MIN_DEPTH)]),len(df_proc[(df_proc['depth'] < MIN_DEPTH)])]}
+    output['stats'].append(depthValidityStat)
 
-	deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
-	output['stats'].append(deltaTStat)
+    temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
+    output['stats'].append(temporalStat)
 
-	deltaTValidityStat = {'statName':'DeltaT Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
-	output['stats'].append(deltaTValidityStat)
+    deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
+    output['stats'].append(deltaTStat)
 
-	rowQualityTest = {"testName": "Rows", "results": "Passed"}
-	if rowValidityStat['statData'][1] > 0:
-		if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
-			rowQualityTest['results'] = "Failed"
-		else:
-			rowQualityTest['results'] = "Warning"
-	output['qualityTests'].append(rowQualityTest)
+    deltaTValidityStat = {'statName':'DeltaT Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
+    output['stats'].append(deltaTValidityStat)
 
-	deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
-	if deltaTValidityStat['statData'][1] > 0:
-		if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
-			deltaTQualityTest['results'] = "Failed"
-		else:
-			deltaTQualityTest['results'] = "Warning"
-	output['qualityTests'].append(deltaTQualityTest)
+    rowQualityTest = {"testName": "Rows", "results": "Passed"}
+    if rowValidityStat['statData'][1] > 0:
+        if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
+            rowQualityTest['results'] = "Failed"
+        else:
+            rowQualityTest['results'] = "Warning"
+    output['qualityTests'].append(rowQualityTest)
 
-	depthQualityTest = {"testName": "Depth", "results": "Passed"}
-	if depthValidityStat['statData'][1] > 0:
-		if depthValidityStat['statData'][1]/len(df_proc) > .10:
-			depthQualityTest['results'] = "Failed"
-		else:
-			depthQualityTest['results'] = "Warning"
-	output['qualityTests'].append(depthQualityTest)
+    deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
+    if deltaTValidityStat['statData'][1] > 0:
+        if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
+            deltaTQualityTest['results'] = "Failed"
+        else:
+            deltaTQualityTest['results'] = "Warning"
+    output['qualityTests'].append(deltaTQualityTest)
 
-	df_crop = df_proc[CROP_COLUMNS]
-	
-	df_crop = df_crop.set_index('date_time')
+    depthQualityTest = {"testName": "Depth", "results": "Passed"}
+    if depthValidityStat['statData'][1] > 0:
+        if depthValidityStat['statData'][1]/len(df_proc) > .10:
+            depthQualityTest['results'] = "Failed"
+        else:
+            depthQualityTest['results'] = "Warning"
+    output['qualityTests'].append(depthQualityTest)
 
-	df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
+    df_crop = df_proc[CROP_COLUMNS]
+    
+    df_crop = df_crop.set_index('date_time')
 
-	df_crop = df_crop.reset_index()
+    df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
 
-	decimals = pd.Series([3], index=['depth'])
-	df_crop = df_crop.round(decimals)
+    df_crop = df_crop.reset_index()
 
-	visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-	visualizerDataObj['data'] = json.loads(df_crop[['date_time','depth']].to_json(orient='values'))
-	visualizerDataObj['unit'] = 'm'
-	visualizerDataObj['label'] = 'Depth'
-	output['visualizerData'].append(visualizerDataObj)
+    decimals = pd.Series([3], index=['depth'])
+    df_crop = df_crop.round(decimals)
 
-	return output
+    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','depth']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'm'
+    visualizerDataObj['label'] = 'Depth'
+    output['visualizerData'].append(visualizerDataObj)
+
+    return output
 
 # -------------------------------------------------------------------------------------
 # Main function of the script should it be run as a stand-alone utility.
 # -------------------------------------------------------------------------------------
 def main(argv):
 
-	parser = argparse.ArgumentParser(description='Parse NMEA DPT data')
-	parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
-	parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser = argparse.ArgumentParser(description='Parse NMEA DPT data')
+    parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser.add_argument('-c', '--csvkit', action='store_true', help=' clean datafile using CSVKit')
 
-	args = parser.parse_args()
-	if args.debug:
-		global DEBUG
-		DEBUG = True
-		debugPrint("Running in debug mode")
+    args = parser.parse_args()
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
 
-	if not os.path.isfile(args.dataFile):
-		errPrint('ERROR: File not found\n')
-		sys.exit(1)
+    if args.csvkit:
+        global CSVKIT
+        CSVKIT = True
+        debugPrint("Using CSVKit to clean data file prior to processing")
 
-	jsonObj = parseFile(args.dataFile)
-	if jsonObj:
-		print(json.dumps(jsonObj))
-		sys.exit(0)
-	else:
-		sys.exit(1)
+    if not os.path.isfile(args.dataFile):
+        errPrint('ERROR: File not found\n')
+        sys.exit(1)
+
+    jsonObj = parseFile(args.dataFile)
+    if jsonObj:
+        print(json.dumps(jsonObj))
+        sys.exit(0)
+    else:
+        sys.exit(1)
             
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility

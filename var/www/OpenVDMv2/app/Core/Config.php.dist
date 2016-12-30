@@ -37,7 +37,7 @@ class Config
         /*
          * Define path on webserver that contains cruise data
          */
-        define('CRUISEDATA_BASEDIR', '/mnt/vault/FTPRoot/CruiseData');
+        define('CRUISEDATA_BASEDIR', '/vault/FTPRoot/CruiseData');
 
         /*
          * Define directory alias configured within the webserver that contains cruise data
