@@ -701,7 +701,7 @@ The default username/passwd is admin/demo
 #### Set the controlling username
 Goto <http://127.0.0.1/OpenVDMv2/config> and login
 
-Goto <http://192.168.1.125/OpenVDMv2/config/system> and scroll down to the bottom of the page.
+Goto <http://127.0.0.1/OpenVDMv2/config/system> and scroll down to the bottom of the page.
 
 In the "Data Warehouses" section Click "Edit" next to Shipboard Data Warehouse (SBDW)
 
