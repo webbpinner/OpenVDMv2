@@ -369,18 +369,21 @@ def task_setCruiseDataDirectoryPermissions(worker, job):
 
     worker.send_job_status(job, 5, 10)
 
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir,worker.cruiseID)
+    
     if worker.OVDM.showOnlyCurrentCruiseDir():
         debugPrint("Clear read permissions")
         lockdown_directory(worker)
         job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
 
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir,worker.cruiseID)
+    worker.send_job_status(job, 8, 10)
+
     if os.path.isdir(cruiseDir):
         debugPrint("Clear read permissions")
         setOwnerGroupPermissions(worker, cruiseDir)
         job_results['parts'].append({"partName": "Set Directory Permissions for current cruise", "result": "Pass"})
-
+        
     job_results['parts'].append({"partName": "Set CruiseData Directory Permissions", "result": "Pass"})
     worker.send_job_status(job, 10, 10)
 
