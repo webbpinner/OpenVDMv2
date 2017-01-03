@@ -74,7 +74,9 @@ def build_sourceDir(worker):
 def test_localSourceDir(worker):
     returnVal = []
 
-    if os.path.isdir(worker.collectionSystemTransfer['sourceDir']):
+    sourceDir = build_sourceDir(worker)
+    debugPrint('Source Dir:', sourceDir)
+    if os.path.isdir(sourceDir):
         returnVal.append({"testName": "Source Directory", "result": "Pass"})
     else:
         returnVal.append({"testName": "Source Directory", "result": "Fail"})
@@ -87,7 +89,7 @@ def test_smbSourceDir(worker):
 
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
- 
+
     command = []
     # Verify the server exists
     if worker.collectionSystemTransfer['smbUser'] == 'guest':
@@ -98,7 +100,7 @@ def test_smbSourceDir(worker):
 
     s = ' '
     debugPrint('Connect Command:', s.join(command))
-    
+
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     lines_iterator = iter(proc.stdout.readline, b"")
     foundServer = False
@@ -106,14 +108,14 @@ def test_smbSourceDir(worker):
         #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
-    
+
     if not foundServer:
         returnVal.append({"testName": "SMB Server", "result": "Fail"})
         returnVal.append({"testName": "SMB Share", "result": "Fail"})
         returnVal.append({"testName": "Source Directory", "result": "Fail"})
     else:
         returnVal.append({"testName": "SMB Server", "result": "Pass"})
-    
+
         # Create mountpoint
         mntPoint = os.path.join(tmpdir, 'mntpoint')
         os.mkdir(mntPoint, 0755)
@@ -136,7 +138,8 @@ def test_smbSourceDir(worker):
         else:
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
-            sourceDir = os.path.join(mntPoint, worker.collectionSystemTransfer['sourceDir'])
+            sourceDir = os.path.join(mntPoint, build_sourceDir(worker))
+            debugPrint('Source Dir:', sourceDir)
             if os.path.isdir(sourceDir):
                 returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
@@ -177,30 +180,31 @@ def test_rsyncSourceDir(worker):
         # Cleanup
         shutil.rmtree(tmpdir)
 
-        return returnVal    
+        return returnVal
 
     finally:
         rsyncPasswordFile.close()
         os.chmod(rsyncPasswordFilePath, 0600)
-    
+
     command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer']]
-    
+
     s = ' '
     debugPrint('Connection Command:',s.join(command))
-    
+
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
 
     if proc.returncode == 0:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        sourceDir = worker.collectionSystemTransfer['sourceDir']
+        sourceDir = build_sourceDir(worker)
+        debugPrint('Source Dir:', sourceDir)
 
         command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
-        
+
         s = ' '
         debugPrint('Connection Command:',s.join(command))
-    
+
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
@@ -233,7 +237,8 @@ def test_sshSourceDir(worker):
     if proc.returncode == 0:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
-        sourceDir = worker.collectionSystemTransfer['sourceDir']
+        sourceDir = build_sourceDir(worker)
+        debugPrint('Source Dir:', sourceDir)
 
         command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', sourceDir]
         
@@ -311,7 +316,8 @@ def test_nfsSourceDir(worker):
             returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
 
             # If mount is successful, test source directory
-            sourceDir = os.path.join(mntPoint, worker.collectionSystemTransfer['sourceDir'])
+            sourceDir = os.path.join(mntPoint, build_sourceDir(worker))
+            debugPrint('Source Dir:', sourceDir)
             if os.path.isdir(sourceDir):
                 returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:

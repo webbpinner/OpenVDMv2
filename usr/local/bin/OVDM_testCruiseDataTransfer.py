@@ -133,9 +133,9 @@ def test_smbDestDir(worker):
 
         # Mount SMB Share
         if worker.cruiseDataTransfer['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']]
         else:
-            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']]
 
         s = ' '
         debugPrint('Connect Command:', s.join(command))

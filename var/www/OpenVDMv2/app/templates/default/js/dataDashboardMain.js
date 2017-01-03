@@ -9,7 +9,8 @@ $(function () {
         colors: ['#337ab7', '#5cb85c', '#d9534f', '#f0ad4e', '#606060']
     });
     
-    function displayLatestJSON(dataType, reversedY = false) {
+    function displayLatestJSON(dataType, reversedY) {
+        var reversedY = reversedY || false;
         var getVisualizerDataURL = siteRoot + 'api/dashboardData/getLatestVisualizerDataByType/' + cruiseID + '/' + dataType;
         $.getJSON(getVisualizerDataURL, function (data, status) {
             if (status === 'success' && data !== null) {

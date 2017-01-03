@@ -314,7 +314,8 @@ $(function () {
         updateBounds(mapObject);
     }
     
-    function updateChart(chartObject, dataObjectJsonName, reversedY = false) {
+    function updateChart(chartObject, dataObjectJsonName, reversedY) {
+        var reversedY = reversedY || false;
         var getVisualizerDataURL = siteRoot + 'api/dashboardData/getDashboardObjectVisualizerDataByJsonName/' + cruiseID + '/' + dataObjectJsonName;
         $.getJSON(getVisualizerDataURL, function (data, status) {
             if (status === 'success' && data !== null) {
