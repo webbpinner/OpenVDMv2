@@ -66,14 +66,14 @@ def errPrint(*args, **kwargs):
 def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60 #5 Mintues
     threshold_time = time.time() - staleness
-
-    debugPrint('cruiseStartDate', worker.cruiseStartDate)
-
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
+    cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
 
     debugPrint("Start:", cruiseStart_time)
+    debugPrint("End:", cruiseEnd_time)
     debugPrint("Threshold:", threshold_time)
     
     filters = build_filters(worker)
@@ -101,10 +101,10 @@ def build_filelist(worker, sourceDir):
                                 continue
                             #debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
-                            if file_mod_time > cruiseStart_time and file_mod_time < threshold_time:
+                            if file_mod_time > cruiseStart_time and file_mod_time < threshold_time and file_mod_time < cruiseEnd_time:
                                 returnFiles['include'].append(os.path.join(root, filename))
-                            #else:
-                                #debugPrint("Ignored because of time")
+                            else:
+                                debugPrint(filename, "skipped for time reasons")
                             
                             include = True
 
@@ -119,16 +119,17 @@ def build_filelist(worker, sourceDir):
 
 def build_rsyncFilelist(worker, sourceDir):
 
-    #print "Build file list"
-
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60
     threshold_time = time.time() - staleness # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S") 
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
+    cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
     
     debugPrint("Threshold:",threshold_time)
     debugPrint("Start:",cruiseStart_time)
+    debugPrint("End:",cruiseEnd_time)
 
     filters = build_filters(worker)
 
@@ -193,11 +194,11 @@ def build_rsyncFilelist(worker, sourceDir):
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
                             #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
-                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
+                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
                                 #debugPrint("include")
                                 returnFiles['include'].append(filename)
-                            #else:
-                                #debugPrint("Skipped for time reasons")
+                            else:
+                                debugPrint(filename, "skipped for time reasons")
 
                             include = True
 
@@ -215,17 +216,17 @@ def build_rsyncFilelist(worker, sourceDir):
 
 def build_sshFilelist(worker, sourceDir):
 
-    #print "Build file list"
-
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
 
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60
     threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
-    
+    cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
+
     debugPrint("Threshold:",threshold_time)
     debugPrint("Start:",cruiseStart_time)
+    debugPrint("End:",cruiseEnd_time)
 
     filters = build_filters(worker)
     
@@ -270,11 +271,11 @@ def build_sshFilelist(worker, sourceDir):
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
                             #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
-                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time:
+                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
                                 #debugPrint("include")
                                 returnFiles['include'].append(filename)
                             #else:
-                                #debugPrint("Skipped for time reasons")
+                                #debugPrint(filename, "skipped for time reasons")
 
                             include = True
 
@@ -413,9 +414,6 @@ def transfer_localSourceDir(worker, job):
 
     debugPrint("Transfer from Local Directory")
     
-    #staleness = worker.collectionSystemTransfer['staleness']
-    #cruiseStartDate = worker.cruiseStartDate
-    
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
@@ -492,8 +490,6 @@ def transfer_smbSourceDir(worker, job):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
     
-#    staleness = worker.collectionSystemTransfer['staleness']
-#    cruiseStartDate = worker.cruiseStartDate
     filters = build_filters(worker)
 
     # Create temp directory
@@ -856,6 +852,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.cruiseID = ''
         self.transferStartDate = ''
         self.cruiseStartDate = ''
+        self.cruiseEndDate = ''
         self.systemStatus = ''
         self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
@@ -888,6 +885,15 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseStartDate = payloadObj['cruiseStartDate']
 
             try:
+                payloadObj['cruiseEndDate']
+            except KeyError:
+                self.cruiseEndDate = self.OVDM.getCruiseEndDate()
+                if self.cruiseEndDate == '':
+                    self.cruiseEndDate = "9999/12/31 23:59"
+            else:
+                self.cruiseEndDate = payloadObj['cruiseEndDate']
+
+            try:
                 payloadObj['systemStatus']
             except KeyError:
                 self.systemStatus = self.OVDM.getSystemStatus()
@@ -896,6 +902,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
         if self.collectionSystemTransfer['useStartDate'] == "0":
             self.cruiseStartDate = "1970/01/01 00:00"
+            self.cruiseEndDate = "9999/12/31 23:59"
         
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "transfer started at:  ", time.strftime("%D %T", time.gmtime()))
         

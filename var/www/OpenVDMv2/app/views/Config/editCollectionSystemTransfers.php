@@ -44,7 +44,7 @@ use Helpers\FormCustom;
                                     <label>Skip files being actively written to?</label><?php echo FormCustom::radioInline($data['stalenessOptions'], $data['row'][0]->staleness); ?>
                                 </div>
                                 <div class="form-group">
-                                    <label>Skip files last modified before cruise start date?</label><?php echo FormCustom::radioInline($data['useStartDateOptions'], $data['row'][0]->useStartDate); ?>
+                                    <label>Skip files create/modified outside of cruise start/stop times?</label><?php echo FormCustom::radioInline($data['useStartDateOptions'], $data['row'][0]->useStartDate); ?>
                                 </div>
                                 <div class="form-group">
                                     <label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $data['row'][0]->transferType); ?>

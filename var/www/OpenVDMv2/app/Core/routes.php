@@ -113,6 +113,7 @@ Router::any('api/warehouse/getCruiseConfig', 'Controllers\Api\Warehouse@getCruis
 Router::any('api/warehouse/getCruiseID', 'Controllers\Api\Warehouse@getCruiseID');
 Router::any('api/warehouse/getCruiseSize', 'Controllers\Api\Warehouse@getCruiseSize');
 Router::any('api/warehouse/getCruiseStartDate', 'Controllers\Api\Warehouse@getCruiseStartDate');
+Router::any('api/warehouse/getCruiseEndDate', 'Controllers\Api\Warehouse@getCruiseEndDate');
 Router::any('api/warehouse/getFreeSpace', 'Controllers\Api\Warehouse@getFreeSpace');
 Router::any('api/warehouse/getMD5FilesizeLimit', 'Controllers\Api\Warehouse@getMD5FilesizeLimit');
 Router::any('api/warehouse/getMD5FilesizeLimitStatus', 'Controllers\Api\Warehouse@getMD5FilesizeLimitStatus');
@@ -138,7 +139,7 @@ Router::any('api/cruiseDataTransfers/setErrorCruiseDataTransfer/(:num)', 'Contro
 Router::any('api/cruiseDataTransfers/setRunningCruiseDataTransfer/(:num)', 'Controllers\Api\CruiseDataTransfers@setRunningCruiseDataTransfer');
 Router::any('api/cruiseDataTransfers/setIdleCruiseDataTransfer/(:num)', 'Controllers\Api\CruiseDataTransfers@setIdleCruiseDataTransfer');
 
-//Router::any('api/dashboardData/getCruises', 'Controllers\Api\DashboardData@getCruises');
+Router::any('api/dashboardData/getDashboardDataTypes/(:any)', 'Controllers\Api\DashboardData@getDashboardDataTypes');
 Router::any('api/dashboardData/getLatestDataObjectByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getLatestDataObjectByType');
 Router::any('api/dashboardData/getLatestVisualizerDataByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getLatestVisualizerDataByType');
 Router::any('api/dashboardData/getLatestStatsByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getLatestStatsByType');

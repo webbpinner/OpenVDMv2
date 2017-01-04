@@ -16,6 +16,11 @@ class DashboardData extends Controller {
         $cruiseModel = new \Models\Cruises();
         echo json_encode($cruiseModel->getCruises());
     }
+
+    public function getDashboardDataTypes($cruiseID) {
+        $this->_model->setCruiseID($cruiseID);
+        echo json_encode($this->_model->getDashboardDataTypes($dataType));
+    }
         
     public function getLatestDataObjectByType($cruiseID, $dataType){
         $this->_model->setCruiseID($cruiseID);

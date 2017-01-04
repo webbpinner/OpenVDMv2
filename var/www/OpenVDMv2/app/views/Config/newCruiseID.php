@@ -39,8 +39,15 @@ use Helpers\Form;
                                 </div>
                                 <label>Cruise Start Date/Time</label>
                                 <div class="form-group">
-                                    <div class="input-group date" id="datetimepicker">
+                                    <div class="input-group date datetimepickerToday">
                                         <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseStartDate', 'value'=>$data['cruiseStartDate'])); ?>
+                                        <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
+                                    </div>
+                                </div>
+                                <label>Cruise End Date/Time</label>
+                                <div class="form-group">
+                                    <div class="input-group date datetimepicker">
+                                        <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseEndDate', 'value'=>$data['cruiseEndDate'])); ?>
                                         <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>

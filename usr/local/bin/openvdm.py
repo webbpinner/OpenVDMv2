@@ -138,6 +138,14 @@ class OpenVDM():
         return returnVal['cruiseStartDate']
     
     
+    def getCruiseEndDate(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getCruiseEndDate'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['cruiseEndDate']
+    
+    
     def getExtraDirectory(self, extraDirectoryID):
         
         url = self.config['siteRoot'] + 'api/extraDirectories/getExtraDirectory/' + extraDirectoryID

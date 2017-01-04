@@ -33,6 +33,7 @@ class Main extends Controller {
         $data['javascript'] = array('main_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['tasks'] = $this->_tasksModel->getTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
@@ -51,16 +52,20 @@ class Main extends Controller {
         $data['javascript'] = array('datetimepicker');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
 
         
         if(isset($_POST['submit'])) {
             $cruiseID = $_POST['cruiseID'];
             $cruiseStartDate = $_POST['cruiseStartDate'];
+            $cruiseEndDate = $_POST['cruiseEndDate'];
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';
             } elseif(!preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $cruiseStartDate)){
-                $error[] = 'Valid Cruise Start Date is required';                
+                $error[] = 'Valid Cruise Start Date is required';              
+            } elseif(strcmp($cruiseEndDate,'') != 0 && !preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $cruiseEndDate)){
+                $error[] = 'Improperly formatted Cruise End Date';
             } else {
                 $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();
                 
@@ -73,6 +78,7 @@ class Main extends Controller {
 
                 $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
                 $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
+                $this->_warehouseModel->setCruiseEndDate(array('value' => $cruiseEndDate));
 
                 //$_warehouseModel = new \models\warehouse();
                 $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
@@ -133,6 +139,7 @@ class Main extends Controller {
         $data['javascript'] = array('main_config');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['tasks'] = $this->_tasksModel->getTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
@@ -206,16 +213,20 @@ class Main extends Controller {
         $data['javascript'] = array('datetimepicker');
         $data['cruiseID'] = '';
         $data['cruiseStartDate'] = '';
+        $data['cruiseEndDate'] = '';
 //        $error = array();
 
         if(isset($_POST['submit'])){
             $cruiseID = $_POST['cruiseID'];
             $cruiseStartDate = $_POST['cruiseStartDate'];
+            $cruiseEndDate = $_POST['cruiseEndDate'];
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';
             } elseif(!preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $cruiseStartDate)){
                 $error[] = 'Valid Cruise Start Date is required';
+            } elseif($cruiseEndDate != '' && !preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $cruiseEndDate)){
+                $error[] = 'Improperly formatted Cruise End Date';
             } else {
                 $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();  
                 if (is_dir($warehouseData['shipboardDataWarehouseBaseDir'] . '/' . $cruiseID)) {
@@ -227,6 +238,7 @@ class Main extends Controller {
                 
                 $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
                 $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
+                $this->_warehouseModel->setCruiseEndDate(array('value' => $cruiseEndDate));
                 $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
                 # create the gearman client
@@ -258,10 +270,12 @@ class Main extends Controller {
             } else {
                 $data['cruiseID'] = $cruiseID;
                 $data['cruiseStartDate'] = $cruiseStartDate;
+                $data['cruiseEndDate'] = $cruiseEndDate;
             }
         } elseif(isset($_POST)) {
             $data['cruiseID'] = $_POST['cruiseID'];
             $data['cruiseStartDate'] = $_POST['cruiseStartDate'];
+            $data['cruiseEndDate'] = $_POST['cruiseEndDate'];
             if(isset($_POST['disableSSDW'])) {
                 $this->_cruiseDataTransfersModel->disableCruiseDataTransfer($SSDW->cruiseDataTransferID);
             }

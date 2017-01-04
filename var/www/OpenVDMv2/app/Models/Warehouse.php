@@ -56,6 +56,11 @@ class Warehouse extends Model {
         return $row[0]->value;
     }
     
+    public function getCruiseEndDate(){
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'cruiseEndDate'");
+        return $row[0]->value;
+    }
+
     public function getShipToShoreBWLimit(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipToShoreBWLimit'");
         return $row[0]->value;
@@ -171,6 +176,11 @@ class Warehouse extends Model {
         $this->db->update(PREFIX."CoreVars",$data, $where);
     }
     
+    public function setCruiseEndDate($data){
+        $where = array('name' => 'cruiseEndDate');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+    }
+
     public function setShipboardDataWarehouseConfig($data){
         $where = array('name' => 'shipboardDataWarehouseIP');
         $this->db->update(PREFIX."CoreVars", array('value' => $data['shipboardDataWarehouseIP']), $where);

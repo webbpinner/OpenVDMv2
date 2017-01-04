@@ -122,12 +122,13 @@ VALUES
 	(3,'shipboardDataWarehousePublicDataDir','/vault/FTPRoot/PublicData'),
 	(4,'shipboardDataWarehouseStatus','2'),
 	(5,'cruiseID','CS1601'),
-	(6,'cruiseStartDate','2016/10/29 00:00'),
-	(7,'systemStatus','Off'),
-	(8,'shipToShoreBWLimit','128'),
-	(9,'shipToShoreBWLimitStatus','On'),
-	(10,'md5FilesizeLimit','10'),
-	(11,'md5FilesizeLimitStatus','On');
+	(6,'cruiseStartDate','2017/01/01 00:00'),
+  (7,'cruiseEndDate',''),
+	(8,'systemStatus','Off'),
+	(9,'shipToShoreBWLimit','128'),
+	(10,'shipToShoreBWLimitStatus','On'),
+	(11,'md5FilesizeLimit','10'),
+	(12,'md5FilesizeLimitStatus','On');
 
 /*!40000 ALTER TABLE `OVDM_CoreVars` ENABLE KEYS */;
 UNLOCK TABLES;

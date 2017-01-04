@@ -66,6 +66,7 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 RESAMPLE_INTERVAL = '1T' # 1 minute
 
 DEBUG = False
+CSVKIT = False
 
 def debugPrint(*args, **kwargs):
     if DEBUG:
@@ -210,9 +211,6 @@ def parseFile(filePath):
     vectorWindDirStat = {'statName': 'Vector Wind Dir Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['Vector_Wind_Direction_(degrees, Relative to Bow)'].min(),3), round(df_proc['Vector_Wind_Direction_(degrees, Relative to Bow)'].max(),3)]}
     output['stats'].append(vectorWindDirStat)
 
-    vectorWindDirValidityStat = {'statName':'Vector Wind Dir Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['Vector_Wind_Direction_(degrees, Relative to Bow)'] >= MIN_DIR) & (df_proc['Vector_Wind_Direction_(degrees, Relative to Bow)'] <= MAX_DIR)]),len(df_proc[(df_proc['Vector_Wind_Direction_(degrees, Relative to Bow)'] < MIN_DIR) & (df_proc['Vector_Wind_Direction_(degrees, Relative to Bow)'] > MAX_DIR)])]}
-    output['stats'].append(vectorWindDirValidityStat)
-
     scalarWindSpeedStat = {'statName': 'Scalar Wind Spd','statUnit': 'm/s', 'statType':'bounds', 'statData':[round(df_proc['Scalar_Wind_Speed_(m/s)'].min(),3), round(df_proc['Scalar_Wind_Speed_(m/s)'].max(),3)]}
     output['stats'].append(scalarWindSpeedStat)
 
@@ -240,14 +238,6 @@ def parseFile(filePath):
         else:
             deltaTQualityTest['results'] = "Warning"
     output['qualityTests'].append(deltaTQualityTest)
-
-    vectorWindDirQualityTest = {"testName": "Vector Wind Dir", "results": "Passed"}
-    if vectorWindDirValidityStat['statData'][1] > 0:
-        if vectorWindDirValidityStat['statData'][1]/len(df_proc) > .10:
-            vectorWindDirQualityTest['results'] = "Failed"
-        else:
-            vectorWindDirQualityTest['results'] = "Warning"
-    output['qualityTests'].append(vectorWindDirQualityTest)
 
     df_crop = df_proc[CROP_COLUMNS]
 
