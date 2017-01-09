@@ -49,16 +49,22 @@ class Main extends Controller {
 
         $data['title'] = 'Configuration';
         $data['css'] = array('datetimepicker');
-        $data['javascript'] = array('datetimepicker');
+        $data['javascript'] = array('datetimepicker', 'cruiseIDFormHelper');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
-
+        $data['cruises'] = $this->_warehouseModel->getCruises();
         
         if(isset($_POST['submit'])) {
             $cruiseID = $_POST['cruiseID'];
             $cruiseStartDate = $_POST['cruiseStartDate'];
             $cruiseEndDate = $_POST['cruiseEndDate'];
+
+            if (strcmp($_POST['cruiseID'], $this->_warehouseModel->getCruiseID()) != 0) {
+                $cruiseDates = $this->_warehouseModel->getCruiseDates($_POST['cruiseID']);
+                $cruiseStartDate = $cruiseDates['cruiseStartDate'];
+                $cruiseEndDate = $cruiseDates['cruiseEndDate'];
+            }
 
             if($cruiseID == ''){
                 $error[] = 'Cruise ID is required';

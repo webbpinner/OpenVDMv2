@@ -33,7 +33,7 @@ use Helpers\Session;
                 <div class="panel-body">
                     <a href="<?php echo DIR ?>config/setupNewCruise" class="btn-lg btn btn-primary btn-block">Setup New Cruise</a>
                     <a id="finalizeCurrentCruise" href="<?php echo DIR ?>config/finalizeCurrentCruise" class="btn-lg btn btn-primary btn-block">Run End-of-Cruise Tasks</a>
-                    <a href="<?php echo DIR ?>config/editCruiseID" class="btn-lg btn btn-primary btn-block">Edit Current CruiseID/Start Date</a>
+                    <a href="<?php echo DIR ?>config/editCruiseID" class="btn-lg btn btn-primary btn-block">Edit CruiseID or Start/End Dates</a>
                 </div>
             </div>
             <div class="panel panel-default">

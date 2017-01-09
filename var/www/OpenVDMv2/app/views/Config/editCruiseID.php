@@ -2,7 +2,6 @@
 
 use Core\Error;
 use Helpers\Form;
-
 ?>
 
     <div class="row">
@@ -35,18 +34,36 @@ use Helpers\Form;
                         <div class="row">
                             <div class="col-lg-12">
                                 <div class="form-group">
-                                    <label>Cruise ID</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseID', 'value'=>$data['cruiseID'])); ?>
+                                    <label>Cruise ID</label>
+<?php
+    if(sizeof($data['cruises']) > 0) {
+?>
+                                    <select name="cruiseID" class="form-control">
+<?php
+        for($i=0;$i<sizeof($data['cruises']); $i++){
+?>
+                                        <option value="<?php echo $data['cruises'][$i]; ?>"<?php echo ' ' . ($data['cruiseID'] == $data['cruises'][$i] ? 'selected':'');?>><?php echo $data['cruises'][$i]; ?></option>
+<?php
+        }
+    } else {
+?>
+                                    <select name="cruiseID" class="form-control disabled">
+                                        <option>No Cruises Available</option>
+<?php
+    }
+?>
+                                    </select>
                                 </div>
                                 <label>Cruise Start Date/Time</label>
                                 <div class="form-group">
-                                    <div class="input-group date datetimepicker">
+                                    <div id="cruiseStartDate", class="input-group date datetimepicker">
                                         <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseStartDate', 'value'=>$data['cruiseStartDate'])); ?>
                                         <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
                                 <label>Cruise End Date/Time</label>
                                 <div class="form-group">
-                                    <div class="input-group date datetimepicker">
+                                    <div  id="cruiseEndDate", class="input-group date datetimepicker">
                                         <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'cruiseEndDate', 'value'=>$data['cruiseEndDate'])); ?>
                                         <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                                     </div>

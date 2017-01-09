@@ -264,4 +264,32 @@ class Warehouse extends Model {
         return $this->getCruises()[0];
     }
 
+    public function getCruiseDates($cruiseID = '') {
+        if (strcmp($cruiseID, '') == 0 ){
+            $cruiseID = $this->getCruiseID();
+        }
+
+        $cruiseDir = $this->getShipboardDataWarehouseBaseDir() . DIRECTORY_SEPARATOR . $cruiseID;
+        var_dump($cruiseDir);
+        if (is_dir($cruiseDir)) {
+            //Check cruise Directory for ovdmConfig.json
+            $cruiseFileList = scandir($cruiseDir);
+            #var_dump($cruiseList);
+            foreach ($cruiseFileList as $cruiseKey => $cruiseValue){
+                #var_dump($cruiseValue);
+                if (in_array($cruiseValue,array(self::CONFIG_FN))){
+                    #var_dump($baseDir . DIRECTORY_SEPARATOR . $rootValue . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                    $ovdmConfigContents = file_get_contents($cruiseDir . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                    $ovdmConfigJSON = json_decode($ovdmConfigContents,true);
+                    
+                    return array('cruiseStartDate' => $ovdmConfigJSON['cruiseStartDate'],'cruiseEndDate' => $ovdmConfigJSON['cruiseEndDate']); 
+                }
+            }
+            return array("Error"=>"Could not find cruise config file.");
+
+        } else {
+            return array("Error"=>"Could not find cruise directory.");
+        }
+    }
+
 }
