@@ -216,7 +216,7 @@ class Warehouse extends Model {
                 {
                     if (!in_array($rootValue,array(".","..")))
                     {
-                        if (is_dir($baseDir . DIRECTORY_SEPARATOR . $rootValue))
+                        if (is_dir($baseDir . DIRECTORY_SEPARATOR . $rootValue) && is_readable($baseDir . DIRECTORY_SEPARATOR . $rootValue))
                         {
                             //Check each Directory for ovdmConfig.json
                             $cruiseList = scandir($baseDir . DIRECTORY_SEPARATOR . $rootValue);
