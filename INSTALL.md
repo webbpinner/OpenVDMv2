@@ -438,9 +438,9 @@ In order for OpenVDMv2 to properly store data serveral directories must be creat
  - **PublicData** - This is the location where the Public Data share will be located.  This directory needs to live within the **FTPRoot**
  - **VisitorInformation** - This is the location where ship-specific information will be located.  This directory needs to live within the **FTPRoot**
 
-The Location of the **FTPRoot** needs to be large enough to hold multiple cruises worth of data.  In typical installation of OpenVDMv2, the location of the **FTPRoot** is on dedicated hardware (internal RAID array).  In these cases the volume is mounted at boot by the OS to a specific location (i.e. `/mnt/vault`).  Instructions on mounting volumes at boot is beyond the scope of these installation procedures however.
+The Location of the **FTPRoot** needs to be large enough to hold multiple cruises worth of data.  In typical installation of OpenVDMv2, the location of the **FTPRoot** is on dedicated hardware (internal RAID array).  In these cases the volume is mounted at boot by the OS to a specific location (i.e. `/vault`).  Instructions on mounting volumes at boot is beyond the scope of these installation procedures however.
 
-For the purposes of these installation instructions the parent folder for **FTPRoot** will be a large RAID array located at: `/mnt/vault` and the user that will retain ownership of these folders will be "survey"
+For the purposes of these installation instructions the parent folder for **FTPRoot** will be a large RAID array located at: `/vault` and the user that will retain ownership of these folders will be "survey"
 
 ```
 sudo mkdir -p /vault/FTPRoot/CruiseData
