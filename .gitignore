@@ -7,6 +7,7 @@
 /usr/local/etc/openvdm/postCollectionSystemTransfer.yaml
 /usr/local/etc/openvdm/datadashboard.yaml
 /usr/local/etc/openvdm/openvdm.yaml
+/usr/local/bin/openvdm.pyc
 /usr/local/bin/OVDM_dashboardDataScripts/EM302_dataDashboard.py
 /usr/local/bin/OVDM_dashboardDataScripts/SCS_dataDashboard.py
 composer.lock
