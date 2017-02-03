@@ -106,18 +106,27 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-OpenVDM requires that php5 be integrated with Gearman. To do that `extension=gearman.so` must be added to `/etc/php5/cli/php.ini` and `/etc/php5/apache2/php.ini`.
-
-Modifying these files requires root privledges:
+OpenVDM requires that php5 be integrated with Gearman. Create the file `/etc/php5/mods-available/gearman.ini`
 ```
-sudo nano /etc/php5/cli/php.ini
-sudo nano /etc/php5/apache2/php.ini
+sudo nano /etc/php5/mods-available/gearman.ini
 ```
 
-Within each of these files is a section called `Dynamic Extensions`.  Most of these section is probably commented out.  Simple add `extension=gearman.so` to the end of the section.
+Copy the following into `gearman.ini`
+```
+; configuration for gearman module
+; priority=20
+extension="gearman.so"
+```
+
+Enable the new module
+```
+sudo php5enmod gearman
+```
 
 Restart Apache
-`sudo service apache2 restart`
+```
+sudo service apache2 restart
+```
 
 #### Installing Supervisor
 To install Supervisor open and terminal window and type the following command:
@@ -373,10 +382,26 @@ sudo pear upgrade -Z Archive_Tar
 sudo pecl install yaml
 ```
 
-Add the following to the end of `/etc/php5/apache2/php.ini` and `/etc/php5/cli/php.ini`
-
+Create the file `/etc/php5/mods-available/yaml.ini`
 ```
-extension=yaml.so
+sudo nano /etc/php5/mods-available/yaml.ini
+```
+
+Copy the following into `yaml.ini`
+```
+; configuration for yaml module
+; priority=20
+extension="yaml.so"
+```
+
+Enable the new module
+```
+sudo php5enmod yaml
+```
+
+Restart Apache2
+```
+sudo service apache2 restart
 ```
 
 ####Create the Required Directories
