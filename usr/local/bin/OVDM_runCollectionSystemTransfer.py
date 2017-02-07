@@ -121,7 +121,7 @@ def build_filelist(worker, sourceDir):
         debugPrint("Pausing for 5 seconds")
         time.sleep(5)
         for idx, val in enumerate(returnFiles['include']):
-            debugPrint('idx:',idx,'val:',val,'filesize:',returnFiles['filesize'][idx])
+            #debugPrint('idx:',idx,'val:',val,'filesize:',returnFiles['filesize'][idx])
             if not os.stat(val).st_size == returnFiles['filesize'][idx]:
                 debugPrint(val, "removed because it's size is changing")
                 del returnFiles['include'][idx]
