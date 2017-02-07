@@ -65,7 +65,7 @@ def errPrint(*args, **kwargs):
 
 def build_filelist(worker, sourceDir):
 
-    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[], 'filesize':[]}
 
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60 #5 Mintues
     threshold_time = time.time() - staleness
@@ -103,17 +103,31 @@ def build_filelist(worker, sourceDir):
                             #debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             debugPrint("file_mod_time:",file_mod_time)
-                            if file_mod_time > cruiseStart_time and file_mod_time < threshold_time and file_mod_time < cruiseEnd_time:
+                            if file_mod_time > cruiseStart_time and file_mod_time < cruiseEnd_time:
                                 debugPrint(filename, "included")
                                 returnFiles['include'].append(os.path.join(root, filename))
+                                returnFiles['filesize'].append(os.stat(os.path.join(root, filename)).st_size)
                             else:
                                 debugPrint(filename, "skipped for time reasons")
-                            
+
                             include = True
 
                 if not include:
                     debugPrint(filename, "excluded")
                     returnFiles['exclude'].append(os.path.join(root, filename))
+
+    if not worker.collectionSystemTransfer['staleness'] == '0':
+        debugPrint("Checking for changing filesizes")
+        debugPrint("Pausing for 5 seconds")
+        time.sleep(5)
+        for idx, val in enumerate(returnFiles['include']):
+            debugPrint('idx:',idx,'val:',val,'filesize:',returnFiles['filesize'][idx])
+            if not os.stat(val).st_size == returnFiles['filesize'][idx]:
+                debugPrint(val, "removed because it's size is changing")
+                del returnFiles['include'][idx]
+                del returnFiles['filesize'][idx]
+
+    del returnFiles['filesize']
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
