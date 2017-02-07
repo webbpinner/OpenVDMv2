@@ -109,8 +109,8 @@ class Main extends Controller {
                 $data['jobResults'] = json_decode($gmc->doNormal("setCruiseDataDirectoryPermissions", json_encode($gmData)));
                 $data['jobResults'] = json_decode($gmc->doNormal("exportOVDMConfig", json_encode($gmData)));
 
-                var_dump(this->_warehouseModel->getLowerings());
-                var_dump(this->_warehouseModel->getLatestLowering());
+                //var_dump($this->_warehouseModel->getLowerings());
+                //var_dump($this->_warehouseModel->getLatestLowering());
         
                 sleep(1);
                 Session::set('message','Cruise ID Updated');
@@ -288,6 +288,9 @@ class Main extends Controller {
                 View::rendertemplate('header',$data);
                 View::render('Config/main',$data);
                 View::rendertemplate('footer',$data);
+
+                return true;
+
             } else {
                 $data['cruiseID'] = $cruiseID;
                 $data['cruiseStartDate'] = $cruiseStartDate;

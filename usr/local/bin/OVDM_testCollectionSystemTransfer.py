@@ -463,9 +463,11 @@ def task_testCollectionSystemTransfer(worker, job):
 
     worker.send_job_status(job, 2, 4)
 
-    debugPrint("Test Destination Directory")
-    job_results['parts'] += test_destDir(worker)
-    worker.send_job_status(job, 3, 4)
+    debugPrint(json.dumps(worker.collectionSystemTransfer))
+    if worker.collectionSystemTransfer['enable'] == '1':
+        debugPrint("Test Destination Directory")
+        job_results['parts'] += test_destDir(worker)
+        worker.send_job_status(job, 3, 4)
         
     verdict = "Pass"
     for test in job_results['parts']:

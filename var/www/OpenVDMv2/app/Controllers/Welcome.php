@@ -20,13 +20,6 @@ class Welcome extends Controller {
         $this->_extraDirectoriesModel = new \Models\Config\ExtraDirectories();
     }
 
-    //private function formatFilesize($bytes) {
-    //    $s = array('bytes', 'kb', 'MB', 'GB', 'TB', 'PB');
-    //    $e = floor(log($bytes)/log(1024));
-    //    return round(($bytes/pow(1024, floor($e))),2) . " " . $s[$e];
-//        return '0';
-    //}
-
     public function index(){
         $data['title'] = 'Dashboard';
 
