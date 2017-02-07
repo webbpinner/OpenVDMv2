@@ -102,7 +102,7 @@ def build_filelist(worker, sourceDir):
                                 continue
                             #debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
-                            debugPrint("file_mod_time:",file_mod_time)
+                            #debugPrint("file_mod_time:",file_mod_time)
                             if file_mod_time > cruiseStart_time and file_mod_time < cruiseEnd_time:
                                 debugPrint(filename, "included")
                                 returnFiles['include'].append(os.path.join(root, filename))
@@ -118,7 +118,7 @@ def build_filelist(worker, sourceDir):
 
     if not worker.collectionSystemTransfer['staleness'] == '0':
         debugPrint("Checking for changing filesizes")
-        debugPrint("Pausing for 5 seconds")
+        #debugPrint("Pausing for 5 seconds")
         time.sleep(5)
         for idx, val in enumerate(returnFiles['include']):
             #debugPrint('idx:',idx,'val:',val,'filesize:',returnFiles['filesize'][idx])
