@@ -58,6 +58,7 @@ class Main extends Controller {
         if(isset($_POST['submit'])) {
 
             $cruiseID = null;
+            $setLatestLowering = false;
 
             if ($_POST['cruiseID']) {
                 $cruiseID = $_POST['cruiseID'];
@@ -68,6 +69,7 @@ class Main extends Controller {
             $cruiseEndDate = $_POST['cruiseEndDate'];
 
             if (strcmp($cruiseID, $this->_warehouseModel->getCruiseID()) != 0) {
+                $setLatestLowering = true;
                 $cruiseDates = $this->_warehouseModel->getCruiseDates($_POST['cruiseID']);
                 $cruiseStartDate = $cruiseDates['cruiseStartDate'];
                 $cruiseEndDate = $cruiseDates['cruiseEndDate'];
@@ -106,8 +108,11 @@ class Main extends Controller {
                 #$job_handle = $gmc->doBackground("updateCruiseDirectory", json_encode($gmData));
                 $data['jobResults'] = json_decode($gmc->doNormal("setCruiseDataDirectoryPermissions", json_encode($gmData)));
                 $data['jobResults'] = json_decode($gmc->doNormal("exportOVDMConfig", json_encode($gmData)));
+
+                var_dump(this->_warehouseModel->getLowerings());
+                var_dump(this->_warehouseModel->getLatestLowering());
         
-        sleep(1);
+                sleep(1);
                 Session::set('message','Cruise ID Updated');
                 Url::redirect('config');
             } else {
