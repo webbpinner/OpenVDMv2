@@ -102,6 +102,7 @@ def build_filelist(worker, sourceDir):
                                 continue
                             #debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
+                            debugPrint("file_mod_time:",file_mod_time)
                             if file_mod_time > cruiseStart_time and file_mod_time < threshold_time and file_mod_time < cruiseEnd_time:
                                 debugPrint(filename, "included")
                                 returnFiles['include'].append(os.path.join(root, filename))
