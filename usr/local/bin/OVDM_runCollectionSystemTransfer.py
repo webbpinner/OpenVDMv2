@@ -11,10 +11,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-30
+#     REVISION:  2017-01-24
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2016
+#               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -86,6 +86,7 @@ def build_filelist(worker, sourceDir):
             for filt in filters['ignoreFilter'].split(','):
                 #print filt
                 if fnmatch.fnmatch(os.path.join(root, filename), filt):
+                    debugPrint(filename, "ignored")
                     ignore = True
                     break
             if not ignore:
@@ -102,6 +103,7 @@ def build_filelist(worker, sourceDir):
                             #debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             if file_mod_time > cruiseStart_time and file_mod_time < threshold_time and file_mod_time < cruiseEnd_time:
+                                debugPrint(filename, "included")
                                 returnFiles['include'].append(os.path.join(root, filename))
                             else:
                                 debugPrint(filename, "skipped for time reasons")
@@ -109,6 +111,7 @@ def build_filelist(worker, sourceDir):
                             include = True
 
                 if not include:
+                    debugPrint(filename, "excluded")
                     returnFiles['exclude'].append(os.path.join(root, filename))
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
