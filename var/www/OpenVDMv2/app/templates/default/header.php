@@ -22,8 +22,10 @@ use Helpers\Hooks;
     function formatFilesize($bytes) {
         $s = array('bytes', 'kb', 'MB', 'GB', 'TB', 'PB');
         $e = floor(log($bytes)/log(1024));
-        return round(($bytes/pow(1024, floor($e))),2) . " " . $s[$e];
-    }
+        if ($e > 0) {
+            return round(($bytes/pow(1024, floor($e))),2) . " " . $s[$e];
+        }
+        return "0 bytes";
 
     function time_elapsed_string($mysqlTime)
     {

@@ -140,10 +140,11 @@ def parseFile(filePath):
 
             line_date_time = line['date'] + ' ' + line['time']
 
-            line_cog_t = float(line['cog_t'])
-            line_cog_m = float(line['cog_m'])
-            line_sog_kts = float(line['sog_kts'])
-            line_sog_kph = float(line['sog_kph'])
+            #x = 10 if a > b else 11
+            line_cog_t = np.nan if line['cog_t'] == '' else float(line['cog_t'])
+            line_cog_m = np.nan if line['cog_m'] == '' else float(line['cog_m'])
+            line_sog_kts = np.nan if line['sog_kts'] == '' else float(line['sog_kts'])
+            line_sog_kph = np.nan if line['sog_kph'] == '' else float(line['sog_kph'])
 
         except:
 
@@ -178,6 +179,10 @@ def parseFile(filePath):
     output['stats'].append(cog_tValidityStat)
 
     cog_mStat = {'statName': 'COG Mag Bounds','statUnit': 'deg', 'statType':'bounds', 'statData':[round(df_proc['cog_m'].min(),3), round(df_proc['cog_m'].max(),3)]}
+    if np.isnan(cog_mStat['statData'][0]) == True:
+        cog_mStat['statData'][0] = None
+    if np.isnan(cog_mStat['statData'][1]) == True:
+        cog_mStat['statData'][1] = None
     output['stats'].append(cog_mStat)
 
     cog_mValidityStat = {'statName':'COG Mag Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['cog_m'] >= MIN_COG) & (df_proc['cog_m'] <= MAX_COG)]),len(df_proc[(df_proc['cog_m'] < MIN_COG) & (df_proc['cog_m'] > MAX_COG)])]}

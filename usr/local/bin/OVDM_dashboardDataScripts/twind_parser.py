@@ -219,7 +219,13 @@ def parseFile(filePath):
 
     df_crop = df_crop.set_index('date_time')
 
+    wind_gust = df_crop['Wind_Speed_(m/s)'].resample(RESAMPLE_INTERVAL, label='right', closed='right').max()
+    wind_lull = df_crop['Wind_Speed_(m/s)'].resample(RESAMPLE_INTERVAL, label='right', closed='right').min()
+
     df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
+
+    df_crop['Wind_Gust_(m/s)'] = wind_gust
+    df_crop['Wind_Lull_(m/s)'] = wind_lull
 
     df_crop = df_crop.reset_index()
 
@@ -230,6 +236,18 @@ def parseFile(filePath):
     visualizerDataObj['data'] = json.loads(df_crop[['date_time','Wind_Speed_(m/s)']].to_json(orient='values'))
     visualizerDataObj['unit'] = 'm/s'
     visualizerDataObj['label'] = 'Wind Spd'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Wind_Gust_(m/s)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'm/s'
+    visualizerDataObj['label'] = 'Wind Gust'
+    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+
+    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Wind_Lull_(m/s)']].to_json(orient='values'))
+    visualizerDataObj['unit'] = 'm/s'
+    visualizerDataObj['label'] = 'Wind Lull'
     output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
 
     visualizerDataObj['data'] = json.loads(df_crop[['date_time','Wind_Direction_(deg, Relative to Bow)']].to_json(orient='values'))
