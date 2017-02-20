@@ -47,11 +47,11 @@ class shipToShoreTransfers extends Controller {
         $output['name'] = "collectionSystemTransfer";
         $output['class'] = "form-control";
         
-        var_dump($output['data']);
+        //var_dump($output['data']);
         if(isset($selectedCollectionSystemTransferID)) {
             $output['value'] = $selectedCollectionSystemTransferID;
         }
-	var_dump($output['data'][1]);
+	//var_dump($output['data'][1]);
         return $output;
     }
     

@@ -26,6 +26,7 @@ use Helpers\Hooks;
             return round(($bytes/pow(1024, floor($e))),2) . " " . $s[$e];
         }
         return "0 bytes";
+    }
 
     function time_elapsed_string($mysqlTime)
     {

@@ -17,4 +17,5 @@ sudo mkdir -p /var/log/OpenVDM
 sudo rsync -aiv ../usr/local/bin/* /usr/local/bin/
 
 sudo rsync -aiv ../etc/supervisor/conf.d/* /etc/supervisor/conf.d/
-
+sudo mv /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf
+sudo mv /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf

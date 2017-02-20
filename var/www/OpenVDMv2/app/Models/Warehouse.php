@@ -270,7 +270,7 @@ class Warehouse extends Model {
         }
 
         $cruiseDir = $this->getShipboardDataWarehouseBaseDir() . DIRECTORY_SEPARATOR . $cruiseID;
-        var_dump($cruiseDir);
+        #var_dump($cruiseDir);
         if (is_dir($cruiseDir)) {
             //Check cruise Directory for ovdmConfig.json
             $cruiseFileList = scandir($cruiseDir);
