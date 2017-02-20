@@ -14,7 +14,7 @@
 #     REVISION:  2016-10-30
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2016
+#               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
