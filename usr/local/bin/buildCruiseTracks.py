@@ -72,11 +72,19 @@ AllGPSSources = [
         "GPSSources": [
             {
                 "device":"POSMV",
-                "regex":"NAV/POSMV-GGA_*.json"
+                "regex":"NAV/COM30-POSMV-GGA-RAW_*.json"
+            },
+            {
+                "device":"BridgeData",
+                "regex":"NAV/COM22-BridgeData-GGA-RAW_*.json"
             },
             {
                 "device":"CNAV",
-                "regex":"NAV/CNAV-GGA_*.json"
+                "regex":"NAV/COM18-CNAV-GGA-RAW_*.json"
+            },
+            {
+                "device":"Seapath",
+                "regex":"NAV/COM12-Seapath-GGA-RAW_*.json"
             }
         ]
     }
@@ -246,7 +254,7 @@ def main(argv):
     # Define the command-line structure
     parser = argparse.ArgumentParser(description='build cruise tracklines post-dashboard processing')
     parser.add_argument('-c', dest='cruiseID', metavar='cruiseID', help='the cruiseID to process')
-    parser.add_argument('collectionSystem', help='json-formatted array of files to NOT include for processing')
+    parser.add_argument('collectionSystem', help='the collection system to search for geoJSON files')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
     args = parser.parse_args()
@@ -323,6 +331,7 @@ def main(argv):
                 
                 # Build the list of files coorsponding to the current device based on the regex provided
                 files = glob.glob(collectionSystemDashboardDataDir.rstrip('/') + '/' + GPSSource['regex'])
+                files.sort()
                 
                 # Combind the geoJSON objects
                 combineGeoJsonObj = combineGeoJsonFiles(files, cruiseID, GPSSource['device'])
