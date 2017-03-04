@@ -98,13 +98,12 @@ def setOwnerGroupPermissions(worker, path):
 
     warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 
-    #debugPrint(path)
+    debugPrint(path)
 
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
-    
     if os.path.isfile(path):
         try:
             debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
@@ -113,27 +112,36 @@ def setOwnerGroupPermissions(worker, path):
         except OSError:
             errPrint("Unable to set file permissions for", path)
             return False
-    elif os.path.isdir(path):
-        os.chown(path, uid, gid)
-        os.chmod(path, 0755)
-        for item in os.listdir(path):
-            itempath = os.path.join(path, item)
-            if os.path.isdir(itempath):
+    else: #directory
+        try:
+            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0755)
+        except OSError:
+            errPrint("Unable to set file permissions for", fname)
+            return False
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                fname = os.path.join(root, file)
                 try:
-                    if not setOwnerGroupPermissions(worker, itempath):
-                        return False
+                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    os.chown(fname, uid, gid)
+                    os.chmod(fname, 0644)
                 except OSError:
+                    errPrint("Unable to set file permissions for", fname)
                     return False
-            elif os.path.isfile(itempath):
-                try:
-                    debugPrint("Setting ownership for", itempath, "to", warehouseUser + ":" + warehouseUser)
-                    os.chown(itempath, uid, gid)
-                    os.chmod(itempath, 0644)
-                except OSError:
-                    errPrint("Unable to set file permissions for", itempath)
-                    return False
-    return True
 
+            for momo in dirs:
+                dname = os.path.join(root, momo)
+                try:
+                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    os.chown(dname, uid, gid)
+                    os.chmod(dname, 0755)
+                except OSError:
+                    errPrint("Unable to set file permissions for", dname)
+                    return False
+
+    return True
 
 def output_JSONDataToFile(worker, filePath, contents):
     
@@ -403,14 +411,6 @@ def task_updateDataDashboard(worker, job):
                     else:
                         if output_JSONDataToFile(worker, jsonFilePath, outObj):
                             job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
-                            if(setOwnerGroupPermissions(worker, jsonFilePath)):
-                                job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Pass"})
-                            else:
-                                errorTitle = 'Datafile Parsing error'
-                                errorBody = "Error Setting DashboardData file ownership: " + filename
-                                errPrint(errorTitle + ':', errorBody)
-                                worker.OVDM.sendMsg(errorTitle,errorBody)
-                                job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Fail"})
                         else:
                             errorTitle = 'Datafile Parsing error'
                             errorBody = "Error Writing DashboardData file: " + filename
@@ -500,14 +500,15 @@ def task_updateDataDashboard(worker, job):
             errPrint("Error Writing Dashboard manifest file")
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail"})
             return json.dumps(job_results)
+    
+        worker.send_job_status(job, 9, 10)
+        debugPrint("Setting file permissions")
 
-    worker.send_job_status(job, 9, 10)
-
-    if(setOwnerGroupPermissions(worker, dataDashboardManifestFilePath)):
-        job_results['parts'].append({"partName": "Setting manifest file ownership", "result": "Pass"})
-    else:
-        errPrint("Error Setting manifest file ownership")
-        job_results['parts'].append({"partName": "Setting manifest file ownership", "result": "Fail"})
+        if setOwnerGroupPermissions(worker, dataDashboardDir):
+            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
+        else:
+            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
+            return json.dumps(job_results)
 
     worker.send_job_status(job, 10, 10)
 
@@ -625,14 +626,6 @@ def task_rebuildDataDashboard(worker, job):
                             #job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Pass"})
                             if output_JSONDataToFile(worker, jsonFilePath, outObj):
                                 job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
-                                if(setOwnerGroupPermissions(worker, jsonFilePath)):
-                                    job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Pass"})
-                                else:
-                                    errorTitle = 'Error setting ownership'
-                                    errorBody = "Could not set ownership: " + filename
-                                    errPrint(errorTitle + ':', errorBody)
-                                    worker.OVDM.sendMsg(errorTitle,errorBody)
-                                    job_results['parts'].append({"partName": "Setting DashboardData file ownership: " + filename, "result": "Fail"})
                             else:
                                 errorTitle = 'Error writing file'
                                 errorBody = "Error Writing DashboardData file: " + filename
@@ -677,6 +670,7 @@ def task_rebuildDataDashboard(worker, job):
 
     worker.send_job_status(job, 95, 100)
 
+    debugPrint("Setting file permissions")
     if(setOwnerGroupPermissions(worker, dataDashboardDir)):
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:

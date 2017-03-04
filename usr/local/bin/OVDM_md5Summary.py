@@ -147,13 +147,12 @@ def setOwnerGroupPermissions(worker, path):
 
     warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 
-    #debugPrint(path)
+    debugPrint(path)
 
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
-    
     if os.path.isfile(path):
         try:
             debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
@@ -162,28 +161,36 @@ def setOwnerGroupPermissions(worker, path):
         except OSError:
             errPrint("Unable to set file permissions for", path)
             return False
-    elif os.path.isdir(path):
-        os.chown(path, uid, gid)
-        os.chmod(path, 0755)
+    else: #directory
+        try:
+            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0755)
+        except OSError:
+            errPrint("Unable to set file permissions for", fname)
+            return False
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                fname = os.path.join(root, file)
+                try:
+                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    os.chown(fname, uid, gid)
+                    os.chmod(fname, 0644)
+                except OSError:
+                    errPrint("Unable to set file permissions for", fname)
+                    return False
 
-        for item in os.listdir(path):
-            itempath = os.path.join(path, item)
-            if os.path.isdir(itempath):
+            for momo in dirs:
+                dname = os.path.join(root, momo)
                 try:
-                    if not setOwnerGroupPermissions(worker, itempath):
-                        return False
+                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    os.chown(dname, uid, gid)
+                    os.chmod(dname, 0755)
                 except OSError:
+                    errPrint("Unable to set file permissions for", dname)
                     return False
-            elif os.path.isfile(itempath):
-                try:
-                    debugPrint("Setting ownership for", itempath, "to", warehouseUser + ":" + warehouseUser)
-                    os.chown(itempath, uid, gid)
-                    os.chmod(itempath, 0644)
-                except OSError:
-                    errPrint("Unable to set file permissions for", itempath)
-                    return False
+
     return True
-
 
 def build_MD5Summary_MD5(worker):
 
