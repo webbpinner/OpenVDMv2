@@ -226,21 +226,30 @@ def test_sshSourceDir(worker):
     
     returnVal = []
 
-    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
-    
+    command = ''
+
+    if worker.collectionSystemTransfer['sshUseKey'] == '1':
+        command = ['ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PasswordAuthentication=no', 'ls']
+    else:
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
+
     s = ' '
     debugPrint('Connection Command:', s.join(command))
     
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
 
+    debugPrint(proc.returncode)
     if proc.returncode == 0:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
         sourceDir = build_sourceDir(worker)
         debugPrint('Source Dir:', sourceDir)
 
-        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', sourceDir]
+        if worker.collectionSystemTransfer['sshUseKey'] == '1':
+            command = ['ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PasswordAuthentication=no', 'ls', sourceDir]
+        else:
+            command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'ssh', worker.collectionSystemTransfer['sshServer'], '-l', worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', sourceDir]
         
         s = ' '
         debugPrint('Connection Command:', s.join(command))

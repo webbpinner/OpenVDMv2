@@ -292,7 +292,12 @@ def test_sshDestDir(worker):
     
     returnVal = []
 
-    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
+    command = ''
+
+    if worker.cruiseDataTransfer['sshUseKey'] == '1':
+        command = ['ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'ls']
+    else:
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls']
     
     s = ' '
     debugPrint('Connection Command:', s.join(command))
@@ -309,7 +314,10 @@ def test_sshDestDir(worker):
 
         destDir = worker.cruiseDataTransfer['destDir']
 
-        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', destDir]
+        if worker.cruiseDataTransfer['sshUseKey'] == '1':
+            command = ['ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'ls', destDir]
+        else:
+            command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'ls', destDir]
         
         s = ' '
         debugPrint('Connection Command:', s.join(command))
@@ -323,7 +331,10 @@ def test_sshDestDir(worker):
         else:
             returnVal.append({"testName": "Destination Directory", "result": "Pass"})
 
-            command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + os.path.join(destDir, 'writeTest.txt')]
+            if worker.cruiseDataTransfer['sshUseKey'] == '1':
+                command = ['ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'touch ' + os.path.join(destDir, 'writeTest.txt')]
+            else:
+                command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'touch ' + os.path.join(destDir, 'writeTest.txt')]
             
             s = ' '
             debugPrint('Write Test Command:', s.join(command))
@@ -334,8 +345,11 @@ def test_sshDestDir(worker):
             if proc.returncode != 0:
             	returnVal.append({"testName": "Write Test", "result": "Fail"})
                 
-            else:                
-                command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + os.path.join(destDir, 'writeTest.txt')]
+            else:
+                if worker.cruiseDataTransfer['sshUseKey'] == '1':
+                    command = ['ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'rm ' + os.path.join(destDir, 'writeTest.txt')]
+                else:
+                    command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'rm ' + os.path.join(destDir, 'writeTest.txt')]
             
                 s = ' '
                 debugPrint('Delete Test file Command:', s.join(command))

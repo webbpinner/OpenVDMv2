@@ -37,6 +37,14 @@ class CollectionSystemTransfers extends Controller {
         return $trueFalse;
     }
     
+
+    private function _buildUseSSHKeyOptions() {
+        
+        $trueFalse = array(array('id'=>'useSSHKey0', 'name'=>'sshUseKey', 'value'=>'0', 'label'=>'No'), array('id'=>'useSSHKey1', 'name'=>'sshUseKey', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
+
+
     private function updateCruiseDirectory() {
         $_warehouseModel = new \Models\Warehouse();
         $warehouseConfig = $_warehouseModel->getShipboardDataWarehouseConfig();
@@ -82,6 +90,7 @@ class CollectionSystemTransfers extends Controller {
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -100,6 +109,7 @@ class CollectionSystemTransfers extends Controller {
             $smbDomain = $_POST['smbDomain'];
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
             //$nfsUser = $_POST['nfsUser'];
@@ -145,6 +155,7 @@ class CollectionSystemTransfers extends Controller {
                 $rsyncPass = '';
                 $sshServer = '';
                 $sshUser = '';
+                $sshUseKey = '0';
                 $sshPass = '';
                 $nfsServer = '';
                 //$nfsUser = '';
@@ -175,6 +186,7 @@ class CollectionSystemTransfers extends Controller {
                     $smbPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -209,6 +221,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -227,7 +240,7 @@ class CollectionSystemTransfers extends Controller {
 
                 } 
 
-                if($sshPass == ''){
+                if(($sshPass == '') && ($sshUseKey == "0")){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -271,6 +284,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                 }
             } 
@@ -293,6 +307,7 @@ class CollectionSystemTransfers extends Controller {
                     'smbDomain' => $smbDomain,
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
                     //'nfsUser' => $nfsUser,
@@ -325,6 +340,7 @@ class CollectionSystemTransfers extends Controller {
             $smbDomain = $_POST['smbDomain'];
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
             //$nfsUser = $_POST['nfsUser'];
@@ -370,6 +386,7 @@ class CollectionSystemTransfers extends Controller {
                 $rsyncPass = '';
                 $sshServer = '';
                 $sshUser = '';
+                $sshUseKey = '0';
                 $sshPass = '';
                 $nfsServer = '';
                 //$nfsUser = '';
@@ -400,6 +417,7 @@ class CollectionSystemTransfers extends Controller {
                     $smbDomain = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -434,6 +452,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -496,6 +515,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                 }
             }    
@@ -520,6 +540,7 @@ class CollectionSystemTransfers extends Controller {
                     'smbDomain' => $smbDomain,
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
                     //'nfsUser' => $nfsUser,
@@ -572,6 +593,7 @@ class CollectionSystemTransfers extends Controller {
             $smbDomain = $_POST['smbDomain'];
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
             //$nfsUser = $_POST['nfsUser'];
@@ -616,6 +638,7 @@ class CollectionSystemTransfers extends Controller {
                 $rsyncPass = '';
                 $sshServer = '';
                 $sshUser = '';
+                $sshUseKey = '0';
                 $sshPass = '';
                 $nfsServer = '';
                 //$nfsUser = '';
@@ -645,6 +668,7 @@ class CollectionSystemTransfers extends Controller {
                     $smbPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -679,6 +703,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -696,7 +721,7 @@ class CollectionSystemTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if($sshPass == ''){
+                if(($sshPass == '') && ($sshUseKey == '0')){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -741,6 +766,7 @@ class CollectionSystemTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                 }
             }
@@ -763,6 +789,7 @@ class CollectionSystemTransfers extends Controller {
                     'smbDomain' => $smbDomain,
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
                     //'nfsUser' => $nfsUser,
@@ -800,6 +827,7 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->smbDomain = $smbDomain;
                 $data['row'][0]->sshServer = $sshServer;
                 $data['row'][0]->sshUser = $sshUser;
+                $data['row'][0]->sshUseKey = $sshUseKey;
                 $data['row'][0]->sshPass = $sshPass;
                 $data['row'][0]->nfsServer = $nfsServer;
                 //$data['row'][0]->nfsUser = $nfsUser;
@@ -828,6 +856,7 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->smbDomain = $_POST['smbDomain'];
             $gmData['collectionSystemTransfer']->sshServer = $_POST['sshServer'];
             $gmData['collectionSystemTransfer']->sshUser = $_POST['sshUser'];
+            $gmData['collectionSystemTransfer']->sshUseKey = $_POST['sshUseKey'];
             $gmData['collectionSystemTransfer']->sshPass = $_POST['sshPass'];
             $gmData['collectionSystemTransfer']->nfsServer = $_POST['nfsServer'];
             //$gmData['collectionSystemTransfer']->nfsUser = $_POST['nfsUser'];
@@ -862,6 +891,7 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->smbDomain = $_POST['smbDomain'];
             $data['row'][0]->sshServer = $_POST['sshServer'];
             $data['row'][0]->sshUser = $_POST['sshUser'];
+            $data['row'][0]->sshUseKey = $_POST['sshUseKey'];
             $data['row'][0]->sshPass = $_POST['sshPass'];
             $data['row'][0]->nfsServer = $_POST['nfsServer'];
             //$data['row'][0]->nfsUser = $_POST['nfsUser'];
@@ -876,6 +906,7 @@ class CollectionSystemTransfers extends Controller {
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
 
         View::rendertemplate('header',$data);
         View::render('Config/editCollectionSystemTransfers',$data,$error);

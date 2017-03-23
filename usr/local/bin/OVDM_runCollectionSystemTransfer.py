@@ -249,8 +249,11 @@ def build_sshFilelist(worker, sourceDir):
     filters = build_filters(worker)
     
     rsyncFileList = ''
-    
-    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
+
+    if worker.collectionSystemTransfer['sshUseKey'] == '1':
+        command = ['rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']    
+    else:
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     
     s = ' '
     debugPrint("Command:",s.join(command))
@@ -742,8 +745,12 @@ def transfer_sshSourceDir(worker, job):
     finally:
         sshFileListFile.close()
     
-    #command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh -c arcfour', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
-    command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+    command = ''
+    
+    if worker.collectionSystemTransfer['sshUseKey'] == '1':
+        command = ['rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+    else:
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:',s.join(command))

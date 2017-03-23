@@ -2,6 +2,7 @@
 
 use Core\Error;
 use Helpers\Form;
+use Helpers\FormCustom;
 
 ?>
 
@@ -42,6 +43,9 @@ use Helpers\Form;
                                 </div>
                                 <div class="form-group">
                                     <label>Server Username</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'sshUser', 'value'=>$data['shoresideDataWarehouseConfig']['sshUser'])); ?>
+                                </div>
+                                <div class="form-group">
+                                    <label>Use SSH Public/Private key?</label><?php echo FormCustom::radioInline($data['useSSHKeyOptions'], $data['shoresideDataWarehouseConfig']['sshUseKey']); ?>
                                 </div>
                                 <div class="form-group">
                                     <label>Server Password</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'password', 'name'=>'sshPass', 'value'=>$data['shoresideDataWarehouseConfig']['sshPass'])); ?>

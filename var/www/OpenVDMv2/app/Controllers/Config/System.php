@@ -14,6 +14,14 @@ class System extends Controller {
     private $_shipToShoreTransfersModel;
     private $_linksModel;
 
+
+    private function _buildUseSSHKeyOptions() {
+        
+        $trueFalse = array(array('id'=>'useSSHKey0', 'name'=>'sshUseKey', 'value'=>'0', 'label'=>'No'), array('id'=>'useSSHKey1', 'name'=>'sshUseKey', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
+
+
     private function updateCruiseDirectory() {
         if($this->_coreValuesModel->getSystemStatus()) {
 
@@ -123,7 +131,8 @@ class System extends Controller {
     public function editShoresideDataWarehouse(){
 
         $data['title'] = 'Configuration';
-        $data['javascript'] = array();
+        $data['javascript'] = array('SSDWFormHelper');
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['shoresideDataWarehouseConfig'] = array();
         
@@ -133,6 +142,7 @@ class System extends Controller {
                 $data['shoresideDataWarehouseConfig']['cruiseDataTransferID'] = $row->cruiseDataTransferID;
                 $data['shoresideDataWarehouseConfig']['sshServer'] = $row->sshServer;
                 $data['shoresideDataWarehouseConfig']['sshUser'] = $row->sshUser;
+                $data['shoresideDataWarehouseConfig']['sshUseKey'] = $row->sshUseKey;
                 $data['shoresideDataWarehouseConfig']['sshPass'] = $row->sshPass;
                 $data['shoresideDataWarehouseConfig']['destDir'] = $row->destDir;
                 break;
@@ -142,6 +152,7 @@ class System extends Controller {
         if(isset($_POST['submit'])){
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $destDir = $_POST['destDir'];
 
@@ -153,7 +164,7 @@ class System extends Controller {
                 $error[] = 'Shipboard Data Warehouse Username is required';
             }
 
-            if($sshPass == ''){
+            if(($sshPass == '') && ($sshUseKey == '0')){
                 $error[] = 'Shipboard Data Warehouse Password is required';
             }
 
@@ -165,6 +176,7 @@ class System extends Controller {
                 $postdata = array(
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'destDir' => $destDir,
                 );
@@ -178,6 +190,7 @@ class System extends Controller {
                 $data['shoresideDataWarehouseConfig'] = array(
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'destDir' => $destDir,
                 );

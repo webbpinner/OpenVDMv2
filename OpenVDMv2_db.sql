@@ -68,6 +68,7 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
   `smbDomain` tinytext,
   `sshServer` tinytext,
   `sshUser` tinytext,
+  `sshUseKey` int(1) unsigned NOT NULL DEFAULT '0',
   `sshPass` tinytext,
   `nfsServer` tinytext,
   `nfsUser` tinytext,
@@ -83,19 +84,18 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
   KEY `CollectionSystemTransferType` (`transferType`),
   CONSTRAINT `CollectionSystemTransferStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`),
   CONSTRAINT `CollectionSystemTransferType` FOREIGN KEY (`transferType`) REFERENCES `OVDM_TransferTypes` (`transferTypeID`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_CollectionSystemTransfers` WRITE;
 /*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` DISABLE KEYS */;
 
-INSERT INTO `OVDM_CollectionSystemTransfers` (`collectionSystemTransferID`, `name`, `longName`, `sourceDir`, `destDir`, `staleness`, `useStartDate`, `transferType`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `includeFilter`, `excludeFilter`, `ignoreFilter`, `status`, `enable`, `pid`)
+INSERT INTO `OVDM_CollectionSystemTransfers` (`collectionSystemTransferID`, `name`, `longName`, `sourceDir`, `destDir`, `staleness`, `useStartDate`, `transferType`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `includeFilter`, `excludeFilter`, `ignoreFilter`, `status`, `enable`, `pid`)
 VALUES
-	(1,'SCS','SCS Underway Data Logger (SMB)','/','Vessel/RAW/SCS',0,0,3,'','','','//127.0.0.1/SCS','guest','','WORKGROUP','','','','','','','*','','',4,0,0),
-	(2,'EM302','EM302 Multibeam Mapping System (SMB)','/','Vessel/PROC/EM302',5,0,3,'','','','//127.0.0.1/EM302','survey','password','WORKGROUP','','','','','','','*.tif','','',4,0,0),
-	(3,'XBT','Sippican MK21 XBT (via rsync daemon)','/','Vessel/RAW/XBT',0,0,2,'127.0.0.1/XBT','survey','password','','','','','','','','','','','*XBT[0-9][0-9][0-9]*','','',4,0,0),
-	(4,'XBT2','Sippican MK21 XBT (via ssh server)','/data/XBT','Vessel/RAW/XBT_sshAuthentication',0,0,4,'','','','','','','','127.0.0.1','survey','password','','','','*XBT[0-9][0-9][0-9]*','','',4,0,0),
-	(5,'XBT3','Sippican MK21 XBT (via anonymous rsync)','/','Vessel/RAW/XBT_anonymousRsync',0,0,2,'127.0.0.1/XBT_PUB','anonymous','','','','','','','','','','','','*XBT[0-9][0-9][0-9]*','','',4,0,0);
-
+	(1,'SCS','SCS Underway Data Logger (guest SMB)','/','Vessel/RAW/SCS',0,0,3,'','','','//127.0.0.1/SCS','guest','','WORKGROUP','','',0,'','','','','*','','',2,1,0),
+	(2,'EM302','EM302 Multibeam Mapping System (authenticated SMB)','/','Vessel/PROC/EM302',5,0,3,'','','','//127.0.0.1/EM302','survey','password','WORKGROUP','','',0,'','','','','*.tif','','',2,1,0),
+	(3,'XBT','Sippican MK21 XBT (authenticated rsync)','/','Vessel/RAW/XBT',0,0,2,'127.0.0.1/XBT','survey','password','','','','','','',0,'','',NULL,NULL,'*XBT[0-9][0-9][0-9]*','','',2,1,0),
+	(4,'XBT3','Sippican MK21 XBT (ssh server)','/data/XBT','Vessel/RAW/XBT_sshAuthentication',0,0,4,'','','','','','','','127.0.0.1','survey',0,'password','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0),
+	(5,'XBT2','Sippican MK21 XBT (anonymous rsync)','/','Vessel/RAW/XBT_anonymousRsync',0,0,2,'127.0.0.1/XBT_PUB','anonymous','','','','','','','',0,'','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0);
 /*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -154,10 +154,11 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
   `smbDomain` tinytext,
   `sshServer` tinytext,
   `sshUser` tinytext,
+  `sshUseKey` int(1) unsigned NOT NULL DEFAULT '0',
   `sshPass` tinytext,
   `nfsServer` tinytext,
   `nfsUser` tinytext,
-  `nfsPass` tinytext,
+  `nfsPass` tinytext CHARACTER SET utf8 COLLATE utf8_bin,
   `status` int(11) unsigned NOT NULL DEFAULT '3',
   `enable` tinyint(1) NOT NULL DEFAULT '0',
   `required` tinyint(1) NOT NULL DEFAULT '0',
@@ -167,16 +168,16 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
   KEY `CruiseDataTransferType` (`transferType`),
   CONSTRAINT `CruiseDataTransferStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`),
   CONSTRAINT `CruiseDataTransferType` FOREIGN KEY (`transferType`) REFERENCES `OVDM_TransferTypes` (`transferTypeID`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` DISABLE KEYS */;
 
-INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `status`, `enable`, `required`, `pid`)
+INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `status`, `enable`, `required`, `pid`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',4,'/shoreside','','','','','','','','127.0.0.1','survey','password',NULL,NULL,NULL,4,0,1,0),
-	(2,'SBDA','Shipboard Data Archive (SMB Share)',3,'/','','','','//127.0.0.1/NASBackup','survey','password','WORKGROUP','','','','','','',4,0,0,0),
-	(3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/LocalBackup','','','','','','','','','','','',NULL,NULL,4,0,0,0);
+	(1,'SSDW','Shoreside Data Warehouse',4,'/shoreside','','','','','','','','127.0.0.1','survey',1,NULL,NULL,NULL,NULL,2,1,1,0),
+	(2,'SBDA','Shipboard NAS (SMB Share)',3,'/','','','','//127.0.0.1/NASBackup','survey','password','WORKGROUP','','',0,'','','','',2,1,0,0),
+	(3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/LocalBackup','','','','','','','','','',0,'','',NULL,NULL,2,1,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;

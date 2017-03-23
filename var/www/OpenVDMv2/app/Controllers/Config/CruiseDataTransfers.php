@@ -24,6 +24,12 @@ class CruiseDataTransfers extends Controller {
         
         return $output;
     }
+
+    private function _buildUseSSHKeyOptions() {
+        
+        $trueFalse = array(array('id'=>'useSSHKey0', 'name'=>'sshUseKey', 'value'=>'0', 'label'=>'No'), array('id'=>'useSSHKey1', 'name'=>'sshUseKey', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
     
     public function __construct(){
         if(!Session::get('loggedin')){
@@ -47,6 +53,7 @@ class CruiseDataTransfers extends Controller {
         $data['title'] = 'Add Cruise Data Transfer';
         $data['javascript'] = array('cruiseDataTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($_POST['transferType']);
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -62,6 +69,7 @@ class CruiseDataTransfers extends Controller {
             $smbDomain = $_POST['smbDomain'];
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
             //$nfsUser = $_POST['nfsUser'];
@@ -95,6 +103,7 @@ class CruiseDataTransfers extends Controller {
                 $rsyncPass = '';
                 $sshServer = '';
                 $sshUser = '';
+                $sshUseKey = '0';
                 $sshPass = '';
                 $nfsServer = '';
                 //$nfsUser = '';
@@ -124,6 +133,7 @@ class CruiseDataTransfers extends Controller {
                     $smbPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -158,6 +168,7 @@ class CruiseDataTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -176,7 +187,7 @@ class CruiseDataTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if($sshPass == ''){
+                if(($sshPass == '') && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -221,6 +232,7 @@ class CruiseDataTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                 }
             }
@@ -240,6 +252,7 @@ class CruiseDataTransfers extends Controller {
                     'smbDomain' => $smbDomain,
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
                     //'nfsUser' => $nfsUser,
@@ -266,6 +279,7 @@ class CruiseDataTransfers extends Controller {
             $smbDomain = $_POST['smbDomain'];
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
             //$nfsUser = $_POST['nfsUser'];
@@ -299,6 +313,7 @@ class CruiseDataTransfers extends Controller {
                 $rsyncPass = '';
                 $sshServer = '';
                 $sshUser = '';
+                $sshUseKey = '0';
                 $sshPass = '';
                 $nfsServer = '';
                 //$nfsUser = '';
@@ -328,6 +343,7 @@ class CruiseDataTransfers extends Controller {
                     $smbDomain = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -362,6 +378,7 @@ class CruiseDataTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -380,7 +397,7 @@ class CruiseDataTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if($sshPass == ''){
+                if(($sshPass == '') && ($sshUseKey == '0')){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -425,6 +442,7 @@ class CruiseDataTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                 }
             }
@@ -445,6 +463,7 @@ class CruiseDataTransfers extends Controller {
                     'smbDomain' => $smbDomain,
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
                     //'nfsUser' => $nfsUser,
@@ -475,6 +494,7 @@ class CruiseDataTransfers extends Controller {
         $data['title'] = 'Edit Cruise Data Transfer';
         $data['javascript'] = array('cruiseDataTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($data['row'][0]->transferType);
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions($data['row'][0]->sshUseKey);
         $data['row'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id);
 
         if(isset($_POST['submit'])){
@@ -491,6 +511,7 @@ class CruiseDataTransfers extends Controller {
             $smbDomain = $_POST['smbDomain'];
             $sshServer = $_POST['sshServer'];
             $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $nfsServer = $_POST['nfsServer'];
             //$nfsUser = $_POST['nfsUser'];
@@ -522,6 +543,7 @@ class CruiseDataTransfers extends Controller {
                 $rsyncPass = '';
                 $sshServer = '';
                 $sshUser = '';
+                $sshUseKey = '0';
                 $sshPass = '';
                 $nfsServer = '';
                 //$nfsUser = '';
@@ -551,6 +573,7 @@ class CruiseDataTransfers extends Controller {
                     $smbPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                     $nfsServer = '';
                     //$nfsUser = '';
@@ -602,7 +625,7 @@ class CruiseDataTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if($sshPass == ''){
+                if(($sshPass == '') && ($sshUseKey == '0')){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 } 
@@ -647,6 +670,7 @@ class CruiseDataTransfers extends Controller {
                     $rsyncPass = '';
                     $sshServer = '';
                     $sshUser = '';
+                    $sshUseKey = '0';
                     $sshPass = '';
                 }
             }
@@ -666,6 +690,7 @@ class CruiseDataTransfers extends Controller {
                     'smbDomain' => $smbDomain,
                     'sshServer' => $sshServer,
                     'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'nfsServer' => $nfsServer,
                     //'nfsUser' => $nfsUser,
@@ -693,6 +718,7 @@ class CruiseDataTransfers extends Controller {
                 $data['row'][0]->smbDomain = $smbDomain;
                 $data['row'][0]->sshServer = $sshServer;
                 $data['row'][0]->sshUser = $sshUser;
+                $data['row'][0]->sshUseKey = $sshUseKey;
                 $data['row'][0]->sshPass = $sshPass;
                 $data['row'][0]->nfsServer = $nfsServer;
                 //$data['row'][0]->nfsUser = $nfsUser;
@@ -715,6 +741,7 @@ class CruiseDataTransfers extends Controller {
             $gmData['cruiseDataTransfer']->smbDomain = $_POST['smbDomain'];
             $gmData['cruiseDataTransfer']->sshServer = $_POST['sshServer'];
             $gmData['cruiseDataTransfer']->sshUser = $_POST['sshUser'];
+            $gmData['cruiseDataTransfer']->sshUseKey = $_POST['sshUseKey'];
             $gmData['cruiseDataTransfer']->sshPass = $_POST['sshPass'];
             $gmData['cruiseDataTransfer']->nfsServer = $_POST['nfsServer'];
             //$gmData['cruiseDataTransfer']->nfsUser = $_POST['nfsUser'];
@@ -743,6 +770,7 @@ class CruiseDataTransfers extends Controller {
             $data['row'][0]->smbDomain = $_POST['smbDomain'];
             $data['row'][0]->sshServer = $_POST['sshServer'];
             $data['row'][0]->sshUser = $_POST['sshUser'];
+            $data['row'][0]->sshUseKey = $_POST['sshUseKey'];
             $data['row'][0]->sshPass = $_POST['sshPass'];
             $data['row'][0]->nfsServer = $_POST['nfsServer'];
             //$data['row'][0]->nfsUser = $_POST['nfsUser'];
@@ -752,6 +780,7 @@ class CruiseDataTransfers extends Controller {
         }
         
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         
         View::rendertemplate('header',$data);
         View::render('Config/editCruiseDataTransfers',$data,$error);
