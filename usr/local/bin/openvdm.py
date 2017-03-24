@@ -282,7 +282,10 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfer/' + collectionSystemTransferID
         r = requests.get(url)
         returnVal = json.loads(r.text)
-        return returnVal[0]
+        if(len(returnVal)):
+            return returnVal[0]
+        else:
+            return False
     
     def getCollectionSystemTransferByName(self, collectionSystemTransferName):
 

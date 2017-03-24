@@ -475,8 +475,14 @@ def transfer_localSourceDir(worker, job):
     finally:
         #debugPrint("Closing rsync filelist file")
         rsyncFileListFile.close()
+
+
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
     
-    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, sourceDir + '/', destDir]
+    command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir + '/', destDir]
     
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -577,7 +583,13 @@ def transfer_smbSourceDir(worker, job):
     finally:
         rsyncFileListFile.close()
 
-    command = ['rsync', '-trim', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
+
+
+    command = ['rsync', '-trim', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -669,8 +681,14 @@ def transfer_rsyncSourceDir(worker, job):
 
     finally:
         rsyncFileListFile.close()
+
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
+
     
-    command = ['rsync', '-ti', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
+    command = ['rsync', '-ti', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -744,13 +762,18 @@ def transfer_sshSourceDir(worker, job):
 
     finally:
         sshFileListFile.close()
+
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
     
     command = ''
     
     if worker.collectionSystemTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+        command = ['rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
     else:
-        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:',s.join(command))
@@ -833,8 +856,14 @@ def transfer_nfsSourceDir(worker, job):
 
     finally:
         rsyncFileListFile.close()
+
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
+
     
-    command = ['rsync', '-trim', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir, destDir]
     
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -891,6 +920,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         payloadObj = json.loads(current_job.data)
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
+        if not self.collectionSystemTransfer:
+            return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+
         self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
         
         self.cruiseID = self.OVDM.getCruiseID()

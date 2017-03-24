@@ -253,10 +253,15 @@ def transfer_sshDestDir(worker, job):
     finally:
         sshFileListFile.close()
 
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.bandwidthLimit != '0' and worker.bandwidthLimitStatus:
+        bandwidthLimit = '--bwlimit=' + worker.bandwidthLimit
+
     if worker.cruiseDataTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-tri', '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     else:
-        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
     s = ' '
     debugPrint('Transfer Command:',s.join(command))
@@ -299,6 +304,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.cruiseID = ''
         self.transferStartDate = ''
         self.systemStatus = ''
+        self.bandwidthLimit = 0
         self.cruiseDataTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
@@ -316,7 +322,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         #debugPrint("Payload:", json.dumps(payloadObj))
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         self.cruiseDataTransfer = self.getShipToShoreTransfer()
-        
+        self.bandwidthLimit = self.OVDM.getShipToShoreBWLimit()
+        self.bandwidthLimitStatus = self.OVDM.getShipToShoreBWLimitStatus()
         self.cruiseID = self.OVDM.getCruiseID()
         self.transferStartDate = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
         self.systemStatus = self.OVDM.getSystemStatus()

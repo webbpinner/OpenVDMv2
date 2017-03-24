@@ -100,6 +100,7 @@ class CollectionSystemTransfers extends Controller {
             $destDir = $_POST['destDir'];
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -144,6 +145,9 @@ class CollectionSystemTransfers extends Controller {
                 $includeFilter = '*';
             }
 
+            if(!((int)$bandwidthLimit == $bandwidthLimit) && (strlen($bandwidthLimit) > 0)){
+                $error[] = 'Transfer limit must be an integer';
+            }
             
             if ($transferType == 1) { //local directory
                 $smbServer = '';
@@ -298,6 +302,7 @@ class CollectionSystemTransfers extends Controller {
                     'destDir' => $destDir,
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
+                    'bandwidthLimit' => (int)$bandwidthLimit,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -331,6 +336,7 @@ class CollectionSystemTransfers extends Controller {
             $destDir = $_POST['destDir'];
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -371,10 +377,9 @@ class CollectionSystemTransfers extends Controller {
                 $error[] = 'Destination Directory is required';
             }
             
-            if($includeFilter == ''){
-                $includeFilter = '*';
+            if(!((int)$bandwidthLimit == $bandwidthLimit) && (strlen($bandwidthLimit) > 0)){
+                $error[] = 'Transfer limit must be an integer';
             }
-
             
             if ($transferType == 1) { //local directory
                 $smbServer = '';
@@ -531,6 +536,7 @@ class CollectionSystemTransfers extends Controller {
                     'destDir' => $destDir,
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
+                    'bandwidthLimit' => (int)$bandwidthLimit,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -570,10 +576,16 @@ class CollectionSystemTransfers extends Controller {
         View::rendertemplate('footer',$data);
     }
         
-    public function edit($id){
+    public function edit($id) {
         $data['title'] = 'Collection System Transfers';
         $data['javascript'] = array('collectionSystemTransfersFormHelper');
         $data['row'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id);
+
+        if ($data['row']['bandwidthLimit'] == '0') {
+            $data['row']['useBandwidthLimit'] = '0';
+        } else {
+            $data['row']['useBandwidthLimit'] = '1';
+        }
         
         
         if(isset($_POST['submit'])){
@@ -584,6 +596,7 @@ class CollectionSystemTransfers extends Controller {
             $destDir = $_POST['destDir'];
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -628,6 +641,10 @@ class CollectionSystemTransfers extends Controller {
                 $includeFilter = '*';
             }
             
+            if(!((int)$bandwidthLimit == $bandwidthLimit) && (strlen($bandwidthLimit) > 0)){
+                $error[] = 'Transfer limit must be an integer';
+            }
+
             if ($transferType == 1) { //local directory
                 $smbServer = '';
                 $smbUser = '';
@@ -780,6 +797,7 @@ class CollectionSystemTransfers extends Controller {
                     'destDir' => $destDir,
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
+                    'bandwidthLimit' => (int)$bandwidthLimit,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -818,6 +836,7 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->destDir = $destDir;
                 $data['row'][0]->staleness = $staleness;
                 $data['row'][0]->useStartDate = $useStartDate;
+                $data['row'][0]->bandwidthLimit = $bandwidthLimit;
                 $data['row'][0]->rsyncServer = $rsyncServer;
                 $data['row'][0]->rsyncUser = $rsyncUser;
                 $data['row'][0]->rsyncPass = $rsyncPass;
@@ -847,6 +866,7 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->destDir = $_POST['destDir'];
             $gmData['collectionSystemTransfer']->staleness = $_POST['staleness'];
             $gmData['collectionSystemTransfer']->useStartDate = $_POST['useStartDate'];
+            $gmData['collectionSystemTransfer']->bandwidthLimit = $_POST['bandwidthLimit'];
             $gmData['collectionSystemTransfer']->rsyncServer = $_POST['rsyncServer'];
             $gmData['collectionSystemTransfer']->rsyncUser = $_POST['rsyncUser'];
             $gmData['collectionSystemTransfer']->rsyncPass = $_POST['rsyncPass'];
@@ -882,6 +902,7 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->destDir = $_POST['destDir'];
             $data['row'][0]->staleness = $_POST['staleness'];
             $data['row'][0]->useStartDate = $_POST['useStartDate'];
+            $data['row'][0]->bandwidthLimit = $_POST['bandwidthLimit'];
             $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
             $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
             $data['row'][0]->rsyncPass = $_POST['rsyncPass'];

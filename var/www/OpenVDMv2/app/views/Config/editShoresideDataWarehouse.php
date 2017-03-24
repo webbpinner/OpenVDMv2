@@ -67,6 +67,7 @@ use Helpers\FormCustom;
             <p>This form is for editing settings related to the Shore-side Data Warehouse (SSDW). The Shoreside Data Warehouse is the destination for the Ship-to-Shore Transfers.</p>
             <p>The <strong>Server IP</strong> is the IP address of the Shoreside Data Warehouse (i.e. "192.168.4.151").</p>
             <p>The <strong>Server Username</strong> is the SSH username on the SSDW with read/write permission to the Destination Directory (i.e. "shipTech").</p>
+            <p>The <strong>Use SSH Public/Private key?</strong> instructs OpenVDM to authenticate this connection using SSH public/private keys instead of a password</p>
             <p>The <strong>Server Password</strong> is the username on the SSDW with read/write permission to the files/folders in the Cruise Data Directories (i.e. "shipTech").</p>
             <p>The <strong>Cruise Data Directory</strong> is the location of the parent directory to the Cruise Data Directories on the SSDW (i.e. "/mnt/vault/Shoreside").</p>
             <p>Click the <strong>Update</strong> button to submit the changes to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.</p>

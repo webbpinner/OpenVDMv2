@@ -102,6 +102,7 @@ class Form
         $o .= (isset($params['onkeypress'])) ? " onkeypress='{$params['onkeypress']}'"       : '';
         $o .= (isset($params['value']))     ? ' value="'.$params['value'].'"'           : '';
         $o .= (isset($params['length']))    ? " maxlength='{$params['length']}'"            : '';
+        $o .= (isset($params['size']))    ? " size='{$params['size']}'"            : '';
         $o .= (isset($params['width']))     ? " style='width:{$params['width']}px;'"        : '';
         $o .= (isset($params['disabled']))  ? " disabled='{$params['disabled']}'"           : '';
         $o .= (isset($params['placeholder']))  ? " placeholder='{$params['placeholder']}'"  : '';
