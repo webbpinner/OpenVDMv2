@@ -25,30 +25,35 @@ $(function () {
         
         switch (transferTypeText) {
         case "Local Directory":
+            $(".localDir").show();
             $(".rsyncServer").hide();
             $(".smbShare").hide();
             $(".sshServer").hide();
             $(".nfsShare").hide();
             break;
         case "Rsync Server":
+            $(".localDir").hide();
             $(".rsyncServer").show();
             $(".smbShare").hide();
             $(".sshServer").hide();
             $(".nfsShare").hide();
             break;
         case "SMB Share":
+            $(".localDir").hide();
             $(".rsyncServer").hide();
             $(".smbShare").show();
             $(".sshServer").hide();
             $(".nfsShare").hide();
             break;
         case "SSH Server":
+            $(".localDir").hide();
             $(".rsyncServer").hide();
             $(".smbShare").hide();
             $(".sshServer").show();
             $(".nfsShare").hide();
             break;
         case "NFS Share":
+            $(".localDir").hide();
             $(".rsyncServer").hide();
             $(".smbShare").hide();
             $(".sshServer").hide();

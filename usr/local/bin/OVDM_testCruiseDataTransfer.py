@@ -87,6 +87,12 @@ def test_localDestDir(worker):
     else:
         returnVal.append({"testName": "Destination Directory", "result": "Pass"})
 
+        if worker.cruiseDataTransfer['localDirIsMountPoint'] == '1':
+            if not os.path.ismount(destDir):
+                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail"})
+            else:
+                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Pass"})
+
         if not writeTest(destDir):
             returnVal.append({"testName": "Write Test", "result": "Fail"})
         else:
@@ -100,7 +106,7 @@ def test_smbDestDir(worker):
 
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
- 
+
     command = []
     # Verify the server exists
     if worker.cruiseDataTransfer['smbUser'] == 'guest':

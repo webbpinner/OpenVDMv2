@@ -30,6 +30,12 @@ class CruiseDataTransfers extends Controller {
         $trueFalse = array(array('id'=>'useSSHKey0', 'name'=>'sshUseKey', 'value'=>'0', 'label'=>'No'), array('id'=>'useSSHKey1', 'name'=>'sshUseKey', 'value'=>'1', 'label'=>'Yes'));
         return $trueFalse;
     }
+
+    private function _buildUseLocalMountPointOptions() {
+        
+        $trueFalse = array(array('id'=>'localDirIsMountPoint0', 'name'=>'localDirIsMountPoint', 'value'=>'0', 'label'=>'No'), array('id'=>'localDirIsMountPoint1', 'name'=>'localDirIsMountPoint', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
     
     public function __construct(){
         if(!Session::get('loggedin')){
@@ -54,12 +60,14 @@ class CruiseDataTransfers extends Controller {
         $data['javascript'] = array('cruiseDataTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($_POST['transferType']);
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
+        $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $destDir = $_POST['destDir'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -127,6 +135,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($rsyncDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -163,6 +172,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($smbDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
@@ -193,6 +203,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -223,6 +234,7 @@ class CruiseDataTransfers extends Controller {
                 //}
                 
                 if($nfsDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -243,6 +255,7 @@ class CruiseDataTransfers extends Controller {
                     'longName' => $longName,
                     'transferType' => $transferType,
                     'destDir' => $destDir,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -270,6 +283,7 @@ class CruiseDataTransfers extends Controller {
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $destDir = $_POST['destDir'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -337,6 +351,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($rsyncDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbPass = '';
@@ -373,6 +388,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($smbDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
@@ -403,6 +419,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -433,6 +450,7 @@ class CruiseDataTransfers extends Controller {
                 //}
                 
                 if($nfsDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -454,6 +472,7 @@ class CruiseDataTransfers extends Controller {
                     'longName' => $longName,
                     'transferType' => $transferType,
                     'destDir' => $destDir,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -494,7 +513,8 @@ class CruiseDataTransfers extends Controller {
         $data['title'] = 'Edit Cruise Data Transfer';
         $data['javascript'] = array('cruiseDataTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($data['row'][0]->transferType);
-        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions($data['row'][0]->sshUseKey);
+        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
+        $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
         $data['row'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id);
 
         if(isset($_POST['submit'])){
@@ -502,6 +522,7 @@ class CruiseDataTransfers extends Controller {
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $destDir = $_POST['destDir'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -567,6 +588,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($rsyncDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -603,6 +625,7 @@ class CruiseDataTransfers extends Controller {
                 }
                 
                 if($smbDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
@@ -631,6 +654,7 @@ class CruiseDataTransfers extends Controller {
                 } 
                 
                 if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -661,6 +685,7 @@ class CruiseDataTransfers extends Controller {
                 //} 
                 
                 if($nfsDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -681,6 +706,7 @@ class CruiseDataTransfers extends Controller {
                     'longName' => $longName,
                     'transferType' => $transferType,
                     'destDir' => $destDir,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -709,6 +735,7 @@ class CruiseDataTransfers extends Controller {
                 $data['row'][0]->longName = $longName;
                 $data['row'][0]->transferType = $transferType;
                 $data['row'][0]->destDir = $destDir;
+                $data['row'][0]->localDirIsMountPoint = $localDirIsMountPoint;
                 $data['row'][0]->rsyncServer = $rsyncServer;
                 $data['row'][0]->rsyncUser = $rsyncUser;
                 $data['row'][0]->rsyncPass = $rsyncPass;
@@ -732,6 +759,7 @@ class CruiseDataTransfers extends Controller {
             $gmData['cruiseDataTransfer']->longName = $_POST['longName'];
             $gmData['cruiseDataTransfer']->transferType = $_POST['transferType'];
             $gmData['cruiseDataTransfer']->destDir = $_POST['destDir'];
+            $gmData['cruiseDataTransfer']->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $gmData['cruiseDataTransfer']->rsyncServer = $_POST['rsyncServer'];
             $gmData['cruiseDataTransfer']->rsyncUser = $_POST['rsyncUser'];
             $gmData['cruiseDataTransfer']->rsyncPass = $_POST['rsyncPass'];
@@ -761,6 +789,7 @@ class CruiseDataTransfers extends Controller {
             $data['row'][0]->longName = $_POST['longName'];
             $data['row'][0]->transferType = $_POST['transferType'];
             $data['row'][0]->destDir = $_POST['destDir'];
+            $data['row'][0]->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
             $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
             $data['row'][0]->rsyncPass = $_POST['rsyncPass'];
@@ -781,7 +810,8 @@ class CruiseDataTransfers extends Controller {
         
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
-        
+        $data['localDirIsMountPoint'] = $this->_buildUseLocalMountPointOptions();
+
         View::rendertemplate('header',$data);
         View::render('Config/editCruiseDataTransfers',$data,$error);
         View::rendertemplate('footer',$data);

@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.7.17-0ubuntu0.16.04.1)
 # Database: OpenVDMv2
-# Generation Time: 2017-03-24 16:30:23 +0000
+# Generation Time: 2017-03-26 13:09:58 +0000
 # ************************************************************
 
 
@@ -59,6 +59,7 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
   `staleness` int(11) DEFAULT '0',
   `useStartDate` tinyint(1) DEFAULT '0',
   `transferType` int(11) unsigned NOT NULL,
+  `localDirIsMountPoint` int(1) unsigned NOT NULL DEFAULT '0',
   `rsyncServer` tinytext,
   `rsyncUser` tinytext,
   `rsyncPass` tinytext,
@@ -90,13 +91,13 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
 LOCK TABLES `OVDM_CollectionSystemTransfers` WRITE;
 /*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` DISABLE KEYS */;
 
-INSERT INTO `OVDM_CollectionSystemTransfers` (`collectionSystemTransferID`, `name`, `longName`, `sourceDir`, `destDir`, `staleness`, `useStartDate`, `transferType`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `includeFilter`, `excludeFilter`, `ignoreFilter`, `status`, `enable`, `pid`, `bandwidthLimit`)
+INSERT INTO `OVDM_CollectionSystemTransfers` (`collectionSystemTransferID`, `name`, `longName`, `sourceDir`, `destDir`, `staleness`, `useStartDate`, `transferType`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `includeFilter`, `excludeFilter`, `ignoreFilter`, `status`, `enable`, `pid`, `bandwidthLimit`)
 VALUES
-  (1,'SCS','SCS Underway Data Logger (guest SMB)','/','Vessel/RAW/SCS',0,0,3,'','','','//127.0.0.1/SCS','guest','','WORKGROUP','','',0,'','','','','*','','',2,1,0,128),
-  (2,'EM302','EM302 Multibeam Mapping System (authenticated SMB)','/','Vessel/PROC/EM302',5,0,3,'','','','//127.0.0.1/EM302','survey','password','WORKGROUP','','',0,'','','','','*.tif','','',2,1,0,0),
-  (3,'XBT','Sippican MK21 XBT (authenticated rsync)','/','Vessel/RAW/XBT',0,0,2,'127.0.0.1/XBT','survey','password','','','','','','',0,'','',NULL,NULL,'*XBT[0-9][0-9][0-9]*','','',2,1,0,0),
-  (4,'XBT3','Sippican MK21 XBT (ssh server)','/data/XBT','Vessel/RAW/XBT_sshAuthentication',0,0,4,'','','','','','','','127.0.0.1','survey',0,'password','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0,0),
-  (5,'XBT2','Sippican MK21 XBT (anonymous rsync)','/','Vessel/RAW/XBT_anonymousRsync',0,0,2,'127.0.0.1/XBT_PUB','anonymous','','','','','','','',0,'','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0,0);
+  (1,'SCS','SCS Underway Data Logger (guest SMB)','/','Vessel/RAW/SCS',0,0,3,0,'','','','//127.0.0.1/SCS','guest','','WORKGROUP','','',0,'','','','','*','','',2,1,0,128),
+  (2,'EM302','EM302 Multibeam Mapping System (authenticated SMB)','/','Vessel/PROC/EM302',5,0,3,0,'','','','//127.0.0.1/EM302','survey','password','WORKGROUP','','',0,'','','','','*.tif','','',2,1,0,0),
+  (3,'XBT','Sippican MK21 XBT (authenticated rsync)','/','Vessel/RAW/XBT',0,0,2,0,'127.0.0.1/XBT','survey','password','','','','','','',0,'','',NULL,NULL,'*XBT[0-9][0-9][0-9]*','','',1,1,5788,0),
+  (4,'XBT3','Sippican MK21 XBT (ssh server)','/data/XBT','Vessel/RAW/XBT_sshAuthentication',0,0,4,0,'','','','','','','','127.0.0.1','survey',0,'password','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0,0),
+  (5,'XBT2','Sippican MK21 XBT (anonymous rsync)','/','Vessel/RAW/XBT_anonymousRsync',0,0,2,0,'127.0.0.1/XBT_PUB','anonymous','','','','','','','',0,'','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -147,6 +148,7 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
   `longName` text,
   `transferType` int(11) unsigned NOT NULL,
   `destDir` tinytext,
+  `localDirIsMountPoint` int(1) unsigned NOT NULL DEFAULT '0',
   `rsyncServer` tinytext,
   `rsyncUser` tinytext,
   `rsyncPass` tinytext,
@@ -175,11 +177,11 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
 LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` DISABLE KEYS */;
 
-INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `status`, `enable`, `required`, `pid`)
+INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `status`, `enable`, `required`, `pid`)
 VALUES
-  (1,'SSDW','Shoreside Data Warehouse',4,'/shoreside','','','','','','','','127.0.0.1','survey',1,NULL,NULL,NULL,NULL,2,1,1,0),
-  (2,'SBDA','Shipboard NAS (SMB Share)',3,'/','','','','//127.0.0.1/NASBackup','survey','password','WORKGROUP','','',0,'','','','',1,1,0,21112),
-  (3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/LocalBackup','','','','','','','','','',0,'','',NULL,NULL,2,1,0,0);
+  (1,'SSDW','Shoreside Data Warehouse',4,'/shoreside',0,'','','','','','','','127.0.0.1','survey',1,NULL,NULL,NULL,NULL,2,1,1,0),
+  (2,'SBDA','Shipboard NAS (SMB Share)',3,'/',0,'','','','//127.0.0.1/NASBackup','survey','password','WORKGROUP','','',0,'','','','',2,1,0,0),
+  (3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/LocalBackup',0,'','','','','','','','','',0,'','',NULL,NULL,2,1,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -245,8 +247,17 @@ CREATE TABLE `OVDM_Gearman` (
   `jobName` tinytext,
   `jobPid` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`jobID`)
-) ENGINE=InnoDB AUTO_INCREMENT=7326 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=11432 DEFAULT CHARSET=utf8;
 
+LOCK TABLES `OVDM_Gearman` WRITE;
+/*!40000 ALTER TABLE `OVDM_Gearman` DISABLE KEYS */;
+
+INSERT INTO `OVDM_Gearman` (`jobID`, `jobHandle`, `jobKnown`, `jobRunning`, `jobNumerator`, `jobDenominator`, `jobName`, `jobPid`)
+VALUES
+  (11430,'H:openvdm-digital-ocean:5165',1,1,10,10,'Transfer for XBT',5788);
+
+/*!40000 ALTER TABLE `OVDM_Gearman` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table OVDM_Links
@@ -291,14 +302,16 @@ CREATE TABLE `OVDM_Messages` (
   `messageTS` datetime NOT NULL,
   `messageViewed` tinyint(1) NOT NULL,
   PRIMARY KEY (`messageID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_Messages` WRITE;
 /*!40000 ALTER TABLE `OVDM_Messages` DISABLE KEYS */;
 
 INSERT INTO `OVDM_Messages` (`messageID`, `messageTitle`, `messageBody`, `messageTS`, `messageViewed`)
 VALUES
-  (1,'Test Connection test failed','Reason: SSH Connection','2017-03-24 13:39:42',1);
+  (1,'Test Connection test failed','Reason: SSH Connection','2017-03-24 13:39:42',1),
+  (2,'Manual Stop of transfer','SBDA','2017-03-25 12:08:31',0),
+  (3,'USBhd Connection test failed','Reason: Destination Directory is a Mountpoint','2017-03-26 13:06:39',0);
 
 /*!40000 ALTER TABLE `OVDM_Messages` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -415,7 +428,7 @@ LOCK TABLES `OVDM_Users` WRITE;
 
 INSERT INTO `OVDM_Users` (`userID`, `username`, `password`, `lastLogin`)
 VALUES
-  (1,'admin','$2y$12$JviETOQPkNzqZxQpswLb1ONtTLxsqdzQJEoaWjlNzb0/.xfIOVM/C','2017-03-24 12:06:15');
+  (1,'admin','$2y$12$JviETOQPkNzqZxQpswLb1ONtTLxsqdzQJEoaWjlNzb0/.xfIOVM/C','2017-03-26 14:06:30');
 
 /*!40000 ALTER TABLE `OVDM_Users` ENABLE KEYS */;
 UNLOCK TABLES;

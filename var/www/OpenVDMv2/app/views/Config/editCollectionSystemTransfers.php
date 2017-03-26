@@ -51,6 +51,9 @@ use Helpers\FormCustom;
                                     <label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $data['row'][0]->transferType); ?>
                                 </div>
                                 <div class="form-group"><label>Source Directory</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sourceDir', 'value'=> $data['row'][0]->sourceDir)); ?></div>
+                                <div class="form-group localDir">
+                                    <label>Source Directory is mountpoint?</label><?php echo FormCustom::radioInline($data['useLocalMountPointOptions'], $data['row'][0]->localDirIsMountPoint); ?>
+                                </div>
                                 <div class="form-group rsyncServer"><label>Rsync Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncServer', 'value'=> $data['row'][0]->rsyncServer)); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncUser', 'value'=> $data['row'][0]->rsyncUser)); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncPass', 'value'=> $data['row'][0]->rsyncPass, 'type'=>'password')); ?></div>
@@ -94,6 +97,7 @@ use Helpers\FormCustom;
             <p>The <strong>Transfer bandwidth limit</strong> option will limit the amount of network bandwidth use for the collection system transfer.  Setting this option to 0 or leaving it empty will removing any bandwidth restrictions</p>
             <p>The <strong>Transfer Type</strong> defines how OpenVDM will transfer the data from the Collection System to the Data Warehouse.  <strong>Local Directory</strong> is a transfer of data that is located on the Data Warehouse but is outside of the Cruise Data Directory.  <strong>Rsync Server</strong> is a transfer of data from a Collection System running Rsync and SSH servers. <strong>SMB Share</strong> is a transfer of data from a Collection System with a SMB (Windows) Share.  <strong>SSH Server</strong> is a transfer of cruise data to a destination system via Secure Shell (SSH).  <strong>NFS Share</strong> is a transfer of cruise data to a destination system with a Network Filesystem (NFS) Share.</p>
             <p>The <strong>Source Directory</strong> is the location of the data files on the collection system.</p>
+            <p class="localDir">The <strong>Source Directory is mountpoint</strong> specifies whether OpenVDM should confirm a device (external HDD) is connected at that location.</p>
             <p class="rsyncServer">The <strong>Rsync Server</strong> is the IP address of the Collection System (i.e. "192.168.4.151").</p>
             <p class="rsyncServer">The <strong>Rsync Username</strong> is the rsync username with permission to access the data on the Collection System (i.e. "shipTech").  If the rsync server allows anonymous access set this field to "anonymous" and no password will be required.</p>
             <p class="rsyncServer">The <strong>Rsync Password</strong> is the rsync password for the Rsync Username. Not required if Rsync Username is set to "anonymous".</p>

@@ -76,10 +76,17 @@ def test_localSourceDir(worker):
 
     sourceDir = build_sourceDir(worker)
     debugPrint('Source Dir:', sourceDir)
-    if os.path.isdir(sourceDir):
-        returnVal.append({"testName": "Source Directory", "result": "Pass"})
-    else:
+    if not os.path.isdir(sourceDir):
         returnVal.append({"testName": "Source Directory", "result": "Fail"})
+    else:
+        returnVal.append({"testName": "Source Directory", "result": "Pass"})
+
+        if worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
+            if not os.path.ismount(sourceDir):
+                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail"})
+            else:
+                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Pass"})
+
 
     return returnVal
 

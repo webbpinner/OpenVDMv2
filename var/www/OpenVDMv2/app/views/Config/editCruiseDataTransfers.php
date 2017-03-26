@@ -40,6 +40,9 @@ use Helpers\FormCustom;
                                     <label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $data['row'][0]->transferType); ?>
                                 </div>
                                 <div class="form-group"><label>Destination Directory</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'destDir', 'value'=> $data['row'][0]->destDir)); ?></div>
+                                <div class="form-group localDir">
+                                    <label>Destination Directory is mountpoint?</label><?php echo FormCustom::radioInline($data['useLocalMountPointOptions'], $data['row'][0]->localDirIsMountPoint); ?>
+                                </div>
                                 <div class="form-group rsyncServer"><label>Rsync Server</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncServer', 'value'=> $data['row'][0]->rsyncServer)); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncUser', 'value'=> $data['row'][0]->rsyncUser)); ?></div>
                                 <div class="form-group rsyncServer"><label>Rsync password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'rsyncPass', 'type'=>'password', 'value'=> $data['row'][0]->rsyncPass)); ?></div>
@@ -78,6 +81,7 @@ use Helpers\FormCustom;
             <p>The <strong>Long Name</strong> field is a longer name for the Cruise Data Transfer (i.e. "Chief Scientist USB HDD" ).  These names can have spaces in them.</p>
             <p>The <strong>Transfer Type</strong> defines how OpenVDM will transfer the data from the cruise data directory on the Data Warehouse to the desired destination.  <strong>Local Directory</strong> is a transfer of the cruise data to another location on the Data Warehouse but outside of the Cruise Data Directory (i.e USB hard drive).  <strong>Rsync Server</strong> is a transfer of cruise data to a destination system running Rsync and SSH servers. <strong>SMB Share</strong> is a transfer of cruise data to a destination system with a SMB (Windows) Share (i.e. a NAS box).  <strong>SSH Server</strong> is a transfer of cruise data to a destination system via Secure Shell (SSH).  <strong>NFS Share</strong> is a transfer of cruise data to a destination system with a Network Filesystem (NFS) Share.</p>
             <p>The <strong>Destination Directory</strong> is the directory within the destination location where the cruise data will be copied to.</p>
+            <p class="localDir">The <strong>Destination Directory is mountpoint</strong> specifies whether OpenVDM should confirm a device (external HDD) is connected at that location.</p>
             <p class="rsyncServer">The <strong>Rsync Server</strong> is the IP address of the Destination System (i.e. "192.168.4.151").</p>
             <p class="rsyncServer">The <strong>Rsync Username</strong> is the rsync username with permission to access the data on the Destination System (i.e. "shipTech").  If the rsync server allows anonymous access set this field to "anonymous" and no password will be required.</p>
             <p class="rsyncServer">The <strong>Rsync Password</strong> is the rsync password for the Rsync Username. Not required if Rsync Username is set to "anonymous".</p>

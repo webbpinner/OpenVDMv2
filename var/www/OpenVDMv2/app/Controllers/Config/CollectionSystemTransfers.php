@@ -44,6 +44,11 @@ class CollectionSystemTransfers extends Controller {
         return $trueFalse;
     }
 
+    private function _buildUseLocalMountPointOptions() {
+        
+        $trueFalse = array(array('id'=>'localDirIsMountPoint0', 'name'=>'localDirIsMountPoint', 'value'=>'0', 'label'=>'No'), array('id'=>'localDirIsMountPoint1', 'name'=>'localDirIsMountPoint', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
 
     private function updateCruiseDirectory() {
         $_warehouseModel = new \Models\Warehouse();
@@ -91,6 +96,7 @@ class CollectionSystemTransfers extends Controller {
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
+        $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -101,6 +107,7 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -250,6 +257,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -279,6 +287,7 @@ class CollectionSystemTransfers extends Controller {
                 //}
                 
                 if($nfsDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -303,6 +312,7 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'bandwidthLimit' => (int)$bandwidthLimit,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -337,6 +347,7 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -416,6 +427,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($rsyncDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbPass = '';
@@ -452,6 +464,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($smbDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
@@ -482,6 +495,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -511,6 +525,7 @@ class CollectionSystemTransfers extends Controller {
                 //}
                 
                 if($nfsDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -537,6 +552,7 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'bandwidthLimit' => (int)$bandwidthLimit,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -597,6 +613,7 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
             $rsyncPass = $_POST['rsyncPass'];
@@ -679,6 +696,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($rsyncDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -715,6 +733,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($smbDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
@@ -744,6 +763,7 @@ class CollectionSystemTransfers extends Controller {
                 }
                 
                 if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -774,6 +794,7 @@ class CollectionSystemTransfers extends Controller {
                 //} 
                 
                 if($nfsDataCheck) {
+                    $localDirIsMountPoint = '0';
                     $smbServer = '';
                     $smbUser = '';
                     $smbDomain = '';
@@ -798,6 +819,7 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'bandwidthLimit' => (int)$bandwidthLimit,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
                     'rsyncPass' => $rsyncPass,
@@ -837,6 +859,7 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->staleness = $staleness;
                 $data['row'][0]->useStartDate = $useStartDate;
                 $data['row'][0]->bandwidthLimit = $bandwidthLimit;
+                $data['row'][0]->localDirIsMountPoint = $localDirIsMountPoint;
                 $data['row'][0]->rsyncServer = $rsyncServer;
                 $data['row'][0]->rsyncUser = $rsyncUser;
                 $data['row'][0]->rsyncPass = $rsyncPass;
@@ -867,6 +890,7 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->staleness = $_POST['staleness'];
             $gmData['collectionSystemTransfer']->useStartDate = $_POST['useStartDate'];
             $gmData['collectionSystemTransfer']->bandwidthLimit = $_POST['bandwidthLimit'];
+            $gmData['collectionSystemTransfer']->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $gmData['collectionSystemTransfer']->rsyncServer = $_POST['rsyncServer'];
             $gmData['collectionSystemTransfer']->rsyncUser = $_POST['rsyncUser'];
             $gmData['collectionSystemTransfer']->rsyncPass = $_POST['rsyncPass'];
@@ -903,6 +927,7 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->staleness = $_POST['staleness'];
             $data['row'][0]->useStartDate = $_POST['useStartDate'];
             $data['row'][0]->bandwidthLimit = $_POST['bandwidthLimit'];
+            $data['row'][0]->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
             $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
             $data['row'][0]->rsyncPass = $_POST['rsyncPass'];
@@ -928,6 +953,7 @@ class CollectionSystemTransfers extends Controller {
         $data['stalenessOptions'] = $this->_buildStalenessOptions();
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
+        $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
 
         View::rendertemplate('header',$data);
         View::render('Config/editCollectionSystemTransfers',$data,$error);
