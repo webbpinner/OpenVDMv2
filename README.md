@@ -19,3 +19,7 @@ For more information on OpenVDMv2 please checkout <http://www.oceandatarat.org/?
 ## Installation
 
 For installation instruction please read the INSTALL.md file located in this repository.
+
+## Supporting the development effort
+
+What to join in the fun?  Please join the [#openvdm](https://oceandatarat.slack.com/messages/C3R1Z084Q) Slack channel!  Once in please introduce yourself and let us know how you'd like to contribute.
