@@ -1,12 +1,12 @@
 [OpenVDMv2_Logo]: http://www.oceandatarat.org/wp-content/uploads/2014/11/openVDM_LogoV2_1_long.png "Open Vessel Data Managment v2" 
 
 ![OpenVDMv2_Logo]
-#Open Vessel Data Management v2.2
+# Open Vessel Data Management v2.2
 
 ##Installation Guide
 At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 16.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 16.04 LTS is used.
 
-###Operating System
+### Operating System
 Goto <http://xubuntu.org/getxubuntu/>
 
 Download Xubuntu for your hardware.  At the time of this writing we are using 16.04.1 (64-bit)
@@ -17,7 +17,7 @@ A few minutes after the install completes and the computer restarts, Xubuntu wil
 
 Before OpenVDMv2 can be installed serveral other services and software packaged must be installed and configured.
 
-###SSH Client/Server
+### SSH Client/Server
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and collection systems workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
 To install SSH open a terminal window and type:
@@ -25,7 +25,7 @@ To install SSH open a terminal window and type:
 sudo apt-get install ssh sshpass
 ```
 
-###Rsync
+### Rsync
 Rsync is used thoughout OpenVDM for providing efficient data transfers to/from the Warehouse.
 
 To install rsync open a terminal window and type:
@@ -33,7 +33,7 @@ To install rsync open a terminal window and type:
 sudo apt-get install rsync
 ```
 
-###Samba
+### Samba
 One of the ways OpenVDM communicates with data collection system is through Windows Shares configured on the collection system workstation.  Windows shares are also configured on the data warehouse to allow scientists and crew to easily access data stored on the Warehouse from their Windows or Mac Laptops.  Windows shares on a non-windows machine are made possible thanks to the Samba project.  
 
 To install Samba open a terminal window and type:
@@ -47,7 +47,7 @@ sudo smbpasswd -a survey
 ```
 
 
-###MySQL Database Server
+### MySQL Database Server
 All of the commonly used variables, tranfer profiles, and user creditials for OpenVDM are stored in a SQL database.  This allows fast access to the stored information as well as a proven mechanism for multiple clients to change records without worry of write collisions.
 
 To install MySQL open a terminal window and type:
@@ -56,7 +56,7 @@ sudo apt-get install mysql-server
 ```
 When installing MySQL you will be prompted to provide a 'root' password.  This is different than the 'root' password for the operating system but just as important to remember. 
 
-###PHP7.0
+### PHP7.0
 The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
@@ -64,7 +64,7 @@ To install PHP open a terminal window and type:
 sudo apt-get install php7.0 php7.0-cli php7.0-mysql php7.0-dev php7.0-zip php7.0-curl
 ```
 
-###Apache2 Web-server
+### Apache2 Web-server
 The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Server
 
 To install Apache open a terminal window and type:
@@ -82,7 +82,7 @@ After enabling the module the webserver must be restarted:
 sudo service apache2 restart
 ```
 
-###Gearman and Supervisor
+### Gearman and Supervisor
 Behind the OpenVDM web-application are several background processes that perform the various data transfers and other tasks.  Managing these background processes is a job broker and processes manager.
 
 The job broker listens for requests to perform a specific task.  Once a request has arrived, the job broker farms the task out to the next available process that can perform that specific task.  OpenVDM uses Gearman as it's job broker.
@@ -100,10 +100,10 @@ Restart the Gearman Job Broker
 sudo service gearman-job-server restart
 ```
 
-###Gearman-UI
+### Gearman-UI
 Gearman-UI is not directly part of OpenVDM or the Gearman job broker however it is extremely useful when troubleshooting problems with Gearman.
 
-####Installing composer
+#### Installing composer
 
 From a terminal window type:
 ```
@@ -113,13 +113,13 @@ curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 ```
 
-####Install bower
+#### Install bower
 ```
 sudo apt-get install npm nodejs-legacy
 sudo npm install -g bower
 ```
 
-####Install Gearman-UI
+#### Install Gearman-UI
 Download the code from GitHub
 ```
 cd ~
@@ -198,7 +198,7 @@ sudo systemctl enable supervisor
 
 Verify the istallation was successful by going to <http://127.0.0.1:9001>.
 
-###MapProxy
+### MapProxy
 In order to add GIS capability to OpenVDMv2 without eccessive requests to the internet for baselayer tiles a map tile proxy needs to be installed.
 
 Install the dependencies
@@ -352,17 +352,17 @@ sudo service apache2 restart
 
 Verify the installation works by going to: <http://127.0.0.1/mapproxy/demo/>
 
-###OpenVDMv2
+### OpenVDMv2
 
-####Install the dependencies
+#### Install the dependencies
 
-####Installing the python dependencies
+#### Installing the python dependencies
 
 ```
 sudo apt-get install python-requests python-yaml
 ```
 
-####Installing the gearman php module
+#### Installing the gearman php module
 The gearman extension team at pecl has not yet updated the gearman php module to work with php7.0.  Luckily the open-source community has come to the rescue.
 
 Download the module
@@ -402,7 +402,7 @@ Restart apache
 sudo service apache2 restart
 ```
 
-####Installing the yaml php module
+#### Installing the yaml php module
 ```
 sudo apt-get install libyaml-dev
 sudo pecl install yaml-2.0.0
@@ -430,7 +430,7 @@ Restart apache
 sudo service apache2 restart
 ```
 
-####Create the Required Directories
+#### Create the Required Directories
 In order for OpenVDMv2 to properly store data serveral directories must be created on the Warehouse
 
  - **FTPRoot** - This will become the document root for the ProFTP server. 
@@ -450,7 +450,7 @@ sudo chmod -R 777 /vault/FTPRoot/PublicData
 sudo chown -R survey:survey /vault/FTPRoot/*
 ```
 
-####Download the OpenVDM Files from Github
+#### Download the OpenVDM Files from Github
 
 From a terminal window type:
 ```
@@ -458,7 +458,7 @@ cd ~
 git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 ```
 
-####Create OpenVDMv2 Database
+#### Create OpenVDMv2 Database
 To create a new database first connect to MySQL by typing:
 ```
 mysql -h localhost -u root -p
@@ -487,14 +487,14 @@ Exit the MySQL console:
 exit
 ```
 
-####Install the OpenVDM configuration files
+#### Install the OpenVDM configuration files
 ```
 sudo mkdir -p /usr/local/etc/openvdm
 sudo cp ~/OpenVDMv2/usr/local/etc/openvdm/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
 sudo cp ~/OpenVDMv2/usr/local/etc/openvdm/datadashboard.yaml.dist /usr/local/etc/openvdm/datadashboard.yaml
 ```
 
-####Modify the OpenVDM configuation file
+#### Modify the OpenVDM configuation file
 ```
 sudo nano /usr/local/etc/openvdm/openvdm.yaml
 ```
@@ -620,13 +620,13 @@ Additionally a log directory must be created for the OpenVDMv2 web-application
 sudo mkdir /var/log/OpenVDM
 ```
 
-####Install OpenVDMv2 Processes
+#### Install OpenVDMv2 Processes
 Copy the OpenVDMv2 processes to the `/usr/local/bin` folder
 ```
 sudo cp -r ~/OpenVDMv2/usr/local/bin/* /usr/local/bin/
 ```
 
-####Install the Supervisor configuration files
+#### Install the Supervisor configuration files
 ```
 sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
 ```
@@ -636,7 +636,7 @@ Restart Supervisor
 sudo service supervisor restart
 ```
 
-####Setup the Samba shares
+#### Setup the Samba shares
 
 Edit the Samba configuration file located at: `/etc/samba/smb.conf`.
 
