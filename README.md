@@ -22,4 +22,4 @@ For installation instruction please read the INSTALL.md file located in this rep
 
 ## Supporting the development effort
 
-What to join in the fun?  Please join the [#openvdm](https://oceandatarat.slack.com/messages/C3R1Z084Q) Slack channel!  Once in please introduce yourself and let us know how you'd like to contribute.
+What to join in the fun?  Please join the [#openvdm](https://oceandatarat.slack.com/messages/C3R1Z084Q) Slack channel!  You'll need an invite so please send a email request to oceandatarat at gmail dot com. Once in the channel please introduce yourself and let us know how you're using OpenVDM and how you'd like to contribute to the project.
