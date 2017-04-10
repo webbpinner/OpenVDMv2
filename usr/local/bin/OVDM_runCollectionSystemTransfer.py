@@ -94,6 +94,7 @@ def build_filelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
+                                debugPrint(filename, "excluded")
                                 returnFiles['exclude'].append(os.path.join(root, filename))
                                 exclude = True
                                 break
