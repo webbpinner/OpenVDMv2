@@ -11,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.2
 #      CREATED:  2015-01-01
-#     REVISION:  2017-01-24
+#     REVISION:  2017-04-09
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
@@ -112,7 +112,7 @@ def build_filelist(worker, sourceDir):
 
                             include = True
 
-                if not include:
+                if not include and not exclude:
                     debugPrint(filename, "excluded")
                     returnFiles['exclude'].append(os.path.join(root, filename))
 
