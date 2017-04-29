@@ -20,7 +20,7 @@ Before OpenVDMv2 can be installed serveral other services and software packaged 
 ### Promoting default account to Sudoer
 The default account will need superuser privledges to complete the OpenVDMv2 install.  Promote the default account using the following command:
 ```
-usermod -aG sudo username
+usermod -aG sudo <username>
 ```
 
 ### SSH Client/Server
