@@ -17,6 +17,12 @@ A few minutes after the install completes and the computer restarts, Xubuntu wil
 
 Before OpenVDMv2 can be installed serveral other services and software packaged must be installed and configured.
 
+### Promoting default account to Sudoer
+The default account will need superuser privledges to complete the OpenVDMv2 install.  Promote the default account using the following command:
+```
+usermod -aG sudo username
+```
+
 ### SSH Client/Server
 SSH is used thoughout OpenVDM for providing secure communication between the Warehouse and collection systems workstations aboard the vessel.  SSH is also used for OpenVDM's ship-to-shore communications.
 
