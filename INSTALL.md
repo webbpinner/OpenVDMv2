@@ -532,7 +532,7 @@ Edit the `.htaccess` file:
 sudo nano /var/www/OpenVDMv2/.htaccess
 ```
 
- - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to http://<hostname or IP>/OpenVDMv2/.  If the default URL was changed in the `openvdm.yaml` file, you will need to change the `RewriteBase` accordingly.  Be sure to include the trailing `/`.
+ - Set the `RewriteBase` to part of the URL after the hostname that will become the landing page for OpenVDMv2.  By default this is set to `OpenVDMv2` meaning that once active users will go to `http://<hostname or IP>/OpenVDMv2/`.  If the default URL was changed in the `openvdm.yaml` file, you will need to change the `RewriteBase` accordingly.  Be sure to include the trailing `/`.
 
 Edit the `./app/Core/Config.php` file:
 ```
