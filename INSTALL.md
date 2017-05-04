@@ -635,6 +635,8 @@ sudo cp -r ~/OpenVDMv2/usr/local/bin/* /usr/local/bin/
 #### Install the Supervisor configuration files
 ```
 sudo cp -r ~/OpenVDMv2/etc/supervisor/conf.d/* /etc/supervisor/conf.d/
+sudo cp /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf
+sudo cp /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf
 ```
 
 Restart Supervisor
