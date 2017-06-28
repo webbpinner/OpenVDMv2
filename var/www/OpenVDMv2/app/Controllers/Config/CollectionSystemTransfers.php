@@ -50,7 +50,14 @@ class CollectionSystemTransfers extends Controller {
         return $trueFalse;
     }
 
-    private function updateCruiseDirectory() {
+    private function _buildCruiseOrLoweringOptions() {
+        
+        $output = array(array('id'=>'cruiseOrLowering0', 'name'=>'cruiseOrLowering', 'value'=>'0', 'label'=>'Cruise'), array('id'=>'cruiseOrLowering1', 'name'=>'cruiseOrLowering', 'value'=>'1', 'label'=>'Lowering'));
+        return $output;
+    }
+
+
+    private function updateDestinationDirectory() {
         $_warehouseModel = new \Models\Warehouse();
         $warehouseConfig = $_warehouseModel->getShipboardDataWarehouseConfig();
         $cruiseID = $_warehouseModel->getCruiseID();
@@ -68,6 +75,11 @@ class CollectionSystemTransfers extends Controller {
 
             #submit job to Gearman
             $job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
+
+            if($_warehouseModel->showLoweringComponents()) {
+                $gmData['loweringID'] = $_warehouseModel->getLoweringID();
+                $job_handle = $gmc->doBackground("rebuildLoweringDirectory", json_encode($gmData));
+            }
         }
     }
 
@@ -97,6 +109,7 @@ class CollectionSystemTransfers extends Controller {
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
+        $data['cruiseOrLoweringOptions'] = $this->_buildCruiseOrLoweringOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -107,6 +120,7 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
+            $cruiseOrLowering = isset($_POST['cruiseOrLowering']) ? $_POST['cruiseOrLowering'] : '0';
             $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
@@ -312,6 +326,7 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'bandwidthLimit' => (int)$bandwidthLimit,
+                    'cruiseOrLowering' => $cruiseOrLowering,
                     'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
@@ -347,6 +362,7 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
+            $cruiseOrLowering = isset($_POST['cruiseOrLowering']) ? $_POST['cruiseOrLowering'] : '0';
             $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
@@ -552,6 +568,7 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'bandwidthLimit' => (int)$bandwidthLimit,
+                    'cruiseOrLowering' => $cruiseOrLowering,
                     'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
@@ -613,6 +630,7 @@ class CollectionSystemTransfers extends Controller {
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
+            $cruiseOrLowering = isset($_POST['cruiseOrLowering']) ? $_POST['cruiseOrLowering'] : '0';
             $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $rsyncServer = $_POST['rsyncServer'];
             $rsyncUser = $_POST['rsyncUser'];
@@ -819,6 +837,7 @@ class CollectionSystemTransfers extends Controller {
                     'staleness' => $staleness,
                     'useStartDate' => $useStartDate,
                     'bandwidthLimit' => (int)$bandwidthLimit,
+                    'cruiseOrLowering' => $cruiseOrLowering,
                     'localDirIsMountPoint' => $localDirIsMountPoint,
                     'rsyncServer' => $rsyncServer,
                     'rsyncUser' => $rsyncUser,
@@ -844,7 +863,7 @@ class CollectionSystemTransfers extends Controller {
                 $this->_collectionSystemTransfersModel->updateCollectionSystemTransfer($postdata,$where);
                 
                 if($data['row'][0]->destDir != $destDir){
-                    $this->updateCruiseDirectory();
+                    $this->updateDestinationDirectory();
                 }
                 
                 Session::set('message','Collection System Transfers Updated');
@@ -859,6 +878,7 @@ class CollectionSystemTransfers extends Controller {
                 $data['row'][0]->staleness = $staleness;
                 $data['row'][0]->useStartDate = $useStartDate;
                 $data['row'][0]->bandwidthLimit = $bandwidthLimit;
+                $data['row'][0]->cruiseOrLowering = $cruiseOrLowering;
                 $data['row'][0]->localDirIsMountPoint = $localDirIsMountPoint;
                 $data['row'][0]->rsyncServer = $rsyncServer;
                 $data['row'][0]->rsyncUser = $rsyncUser;
@@ -890,6 +910,7 @@ class CollectionSystemTransfers extends Controller {
             $gmData['collectionSystemTransfer']->staleness = $_POST['staleness'];
             $gmData['collectionSystemTransfer']->useStartDate = $_POST['useStartDate'];
             $gmData['collectionSystemTransfer']->bandwidthLimit = $_POST['bandwidthLimit'];
+            $gmData['collectionSystemTransfer']->cruiseOrLowering = $_POST['cruiseOrLowering'];
             $gmData['collectionSystemTransfer']->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $gmData['collectionSystemTransfer']->rsyncServer = $_POST['rsyncServer'];
             $gmData['collectionSystemTransfer']->rsyncUser = $_POST['rsyncUser'];
@@ -927,6 +948,7 @@ class CollectionSystemTransfers extends Controller {
             $data['row'][0]->staleness = $_POST['staleness'];
             $data['row'][0]->useStartDate = $_POST['useStartDate'];
             $data['row'][0]->bandwidthLimit = $_POST['bandwidthLimit'];
+            $data['row'][0]->cruiseOrLowering = $_POST['cruiseOrLowering'];
             $data['row'][0]->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
             $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
             $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
@@ -954,6 +976,8 @@ class CollectionSystemTransfers extends Controller {
         $data['useStartDateOptions'] = $this->_buildUseStartDateOptions();
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
+        $data['cruiseOrLoweringOptions'] = $this->_buildCruiseOrLoweringOptions();
+
 
         View::rendertemplate('header',$data);
         View::render('Config/editCollectionSystemTransfers',$data,$error);
@@ -971,7 +995,7 @@ class CollectionSystemTransfers extends Controller {
     public function enable($id) {
         $this->_collectionSystemTransfersModel->enableCollectionSystemTransfer($id);
 
-        $this->updateCruiseDirectory();
+        $this->updateDestinationDirectory();
 
         Url::redirect('config/collectionSystemTransfers');
     }

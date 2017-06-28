@@ -84,7 +84,7 @@ class TransferLogs extends Model {
     
     public function getShipboardLogFilenames($count = 0) {
         $files = preg_grep('#SSDW#', glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/*Z.log"), PREG_GREP_INVERT);
-        if ($count > 0) {
+        if (sizeof($files) > $count) {
             array_splice($files, 0, sizeof($files)-$count);
         }
         return $this->outputLogFilenames($files);
@@ -93,8 +93,10 @@ class TransferLogs extends Model {
     public function getShipboardLogsSummary($count = 0) {
         
         //preg_grep('#\.zip$#', glob('/dir/somewhere/*'), PREG_GREP_INVERT)
-        array_multisort(array_map('filemtime', ($files = preg_grep('#SSDW#', glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/*Z.log"), PREG_GREP_INVERT))), SORT_ASC, $files);
-        if ($count > 0) {
+        $fileList = glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/*Z.log");
+        $fileList = preg_grep('#SSDW#', $fileList, PREG_GREP_INVERT);
+        array_multisort(array_map('filemtime', $files = $fileList), SORT_ASC, $files);
+        if (sizeof($files) > $count) {
             array_splice($files, 0, sizeof($files)-$count);
         }
         return $this->outputLogFileSummary($files);
@@ -102,7 +104,7 @@ class TransferLogs extends Model {
     
     public function getShipToShoreLogFilenames($count = 0) {
         $files = glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/SSDW*.log");
-        if ($count > 0) {
+        if (sizeof($files) > $count) {
             array_splice($files, 0, sizeof($files)-$count);
         }
         return $this->outputLogFilenames($files);
@@ -110,7 +112,7 @@ class TransferLogs extends Model {
     
     public function getShipToShoreLogsSummary($count = 0) {
         $files = glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/SSDW*.log");
-        if ($count > 0) {
+        if (sizeof($files) > $count) {
             array_splice($files, 0, sizeof($files)-$count);
         }
         return $this->outputLogFileSummary($files);
@@ -128,7 +130,7 @@ class TransferLogs extends Model {
     
     public function getShipboardLogFilenamesByName($name, $count = 0) {
         $files = glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/" . $name . "_*Z.log");
-        if ($count > 0) {
+        if (sizeof($files) > $count) {
             array_splice($files, 0, sizeof($files)-$count);
         }
         return $this->outputLogFilenames($files);
@@ -136,7 +138,7 @@ class TransferLogs extends Model {
     
     public function getShipboardLogsSummaryByName($name, $count = 0) {
         $files = glob($this->_cruiseDataDir . '/' . $this->_cruiseID . '/' . $this->_transferLogsDir ."/" . $name . "_*Z.log");
-        if ($count > 0) {
+        if (sizeof($files) > $count) {
             array_splice($files, 0, sizeof($files)-$count);
         }
         return $this->outputLogFileSummary($files);

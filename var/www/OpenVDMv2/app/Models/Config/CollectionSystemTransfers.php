@@ -12,6 +12,14 @@ class CollectionSystemTransfers extends Model {
     public function getCollectionSystemTransfersStatuses(){
         return $this->db->select("SELECT collectionSystemTransferID, name, longName, status, enable FROM ".PREFIX."CollectionSystemTransfers ORDER BY name");
     }
+
+    public function getCruiseOnlyCollectionSystemTransfers(){
+        return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY name", array(':cruiseOrLowering' => 0));
+    }
+
+    public function getLoweringOnlyCollectionSystemTransfers(){
+        return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY name", array(':cruiseOrLowering' => 1));
+    }
     
     public function getCollectionSystemTransfer($id){
         return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE collectionSystemTransferID = :id",array(':id' => $id));

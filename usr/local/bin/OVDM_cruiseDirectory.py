@@ -74,7 +74,9 @@ def errPrint(*args, **kwargs):
 
 def build_destDir(worker, destDir):
     
-    returnDestDir = destDir.replace('{cruiseID}', worker.cruiseID)
+    returnDestDir = destDir.replace('{loweringID}', worker.loweringID)
+    returnDestDir = returnDestDir.replace('{loweringDataBaseDir}', worker.shipboardDataWarehouseConfig['loweringDataBaseDir'],)
+    returnDestDir = returnDestDir.replace('{cruiseID}', worker.cruiseID)
     return returnDestDir
 
 
@@ -86,7 +88,7 @@ def build_directorylist(worker):
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
-        if collectionSystemTransfer['enable'] == "1":
+        if collectionSystemTransfer['enable'] == "1" and collectionSystemTransfer['cruiseOrLowering'] == "0":
             destDir = build_destDir(worker, collectionSystemTransfer['destDir'])
             returnDirectories.append(os.path.join(cruiseDir, destDir))
 
@@ -192,6 +194,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
+        self.loweringID = ''
         self.shipboardDataWarehouseConfig = {}
         self.task = None
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
@@ -228,6 +231,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
+
+            try:
+                payloadObj['loweringID']
+            except KeyError:
+                self.loweringID = self.OVDM.getLoweringID()
+            else:
+                self.loweringID = payloadObj['loweringID']
 
         if int(self.task['taskID']) > 0:
 

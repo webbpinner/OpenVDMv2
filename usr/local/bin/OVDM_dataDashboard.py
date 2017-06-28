@@ -180,6 +180,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
+        self.loweringID = ''
         self.shipboardDataWarehouseConfig = {}
         self.task = None
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
@@ -213,6 +214,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
+
+            try:
+                payloadObj['loweringID']
+            except KeyError:
+                self.loweringID = self.OVDM.getLoweringID()
+            else:
+                self.loweringID = payloadObj['loweringID']
 
         if int(self.task['taskID']) > 0:
 
@@ -248,6 +256,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
         jobData = {}
         jobData['cruiseID'] = self.cruiseID
+        jobData['loweringID'] = self.loweringID
         jobData['files'] = resultsObj['files']
 
         if current_job.task == 'updateDataDashboard':
@@ -320,6 +329,8 @@ def task_updateDataDashboard(worker, job):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    loweringDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID)
+    
     dataDashboardDir = os.path.join(cruiseDir, worker.OVDM.getRequiredExtraDirectoryByName('Dashboard Data')['destDir'])
     dataDashboardManifestFilePath = os.path.join(dataDashboardDir, dataDashboardManifestFN)
     collectionSystemTransfer = worker.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])

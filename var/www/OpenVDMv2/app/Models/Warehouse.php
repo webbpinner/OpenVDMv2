@@ -6,6 +6,7 @@ use Core\Model;
 class Warehouse extends Model {
     
     const CONFIG_FN = 'ovdmConfig.json';
+    const LOWERING_CONFIG_FN = 'loweringConfig.json';
     const MANIFEST_FN = 'manifest.json';
 
     public function getFreeSpace() {
@@ -22,19 +23,43 @@ class Warehouse extends Model {
    	public function getCruiseSize() {
         $baseDir = $this->getShipboardDataWarehouseBaseDir();
         $cruiseID = $this->getCruiseID();
-        if (is_dir($baseDir . '/' . $cruiseID)){
-            $output = exec('du -sk ' . $baseDir . '/' . $cruiseID);
+        if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID)){
+            $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID);
             $data['cruiseSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
         } else {
-            $data['error'] = '(getCruiseSize) Cruise Directory: ' . $baseDir . '/' . $cruiseID . ' is not a directory';            
+            $data['error'] = '(getCruiseSize) Cruise Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . ' is not a directory';            
         }
         
         return $data;
     }
 
+    public function getLoweringSize() {
+        $baseDir = $this->getShipboardDataWarehouseBaseDir();
+        $cruiseID = $this->getCruiseID();
+        $loweringDataBaseDir = $this->getLoweringDataBaseDir();
+        $loweringID = $this->getLoweringID();
+        if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID)){
+            $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID);
+            $data['loweringSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+        } else {
+            $data['error'] = '(getLoweringSize) Lowering Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID . ' is not a directory';            
+        }
+        
+        return $data;
+    }
+
+
     public function getSystemStatus(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'systemStatus'");
         if(strcmp($row[0]->value, "On") == 0 ){
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function showLoweringComponents(){
+        if(strcmp(SHOW_LOWERING_COMPONENTS, "Yes") == 0 ){
             return true;
         } else {
             return false;
@@ -60,6 +85,22 @@ class Warehouse extends Model {
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'cruiseEndDate'");
         return $row[0]->value;
     }
+
+    public function getLoweringID(){
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringID'");
+        return $row[0]->value;
+    }
+    
+    public function getLoweringStartDate(){
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringStartDate'");
+        return $row[0]->value;
+    }
+    
+    public function getLoweringEndDate(){
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringEndDate'");
+        return $row[0]->value;
+    }
+
 
     public function getShipToShoreBWLimit(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipToShoreBWLimit'");
@@ -89,6 +130,10 @@ class Warehouse extends Model {
         return CRUISEDATA_APACHEDIR;
     }
     
+    public function getLoweringDataBaseDir(){
+        return LOWERINGDATA_BASEDIR;
+    }
+
     public function getShipboardDataWarehouseConfig(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehouseIP'");
         $shipboardDataWarehouseIP = $row[0]->value;
@@ -98,6 +143,7 @@ class Warehouse extends Model {
         $shipboardDataWarehouseUsername = $row[0]->value;
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipboardDataWarehousePublicDataDir'");
         $shipboardDataWarehousePublicDataDir = $row[0]->value;
+        $loweringDataBaseDir = $this->getLoweringDataBaseDir();
          
         return array(
             'shipboardDataWarehouseIP' => $shipboardDataWarehouseIP,
@@ -105,6 +151,7 @@ class Warehouse extends Model {
             'shipboardDataWarehouseApacheDir' => $shipboardDataWarehouseApacheDir,
             'shipboardDataWarehouseUsername' => $shipboardDataWarehouseUsername,
             'shipboardDataWarehousePublicDataDir' => $shipboardDataWarehousePublicDataDir,
+            'loweringDataBaseDir' => $loweringDataBaseDir
         );
     }
     
@@ -180,6 +227,22 @@ class Warehouse extends Model {
         $where = array('name' => 'cruiseEndDate');
         $this->db->update(PREFIX."CoreVars",$data, $where);
     }
+
+    public function setLoweringID($data){
+        $where = array('name' => 'loweringID');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+    }
+    
+    public function setLoweringStartDate($data){
+        $where = array('name' => 'loweringStartDate');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+    }
+    
+    public function setLoweringEndDate($data){
+        $where = array('name' => 'loweringEndDate');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+    }
+
 
     public function setShipboardDataWarehouseConfig($data){
         $where = array('name' => 'shipboardDataWarehouseIP');
@@ -259,6 +322,56 @@ class Warehouse extends Model {
             return array("Error"=>"Could not find base directory.");
         }
     }
+
+    public function getLowerings(){
+        
+        if (sizeof($this->_lowerings) == 0) {
+        
+            $baseDir = $this->getShipboardDataWarehouseBaseDir();
+            $cruiseDir = $baseDir . DIRECTORY_SEPARATOR . $this->getCruiseID();
+            $loweringDataBaseDir = $cruiseDir . DIRECTORY_SEPARATOR . $this->getLoweringDataBaseDir();
+            #var_dump($baseDir);
+            //Get the list of directories
+            if (is_dir($loweringDataBaseDir)) {
+                $rootList = scandir($loweringDataBaseDir);
+                #var_dump($rootList);
+
+                foreach ($rootList as $rootKey => $rootValue)
+                {
+                    if (!in_array($rootValue,array(".","..")))
+                    {
+                        if (is_dir($loweringDataBaseDir . DIRECTORY_SEPARATOR . $rootValue) && is_readable($loweringDataBaseDir . DIRECTORY_SEPARATOR . $rootValue))
+                        {
+                            //Check each Directory for ovdmConfig.json
+                            $loweringList = scandir($loweringDataBaseDir . DIRECTORY_SEPARATOR . $rootValue);
+                            #var_dump($cruiseList);
+                            foreach ($loweringList as $loweringKey => $loweringValue){
+                                #var_dump($loweringValue);
+                                if (in_array($loweringValue,array(self::LOWERING_CONFIG_FN))){
+                                    #var_dump($loweringDataBaseDir . DIRECTORY_SEPARATOR . $rootValue . DIRECTORY_SEPARATOR . self::LOWERING_CONFIG_FN);
+                                    $loweringConfigContents = file_get_contents($loweringDataBaseDir . DIRECTORY_SEPARATOR . $rootValue . DIRECTORY_SEPARATOR . self::LOWERING_CONFIG_FN);
+                                    $loweringConfigJSON = json_decode($loweringConfigContents,true);
+                                    #var_dump($ovdmConfigJSON['extraDirectoriesConfig']);
+                                    //Get the the directory that holds the DashboardData
+                                    $this->_lowerings[] = $rootValue;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            #var_dump($this->_lowerings);
+
+            if(sizeof($this->_lowerings) > 0) {
+                rsort($this->_lowerings);
+            }
+            return $this->_lowerings;
+        } else {
+            return array("Error"=>"Could not find base directory.");
+        }
+    }
+
     
     public function getLatestCruise() {
         return $this->getCruises()[0];
@@ -291,5 +404,38 @@ class Warehouse extends Model {
             return array("Error"=>"Could not find cruise directory.");
         }
     }
+
+    public function getLatestLowering() {
+        return $this->getLowerings()[0];
+    }
+
+    public function getLoweringDates($loweringID = '') {
+        if (strcmp($loweringID, '') == 0 ){
+            $loweringID = $this->getLoweringID();
+        }
+
+        $loweringDir = $this->getShipboardDataWarehouseBaseDir() . DIRECTORY_SEPARATOR . $this->getCruiseID() . DIRECTORY_SEPARATOR . $this->getLoweringDataBaseDir() . DIRECTORY_SEPARATOR . $loweringID;
+        #var_dump($loweringDir);
+        if (is_dir($loweringDir)) {
+            //Check lowering Directory for ovdmConfig.json
+            $loweringFileList = scandir($loweringDir);
+            #var_dump($loweringList);
+            foreach ($loweringFileList as $loweringKey => $loweringValue){
+                #var_dump($loweringValue);
+                if (in_array($loweringValue,array(self::LOWERING_CONFIG_FN))){
+                    #var_dump($baseDir . DIRECTORY_SEPARATOR . $rootValue . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                    $loweringConfigContents = file_get_contents($loweringDir . DIRECTORY_SEPARATOR . self::LOWERING_CONFIG_FN);
+                    $loweringConfigJSON = json_decode($loweringConfigContents,true);
+                    
+                    return array('loweringStartDate' => $loweringConfigJSON['loweringStartDate'],'loweringEndDate' => $loweringConfigJSON['loweringEndDate']); 
+                }
+            }
+            return array("Error"=>"Could not find lowering config file.");
+
+        } else {
+            return array("Error"=>"Could not find lowering directory.");
+        }
+    }
+
 
 }

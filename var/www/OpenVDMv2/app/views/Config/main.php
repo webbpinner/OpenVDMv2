@@ -3,6 +3,8 @@
 use Core\Error;
 use Helpers\Session;
 
+$_warehouseModel = new \Models\Warehouse();
+
 ?>
 
     <div class="row">
@@ -36,6 +38,20 @@ use Helpers\Session;
                     <a href="<?php echo DIR ?>config/editCruiseID" class="btn-lg btn btn-primary btn-block">Edit CruiseID or Start/End Dates</a>
                 </div>
             </div>
+<?php
+    if ($_warehouseModel->showLoweringComponents()) {
+?>
+            <div class="panel panel-default">
+                <div class="panel-heading">Lowering Control</div>
+                <div class="panel-body">
+                    <a href="<?php echo DIR ?>config/setupNewLowering" class="btn-lg btn btn-primary btn-block">Setup New Lowering</a>
+                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block">Run End-of-Lowering Tasks</a>
+                    <a href="<?php echo DIR ?>config/editLoweringID" class="btn-lg btn btn-primary btn-block">Edit LoweringID or Start/End Dates</a>
+                </div>
+            </div>
+<?php
+    }
+?>
             <div class="panel panel-default">
                 <div class="panel-heading">Maintenance Tasks</div>
                 <div class="panel-body">
@@ -43,7 +59,7 @@ use Helpers\Session;
 <?php
     if($data['tasks']){
         foreach($data['tasks'] as $row){
-            if((strcmp($row->name, "setupNewCruise") != 0) && (strcmp($row->name, "finalizeCurrentCruise") != 0)) {
+            if((strcmp($row->name, "setupNewCruise") != 0) && (strcmp($row->name, "finalizeCurrentCruise") != 0) && (strcmp($row->name, "setupNewLowering") != 0) && (strcmp($row->name, "finalizeCurrentLowering") != 0)) {
                 switch($row->status) {
                     case 1:
 ?>

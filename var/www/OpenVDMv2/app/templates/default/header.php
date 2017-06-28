@@ -72,6 +72,17 @@ use Helpers\Hooks;
 
     $data['cruiseID'] = $_warehouseModel->getCruiseID();
 
+    if($_warehouseModel->showLoweringComponents()) {
+        $data['loweringID'] = $_warehouseModel->getLoweringID();
+        $loweringSize = $_warehouseModel->getLoweringSize();
+    
+        if(isset($loweringSize['error'])){
+            $data['loweringSize'] = "Error";
+        } else {
+            $data['loweringSize'] = formatFilesize($loweringSize['loweringSize']);
+        }
+    }
+
     $cruiseSize = $_warehouseModel->getCruiseSize();
     if(isset($cruiseSize['error'])){
         $data['cruiseSize'] = "Error";
@@ -315,7 +326,9 @@ use Helpers\Hooks;
         </div>
 
         <div class="row">
-            <div class="col-lg-3 col-md-6 col-xs-6">
+
+    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
+
 <?php
     if(Session::get('loggedin')){
 ?>
@@ -337,7 +350,7 @@ use Helpers\Hooks;
     }
 ?>
             </div> <!-- .col-lg-3 .col-md-6 -->
-            <div class="col-lg-3 col-md-6  col-xs-6">
+    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
                 <div id="cruiseIDPanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="cruiseID" class="huge"><?php echo $data['cruiseID']; ?></div>
@@ -345,7 +358,7 @@ use Helpers\Hooks;
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
             </div> <!-- .col-lg-3 .col-md-6 -->
-            <div class="col-lg-3 col-md-6  col-xs-6">
+    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
                 <div id="cruiseSizePanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="cruiseSize" class="huge"><?php echo $data['cruiseSize']; ?></div>
@@ -353,7 +366,27 @@ use Helpers\Hooks;
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
             </div> <!-- .col-lg-3 .col-md-6 -->
-            <div class="col-lg-3 col-md-6  col-xs-6">
+
+    <?php if($_warehouseModel->showLoweringComponents()) { ?>
+            <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+                <div id="loweringIDPanel" class="panel panel-primary">
+                    <div class="panel-heading">
+                        <div id="loweringID" class="huge"><?php echo $data['loweringID']; ?></div>
+                        <div class="text-right">Lowering ID</div>
+                    </div> <!-- .panel-heading -->
+                </div> <!-- .panel .panel-primary -->
+            </div> <!-- .col-lg-3 .col-md-6 -->
+            <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+                <div id="loweringSizePanel" class="panel panel-primary">
+                    <div class="panel-heading">
+                        <div id="loweringSize" class="huge"><?php echo $data['loweringSize']; ?></div>
+                        <div class="text-right">Lowering Size</div>
+                    </div> <!-- .panel-heading -->
+                </div> <!-- .panel .panel-primary -->
+            </div> <!-- .col-lg-3 .col-md-6 -->
+    <?php } ?>
+
+    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
                 <div id="freeSpacePanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="freeSpace" class="huge"><?php echo $data['freeSpace']; ?></div>

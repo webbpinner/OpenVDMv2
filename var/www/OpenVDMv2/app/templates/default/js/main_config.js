@@ -46,7 +46,7 @@ $(function () {
                 var output = '';
                 var i = 0;
                 for (i = 0; i < data.length; i++) {
-                    if((data[i].name != 'setupNewCruise') && (data[i].name != 'finalizeCurrentCruise')) {
+                    if((data[i].name != 'setupNewCruise') && (data[i].name != 'finalizeCurrentCruise') && (data[i].name != 'setupNewLowering') && (data[i].name != 'finalizeCurrentLowering')) {
                         output += '<div class="list-group-item">';
                         output += data[i].longName;
                         if (data[i].status === "1") {

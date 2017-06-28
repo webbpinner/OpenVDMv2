@@ -67,9 +67,28 @@ class OpenVDM():
         return self.config['showOnlyCurrentCruiseDir']
 
 
+    def showLoweringComponents(self):
+
+        url = self.config['siteRoot'] + 'api/warehouse/showLoweringComponents'
+        r = requests.get(url)
+        if r.text == 'true':
+            return True
+        else:
+            return False
+
+
     def getOVDMConfig(self):
 
         url = self.config['siteRoot'] + 'api/warehouse/getCruiseConfig'
+        r = requests.get(url)
+        returnObj = json.loads(r.text)
+        returnObj['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
+        return returnObj
+
+
+    def getLoweringConfig(self):
+
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringConfig'
         r = requests.get(url)
         returnObj = json.loads(r.text)
         returnObj['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
@@ -144,6 +163,29 @@ class OpenVDM():
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal['cruiseEndDate']
+
+    def getLoweringID(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringID'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['loweringID']
+    
+    
+    def getLoweringStartDate(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringStartDate'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['loweringStartDate']
+    
+    
+    def getLoweringEndDate(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringEndDate'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['loweringEndDate']
     
     
     def getExtraDirectory(self, extraDirectoryID):

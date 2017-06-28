@@ -54,6 +54,7 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
   `collectionSystemTransferID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` tinytext NOT NULL,
   `longName` text,
+  `cruiseOrLowering` int(1) unsigned NOT NULL DEFAULT '0',
   `sourceDir` tinytext,
   `destDir` tinytext,
   `staleness` int(11) DEFAULT '0',
@@ -86,21 +87,7 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
   KEY `CollectionSystemTransferType` (`transferType`),
   CONSTRAINT `CollectionSystemTransferStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`),
   CONSTRAINT `CollectionSystemTransferType` FOREIGN KEY (`transferType`) REFERENCES `OVDM_TransferTypes` (`transferTypeID`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
-
-LOCK TABLES `OVDM_CollectionSystemTransfers` WRITE;
-/*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` DISABLE KEYS */;
-
-INSERT INTO `OVDM_CollectionSystemTransfers` (`collectionSystemTransferID`, `name`, `longName`, `sourceDir`, `destDir`, `staleness`, `useStartDate`, `transferType`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `includeFilter`, `excludeFilter`, `ignoreFilter`, `status`, `enable`, `pid`, `bandwidthLimit`)
-VALUES
-  (1,'SCS','SCS Underway Data Logger (guest SMB)','/','Vessel/RAW/SCS',0,0,3,0,'','','','//127.0.0.1/SCS','guest','','WORKGROUP','','',0,'','','','','*','','',2,1,0,128),
-  (2,'EM302','EM302 Multibeam Mapping System (authenticated SMB)','/','Vessel/PROC/EM302',5,0,3,0,'','','','//127.0.0.1/EM302','survey','password','WORKGROUP','','',0,'','','','','*.tif','','',2,1,0,0),
-  (3,'XBT','Sippican MK21 XBT (authenticated rsync)','/','Vessel/RAW/XBT',0,0,2,0,'127.0.0.1/XBT','survey','password','','','','','','',0,'','',NULL,NULL,'*XBT[0-9][0-9][0-9]*','','',1,1,5788,0),
-  (4,'XBT3','Sippican MK21 XBT (ssh server)','/data/XBT','Vessel/RAW/XBT_sshAuthentication',0,0,4,0,'','','','','','','','127.0.0.1','survey',0,'password','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0,0),
-  (5,'XBT2','Sippican MK21 XBT (anonymous rsync)','/','Vessel/RAW/XBT_anonymousRsync',0,0,2,0,'127.0.0.1/XBT_PUB','anonymous','','','','','','','',0,'','','','','*XBT[0-9][0-9][0-9]*','','',2,1,0,0);
-
-/*!40000 ALTER TABLE `OVDM_CollectionSystemTransfers` ENABLE KEYS */;
-UNLOCK TABLES;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 
 # Dump of table OVDM_CoreVars
@@ -113,7 +100,7 @@ CREATE TABLE `OVDM_CoreVars` (
   `name` tinytext NOT NULL,
   `value` tinytext,
   PRIMARY KEY (`coreVarID`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_CoreVars` WRITE;
 /*!40000 ALTER TABLE `OVDM_CoreVars` DISABLE KEYS */;
@@ -127,11 +114,14 @@ VALUES
   (5,'cruiseID','CS1601'),
   (6,'cruiseStartDate','2017/01/01 00:00'),
   (7,'cruiseEndDate',''),
-  (8,'systemStatus','On'),
-  (9,'shipToShoreBWLimit','128'),
-  (10,'shipToShoreBWLimitStatus','Off'),
-  (11,'md5FilesizeLimit','10'),
-  (12,'md5FilesizeLimitStatus','On');
+  (8,'loweringID','CS1601'),
+  (9,'loweringStartDate','2017/01/01 00:00'),
+  (10,'loweringEndDate',''),
+  (11,'systemStatus','On'),
+  (12,'shipToShoreBWLimit','128'),
+  (13,'shipToShoreBWLimitStatus','Off'),
+  (14,'md5FilesizeLimit','10'),
+  (15,'md5FilesizeLimitStatus','On');
 
 /*!40000 ALTER TABLE `OVDM_CoreVars` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -187,22 +177,6 @@ VALUES
 UNLOCK TABLES;
 
 
-# Dump of table OVDM_DataDashboardObjects
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `OVDM_DataDashboardObjects`;
-
-CREATE TABLE `OVDM_DataDashboardObjects` (
-  `dataDashboardObjectID` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `dataDashboardObjectFile` varchar(128) DEFAULT NULL,
-  `dataDashboardObjectType` varchar(24) DEFAULT NULL,
-  `dataDashboardObjectCruise` varchar(24) DEFAULT NULL,
-  `dataDashboardRawFile` varchar(128) DEFAULT NULL,
-  PRIMARY KEY (`dataDashboardObjectID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
 # Dump of table OVDM_ExtraDirectories
 # ------------------------------------------------------------
 
@@ -216,7 +190,7 @@ CREATE TABLE `OVDM_ExtraDirectories` (
   `enable` tinyint(1) DEFAULT '0',
   `required` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`extraDirectoryID`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_ExtraDirectories` WRITE;
 /*!40000 ALTER TABLE `OVDM_ExtraDirectories` DISABLE KEYS */;
@@ -247,17 +221,7 @@ CREATE TABLE `OVDM_Gearman` (
   `jobName` tinytext,
   `jobPid` int(11) unsigned DEFAULT NULL,
   PRIMARY KEY (`jobID`)
-) ENGINE=InnoDB AUTO_INCREMENT=11432 DEFAULT CHARSET=utf8;
-
-LOCK TABLES `OVDM_Gearman` WRITE;
-/*!40000 ALTER TABLE `OVDM_Gearman` DISABLE KEYS */;
-
-INSERT INTO `OVDM_Gearman` (`jobID`, `jobHandle`, `jobKnown`, `jobRunning`, `jobNumerator`, `jobDenominator`, `jobName`, `jobPid`)
-VALUES
-  (11430,'H:openvdm-digital-ocean:5165',1,1,10,10,'Transfer for XBT',5788);
-
-/*!40000 ALTER TABLE `OVDM_Gearman` ENABLE KEYS */;
-UNLOCK TABLES;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 
 # Dump of table OVDM_Links
@@ -302,19 +266,7 @@ CREATE TABLE `OVDM_Messages` (
   `messageTS` datetime NOT NULL,
   `messageViewed` tinyint(1) NOT NULL,
   PRIMARY KEY (`messageID`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
-
-LOCK TABLES `OVDM_Messages` WRITE;
-/*!40000 ALTER TABLE `OVDM_Messages` DISABLE KEYS */;
-
-INSERT INTO `OVDM_Messages` (`messageID`, `messageTitle`, `messageBody`, `messageTS`, `messageViewed`)
-VALUES
-  (1,'Test Connection test failed','Reason: SSH Connection','2017-03-24 13:39:42',1),
-  (2,'Manual Stop of transfer','SBDA','2017-03-25 12:08:31',0),
-  (3,'USBhd Connection test failed','Reason: Destination Directory is a Mountpoint','2017-03-26 13:06:39',0);
-
-/*!40000 ALTER TABLE `OVDM_Messages` ENABLE KEYS */;
-UNLOCK TABLES;
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
 
 
 # Dump of table OVDM_ShipToShoreTransfers
@@ -333,7 +285,7 @@ CREATE TABLE `OVDM_ShipToShoreTransfers` (
   `enable` tinyint(1) NOT NULL DEFAULT '0',
   `required` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`shipToShoreTransferID`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_ShipToShoreTransfers` WRITE;
 /*!40000 ALTER TABLE `OVDM_ShipToShoreTransfers` DISABLE KEYS */;
