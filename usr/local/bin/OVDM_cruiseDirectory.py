@@ -84,7 +84,12 @@ def build_directorylist(worker):
 
     returnDirectories = []
     cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
-    
+
+    debugPrint(worker.OVDM.showLoweringComponents())
+
+    if worker.OVDM.showLoweringComponents():
+      returnDirectories.append(os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir']))
+
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:

@@ -114,10 +114,10 @@ VALUES
   (5,'cruiseID','CS1601'),
   (6,'cruiseStartDate','2017/01/01 00:00'),
   (7,'cruiseEndDate',''),
-  (8,'loweringID','CS1601'),
+  (8,'loweringID','CS-001'),
   (9,'loweringStartDate','2017/01/01 00:00'),
   (10,'loweringEndDate',''),
-  (11,'systemStatus','On'),
+  (11,'systemStatus','Off'),
   (12,'shipToShoreBWLimit','128'),
   (13,'shipToShoreBWLimitStatus','Off'),
   (14,'md5FilesizeLimit','10'),
@@ -169,9 +169,9 @@ LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 
 INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `nfsServer`, `nfsUser`, `nfsPass`, `status`, `enable`, `required`, `pid`)
 VALUES
-  (1,'SSDW','Shoreside Data Warehouse',4,'/shoreside',0,'','','','','','','','127.0.0.1','survey',1,NULL,NULL,NULL,NULL,2,1,1,0),
-  (2,'SBDA','Shipboard NAS (SMB Share)',3,'/',0,'','','','//127.0.0.1/NASBackup','survey','password','WORKGROUP','','',0,'','','','',2,1,0,0),
-  (3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/LocalBackup',0,'','','','','','','','','',0,'','',NULL,NULL,2,1,0,0);
+  (1,'SSDW','Shoreside Data Warehouse',4,'/shoreside',0,'','','','','','','','127.0.0.1','survey',1,NULL,NULL,NULL,NULL,2,0,1,0),
+  (2,'SBDA','Shipboard NAS (SMB Share)',3,'/',0,'','','','//127.0.0.1/NASBackup','survey','password','WORKGROUP','','',0,'','','','',2,0,0,0),
+  (3,'USBhd','USB HDD for P.I. (Local Directory)',1,'/LocalBackup',0,'','','','','','','','','',0,'','',NULL,NULL,2,0,0,0);
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -293,7 +293,7 @@ LOCK TABLES `OVDM_ShipToShoreTransfers` WRITE;
 INSERT INTO `OVDM_ShipToShoreTransfers` (`shipToShoreTransferID`, `name`, `longName`, `priority`, `collectionSystem`, `extraDirectory`, `includeFilter`, `enable`, `required`)
 VALUES
   (1,'DashboardData','Dashboard Data',1,0,2,'*',1,1),
-  (2,'TransferLogs','Transfer Logs',1,0,1,'*',1,1),
+  (2,'TransferLogs','Transfer Logs',1,0,1,'*',0,1),
   (3,'MD5Summary','MD5 Summary',1,0,0,'MD5_Summary.txt MD5_Summary.md5 ',1,1),
   (4,'OVDM_Config','OpenVDM Configuration',1,0,0,'ovdmConfig.json',1,1),
   (5,'Tracklines','Cruise Tracklines',1,0,4,'*',0,0);
@@ -330,7 +330,10 @@ VALUES
   (4,'rebuildDataDashboard','Rebuild Data Dashboard',2,1,0),
   (5,'rebuildCruiseDirectory','Rebuild Cruise Directory',2,1,0),
   (6,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0),
-  (7,'rsyncPublicDataToCruiseData','Copy PublicData to Cruise Data',2,1,0);
+  (7,'rsyncPublicDataToCruiseData','Copy PublicData to Cruise Data',2,1,0),
+  (8,'setupNewLowering','Setup New Lowering',2,1,0),
+  (9,'rebuildLoweringDirectory','Rebuild Lowering Directory',2,1,0),
+  (10,'exportLoweringConfig','Re-export the Lowering Configuration',2,1,0);
 
 /*!40000 ALTER TABLE `OVDM_Tasks` ENABLE KEYS */;
 UNLOCK TABLES;
