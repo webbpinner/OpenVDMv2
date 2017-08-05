@@ -511,6 +511,16 @@ siteRoot: "http://127.0.0.1/OpenVDMv2/"
 
 If the web-application is NOT going to be accessed as `http://<server IP>/OpenVDMv2/` Change the URL to match the intended location i.e. `http://127.0.0.1/CustomURLJustForOpenVDM/`.   If URL is changed you will need to specified the exact same URL within the `Config.php` and `.htaccess` files.  Editing the `Config.php` and `.htaccess` files is covered below.
 
+
+#### Install the web-application
+
+Download the dependencies:
+
+```
+cd ~/OpenVDMv2/var/www/OpenVDMv2
+composer install
+```
+
 Copy the web-application code to a directory that can be accessed by Apache
 
 ```
