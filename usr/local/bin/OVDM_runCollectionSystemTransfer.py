@@ -67,18 +67,22 @@ def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[], 'filesize':[]}
 
+    debugPrint(returnFiles)
+
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60 #5 Mintues
+    debugPrint("Staleness:", staleness)
+
     threshold_time = time.time() - staleness
+    debugPrint("Threshold:", threshold_time)
 
     dataStart_time = calendar.timegm(time.strptime(worker.dataStartDate, "%Y/%m/%d %H:%M"))
-    dataEnd_time = calendar.timegm(time.strptime(worker.dataEndDate, "%Y/%m/%d %H:%M"))
-
     debugPrint("Start:", dataStart_time)
+
+    dataEnd_time = calendar.timegm(time.strptime(worker.dataEndDate, "%Y/%m/%d %H:%M"))
     debugPrint("End:", dataEnd_time)
-    debugPrint("Threshold:", threshold_time)
-    
+
     filters = build_filters(worker)
-    
+
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
             exclude = False
@@ -447,14 +451,14 @@ def transfer_localSourceDir(worker, job):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
-    if worker.collectionSystemTransfer['cruiseOrLowering'] == '1':
+    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
       destDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
     else:
       destDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
 
     sourceDir = build_sourceDir(worker).rstrip('/')
     debugPrint("Source Dir:", sourceDir)
-    debugPrint("Destinstation Dir:", destDir)
+    debugPrint("Destination Dir:", destDir)
 
     debugPrint("Build file list")
     files = build_filelist(worker, sourceDir)
@@ -539,7 +543,7 @@ def transfer_smbSourceDir(worker, job):
     mntPoint = os.path.join(tmpdir, 'mntpoint')
     os.mkdir(mntPoint, 0755)
 
-    if worker.collectionSystemTransfer['cruiseOrLowering'] == '1':
+    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
       destDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
     else:
       destDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
@@ -645,7 +649,7 @@ def transfer_rsyncSourceDir(worker, job):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
-    if worker.collectionSystemTransfer['cruiseOrLowering'] == '1':
+    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
       destDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
     else:
       destDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
@@ -748,7 +752,7 @@ def transfer_sshSourceDir(worker, job):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
     
-    if worker.collectionSystemTransfer['cruiseOrLowering'] == '1':
+    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
       destDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
     else:
       destDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
@@ -851,7 +855,7 @@ def transfer_nfsSourceDir(worker, job):
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
         
-    if worker.collectionSystemTransfer['cruiseOrLowering'] == '1':
+    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
       destDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
     else:
       destDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
@@ -1015,18 +1019,19 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             else:
                 self.systemStatus = payloadObj['systemStatus']
 
-        #set temporal bounds for transfer based on whether the transfer should use cruise or lowering start/end times
-        if self.collectionSystemTransfer['cruiseOrLowering'] == '0':
-          self.dataStart_time = self.cruiseStartDate
-          self.dataEnd_time = self.cruiseEndDate
-        else:
-          self.dataStart_time = self.loweringStartDate
-          self.dataEnd_time = self.loweringEndDate
-
         #set temporal bounds to extremes if temporal bounds should not be used
         if self.collectionSystemTransfer['useStartDate'] == "0":
-          self.dataStartDate = "1970/01/01 00:00"
-          self.dataEndDate = "9999/12/31 23:59"
+            self.dataStartDate = "1970/01/01 00:00"
+            self.dataEndDate = "9999/12/31 23:59"
+        else:
+            #set temporal bounds for transfer based on whether the transfer should use cruise or lowering start/end times
+            if self.collectionSystemTransfer['cruiseOrLowering'] == "0":
+                self.dataStart_time = self.cruiseStartDate
+                self.dataEnd_time = self.cruiseEndDate
+            else:
+                self.dataStart_time = self.loweringStartDate
+                self.dataEnd_time = self.loweringEndDate
+
         
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "transfer started at:  ", time.strftime("%D %T", time.gmtime()))
         
@@ -1111,10 +1116,15 @@ def task_runCollectionSystemTransfer(worker, job):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    collectionSystemDestDir = ""
 
-    collectionSystemDestDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
+    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
+      collectionSystemDestDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
+    else:
+      collectionSystemDestDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
+
     collectionSystemSourceDir = build_sourceDir(worker).rstrip('/')
-    
+
     if worker.collectionSystemTransfer['status'] != "1": #not running
         debugPrint("Transfer is not already in-progress")
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
