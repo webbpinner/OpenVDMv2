@@ -332,6 +332,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
             for task in self.OVDM.getTasksForHook('setupNewLowering'):
+                debugPrint("Adding post task:", task);
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
                 
         elif current_job.task == 'finalizeCurrentLowering':

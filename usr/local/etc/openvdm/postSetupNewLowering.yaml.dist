@@ -1,8 +1,8 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  postDataDashboard.yaml
+#         FILE:  postSetupNewLowering.yaml
 #
-#  DESCRIPTION:  Configuration file to the postDataDashboard hook
+#  DESCRIPTION:  Configuration file to the postSetupNewLowering hook
 #
 #         BUGS:
 #        NOTES:
@@ -31,46 +31,39 @@
 # ----------------------------------------------------------------------------------- #
 
 # SAMPLE BLOCK --- INDENTS ARE IMPORTANT TO THE YAML-FORMAT ---
-#- collectionSystemTransferName: SCS
-#  commandList:
-#  - name: buildCruiseTracks
+#commandList:
+#  - name: buildLoweringTracks
 #    command:
 #    - python
-#    - /usr/local/bin/buildCruiseTracks.py
+#    - /usr/local/bin/buildLoweringTracks.py
 #    - SCS
 
 # Breakdown of SAMPLE BLOCK
-# Name of the collectionSystemTransfer to run after
-#- collectionSystemTransferName: SCS
 #
 # Array of commands to run
-#  commandList:
+#commandList:
 #
 # The name of the command, used for messaging/error reporting, not part of the actual
 # command(s) that are executed
-#  - name: buildCruiseTracks
+#  - name: buildLoweringTracks
 #
 # This is the array containing the command to be executed. Each element when executed
 # will be joined with a space ' '.  The following example would be called as:
-# 'python /usr/local/bin/buildCruiseTracks.py SCS'
+# 'python /usr/local/bin/buildLoweringTracks.py SCS'
 #    command:
 #    - python
-#    - /usr/local/bin/buildCruiseTracks.py
+#    - /usr/local/bin/buildLoweringTracks.py
 #    - SCS
 
 # Wildcards:
 # Wildcards can be used when defining command arrays (wildcards currently only work for the command array).
 # Currenly implemented wildcards:
 # - '{cruiseID}' --> the cruiseID used for the dataDashboard that just occurred 
-# - '{collectionSystemTransferID}' --> the collectionSystemTransferID used for the dataDashboard that just occurred 
-# - '{collectionSystemTransferName}' --> the collectionSystemTransferName used for the dataDashboard that just occurred 
-# - '{newFiles}' --> JSON-formatted array of all new files that were just transferred in the cooresponding collectionSystemTransfer
-# - '{updatedFile}' --> JSON-formatted array of all updated files that were just transferred in the cooresponding collectionSystemTransfer
+# - '{loweringID}' --> the loweringID used for the dataDashboard that just occurred 
 
-#- collectionSystemTransferName: SCS
-#  commandList:
-#  - name: buildCruiseTracks
+#commandList:
+#  - name: clearScienceData
 #    command:
-#    - python
-#    - /usr/local/bin/buildCruiseTracks.py
-#    - SCS
+#    - rm
+#    - -rf
+#    - /vault/FTPRoot/ScienceData/*
