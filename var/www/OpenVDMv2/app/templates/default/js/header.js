@@ -95,6 +95,48 @@ $(function () {
             }, 5000);
         });
     }
+
+
+    function updateLoweringIDPanel(loweringIDPanel, loweringID) {
+        var transferStatusURL = siteRoot + 'api/warehouse/getLoweringID';
+        $.getJSON(transferStatusURL, function (data, status) {
+            if (status === 'success' && data !== null) {
+                if (data.error) {
+                    $(loweringID).html('Error');
+                    $(loweringIDPanel).removeClass('panel-primary');
+                    $(loweringIDPanel).addClass('panel-red');
+                } else {
+                    $(loweringID).html(data.loweringID);
+                    $(loweringIDPanel).removeClass('panel-red');
+                    $(loweringIDPanel).addClass('panel-primary');
+                }
+            }
+            setTimeout(function () {
+                updateLoweringIDPanel(loweringIDPanel, loweringID);
+            }, 5000);
+        });
+    }
+    
+    function updateLoweringSizePanel(loweringSizePanel, loweringSize) {
+        var transferStatusURL = siteRoot + 'api/warehouse/getLoweringSize';
+        $.getJSON(transferStatusURL, function (data, status) {
+            if (status === 'success' && data !== null) {
+                if (data.error) {
+                    $(loweringSize).html('Error');
+                    $(loweringSizePanel).removeClass('panel-primary');
+                    $(loweringSizePanel).addClass('panel-red');
+                } else {
+                    $(loweringSize).html(formatFilesize(data.loweringSize));
+                    $(loweringSizePanel).removeClass('panel-red');
+                    $(loweringSizePanel).addClass('panel-primary');
+                }
+            }
+            setTimeout(function () {
+                updateLoweringSizePanel(loweringSizePanel, loweringSize);
+            }, 5000);
+        });
+    }
+
     
     function updateFreeSpacePanel(freeSpacePanel, freeSpace) {
         var transferStatusURL = siteRoot + 'api/warehouse/getFreeSpace';
@@ -303,6 +345,13 @@ $(function () {
     updateSystemStatusPanel('#systemStatusPanel', '#systemStatus');
     updateCruiseIDPanel('#cruiseIDPanel', '#cruiseID');
     updateCruiseSizePanel('#cruiseSizePanel', '#cruiseSize');
+
+    if( $('#loweringIDPanel').length )         // use this if you are using id to check
+    {
+        updateLoweringIDPanel('#loweringIDPanel', '#loweringID');
+        updateLoweringSizePanel('#loweringSizePanel', '#loweringSize');
+    }
+
     updateFreeSpacePanel('#freeSpacePanel', '#freeSpace');
     updateRecentMessages('#OVDM_messages','#OVDM_messageCount');
     updateMessageCount('#OVDM_messageCount');

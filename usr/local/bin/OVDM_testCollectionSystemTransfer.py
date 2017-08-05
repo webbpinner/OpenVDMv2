@@ -9,12 +9,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.2
+#      VERSION:  2.3
 #      CREATED:  2015-01-01
-#     REVISION:  2016-10-30
+#     REVISION:  2017-08-05
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2016
+#               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -60,13 +60,17 @@ def errPrint(*args, **kwargs):
 def build_destDir(worker):
     
     returnDestDir = worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', worker.cruiseID)
-
+    returnDestDir = returnDestDir.replace('{loweringID}', worker.loweringID)
+    returnDestDir = returnDestDir.replace('{loweringDataBaseDir}', worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    
     return returnDestDir
 
 
 def build_sourceDir(worker):
     
     returnSourceDir = worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', worker.cruiseID)
+    returnSourceDir = returnSourceDir.replace('{loweringID}', worker.loweringID)
+    returnSourceDir = returnSourceDir.replace('{loweringDataBaseDir}', worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
 
     return returnSourceDir
 
@@ -351,12 +355,18 @@ def test_nfsSourceDir(worker):
 def test_destDir(worker):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
-    destDir = os.path.join(cruiseDir, worker.collectionSystemTransfer['destDir'])
-    
+    destDir = os.path.join(baseDir, worker.cruiseID)
+
+    if worker.collectionSystemTransfer['cruiseOrLowering'] != '0':
+        destDir = os.path.join(destDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID)
+
+    destDir = os.path.join(destDir, build_destDir(worker))
+    debugPrint('Destination Dir:', destDir)
+
     if os.path.isdir(destDir):
         return [{"testName": "Destination Directory", "result": "Pass"}]
     else:
+        debugPrint(destDir)
         return [{"testName": "Destination Directory", "result": "Fail"}]
 
     
@@ -367,6 +377,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
+        self.loweringID = ''
 #        self.cruiseStartDate = ''
 #        self.systemStatus = ''
         self.startTime = time.gmtime(0)
@@ -396,6 +407,14 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
+
+            if self.OVDM.showLoweringComponents:
+                try:
+                    payloadObj['loweringID']
+                except KeyError:
+                    self.loweringID = self.OVDM.getLoweringID()
+                else:
+                    self.loweringID = payloadObj['loweringID']
                 
         if self.collectionSystemTransfer['collectionSystemTransferID'] != None:
             self.OVDM.setRunning_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)

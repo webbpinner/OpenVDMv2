@@ -12,7 +12,7 @@ class CruiseDataTransfers extends Model {
     public function getCruiseDataTransfersStatuses(){
         return $this->db->select("SELECT cruiseDataTransferID, name, longName, status, enable FROM ".PREFIX."CruiseDataTransfers WHERE required = :required ORDER BY name", array(':required' => '0'));
     }
-    
+
     public function getRequiredCruiseDataTransfers(){
         return $this->db->select("SELECT * FROM ".PREFIX."CruiseDataTransfers WHERE required = :required ORDER BY name", array(':required' => '1'));
     }

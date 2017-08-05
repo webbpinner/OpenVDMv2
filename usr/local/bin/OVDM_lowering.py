@@ -1,10 +1,9 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_cruise.py
+#         FILE:  OVDM_lowering.py
 #
-#  DESCRIPTION:  Gearman worker the handles the tasks of initializing a new cruise
-#                and finalizing the current cruise.  This includes initializing/
-#                finalizing the data dashboard, MD5summary and transfer log summary.
+#  DESCRIPTION:  Gearman worker the handles the tasks of initializing a new lowering
+#                and finalizing the current lowering.
 #
 #         BUGS:
 #        NOTES:
@@ -12,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
 #      CREATED:  2015-01-01
-#     REVISION:  2017-08-05
+#     REVISION:  2017-05-02
 #
 # LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
@@ -50,7 +49,7 @@ import openvdm
 from random import randint
 
 
-cruiseConfigFN = 'ovdmConfig.json'
+loweringConfigFN = 'loweringConfig.json'
 
 DEBUG = False
 new_worker = None
@@ -253,7 +252,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
-        self.cruiseStartDate = ''
+        self.loweringID = ''
+        self.loweringStartDate = ''
         self.systemStatus = ''
         self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
@@ -277,22 +277,23 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         
         self.cruiseID = self.OVDM.getCruiseID()
-        self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+        self.loweringID = self.OVDM.getLoweringID()
+        self.loweringStartDate = self.OVDM.getLoweringStartDate()
         self.systemStatus = self.OVDM.getSystemStatus()
         if len(payloadObj) > 0:
             try:
-                payloadObj['cruiseID']
+                payloadObj['loweringID']
             except KeyError:
-                self.cruiseID = self.OVDM.getCruiseID()
+                self.loweringID = self.OVDM.getLoweringID()
             else:
-                self.cruiseID = payloadObj['cruiseID']
+                self.loweringID = payloadObj['loweringID']
                 
             try:
-                payloadObj['cruiseStartDate']
+                payloadObj['loweringStartDate']
             except KeyError:
-                self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+                self.loweringStartDate = self.OVDM.getLoweringStartDate()
             else:
-                self.cruiseStartDate = payloadObj['cruiseStartDate']
+                self.loweringStartDate = payloadObj['loweringStartDate']
 
         if self.task['taskID'] > 0:
             self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
@@ -322,22 +323,23 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
         
-        jobData = {'cruiseID':'', 'self.cruiseStartDate':''}
-        jobData['cruiseID'] = self.cruiseID
-        jobData['cruiseStartDate'] = self.cruiseStartDate
+        jobData = {'loweringID':'', 'self.loweringStartDate':''}
+        jobData['loweringID'] = self.loweringID
+        jobData['loweringStartDate'] = self.loweringStartDate
         
-        if current_job.task == 'setupNewCruise':
+        if current_job.task == 'setupNewLowering':
 
             gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
-            for task in self.OVDM.getTasksForHook('setupNewCruise'):
+            for task in self.OVDM.getTasksForHook('setupNewLowering'):
+                debugPrint("Adding post task:", task);
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
                 
-        elif current_job.task == 'finalizeCurrentCruise':
+        elif current_job.task == 'finalizeCurrentLowering':
 
             gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
-            for task in self.OVDM.getTasksForHook('finalizeCurrentCruise'):
+            for task in self.OVDM.getTasksForHook('finalizeCurrentLowering'):
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
         if len(resultsObj['parts']) > 0:
@@ -379,7 +381,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         debugPrint("Quitting worker...")
 
 
-def task_setupNewCruise(worker, job):
+def task_setupNewLowering(worker, job):
 
     job_results = {'parts':[]}
 
@@ -387,81 +389,83 @@ def task_setupNewCruise(worker, job):
     debugPrint('Payload:', json.dumps(payloadObj, indent=2))
     
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
         
     worker.send_job_status(job, 1, 10)
     
     gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
 
-    debugPrint("Lockdown the CruiseData directory")
-    completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", job.data)
+    #debugPrint("Lockdown the LoweringData directory")
+    #completed_job_request = gm_client.submit_job("setLoweringDataDirectoryPermissions", job.data)
+    
+    #resultObj = json.loads(completed_job_request.result)
+    
+    #if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+    #    job_results['parts'].append({"partName": "Lockdown the LoweringData directory", "result": "Pass"})
+    #else:
+    #    errPrint("Failed to lockdown the LoweringData directory")
+    #    job_results['parts'].append({"partName": "Lockdown the LoweringData directory", "result": "Fail"})
+    #    return json.dumps(job_results)
+
+    debugPrint("Creating lowering data directory")
+    completed_job_request = gm_client.submit_job("createLoweringDirectory", job.data)
     
     resultObj = json.loads(completed_job_request.result)
-    
-    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
-    else:
-        errPrint("Failed to lockdown the CruiseData directory")
-        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail"})
-        return json.dumps(job_results)
-
-    debugPrint("Creating cruise data directory")
-    completed_job_request = gm_client.submit_job("createCruiseDirectory", job.data)
-    
-    resultObj = json.loads(completed_job_request.result)
 
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        job_results['parts'].append({"partName": "Create cruise data directory structure", "result": "Pass"})
+        job_results['parts'].append({"partName": "Create lowering data directory structure", "result": "Pass"})
     else:
-        errPrint("Failed to create cruise data directory")
-        job_results['parts'].append({"partName": "Create cruise data directory structure", "result": "Fail"})
+        errPrint("Failed to create lowering data directory")
+        job_results['parts'].append({"partName": "Create lowering data directory structure", "result": "Fail"})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 5, 10)
     
-    debugPrint("Creating MD5 summary files")
-    completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
+    #debugPrint("Creating MD5 summary files")
+    #completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
 
-    resultObj = json.loads(completed_job_request.result)
+    #resultObj = json.loads(completed_job_request.result)
     #print 'DECODED Results rebuildMD5Summary:', json.dumps(resultObj, indent=2)
 
-    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Pass"})
-    else:
-        errPrint("Failed to create MD5 summary files")
-        job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Fail"})
-        return json.dumps(job_results)
+    #if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+    #    job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Pass"})
+    #else:
+    #    errPrint("Failed to create MD5 summary files")
+    #    job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Fail"})
+    #    return json.dumps(job_results)
     
-    worker.send_job_status(job, 7, 10)
+    #worker.send_job_status(job, 7, 10)
 
-    debugPrint("Creating data dashboard directory structure and manifest file")
-    completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)
+    #debugPrint("Creating data dashboard directory structure and manifest file")
+    #completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)
 
-    resultObj = json.loads(completed_job_request.result)
+    #resultObj = json.loads(completed_job_request.result)
     #print 'DECODED Results from rebuildDataDashboard:', json.dumps(resultObj, indent=2)
 
-    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Pass"})
-    else:
-        errPrint("Failed to create data dashboard directory structure and/or manifest file")
-        job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Fail"})
-        return json.dumps(job_results)
+    #if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+    #    job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Pass"})
+    #else:
+    #    errPrint("Failed to create data dashboard directory structure and/or manifest file")
+    #    job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Fail"})
+    #    return json.dumps(job_results)
     
     worker.send_job_status(job, 9, 10)
 
-    #build OpenVDM Config file
-    debugPrint('Exporting OpenVDM Configuration')
-    ovdmConfig = worker.OVDM.getOVDMConfig()
+    #build lowering Config file
+    debugPrint('Exporting Lowering Configuration')
+    loweringConfig = worker.OVDM.getLoweringConfig()
 
-    #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig):
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Pass"})
+    #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
+    if output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig):
+        job_results['parts'].append({"partName": "Export lowering config data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export lowering config data to file", "result": "Fail"})
         return json.dumps(job_results)
     
-    if not setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN)):
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail"})
+    if not setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN)):
+        job_results['parts'].append({"partName": "Set lowering config file ownership", "result": "Fail"})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 10, 10)
@@ -469,25 +473,27 @@ def task_setupNewCruise(worker, job):
     return json.dumps(job_results)
     
     
-def task_finalizeCurrentCruise(worker, job):
+def task_finalizeCurrentLowering(worker, job):
 
     job_results = {'parts':[]}
 
     worker.send_job_status(job, 1, 10)
 
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)  
-    debugPrint('Cruise Dir:', cruiseDir)
 
-    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    debugPrint('PublicData Dir:', publicDataDir)
+    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
 
-    scienceDir = worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir']
-    debugPrint('Science Dir:', scienceDir)
+    #publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
+    #debugPrint('PublicData Dir:', publicDataDir)
 
-    if os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
+    #scienceDir = worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir']
+    #debugPrint('Science Dir:', scienceDir)
+
+    if os.path.exists(loweringDir):
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -496,8 +502,8 @@ def task_finalizeCurrentCruise(worker, job):
     gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
     
     gmData = {}
-    gmData['cruiseID'] = worker.cruiseID
-    gmData['cruiseStartDate'] = worker.cruiseStartDate
+    gmData['loweringID'] = worker.loweringID
+    gmData['loweringStartDate'] = worker.loweringStartDate
     gmData['systemStatus'] = "On"
     gmData['collectionSystemTransfer'] = {}
         
@@ -509,10 +515,12 @@ def task_finalizeCurrentCruise(worker, job):
 
     for collectionSystemTransfer in collectionSystemTransfers:
 
-        debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
-        gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
+        if collectionSystemTransfer['cruiseOrLowering'] == 1:
+
+            debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
+            gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
         
-        collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
+            collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
 
     
     worker.send_job_status(job, 3, 10)
@@ -528,180 +536,110 @@ def task_finalizeCurrentCruise(worker, job):
 
     worker.send_job_status(job, 5, 10)
     
-    debugPrint('Transferring files from PublicData to the cruise data directory')
+    #debugPrint('Transferring files from PublicData to the lowering data directory')
     
-    if os.path.exists(os.path.join(cruiseDir, scienceDir)):
-        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail"})
-        return json.dumps(job_results)
+    #if os.path.exists(os.path.join(loweringDir, scienceDir)):
+    #    job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
+    #else:
+    #    job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail"})
+    #    return json.dumps(job_results)
 
-    if os.path.exists(publicDataDir):
-        job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Fail"})
-        return json.dumps(job_results)
+    #if os.path.exists(publicDataDir):
+    #    job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Pass"})
+    #else:
+    #    job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Fail"})
+    #    return json.dumps(job_results)
 
 
-    files = transfer_PublicDataDir(worker, job)
-    debugPrint('PublicData Transfer complete')
-    debugPrint("PublicData Files Transferred:", json.dumps(files, indent=2))
+    #files = transfer_PublicDataDir(worker, job)
+    #debugPrint('PublicData Transfer complete')
+    #debugPrint("PublicData Files Transferred:", json.dumps(files, indent=2))
 
-    if files:
-        job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Fail"})
-        return json.dumps(job_results)
+    #if files:
+    #    job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Pass"})
+    #else:
+    #    job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Fail"})
+    #    return json.dumps(job_results)
 
-    if(clear_publicDataDir(worker)):
-        job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Fail"})
-        return json.dumps(job_results)
+    #if(clear_publicDataDir(worker)):
+    #    job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Pass"})
+    #else:
+    #    job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Fail"})
+    #    return json.dumps(job_results)
 
     
     worker.send_job_status(job, 9, 10)
     
-    if len(files['new']) > 0 or len(files['updated']) > 0:
+    #if len(files['new']) > 0 or len(files['updated']) > 0:
 
-        if setOwnerGroupPermissions(worker, os.path.join(cruiseDir, scienceDir)):
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
-        else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
-            return json.dumps(job_results)
+    #    if setOwnerGroupPermissions(worker, os.path.join(loweringDir, scienceDir)):
+    #        job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
+    #    else:
+    #        job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
+    #        return json.dumps(job_results)
         
-    worker.send_job_status(job, 95, 100)
+    #worker.send_job_status(job, 95, 100)
     
-    #build OpenVDM Config file
-    debugPrint('Exporting OpenVDM Configuration')
-    ovdmConfig = worker.OVDM.getOVDMConfig()
+    #build Lowering Config file
+    debugPrint('Exporting Lowering Configuration')
+    loweringConfig = worker.OVDM.getLoweringConfig()
 
-    #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig):
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Pass"})
+    #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
+    if output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig):
+        job_results['parts'].append({"partName": "Export Lowering config data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export Lowering config data to file", "result": "Fail"})
         return json.dumps(job_results)
     
-    if setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN)):
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Pass"})
+    if setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN)):
+        job_results['parts'].append({"partName": "Set Lowering config file ownership", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Set Lowering config file ownership", "result": "Fail"})
         return json.dumps(job_results)
 
-    debugPrint("Initiating MD5 Summary Task")
+    #debugPrint("Initiating MD5 Summary Task")
 
-    gmData = {}
-    gmData['cruiseID'] = worker.cruiseID
-    gmData['files'] = files
-    gmData['files']['new'] = [scienceDir + '/' + filename for filename in gmData['files']['new']]
-    gmData['files']['updated'] = [scienceDir + '/' + filename for filename in gmData['files']['updated']]
+    #gmData = {}
+    #gmData['loweringID'] = worker.loweringID
+    #gmData['files'] = files
+    #gmData['files']['new'] = [scienceDir + '/' + filename for filename in gmData['files']['new']]
+    #gmData['files']['updated'] = [scienceDir + '/' + filename for filename in gmData['files']['updated']]
     
-    gmData['files']['updated'].append(cruiseConfigFN)
+    #gmData['files']['updated'].append(loweringConfigFN)
        
-    completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
+    #completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
     
-    debugPrint("MD5 Summary Task Complete")
+    #debugPrint("MD5 Summary Task Complete")
 
-    # need to add code for cruise data transfers
-
-    worker.send_job_status(job, 10, 10)
-    return json.dumps(job_results)
-
-def task_rsyncPublicDataToCruiseData(worker, job):
-
-    job_results = {'parts':[]}
-
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)  
-    debugPrint('Cruise Dir:', cruiseDir)
-
-    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    debugPrint('PublicData Dir:', publicDataDir)
-
-    scienceDir = worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir']
-    debugPrint('Science Dir:', scienceDir)
-    
-    worker.send_job_status(job, 1, 10)
-
-    if os.path.exists(os.path.join(cruiseDir, scienceDir)):
-        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail"})
-        return json.dumps(job_results)
-
-    if os.path.exists(publicDataDir):
-        job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Fail"})
-        return json.dumps(job_results)
-    
-    worker.send_job_status(job, 5, 10)
-    
-    files = transfer_PublicDataDir(worker, job)
-    debugPrint("Files Transferred:", json.dumps(files, indent=2))
-
-    if files:
-        job_results['parts'].append({"partName": "Transfer files", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Transfer files", "result": "Fail"})
-        return json.dumps(job_results)
-    
-    worker.send_job_status(job, 9, 10)
-    
-    if len(files['new']) > 0 or len(files['updated']) > 0:
-
-        if setOwnerGroupPermissions(worker, os.path.join(cruiseDir, scienceDir)):
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
-        else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
-            return json.dumps(job_results)
-        
-        worker.send_job_status(job, 95, 100)
-
-        debugPrint("Initiating MD5 Summary Task")
-
-        gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])    
-        gmData = {}
-        gmData['cruiseID'] = worker.cruiseID
-        gmData['files'] = files
-        gmData['files']['new'] = [os.path.join(scienceDir,filename) for filename in gmData['files']['new']]
-        gmData['files']['updated'] = [os.path.join(scienceDir,filename) for filename in gmData['files']['updated']]
-        
-        completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
-    
-        debugPrint("MD5 Summary Task Complete")
-
-    # need to verify update MD5 completed successfully
+    # need to add code for lowering data transfers
 
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
 
-def task_exportOVDMConfig(worker, job):
+def task_exportLoweringConfig(worker, job):
 
     job_results = {'parts':[]}
 
     cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
-    #debugPrint('cruiseDir:', cruiseDir)
-
-    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    #debugPrint('publicDataDir:', publicDataDir)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
     
     worker.send_job_status(job, 1, 10)
 
-    if os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
+    if os.path.exists(loweringDir):
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 3, 10)
 
     #build OpenVDM Config file
-    ovdmConfig = worker.OVDM.getOVDMConfig()
+    loweringConfig = worker.OVDM.getLoweringConfig()
 
-    #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig):
+    #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
+    if output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig):
         job_results['parts'].append({"partName": "Export data to file", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Export data to file", "result": "Fail"})
@@ -709,7 +647,7 @@ def task_exportOVDMConfig(worker, job):
 
     worker.send_job_status(job, 6, 10)
     
-    if setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN)):
+    if setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN)):
         job_results['parts'].append({"partName": "Set file ownership", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Set file ownership", "result": "Fail"})
@@ -724,7 +662,7 @@ def task_exportOVDMConfig(worker, job):
 # -------------------------------------------------------------------------------------
 def main(argv):
 
-    parser = argparse.ArgumentParser(description='Handle Cruise-Level tasks')
+    parser = argparse.ArgumentParser(description='Handle Lowering-Level tasks')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
     args = parser.parse_args()
@@ -749,17 +687,17 @@ def main(argv):
     signal.signal(signal.SIGQUIT, sigquit_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    new_worker.set_client_id('cruise.py')
+    new_worker.set_client_id('lowering.py')
 
     debugPrint('Registering worker tasks...')
-    debugPrint('   Task:', 'setupNewCruise')
-    new_worker.register_task("setupNewCruise", task_setupNewCruise)
-    debugPrint('   Task:', 'finalizeCurrentCruise')
-    new_worker.register_task("finalizeCurrentCruise", task_finalizeCurrentCruise)
-    debugPrint('   Task:', 'exportOVDMConfig')
-    new_worker.register_task("exportOVDMConfig", task_exportOVDMConfig)
-    debugPrint('   Task:', 'rsyncPublicDataToCruiseData')
-    new_worker.register_task("rsyncPublicDataToCruiseData", task_rsyncPublicDataToCruiseData)
+    debugPrint('   Task:', 'setupNewLowering')
+    new_worker.register_task("setupNewLowering", task_setupNewLowering)
+    debugPrint('   Task:', 'finalizeCurrentLowering')
+    new_worker.register_task("finalizeCurrentLowering", task_finalizeCurrentLowering)
+    debugPrint('   Task:', 'exportLoweringConfig')
+    new_worker.register_task("exportLoweringConfig", task_exportLoweringConfig)
+#    debugPrint('   Task:', 'rsyncPublicDataToLoweringData')
+#    new_worker.register_task("rsyncPublicDataToLoweringData", task_rsyncPublicDataToLoweringData)
 
     debugPrint('Waiting for jobs...')
     new_worker.work()

@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_cruiseDirectory.py
+#         FILE:  OVDM_loweringDirectory.py
 #
-#  DESCRIPTION:  Gearman worker the handles the tasks of creating a new cruise data
-#                directory and updating the cruise directory structure when additional
+#  DESCRIPTION:  Gearman worker the handles the tasks of creating a new lowering data
+#                directory and updating the lowering directory structure when additional
 #                subdirectories must be added.
 #
 #         BUGS:
@@ -12,7 +12,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
 #      CREATED:  2015-01-01
-#     REVISION:  2017-08-05
+#     REVISION:  2016-05-02
 #
 # LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
 #               Copyright (C) OceanDataRat 2017
@@ -48,13 +48,13 @@ import openvdm
 customTaskLookup = [
     {
         "taskID": "0",
-        "name": "createCruiseDirectory",
-        "longName": "Creating Cruise Directory",
+        "name": "createLoweringDirectory",
+        "longName": "Creating Lowering Directory",
     },
     {
         "taskID": "0",
-        "name": "setCruiseDataDirectoryPermissions",
-        "longName": "Setting CruiseData Directory Permissions",
+        "name": "setLoweringDataDirectoryPermissions",
+        "longName": "Setting Lowering Data Directory Permissions",
     }
 
 ]
@@ -84,29 +84,29 @@ def build_directorylist(worker):
 
     returnDirectories = []
     cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
 
-    debugPrint(worker.OVDM.showLoweringComponents())
-
-    if worker.OVDM.showLoweringComponents():
-      returnDirectories.append(os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir']))
+    returnDirectories.append(loweringDir)
 
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
-        if collectionSystemTransfer['enable'] == "1" and collectionSystemTransfer['cruiseOrLowering'] == "0":
+
+        if collectionSystemTransfer['enable'] == "1" and collectionSystemTransfer['cruiseOrLowering'] == "1":
             destDir = build_destDir(worker, collectionSystemTransfer['destDir'])
-            returnDirectories.append(os.path.join(cruiseDir, destDir))
+            returnDirectories.append(os.path.join(loweringDir, destDir))
 
-    requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
-    for requiredExtraDirectory in requiredExtraDirectories:
-        destDir = build_destDir(worker, requiredExtraDirectory['destDir'])
-        returnDirectories.append(os.path.join(cruiseDir, destDir))
+    #requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
+    #for requiredExtraDirectory in requiredExtraDirectories:
+    #    destDir = build_destDir(worker, requiredExtraDirectory['destDir'])
+    #    returnDirectories.append(os.path.join(loweringDir, destDir))
 
-    extraDirectories = worker.OVDM.getExtraDirectories()
-    for extraDirectory in extraDirectories:
-        if extraDirectory['enable'] == "1":
-            destDir = build_destDir(worker, extraDirectory['destDir'])
-            returnDirectories.append(os.path.join(cruiseDir, destDir))
+    #extraDirectories = worker.OVDM.getExtraDirectories()
+    #for extraDirectory in extraDirectories:
+    #    if extraDirectory['enable'] == "1":
+    #        destDir = build_destDir(worker, extraDirectory['destDir'])
+    #        returnDirectories.append(os.path.join(loweringDir, destDir))
 
     return returnDirectories
 
@@ -174,8 +174,8 @@ def setOwnerGroupPermissions(worker, path):
     
 def lockdown_directory(worker):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir,worker.cruiseID)
-#    debugPrint('cruiseDir:', cruiseDir)
+    loweringDir = os.path.join(baseDir,worker.loweringID)
+#    debugPrint('loweringDir:', loweringDir)
 
     dirContents = [ os.path.join(baseDir,f) for f in os.listdir(baseDir)]
     files = filter(os.path.isfile, dirContents)
@@ -184,7 +184,7 @@ def lockdown_directory(worker):
 
     directories = filter(os.path.isdir, dirContents)
     for directory in directories:
-        if not directory == cruiseDir:
+        if not directory == loweringDir:
             os.chmod(directory, 0700)
 #        else:
 #            debugPrint('Skipping:', directory)
@@ -227,7 +227,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
 
         self.cruiseID = self.OVDM.getCruiseID()
-        self.cruiseStartDate = self.OVDM.getCruiseStartDate()
+        self.loweringID = self.OVDM.getLoweringID()
+        self.loweringStartDate = self.OVDM.getLoweringStartDate()
         self.systemStatus = self.OVDM.getSystemStatus()
         if len(payloadObj) > 0:
             try:
@@ -314,7 +315,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         debugPrint("Quitting worker...")
 
 
-def task_createCruiseDirectory(worker, job):
+def task_createLoweringDirectory(worker, job):
 
     job_results = {'parts':[]}
 
@@ -325,6 +326,9 @@ def task_createCruiseDirectory(worker, job):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    debugPrint(worker.shipboardDataWarehouseConfig)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
 
 
     if os.path.exists(baseDir):
@@ -334,12 +338,25 @@ def task_createCruiseDirectory(worker, job):
         job_results['parts'].append({"partName": "Verify Base Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
-
-    if not os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Pass"})
+    if os.path.exists(cruiseDir):
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
-        errPrint("Cruise directory already exists:", cruiseDir)
-        job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Fail"})
+        errPrint("Lowering directory already exists:", loweringDir)
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        return json.dumps(job_results)
+
+    if os.path.exists(loweringDataBaseDir):
+        job_results['parts'].append({"partName": "Verify Lowering Data Directory exists", "result": "Pass"})
+    else:
+        errPrint("Lowering directory already exists:", loweringDir)
+        job_results['parts'].append({"partName": "Verify Lowering Data Directory exists", "result": "Fail"})
+        return json.dumps(job_results)
+
+    if not os.path.exists(loweringDir):
+        job_results['parts'].append({"partName": "Verify Lowering Directory does not exists", "result": "Pass"})
+    else:
+        errPrint("Lowering directory already exists:", loweringDir)
+        job_results['parts'].append({"partName": "Verify Lowering Directory does not exists", "result": "Fail"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -359,19 +376,19 @@ def task_createCruiseDirectory(worker, job):
     if create_directories(worker, directoryList):
         job_results['parts'].append({"partName": "Create Directories", "result": "Pass"})
     else:
-        errPrint("Failed to create any/all of the cruise data directory structure")
+        errPrint("Failed to create any/all of the lowering data directory structure")
         job_results['parts'].append({"partName": "Create Directories", "result": "Fail"})
 
     worker.send_job_status(job, 7, 10)
 
-    if worker.OVDM.showOnlyCurrentCruiseDir():
-        debugPrint("Clear read permissions for all cruise directories")
-        lockdown_directory(worker)
-        job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
+    #if worker.OVDM.showOnlyCurrentLoweringDir():
+    #    debugPrint("Clear read permissions for all lowering directories")
+    #    lockdown_directory(worker)
+    #    job_results['parts'].append({"partName": "Clear LoweringData Directory Read Permissions", "result": "Pass"})
 
     worker.send_job_status(job, 8, 10)
 
-    if setOwnerGroupPermissions(worker, cruiseDir):
+    if setOwnerGroupPermissions(worker, loweringDir):
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
         errPrint("Failed to set directory ownership")
@@ -382,7 +399,7 @@ def task_createCruiseDirectory(worker, job):
     return json.dumps(job_results)
 
 
-def task_setCruiseDataDirectoryPermissions(worker, job):
+def task_setLoweringDataDirectoryPermissions(worker, job):
 
     job_results = {'parts':[]}
 
@@ -392,26 +409,28 @@ def task_setCruiseDataDirectoryPermissions(worker, job):
     worker.send_job_status(job, 5, 10)
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir,worker.cruiseID)
-    
-    if worker.OVDM.showOnlyCurrentCruiseDir():
-        debugPrint("Clear read permissions")
-        lockdown_directory(worker)
-        job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
+
+    #if worker.OVDM.showOnlyCurrentLoweringDir():
+    #    debugPrint("Clear read permissions")
+    #    lockdown_directory(worker)
+    #    job_results['parts'].append({"partName": "Clear LoweringData Directory Read Permissions", "result": "Pass"})
 
     worker.send_job_status(job, 8, 10)
 
-    if os.path.isdir(cruiseDir):
-        debugPrint("Clear read permissions")
-        setOwnerGroupPermissions(worker, cruiseDir)
-        job_results['parts'].append({"partName": "Set Directory Permissions for current cruise", "result": "Pass"})
+    if os.path.isdir(loweringDir):
+        debugPrint("Set read permissions")
+        setOwnerGroupPermissions(worker, loweringDir)
+        job_results['parts'].append({"partName": "Set Directory Permissions for current lowering", "result": "Pass"})
         
-    job_results['parts'].append({"partName": "Set CruiseData Directory Permissions", "result": "Pass"})
+    job_results['parts'].append({"partName": "Set LoweringData Directory Permissions", "result": "Pass"})
     worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)
 
-def task_rebuildCruiseDirectory(worker, job):
+def task_rebuildLoweringDirectory(worker, job):
 
     job_results = {'parts':[]}
 
@@ -420,19 +439,25 @@ def task_rebuildCruiseDirectory(worker, job):
 
     worker.send_job_status(job, 1, 10)
 
-    if worker.OVDM.showOnlyCurrentCruiseDir():
-        debugPrint("Clear read permissions")
-        lockdown_directory(worker)
-        job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
+#    if worker.OVDM.showOnlyCurrentLoweringDir():
+#        debugPrint("Clear read permissions")
+#        lockdown_directory(worker)
+#        job_results['parts'].append({"partName": "Clear LoweringData Directory Read Permissions", "result": "Pass"})
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    debugPrint(baseDir)
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    debugPrint(cruiseDir)
+    loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    debugPrint(loweringDataBaseDir)
+    loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
+    debugPrint(loweringDir)
     
-    if os.path.exists(cruiseDir):
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
+    if os.path.exists(loweringDir):
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
-        errPrint("Cruise directory not found")
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        errPrint("Lowering directory not found")
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -454,13 +479,13 @@ def task_rebuildCruiseDirectory(worker, job):
     if create_directories(worker, directoryList):
         job_results['parts'].append({"partName": "Create Directories", "result": "Pass"})
     else:
-        errPrint("Failed to create any/all of the cruise data directory structure")
+        errPrint("Failed to create any/all of the lowering data directory structure")
         job_results['parts'].append({"partName": "Create Directories", "result": "Fail"})
 
     worker.send_job_status(job, 7, 10)
     
     debugPrint("Set directory permissions")
-    if setOwnerGroupPermissions(worker, cruiseDir):
+    if setOwnerGroupPermissions(worker, loweringDir):
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
         errPrint("Failed to set directory ownership")
@@ -475,7 +500,7 @@ def task_rebuildCruiseDirectory(worker, job):
 # -------------------------------------------------------------------------------------
 def main(argv):
 
-    parser = argparse.ArgumentParser(description='Handle Cruise data directory related tasks')
+    parser = argparse.ArgumentParser(description='Handle Lowering data directory related tasks')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
     args = parser.parse_args()
@@ -500,15 +525,15 @@ def main(argv):
     signal.signal(signal.SIGQUIT, sigquit_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    new_worker.set_client_id('cruiseDirectory.py')
+    new_worker.set_client_id('loweringDirectory.py')
 
     debugPrint('Registering worker tasks...')
-    debugPrint('   Task:', 'createCruiseDirectory')
-    new_worker.register_task("createCruiseDirectory", task_createCruiseDirectory)
-    debugPrint('   Task:', 'setCruiseDataDirectoryPermissions')
-    new_worker.register_task("setCruiseDataDirectoryPermissions", task_setCruiseDataDirectoryPermissions)
-    debugPrint('   Task:', 'rebuildCruiseDirectory')
-    new_worker.register_task("rebuildCruiseDirectory", task_rebuildCruiseDirectory)
+    debugPrint('   Task:', 'createLoweringDirectory')
+    new_worker.register_task("createLoweringDirectory", task_createLoweringDirectory)
+    debugPrint('   Task:', 'setLoweringDataDirectoryPermissions')
+    new_worker.register_task("setLoweringDataDirectoryPermissions", task_setLoweringDataDirectoryPermissions)
+    debugPrint('   Task:', 'rebuildLoweringDirectory')
+    new_worker.register_task("rebuildLoweringDirectory", task_rebuildLoweringDirectory)
 
     debugPrint('Waiting for jobs...')
     new_worker.work()

@@ -125,6 +125,91 @@ class Main extends Controller {
         View::render('Config/editCruiseID',$data, $error);
         View::rendertemplate('footer',$data);
     }
+
+    public function editLoweringID(){
+
+        if (!$this->_warehouseModel->showLoweringComponents()) {
+            Url::redirect('config');
+        }
+
+        $data['title'] = 'Configuration';
+        $data['css'] = array('datetimepicker');
+        $data['javascript'] = array('datetimepicker', 'loweringIDFormHelper');
+        $data['loweringID'] = $this->_warehouseModel->getLoweringID();
+        $data['loweringStartDate'] = $this->_warehouseModel->getLoweringStartDate();
+        $data['loweringEndDate'] = $this->_warehouseModel->getLoweringEndDate();
+        $data['lowerings'] = $this->_warehouseModel->getLowerings();
+        
+        if(isset($_POST['submit'])) {
+
+            $loweringID = null;
+            $setLatestLowering = false;
+
+            if ($_POST['loweringID']) {
+                $loweringID = $_POST['loweringID'];
+            } else {
+                $loweringID = $this->_warehouseModel->getLoweringID();
+            }
+            $loweringStartDate = $_POST['loweringStartDate'];
+            $loweringEndDate = $_POST['loweringEndDate'];
+
+            if (strcmp($loweringID, $this->_warehouseModel->getLoweringID()) != 0) {
+                $setLatestLowering = true;
+                $loweringDates = $this->_warehouseModel->getLoweringDates($_POST['loweringID']);
+                $loweringStartDate = $loweringDates['loweringStartDate'];
+                $loweringEndDate = $loweringDates['loweringEndDate'];
+            }
+
+            if($loweringID == ''){
+                $error[] = 'Lowering ID is required';
+            } elseif(!preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $loweringStartDate)){
+                $error[] = 'Valid Lowering Start Date is required';              
+            } elseif(strcmp($loweringEndDate,'') != 0 && !preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $loweringEndDate)){
+                $error[] = 'Improperly formatted Lowering End Date';
+            } else {
+                $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();
+                
+                if (!is_dir($warehouseData['shipboardDataWarehouseBaseDir'] . '/' . $this->_warehouseModel->getCruiseID() .'/' . $this->_warehouseModel->getLoweringDataBaseDir() . '/' . '/' . $loweringID)) {
+                    $error[] = 'A Lowering Data Directory for that Lowering ID does not exist';
+                }
+            }
+            
+            if(!$error){
+
+                $this->_warehouseModel->setLoweringID(array('value' => $loweringID));
+                $this->_warehouseModel->setLoweringStartDate(array('value' => $loweringStartDate));
+                $this->_warehouseModel->setLoweringEndDate(array('value' => $loweringEndDate));
+
+                //$_warehouseModel = new \models\warehouse();
+                $gmData['loweringID'] = $this->_warehouseModel->getLoweringID();
+        
+                # create the gearman client
+                $gmc= new \GearmanClient();
+
+                # add the default server (localhost)
+                $gmc->addServer();
+
+                #submit job to Gearman
+                #$job_handle = $gmc->doBackground("updateLoweringDirectory", json_encode($gmData));
+                $data['jobResults'] = json_decode($gmc->doNormal("setLoweringDataDirectoryPermissions", json_encode($gmData)));
+                $data['jobResults'] = json_decode($gmc->doNormal("exportOVDMConfig", json_encode($gmData)));
+
+                //var_dump($this->_warehouseModel->getLowerings());
+                //var_dump($this->_warehouseModel->getLatestLowering());
+        
+                sleep(1);
+                Session::set('message','Lowering ID Updated');
+                Url::redirect('config');
+            } else {
+                $data['loweringID'] = $loweringID;
+                $data['loweringStartDate'] = $loweringStartDate;
+            }
+        }
+        
+        View::rendertemplate('header',$data);
+        View::render('Config/editLoweringID',$data, $error);
+        View::rendertemplate('footer',$data);
+    }
     
     public function enableSystem() {
 
@@ -174,6 +259,42 @@ class Main extends Controller {
         View::rendertemplate('footer',$data);
     }
     
+
+    public function rebuildLoweringDirectory() {
+
+        //$_warehouseModel = new \models\warehouse();
+        $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        $gmData['loweringID'] = $this->_warehouseModel->getLoweringID();
+        
+        # create the gearman client
+        $gmc= new \GearmanClient();
+
+        # add the default server (localhost)
+        $gmc->addServer();
+
+        #submit job to Gearman
+        #$job_handle = $gmc->doBackground("updateCruiseDirectory", json_encode($gmData));
+        $data['jobResults'] = json_decode($gmc->doNormal("rebuildLoweringDirectory", json_encode($gmData)));
+    
+        #additional data needed for view
+        $data['title'] = 'Configuration';
+        $data['javascript'] = array('main_config');
+        #$data['cruiseID'] = $this->_warehouseModel->getCruiseID();
+        #$data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        #$data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
+        #$data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
+        $data['tasks'] = $this->_tasksModel->getTasks();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+        $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
+
+        $data['jobName'] = 'Rebuild Lowering Directory';
+
+        View::rendertemplate('header',$data);
+        View::render('Config/main',$data);
+        View::rendertemplate('footer',$data);
+    }
+
     public function rebuildMD5Summary() {
 
         //$_warehouseModel = new \Models\Warehouse();
@@ -227,8 +348,7 @@ class Main extends Controller {
             }
         }
 
-        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
-        
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers();
         $data['title'] = 'Configuration';
         $data['css'] = array('datetimepicker');
         $data['javascript'] = array('datetimepicker');
@@ -279,7 +399,7 @@ class Main extends Controller {
                 $data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
                 $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
                 $data['tasks'] = $this->_tasksModel->getTasks();
-                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers();
                 $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
                 $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
                 
@@ -319,7 +439,7 @@ class Main extends Controller {
                 }
             }
             
-            $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+            $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers();
             $data['shipToShoreTransfersEnable'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($SSDW->cruiseDataTransferID)[0]->enable;
 
         }
@@ -328,6 +448,110 @@ class Main extends Controller {
         View::render('Config/newCruiseID',$data, $error);
         View::rendertemplate('footer',$data);
     }
+
+
+    public function setupNewLowering() {
+
+        if (!$this->_warehouseModel->showLoweringComponents()) {
+            Url::redirect('config');
+        }
+
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getLoweringOnlyCollectionSystemTransfers();
+        $data['title'] = 'Configuration';
+        $data['css'] = array('datetimepicker');
+        $data['javascript'] = array('datetimepicker');
+        $data['loweringID'] = '';
+        $data['loweringStartDate'] = '';
+        $data['loweringEndDate'] = '';
+//        $error = array();
+
+        if(isset($_POST['submit'])){
+            $cruiseID = $this->_warehouseModel->getCruiseID();
+            $loweringDataBaseDir = $this->_warehouseModel->getLoweringDataBaseDir();
+            $loweringID = $_POST['loweringID'];
+            $loweringStartDate = $_POST['loweringStartDate'];
+            $loweringEndDate = $_POST['loweringEndDate'];
+
+            if($loweringID == ''){
+                $error[] = 'Lowering ID is required';
+            } elseif(!preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $loweringStartDate)){
+                $error[] = 'Valid Lowering Start Date is required';
+            } elseif($loweringEndDate != '' && !preg_match('/([0-9]{4})\/([0-9]{2})\/([0-9]{2}) ([0-9]{2}):([0-9]{2})/', $loweringEndDate)){
+                $error[] = 'Improperly formatted Lowering End Date';
+            } else {
+                $warehouseData = $this->_warehouseModel->getShipboardDataWarehouseConfig();  
+                if (is_dir($warehouseData['shipboardDataWarehouseBaseDir'] . '/' . $cruiseID . '/' . $loweringDataBaseDir . '/' . $loweringID)) {
+                    $error[] = 'A Loweing Data Directory for that Lowering ID already exists';
+                }
+            }
+                
+            if(!$error){
+                
+                $this->_warehouseModel->setLoweringID(array('value' => $loweringID));
+                $this->_warehouseModel->setLoweringStartDate(array('value' => $loweringStartDate));
+                $this->_warehouseModel->setLoweringEndDate(array('value' => $loweringEndDate));
+                $gmData['loweringID'] = $this->_warehouseModel->getLoweringID();
+        
+                # create the gearman client
+                $gmc= new \GearmanClient();
+
+                # add the default server (localhost)
+                $gmc->addServer();
+
+                #submit job to Gearman
+                $data['jobResults'] = json_decode($gmc->doNormal("setupNewLowering", json_encode($gmData)));
+    
+        
+                #additional data needed for view
+                $data['title'] = 'Configuration';
+                $data['javascript'] = array('main_config');
+                //$data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
+                //$data['loweringID'] = $this->_warehouseModel->getLoweringID();                                                           
+                //$data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
+                $data['tasks'] = $this->_tasksModel->getTasks();
+                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getLoweringOnlyCollectionSystemTransfers();
+                //$data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+                //$data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
+                
+                $data['jobName'] = 'Setup New Lowering';
+
+                View::rendertemplate('header',$data);
+                View::render('Config/main',$data);
+                View::rendertemplate('footer',$data);
+
+                return true;
+
+            } else {
+                $data['loweringID'] = $loweringID;
+                $data['loweringStartDate'] = $loweringStartDate;
+                $data['loweringEndDate'] = $loweringEndDate;
+            }
+        } elseif(isset($_POST)) {
+            $data['loweringID'] = $_POST['loweringID'];
+            $data['loweringStartDate'] = $_POST['loweringStartDate'];
+            $data['loweringEndDate'] = $_POST['loweringEndDate'];
+            
+            foreach($data['collectionSystemTransfers'] as $row) {
+                if(isset($_POST['enableCS' . $row->collectionSystemTransferID])) {
+                    $this->_collectionSystemTransfersModel->enableCollectionSystemTransfer($row->collectionSystemTransferID);
+                    break;
+                }
+                if(isset($_POST['disableCS' . $row->collectionSystemTransferID])) {
+                    $this->_collectionSystemTransfersModel->disableCollectionSystemTransfer($row->collectionSystemTransferID);
+                    break;
+                }
+            }
+            
+            $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getLoweringOnlyCollectionSystemTransfers();
+            //$data['shipToShoreTransfersEnable'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($SSDW->cruiseDataTransferID)[0]->enable;
+
+        }
+        
+        View::rendertemplate('header',$data);
+        View::render('Config/newLoweringID',$data, $error);
+        View::rendertemplate('footer',$data);
+    }
+
     
     public function finalizeCurrentCruise() {
 
@@ -348,6 +572,32 @@ class Main extends Controller {
         Url::redirect('config');
     
     }
+
+    public function finalizeCurrentLowering() {
+
+        if (!$this->_warehouseModel->showLoweringComponents()) {
+            Url::redirect('config');
+        }
+
+
+        $gmData = array();
+        
+        # create the gearman client
+        $gmc= new \GearmanClient();
+
+        # add the default server (localhost)
+        $gmc->addServer();
+
+        #submit job to Gearman
+        #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
+        $data['jobResults'] = json_decode($gmc->doBackground("finalizeCurrentLowering", json_encode($gmData)));
+        
+        sleep(1);
+
+        Url::redirect('config');
+    
+    }
+
     
     public function exportOVDMConfig() {
         
@@ -369,6 +619,26 @@ class Main extends Controller {
     
     }
     
+    public function exportLoweringConfig() {
+        
+        $gmData = array();
+        
+        # create the gearman client
+        $gmc= new \GearmanClient();
+
+        # add the default server (localhost)
+        $gmc->addServer();
+
+        #submit job to Gearman
+        #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
+        $data['jobResults'] = json_decode($gmc->doBackground("exportLoweringConfig", json_encode($gmData)));
+        
+        sleep(1);
+
+        Url::redirect('config');
+    
+    }
+
     public function rsyncPublicDataToCruiseData() {
         
         $gmData = array();

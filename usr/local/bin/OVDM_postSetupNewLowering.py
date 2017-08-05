@@ -1,17 +1,17 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_postCollectioSystemTransfer.py
+#         FILE:  OVDM_postSetupNewLowering.py
 #
 #  DESCRIPTION:  Gearman worker that run user-defined scripts following the completion
-#                of the runCollectionSystemTransfer tasks.
+#                of the setupNewLowering task.
 #
 #         BUGS:
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
-#      CREATED:  2016-02-09
-#     REVISION:  2017-08-05
+#      CREATED:  2017-07-17
+#     REVISION:  
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
@@ -48,12 +48,12 @@ import openvdm
 customTaskLookup = [
     {
         "taskID": "0",
-        "name": "postCollectionSystemTransfer",
-        "longName": "Post Collection System Transfer",
+        "name": "postSetupNewLowering",
+        "longName": "Post Setup New Lowering",
     }
 ]
 
-commandFile = '/usr/local/etc/openvdm/postCollectionSystemTransfer.yaml'
+commandFile = '/usr/local/etc/openvdm/postSetupNewLowering.yaml'
 
 DEBUG = False
 new_worker = None
@@ -73,37 +73,25 @@ def getCommands(worker):
 
     try:
         f = open(commandFile, 'r')
-        collectionSystemCommands = yaml.load(f.read())
+        Commands = yaml.load(f.read())
         f.close()
     except:
         errPrint("ERROR: Could not process configuration file:", commandFile + "!")
         return None
     
-    if collectionSystemCommands:
-        debugPrint("commands to process")
-        for collectionSystemCommand in collectionSystemCommands:
-            if collectionSystemCommand['collectionSystemTransferName'] == worker.collectionSystemTransfer['name']:
-                #debugPrint('CollectionSystem Command:',json.dumps(collectionSystemCommand))
-                returnCommandList = collectionSystemCommand['commandList']
-                debugPrint(json.dumps(returnCommandList))
-                for command in returnCommandList:
-                    debugPrint("Raw Command:", json.dumps(command))
-                    #print "Replacing cruiseID"
-                    command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
-                    #print "Replacing collectionSystemTransferID"
-                    command['command'] = [arg.replace('{collectionSystemTransferID}', worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
-                    #print "Replacing collectionSystemTransferName"
-                    command['command'] = [arg.replace('{collectionSystemTransferName}', worker.collectionSystemTransfer['name']) for arg in command['command']]
-                    #print "Replacing newFiles"
-                    command['command'] = [arg.replace('{newFiles}', "'" + json.dumps(worker.files['new']) + "'") for arg in command['command']]
-                    #print "Replacing updatedFiles"
-                    command['command'] = [arg.replace('{updatedFiles}', "'" + json.dumps(worker.files['updated']) + "'" ) for arg in command['command']]
-                    
-                debugPrint("Processed Command:", json.dumps(returnCommandList))
-                return returnCommandList
-    else:
-        debugPrint('Command list file is empty')
+    try:
+        returnCommandList = Commands['commandList']
+        for command in returnCommandList:
+            #debugPrint(" Raw Command:", ' '.join(command['command']))
+            command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
+            command['command'] = [arg.replace('{loweringID}', worker.loweringID) for arg in command['command']]
+            #debugPrint("Proc Command:", ' '.join(command['command']))
+        return returnCommandList
+    except AttributeError:
+        errPrint('Command list file is malformed', Commands)
+        return []
 
+    debugPrint('No commands found')
     return []
     
 
@@ -114,7 +102,7 @@ def runCommands(commands, worker):
         try:
             s = ' '
             debugPrint("Executing:", s.join(command['command']))
-            proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            proc = subprocess.Popen(s.join(command['command']), shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             out, err = proc.communicate()            
             
             if len(out) > 0:
@@ -127,7 +115,7 @@ def runCommands(commands, worker):
 
         except:
             errPrint("Error executing the: " + command['name'] + " script: ", s.join(command['command']))
-            worker.OVDM.sendMsg("Error executing postCollectionSystemTransfer script", command['name'])
+            worker.OVDM.sendMsg("Error executing postSetupNewLowering script", command['name'])
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
@@ -136,8 +124,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
-        self.collectionSystemTransfer = {}
-        self.files = {}
+        self.loweringID = ''
         self.shipboardDataWarehouseConfig = {}
         self.task = None
 
@@ -164,14 +151,24 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
 
         self.cruiseID = self.OVDM.getCruiseID()
+        self.loweringID = self.OVDM.getLoweringID()
+
         if len(payloadObj) > 0:
             try:
                 payloadObj['cruiseID']
             except KeyError:
-            	debugPrint("Using current CruiseID")
+                debugPrint("Using current CruiseID")
             else:
                 self.cruiseID = payloadObj['cruiseID']
                 debugPrint('Setting cruiseID to:', self.cruiseID)
+
+            try:
+                payloadObj['loweringID']
+            except KeyError:
+                debugPrint("Using current LoweringID")
+            else:
+                self.loweringID = payloadObj['loweringID']
+                debugPrint('Setting loweringID to:', self.loweringID)
 
         if len(payloadObj) > 0:
             try:
@@ -254,7 +251,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         debugPrint("Quitting worker...")
 
         
-def task_postCollectionSystemTransfer(worker, job):
+def task_postSetupNewLowering(worker, job):
 
     job_results = {'parts':[]}
 
@@ -271,22 +268,22 @@ def task_postCollectionSystemTransfer(worker, job):
 
     
     #print "Get Commands"
-    commandsForCollectionSystem = getCommands(worker)
+    commands = getCommands(worker)
     
-    if commandsForCollectionSystem == None:
+    if commands == None:
         job_results['parts'].append({"partName": "Get Commands", "result": "Fail"})
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
-        debugPrint("Commands:", json.dumps(commandsForCollectionSystem, indent=2))
-        if len(commandsForCollectionSystem) == 0:
+        debugPrint("Commands:", json.dumps(commands, indent=2))
+        if len(commands) == 0:
             #debugPrint("Nothing to do")
             return json.dumps(job_results)
     
     worker.send_job_status(job, 3, 10)
 
     debugPrint("Run Commands")
-    runCommands(commandsForCollectionSystem, worker)
+    runCommands(commands, worker)
 
     debugPrint("done")
     
@@ -300,7 +297,7 @@ def task_postCollectionSystemTransfer(worker, job):
 # -------------------------------------------------------------------------------------
 def main(argv):
 
-    parser = argparse.ArgumentParser(description='Handle MD5 Summary related tasks')
+    parser = argparse.ArgumentParser(description='Handle post setup new lowering tasks')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
     args = parser.parse_args()
@@ -325,11 +322,11 @@ def main(argv):
     signal.signal(signal.SIGQUIT, sigquit_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    new_worker.set_client_id('postCollectionSystemTransfer.py')
+    new_worker.set_client_id('postSetupNewLowering.py')
 
     debugPrint('Registering worker tasks...')
-    debugPrint('   Task:', 'postCollectionSystemTransfer')
-    new_worker.register_task("postCollectionSystemTransfer", task_postCollectionSystemTransfer)
+    debugPrint('   Task:', 'postSetupNewLowering')
+    new_worker.register_task("postSetupNewLowering", task_postSetupNewLowering)
 
     debugPrint('Waiting for jobs...')
     new_worker.work()

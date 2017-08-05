@@ -8,12 +8,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.2
+#      VERSION:  2.3
 #      CREATED:  2016-02-02
-#     REVISION:  2016-10-30
+#     REVISION:  2016-08-05
 #
-# LICENSE INFO: Open Vessel Data Management v2.2 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2016
+# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -67,9 +67,28 @@ class OpenVDM():
         return self.config['showOnlyCurrentCruiseDir']
 
 
+    def showLoweringComponents(self):
+
+        url = self.config['siteRoot'] + 'api/warehouse/showLoweringComponents'
+        r = requests.get(url)
+        if r.text == 'true':
+            return True
+        else:
+            return False
+
+
     def getOVDMConfig(self):
 
         url = self.config['siteRoot'] + 'api/warehouse/getCruiseConfig'
+        r = requests.get(url)
+        returnObj = json.loads(r.text)
+        returnObj['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
+        return returnObj
+
+
+    def getLoweringConfig(self):
+
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringConfig'
         r = requests.get(url)
         returnObj = json.loads(r.text)
         returnObj['configCreatedOn'] = datetime.datetime.utcnow().strftime("%Y/%m/%dT%H:%M:%SZ")
@@ -144,6 +163,29 @@ class OpenVDM():
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal['cruiseEndDate']
+
+    def getLoweringID(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringID'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['loweringID']
+    
+    
+    def getLoweringStartDate(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringStartDate'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['loweringStartDate']
+    
+    
+    def getLoweringEndDate(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringEndDate'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal['loweringEndDate']
     
     
     def getExtraDirectory(self, extraDirectoryID):
