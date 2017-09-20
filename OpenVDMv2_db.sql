@@ -332,8 +332,9 @@ VALUES
   (6,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0),
   (7,'rsyncPublicDataToCruiseData','Copy PublicData to Cruise Data',2,1,0),
   (8,'setupNewLowering','Setup New Lowering',2,1,0),
-  (9,'rebuildLoweringDirectory','Rebuild Lowering Directory',2,1,0),
-  (10,'exportLoweringConfig','Re-export the Lowering Configuration',2,1,0);
+  (9,'finalizeCurrentCruise','Finalize Current Cruise',2,1,0),
+  (10,'rebuildLoweringDirectory','Rebuild Lowering Directory',2,1,0),
+  (11,'exportLoweringConfig','Re-export the Lowering Configuration',2,1,0);
 
 /*!40000 ALTER TABLE `OVDM_Tasks` ENABLE KEYS */;
 UNLOCK TABLES;

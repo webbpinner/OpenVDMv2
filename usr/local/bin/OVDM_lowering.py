@@ -274,6 +274,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_execute(self, current_job):
         self.get_task(current_job)
         payloadObj = json.loads(current_job.data)
+        debugPrint(current_job)
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         
         self.cruiseID = self.OVDM.getCruiseID()
@@ -493,6 +494,7 @@ def task_finalizeCurrentLowering(worker, job):
     if os.path.exists(loweringDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
+        errorPrint("Failed to find lowering directory:", loweringDir)
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
@@ -516,7 +518,6 @@ def task_finalizeCurrentLowering(worker, job):
     for collectionSystemTransfer in collectionSystemTransfers:
 
         if collectionSystemTransfer['cruiseOrLowering'] == '1':
-
             debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
             gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
         
@@ -625,7 +626,7 @@ def task_exportLoweringConfig(worker, job):
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
     loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
     loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
-    
+
     worker.send_job_status(job, 1, 10)
 
     if os.path.exists(loweringDir) and (worker.loweringID != ''):
@@ -633,7 +634,7 @@ def task_exportLoweringConfig(worker, job):
     else:
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
         return json.dumps(job_results)
-    
+
     worker.send_job_status(job, 3, 10)
 
     #build OpenVDM Config file
