@@ -28,7 +28,7 @@ use Helpers\Form;
     <div class="row">
         <div class="col-lg-6">
             <div class="panel panel-default">
-                <div class="panel-heading">Edit CruiseID</div>
+                <div class="panel-heading">Edit Current Cruise</div>
                 <div class="panel-body">
                     <?php echo Form::open(array('role'=>'form', 'method'=>'post')); ?>
                         <div class="row">
@@ -68,6 +68,17 @@ use Helpers\Form;
                                         <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
+                                <label>Other Options</label>
+                                <table class='table table-striped table-hover table-bordered responsive'>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th style='width:20px;'>Enabled</th>
+                                    </tr>
+                                    <tr>
+                                        <td>Show Lowering Components</td><td style='width:20px; text-align:center'><?php echo $data['showLoweringComponents'] === True ? Form::submit(array('name'=>'hideLoweringComponents', 'class'=>'btn btn-xs btn-success', 'value'=>'On')): Form::submit(array('name'=>'showLoweringComponents', 'class'=>'btn btn-xs btn-danger', 'value'=>'Off')); ?></td>
+                                    </tr>
+                                </table>
+
                             </div>
                         </div>
                         <div class="row">

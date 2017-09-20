@@ -50,6 +50,18 @@ class CollectionSystemTransfers extends Controller {
         echo json_encode($this->_collectionSystemTransfersModel->getCollectionSystemTransfers());
     }
     
+    public function getActiveCollectionSystemTransfers(){
+        echo json_encode($this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers());
+    }
+
+    public function getCruiseOnlyCollectionSystemTransfers(){
+        echo json_encode($this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers());
+    }
+
+    public function getLoweringOnlyCollectionSystemTransfers(){
+        echo json_encode($this->_collectionSystemTransfersModel->getLoweringOnlyCollectionSystemTransfers());
+    }
+
     public function getCollectionSystemTransfer($id){
         echo json_encode($this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id));
     }

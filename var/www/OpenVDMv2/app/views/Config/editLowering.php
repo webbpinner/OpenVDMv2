@@ -28,7 +28,7 @@ use Helpers\Form;
     <div class="row">
         <div class="col-lg-6">
             <div class="panel panel-default">
-                <div class="panel-heading">Edit LoweringID</div>
+                <div class="panel-heading">Edit Current Lowering</div>
                 <div class="panel-body">
                     <?php echo Form::open(array('role'=>'form', 'method'=>'post')); ?>
                         <div class="row">

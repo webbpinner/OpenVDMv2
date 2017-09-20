@@ -479,8 +479,8 @@ def task_finalizeCurrentLowering(worker, job):
 
     worker.send_job_status(job, 1, 10)
 
-
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
     loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
     loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
 
@@ -490,7 +490,7 @@ def task_finalizeCurrentLowering(worker, job):
     #scienceDir = worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir']
     #debugPrint('Science Dir:', scienceDir)
 
-    if os.path.exists(loweringDir):
+    if os.path.exists(loweringDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
@@ -515,7 +515,7 @@ def task_finalizeCurrentLowering(worker, job):
 
     for collectionSystemTransfer in collectionSystemTransfers:
 
-        if collectionSystemTransfer['cruiseOrLowering'] == 1:
+        if collectionSystemTransfer['cruiseOrLowering'] == '1':
 
             debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
             gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
@@ -621,13 +621,14 @@ def task_exportLoweringConfig(worker, job):
 
     job_results = {'parts':[]}
 
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
     loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
     loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
     
     worker.send_job_status(job, 1, 10)
 
-    if os.path.exists(loweringDir):
+    if os.path.exists(loweringDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})

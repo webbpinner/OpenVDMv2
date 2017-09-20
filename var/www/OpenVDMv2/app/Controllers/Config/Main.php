@@ -35,8 +35,8 @@ class Main extends Controller {
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['tasks'] = $this->_tasksModel->getTasks();
-        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $data['tasks'] = $this->_tasksModel->getActiveTasks();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
         
@@ -45,15 +45,16 @@ class Main extends Controller {
         View::rendertemplate('footer',$data);
     }
     
-    public function editCruiseID(){
+    public function editCruise(){
 
         $data['title'] = 'Configuration';
         $data['css'] = array('datetimepicker');
-        $data['javascript'] = array('datetimepicker', 'cruiseIDFormHelper');
+        $data['javascript'] = array('datetimepicker', 'cruiseFormHelper');
         $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
         $data['cruises'] = $this->_warehouseModel->getCruises();
+        $data['showLoweringComponents'] = $this->_warehouseModel->getShowLoweringComponents();
         
         if(isset($_POST['submit'])) {
 
@@ -95,6 +96,21 @@ class Main extends Controller {
                 $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
                 $this->_warehouseModel->setCruiseEndDate(array('value' => $cruiseEndDate));
 
+                $loweringID = $this->_warehouseModel->getLatestLowering();
+
+                if ($loweringID) {
+                    $this->_warehouseModel->setLoweringID(array('value' => $loweringID));
+                
+                    $loweringDates = $this->_warehouseModel->getLoweringDates();
+
+                    $this->_warehouseModel->setLoweringStartDate(array('value' => $loweringDates['loweringStartDate']));
+                    $this->_warehouseModel->setLoweringEndDate(array('value' => $loweringDates['loweringEndDate']));                
+                } else {
+                    $this->_warehouseModel->setLoweringID(array('value' => ''));
+                    $this->_warehouseModel->setLoweringStartDate(array('value' => ''));
+                    $this->_warehouseModel->setLoweringEndDate(array('value' => ''));  
+                }
+
                 //$_warehouseModel = new \models\warehouse();
                 $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
@@ -119,16 +135,27 @@ class Main extends Controller {
                 $data['cruiseID'] = $cruiseID;
                 $data['cruiseStartDate'] = $cruiseStartDate;
             }
+        } elseif(isset($_POST)) {
+        
+            if(isset($_POST['hideLoweringComponents'])) {
+                $this->_warehouseModel->hideLoweringComponents();
+            }
+            
+            if(isset($_POST['showLoweringComponents'])) {
+                $this->_warehouseModel->showLoweringComponents();
+            }
+
+            $data['showLoweringComponents'] = $this->_warehouseModel->getShowLoweringComponents();
         }
         
         View::rendertemplate('header',$data);
-        View::render('Config/editCruiseID',$data, $error);
+        View::render('Config/editCruise',$data, $error);
         View::rendertemplate('footer',$data);
     }
 
-    public function editLoweringID(){
+    public function editLowering(){
 
-        if (!$this->_warehouseModel->showLoweringComponents()) {
+        if (!$this->_warehouseModel->getShowLoweringComponents()) {
             Url::redirect('config');
         }
 
@@ -139,7 +166,7 @@ class Main extends Controller {
         $data['loweringStartDate'] = $this->_warehouseModel->getLoweringStartDate();
         $data['loweringEndDate'] = $this->_warehouseModel->getLoweringEndDate();
         $data['lowerings'] = $this->_warehouseModel->getLowerings();
-        
+
         if(isset($_POST['submit'])) {
 
             $loweringID = null;
@@ -207,7 +234,7 @@ class Main extends Controller {
         }
         
         View::rendertemplate('header',$data);
-        View::render('Config/editLoweringID',$data, $error);
+        View::render('Config/editLowering',$data, $error);
         View::rendertemplate('footer',$data);
     }
     
@@ -247,8 +274,8 @@ class Main extends Controller {
         $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
         $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['tasks'] = $this->_tasksModel->getTasks();
-        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $data['tasks'] = $this->_tasksModel->getActiveTasks();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
 
@@ -283,8 +310,8 @@ class Main extends Controller {
         #$data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
         #$data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
         #$data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-        $data['tasks'] = $this->_tasksModel->getTasks();
-        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $data['tasks'] = $this->_tasksModel->getActiveTasks();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
 
@@ -349,6 +376,7 @@ class Main extends Controller {
         }
 
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers();
+        $data['showLoweringComponents'] = $this->_warehouseModel->getShowLoweringComponents();
         $data['title'] = 'Configuration';
         $data['css'] = array('datetimepicker');
         $data['javascript'] = array('datetimepicker');
@@ -380,6 +408,11 @@ class Main extends Controller {
                 $this->_warehouseModel->setCruiseID(array('value' => $cruiseID));
                 $this->_warehouseModel->setCruiseStartDate(array('value' => $cruiseStartDate));
                 $this->_warehouseModel->setCruiseEndDate(array('value' => $cruiseEndDate));
+
+                $this->_warehouseModel->setLoweringID(array('value' => ''));
+                $this->_warehouseModel->setLoweringStartDate(array('value' => ''));
+                $this->_warehouseModel->setLoweringEndDate(array('value' => ''));
+
                 $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
         
                 # create the gearman client
@@ -398,8 +431,8 @@ class Main extends Controller {
                 $data['javascript'] = array('main_config');
                 $data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
                 $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-                $data['tasks'] = $this->_tasksModel->getTasks();
-                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers();
+                $data['tasks'] = $this->_tasksModel->getActiveTasks();
+                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
                 $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
                 $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
                 
@@ -420,6 +453,15 @@ class Main extends Controller {
             $data['cruiseID'] = $_POST['cruiseID'];
             $data['cruiseStartDate'] = $_POST['cruiseStartDate'];
             $data['cruiseEndDate'] = $_POST['cruiseEndDate'];
+
+            if(isset($_POST['hideLoweringComponents'])) {
+                $this->_warehouseModel->hideLoweringComponents();
+            }
+            
+            if(isset($_POST['showLoweringComponents'])) {
+                $this->_warehouseModel->showLoweringComponents();
+            }
+
             if(isset($_POST['disableSSDW'])) {
                 $this->_cruiseDataTransfersModel->disableCruiseDataTransfer($SSDW->cruiseDataTransferID);
             }
@@ -441,18 +483,19 @@ class Main extends Controller {
             
             $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCruiseOnlyCollectionSystemTransfers();
             $data['shipToShoreTransfersEnable'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($SSDW->cruiseDataTransferID)[0]->enable;
+            $data['showLoweringComponents'] = $this->_warehouseModel->getShowLoweringComponents();
 
         }
         
         View::rendertemplate('header',$data);
-        View::render('Config/newCruiseID',$data, $error);
+        View::render('Config/newCruise',$data, $error);
         View::rendertemplate('footer',$data);
     }
 
 
     public function setupNewLowering() {
 
-        if (!$this->_warehouseModel->showLoweringComponents()) {
+        if (!$this->_warehouseModel->getShowLoweringComponents()) {
             Url::redirect('config');
         }
 
@@ -505,13 +548,8 @@ class Main extends Controller {
                 #additional data needed for view
                 $data['title'] = 'Configuration';
                 $data['javascript'] = array('main_config');
-                //$data['cruiseID'] = $this->_warehouseModel->getCruiseID();                                                           
-                //$data['loweringID'] = $this->_warehouseModel->getLoweringID();                                                           
-                //$data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
-                $data['tasks'] = $this->_tasksModel->getTasks();
-                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getLoweringOnlyCollectionSystemTransfers();
-                //$data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
-                //$data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
+                $data['tasks'] = $this->_tasksModel->getActiveTasks();
+                $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
                 
                 $data['jobName'] = 'Setup New Lowering';
 
@@ -543,12 +581,11 @@ class Main extends Controller {
             }
             
             $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getLoweringOnlyCollectionSystemTransfers();
-            //$data['shipToShoreTransfersEnable'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($SSDW->cruiseDataTransferID)[0]->enable;
-
+            
         }
         
         View::rendertemplate('header',$data);
-        View::render('Config/newLoweringID',$data, $error);
+        View::render('Config/newLowering',$data, $error);
         View::rendertemplate('footer',$data);
     }
 
@@ -575,7 +612,7 @@ class Main extends Controller {
 
     public function finalizeCurrentLowering() {
 
-        if (!$this->_warehouseModel->showLoweringComponents()) {
+        if (!$this->_warehouseModel->getShowLoweringComponents()) {
             Url::redirect('config');
         }
 

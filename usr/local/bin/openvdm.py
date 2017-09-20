@@ -67,9 +67,9 @@ class OpenVDM():
         return self.config['showOnlyCurrentCruiseDir']
 
 
-    def showLoweringComponents(self):
+    def getShowLoweringComponents(self):
 
-        url = self.config['siteRoot'] + 'api/warehouse/showLoweringComponents'
+        url = self.config['siteRoot'] + 'api/warehouse/getShowLoweringComponents'
         r = requests.get(url)
         if r.text == 'true':
             return True
@@ -299,6 +299,14 @@ class OpenVDM():
         return returnVal
 
     
+    def getActiveTasks(self):
+
+        url = self.config['siteRoot'] + 'api/tasks/getActiveTasks'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal
+
+
     def getTask(self, taskID):
 
         url = self.config['siteRoot'] + 'api/tasks/getTask/' + taskID
@@ -319,6 +327,14 @@ class OpenVDM():
         return returnVal
 
     
+    def getActiveCollectionSystemTransfers(self):
+
+        url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getActiveCollectionSystemTransfers'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal
+
+
     def getCollectionSystemTransfer(self, collectionSystemTransferID):
 
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfer/' + collectionSystemTransferID

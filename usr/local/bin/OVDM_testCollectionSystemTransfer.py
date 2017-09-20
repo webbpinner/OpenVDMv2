@@ -408,7 +408,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             else:
                 self.cruiseID = payloadObj['cruiseID']
 
-            if self.OVDM.showLoweringComponents:
+            if self.OVDM.getShowLoweringComponents:
                 try:
                     payloadObj['loweringID']
                 except KeyError:

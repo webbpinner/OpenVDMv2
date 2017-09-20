@@ -2,7 +2,8 @@ $(function () {
     'use strict';
     
     function updateCollectionSystemTransferStatusList(collectionSystemTransferStatusList) {
-        var collectionSystemTransferStatusURL = siteRoot + 'api/collectionSystemTransfers/getCollectionSystemTransfersStatuses';
+
+        var collectionSystemTransferStatusURL = siteRoot + 'api/collectionSystemTransfers/getActiveCollectionSystemTransfers';
         $.getJSON(collectionSystemTransferStatusURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 var output = '';
@@ -40,7 +41,7 @@ $(function () {
     }
     
     function updateTaskStatusList(taskList) {
-        var taskStatusURL = siteRoot + 'api/tasks/getTasks';
+        var taskStatusURL = siteRoot + 'api/tasks/getActiveTasks'
         $.getJSON(taskStatusURL, function (data, status) {
             if (status === 'success' && data !== null) {
                 var output = '';

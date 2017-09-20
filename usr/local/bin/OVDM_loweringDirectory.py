@@ -345,7 +345,7 @@ def task_createLoweringDirectory(worker, job):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
         return json.dumps(job_results)
 
-    if os.path.exists(loweringDataBaseDir):
+    if os.path.exists(loweringDataBaseDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Data Directory exists", "result": "Pass"})
     else:
         errPrint("Lowering directory already exists:", loweringDir)
@@ -445,15 +445,15 @@ def task_rebuildLoweringDirectory(worker, job):
 #        job_results['parts'].append({"partName": "Clear LoweringData Directory Read Permissions", "result": "Pass"})
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    debugPrint(baseDir)
+    # debugPrint(baseDir)
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
-    debugPrint(cruiseDir)
+    # debugPrint(cruiseDir)
     loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
-    debugPrint(loweringDataBaseDir)
+    # debugPrint(loweringDataBaseDir)
     loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
-    debugPrint(loweringDir)
+    # debugPrint(loweringDir)
     
-    if os.path.exists(loweringDir):
+    if os.path.exists(loweringDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         errPrint("Lowering directory not found")

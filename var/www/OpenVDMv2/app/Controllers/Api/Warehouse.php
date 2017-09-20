@@ -43,7 +43,7 @@ class Warehouse extends Controller {
         echo json_encode($response);
     }
     
-    // getFreeSpace - return the free space on the server.
+    // getShipboardDataWarehouseConfig - return the shipboard data warehouse configuration.
 	public function getShipboardDataWarehouseConfig() {
 
         echo json_encode($this->_warehouseModel->getShipboardDataWarehouseConfig());
@@ -52,13 +52,16 @@ class Warehouse extends Controller {
     // getFreeSpace - return the free space on the server.
 	public function getFreeSpace() {
 
-        echo json_encode($this->_warehouseModel->getFreeSpace());
+        $data['freeSpace'] = $this->_warehouseModel->getFreeSpace()['freeSpace'];
+        $data['totalSpace'] = $this->_warehouseModel->getTotalSpace()['totalSpace'];
+
+        echo json_encode($data);
     }
 
-    // getFreeSpace - return the free space on the server.
-    public function showLoweringComponents() {
+    // getShowLoweringComponents - return whether or not to show lowering components.
+    public function getShowLoweringComponents() {
 
-        echo json_encode($this->_warehouseModel->showLoweringComponents());
+        echo json_encode($this->_warehouseModel->getShowLoweringComponents());
     }
 
 	// getCruiseSize - return the size of the cruise directory.
@@ -88,10 +91,19 @@ class Warehouse extends Controller {
         echo json_encode($response);
     }
 
-        // getLoweringSize - return the size of the lowering directory.
+    // getLoweringSize - return the size of the lowering directory.
     public function getLoweringSize() {
 
-        echo json_encode($this->_warehouseModel->getLoweringSize());
+        if(strcmp($this->_warehouseModel->getLoweringID(), '') === 0){
+            $data['loweringSize'] = 'Undefined';
+            echo json_encode($data);
+
+        } else {
+
+            echo json_encode($this->_warehouseModel->getLoweringSize());
+
+        }
+
     }
     
     // getLoweringID - return the current lowering ID.
@@ -190,7 +202,7 @@ class Warehouse extends Controller {
         $response['cruiseDataTransfersConfig'] = $cruiseDataTransfersModel->getCruiseDataTransfersConfig();
         $response['shipToShoreTransfersConfig'] = $shipToShoreTransfersModel->getShipToShoreTransfersConfig();
 
-        if($this->_warehouseModel->showLoweringComponents()) {
+        if($this->_warehouseModel->getShowLoweringComponents()) {
             $response['loweringDataBaseDir'] = $this->_warehouseModel->getLoweringDataBaseDir();
         }
 
@@ -199,7 +211,7 @@ class Warehouse extends Controller {
             $collectionSystemTransfersConfig->destDir = $this->translateOVDMVariables($collectionSystemTransfersConfig->destDir);
         }
 
-        echo json_encode($response, JSON_PRETTY_PRINT);
+        echo json_encode($response);
     
     }
 
@@ -221,7 +233,7 @@ class Warehouse extends Controller {
             $collectionSystemTransfersConfig->destDir = $this->translateOVDMVariables($collectionSystemTransfersConfig->destDir);
         }
 
-        echo json_encode($response, JSON_PRETTY_PRINT);
+        echo json_encode($response);
     
     }
     

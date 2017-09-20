@@ -15,6 +15,18 @@ class Tasks extends Controller {
         echo json_encode($this->_tasksModel->getTasks());
     }
     
+    public function getActiveTasks(){
+        echo json_encode($this->_tasksModel->getActiveTasks());
+    }
+
+    public function getCruiseOnlyTasks(){
+        echo json_encode($this->_tasksModel->getCruiseOnlyTasks());
+    }
+
+    public function getLoweringOnlyTasks(){
+        echo json_encode($this->_tasksModel->getLoweringOnlyTasks());
+    }
+
     public function getTask($id){
         echo json_encode($this->_tasksModel->getTask($id));
     }

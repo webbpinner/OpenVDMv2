@@ -20,12 +20,29 @@ class Warehouse extends Model {
         return $data;
     }
     
+
+    public function getTotalSpace() {
+        $baseDir = $this->getShipboardDataWarehouseBaseDir();
+        if (is_dir($baseDir)){
+            $data['totalSpace'] = disk_total_space($baseDir);
+        } else {
+            $data['error'] = '(getFreeSpace) Base Directory: ' . $baseDir . ' is not a directory';            
+        }
+        
+        return $data;
+    }
+
    	public function getCruiseSize() {
         $baseDir = $this->getShipboardDataWarehouseBaseDir();
         $cruiseID = $this->getCruiseID();
         if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID)){
-            $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID);
-            $data['cruiseSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+            try {
+                $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID);
+                $data['cruiseSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+            } catch (Exception $e) {
+                $data['error'] = '(getCruiseSize) Unable to get size of cruise directory';                            
+            }
+
         } else {
             $data['error'] = '(getCruiseSize) Cruise Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . ' is not a directory';            
         }
@@ -39,8 +56,13 @@ class Warehouse extends Model {
         $loweringDataBaseDir = $this->getLoweringDataBaseDir();
         $loweringID = $this->getLoweringID();
         if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID)){
-            $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID);
-            $data['loweringSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+            try {
+                $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID);
+                $data['loweringSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+            } catch (Exception $e) {
+                $data['error'] = '(getLoweringSize) Unable to get size of lowering directory';                            
+            }
+
         } else {
             $data['error'] = '(getLoweringSize) Lowering Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID . ' is not a directory';            
         }
@@ -58,8 +80,10 @@ class Warehouse extends Model {
         }
     }
 
-    public function showLoweringComponents(){
-        if(strcmp(SHOW_LOWERING_COMPONENTS, "Yes") == 0 ){
+    public function getShowLoweringComponents(){
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'showLoweringComponents'");
+#        if(strcmp(SHOW_LOWERING_COMPONENTS, "Yes") == 0 ){
+        if(strcmp($row[0]->value, "Yes") == 0 ){
             return true;
         } else {
             return false;
@@ -179,6 +203,18 @@ class Warehouse extends Model {
         $this->db->update(PREFIX."CoreVars",$data, $where);
     }
     
+    public function showLoweringComponents(){
+        $data = array('value' => 'Yes');   
+        $where = array('name' => 'showLoweringComponents');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+    }
+
+    public function hideLoweringComponents(){
+        $data = array('value' => 'No');   
+        $where = array('name' => 'showLoweringComponents');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+    }
+
     public function setShipToShoreBWLimit($data){
         $where = array('name' => 'shipToShoreBWLimit');
         $this->db->update(PREFIX."CoreVars",$data, $where);

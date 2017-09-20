@@ -76,7 +76,7 @@ class CollectionSystemTransfers extends Controller {
             #submit job to Gearman
             $job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
 
-            if($_warehouseModel->showLoweringComponents()) {
+            if($_warehouseModel->getShowLoweringComponents()) {
                 $gmData['loweringID'] = $_warehouseModel->getLoweringID();
                 $job_handle = $gmc->doBackground("rebuildLoweringDirectory", json_encode($gmData));
             }
@@ -96,6 +96,10 @@ class CollectionSystemTransfers extends Controller {
         $data['title'] = 'Configuration';
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
         $data['javascript'] = array('collectionSystemTransfers');
+
+        $warehouseModel = new \Models\Warehouse();
+        $data['showLoweringComponents'] = $warehouseModel->getShowLoweringComponents();
+
         View::rendertemplate('header',$data);
         View::render('Config/collectionSystemTransfers',$data);
         View::rendertemplate('footer',$data);
@@ -139,7 +143,7 @@ class CollectionSystemTransfers extends Controller {
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
-            $status = 3;
+            $status = 4;
             $enable = 0;
 
             if($name == ''){
@@ -381,7 +385,7 @@ class CollectionSystemTransfers extends Controller {
             $includeFilter = $_POST['includeFilter'];
             $excludeFilter = $_POST['excludeFilter'];
             $ignoreFilter = $_POST['ignoreFilter'];
-            $status = 3;
+            $status = 4;
             $enable = 0;
 
             if($name == ''){

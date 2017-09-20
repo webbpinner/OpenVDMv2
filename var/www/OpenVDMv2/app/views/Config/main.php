@@ -35,18 +35,18 @@ $_warehouseModel = new \Models\Warehouse();
                 <div class="panel-body">
                     <a href="<?php echo DIR ?>config/setupNewCruise" class="btn-lg btn btn-primary btn-block">Setup New Cruise</a>
                     <a id="finalizeCurrentCruise" href="<?php echo DIR ?>config/finalizeCurrentCruise" class="btn-lg btn btn-primary btn-block">Run End-of-Cruise Tasks</a>
-                    <a href="<?php echo DIR ?>config/editCruiseID" class="btn-lg btn btn-primary btn-block">Edit CruiseID or Start/End Dates</a>
+                    <a href="<?php echo DIR ?>config/editCruise" class="btn-lg btn btn-primary btn-block">Edit Current Cruise</a>
                 </div>
             </div>
 <?php
-    if ($_warehouseModel->showLoweringComponents()) {
+    if ($_warehouseModel->getShowLoweringComponents()) {
 ?>
             <div class="panel panel-default">
                 <div class="panel-heading">Lowering Control</div>
                 <div class="panel-body">
                     <a href="<?php echo DIR ?>config/setupNewLowering" class="btn-lg btn btn-primary btn-block">Setup New Lowering</a>
                     <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block">Run End-of-Lowering Tasks</a>
-                    <a href="<?php echo DIR ?>config/editLoweringID" class="btn-lg btn btn-primary btn-block">Edit LoweringID or Start/End Dates</a>
+                    <a href="<?php echo DIR ?>config/editLowering" class="btn-lg btn btn-primary btn-block">Edit Current Lowering</a>
                 </div>
             </div>
 <?php

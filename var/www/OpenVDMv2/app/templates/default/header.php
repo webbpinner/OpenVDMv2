@@ -72,7 +72,7 @@ use Helpers\Hooks;
 
     $data['cruiseID'] = $_warehouseModel->getCruiseID();
 
-    if($_warehouseModel->showLoweringComponents()) {
+    if($_warehouseModel->getShowLoweringComponents()) {
         $data['loweringID'] = $_warehouseModel->getLoweringID();
         $loweringSize = $_warehouseModel->getLoweringSize();
     
@@ -91,6 +91,8 @@ use Helpers\Hooks;
     }
 
     $freeSpace = $_warehouseModel->getFreeSpace();
+    $totalSpace = $_warehouseModel->getTotalSpace();
+
     if(isset($freeSpace['error'])){
         $data['freeSpace'] = "Error";
     } else {
@@ -327,7 +329,7 @@ use Helpers\Hooks;
 
         <div class="row">
 
-    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
+    <?php echo $_warehouseModel->getShowLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
 
 <?php
     if(Session::get('loggedin')){
@@ -350,7 +352,7 @@ use Helpers\Hooks;
     }
 ?>
             </div> <!-- .col-lg-3 .col-md-6 -->
-    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
+    <?php echo $_warehouseModel->getShowLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
                 <div id="cruiseIDPanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="cruiseID" class="huge"><?php echo $data['cruiseID']; ?></div>
@@ -358,7 +360,7 @@ use Helpers\Hooks;
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
             </div> <!-- .col-lg-3 .col-md-6 -->
-    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
+    <?php echo $_warehouseModel->getShowLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
                 <div id="cruiseSizePanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="cruiseSize" class="huge"><?php echo $data['cruiseSize']; ?></div>
@@ -367,27 +369,83 @@ use Helpers\Hooks;
                 </div> <!-- .panel .panel-primary -->
             </div> <!-- .col-lg-3 .col-md-6 -->
 
-    <?php if($_warehouseModel->showLoweringComponents()) { ?>
+<?php
+        if($_warehouseModel->getShowLoweringComponents()) {
+?>
             <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+<?php
+            if(strcmp($data['loweringID'], '')) {
+?>
                 <div id="loweringIDPanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="loweringID" class="huge"><?php echo $data['loweringID']; ?></div>
                         <div class="text-right">Lowering ID</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
+<?php
+            } else {
+?>
+                <div id="loweringIDPanel" class="panel panel-yellow">
+                    <div class="panel-heading">
+                        <div id="loweringID" class="huge">Undefined</div>
+                        <div class="text-right">Lowering ID</div>
+                    </div> <!-- .panel-heading -->
+                </div> <!-- .panel .panel-primary -->
+<?php
+            }
+?>
             </div> <!-- .col-lg-3 .col-md-6 -->
             <div class="col-lg-2 col-md-4 col-sm-6 col-xs-12">
+<?php
+            if(strcmp($data['loweringID'], '')) {
+?>
                 <div id="loweringSizePanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="loweringSize" class="huge"><?php echo $data['loweringSize']; ?></div>
                         <div class="text-right">Lowering Size</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
+<?php
+            } else {
+?>
+                <div id="loweringSizePanel" class="panel panel-yellow">
+                    <div class="panel-heading">
+                        <div id="loweringSize" class="huge">Undefined</div>
+                        <div class="text-right">Lowering Size</div>
+                    </div> <!-- .panel-heading -->
+                </div> <!-- .panel .panel-primary -->
+<?php
+            }
+?>
             </div> <!-- .col-lg-3 .col-md-6 -->
-    <?php } ?>
 
-    <?php echo $_warehouseModel->showLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">"; ?>
+<?php
+        }
+?>
+
+<?php
+        echo $_warehouseModel->getShowLoweringComponents() ? "        <div class=\"col-lg-2 col-md-4 col-sm-6 col-xs-12\">" : "       <div class=\"col-lg-3 col-md-6 col-sm-6 col-xs-12\">";
+?>
+
+<?php
+        if (strcmp($data['freeSpace'], 'Error') === 0) {
+?>
+                <div id="freeSpacePanel" class="panel panel-red">
+<?php
+        } elseif ($freeSpace['freeSpace']/$totalSpace['totalSpace'] <= .1) {
+?>
+                <div id="freeSpacePanel" class="panel panel-red">
+<?php
+        } elseif ($freeSpace['freeSpace']/$totalSpace['totalSpace'] <= .25) {
+?>
+                <div id="freeSpacePanel" class="panel panel-yellow">
+<?php
+        } else {
+?>
                 <div id="freeSpacePanel" class="panel panel-primary">
+<?php
+        }
+?>
                     <div class="panel-heading">
                         <div id="freeSpace" class="huge"><?php echo $data['freeSpace']; ?></div>
                         <div class="text-right">Free Space</div>

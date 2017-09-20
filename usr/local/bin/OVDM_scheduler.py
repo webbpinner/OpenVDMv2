@@ -79,7 +79,7 @@ def main(argv):
             else:
                 break
 
-        collectionSystemTransfers = openVDM.getCollectionSystemTransfers()
+        collectionSystemTransfers = openVDM.getActiveCollectionSystemTransfers()
         for collectionSystemTransfer in collectionSystemTransfers:
             print 'Submitting collection system transfer job for: ' + collectionSystemTransfer['longName']
 

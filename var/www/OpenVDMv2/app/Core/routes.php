@@ -29,8 +29,8 @@ Router::any('config/rebuildTransferLogSummary', '\Controllers\Config\Main@rebuil
 Router::any('config/rebuildCruiseDirectory', '\Controllers\Config\Main@rebuildCruiseDirectory');
 Router::any('config/rebuildLoweringDirectory', '\Controllers\Config\Main@rebuildLoweringDirectory');
 Router::any('config/rebuildDataDashboard', '\Controllers\Config\Main@rebuildDataDashboard');
-Router::any('config/editCruiseID', '\Controllers\Config\Main@editCruiseID');
-Router::any('config/editLoweringID', '\Controllers\Config\Main@editLoweringID');
+Router::any('config/editCruise', '\Controllers\Config\Main@editCruise');
+Router::any('config/editLowering', '\Controllers\Config\Main@editLowering');
 Router::any('config/editShipboardDataWarehouse', '\Controllers\Config\Main@editShipboardDataWarehouse');
 Router::any('config/login', '\Controllers\Config\Auth@login');
 Router::any('config/logout', '\Controllers\Config\Auth@logout');
@@ -132,9 +132,12 @@ Router::any('api/warehouse/getShipboardDataWarehouseStatus', 'Controllers\Api\Wa
 Router::any('api/warehouse/getShipToShoreBWLimit', 'Controllers\Api\Warehouse@getShipToShoreBWLimit');
 Router::any('api/warehouse/getShipToShoreBWLimitStatus', 'Controllers\Api\Warehouse@getShipToShoreBWLimitStatus');
 Router::any('api/warehouse/getSystemStatus', 'Controllers\Api\Warehouse@getSystemStatus');
-Router::any('api/warehouse/showLoweringComponents', 'Controllers\Api\Warehouse@showLoweringComponents');
+Router::any('api/warehouse/getShowLoweringComponents', 'Controllers\Api\Warehouse@getShowLoweringComponents');
 
 Router::any('api/collectionSystemTransfers/getCollectionSystemTransfers', 'Controllers\Api\CollectionSystemTransfers@getCollectionSystemTransfers');
+Router::any('api/collectionSystemTransfers/getActiveCollectionSystemTransfers', 'Controllers\Api\CollectionSystemTransfers@getActiveCollectionSystemTransfers');
+Router::any('api/collectionSystemTransfers/getCruiseOnlyCollectionSystemTransfers', 'Controllers\Api\CollectionSystemTransfers@getCruiseOnlyCollectionSystemTransfers');
+Router::any('api/collectionSystemTransfers/getLoweringOnlyCollectionSystemTransfers', 'Controllers\Api\CollectionSystemTransfers@getLoweringOnlyCollectionSystemTransfers');
 Router::any('api/collectionSystemTransfers/getCollectionSystemTransfer/(:num)', 'Controllers\Api\CollectionSystemTransfers@getCollectionSystemTransfer');
 Router::any('api/collectionSystemTransfers/getCollectionSystemTransfersStatuses', 'Controllers\Api\CollectionSystemTransfers@getCollectionSystemTransfersStatuses');
 Router::any('api/collectionSystemTransfers/setErrorCollectionSystemTransfer/(:num)', 'Controllers\Api\CollectionSystemTransfers@setErrorCollectionSystemTransfer');
@@ -167,6 +170,9 @@ Router::any('api/extraDirectories/getExtraDirectory/(:num)', 'Controllers\Api\Ex
 Router::any('api/extraDirectories/getRequiredExtraDirectories', 'Controllers\Api\ExtraDirectories@getRequiredExtraDirectories');
 
 Router::any('api/tasks/getTasks', 'Controllers\Api\Tasks@getTasks');
+Router::any('api/tasks/getActiveTasks', 'Controllers\Api\Tasks@getActiveTasks');
+Router::any('api/tasks/getCruiseOnlyTasks', 'Controllers\Api\Tasks@getCruiseOnlyTasks');
+Router::any('api/tasks/getLoweringOnlyTasks', 'Controllers\Api\Tasks@getLoweringOnlyTasks');
 Router::any('api/tasks/getTask/(:num)', 'Controllers\Api\Tasks@getTask');
 Router::any('api/tasks/getTaskStatuses', 'Controllers\Api\Tasks@getTaskStatuses');
 Router::any('api/tasks/setErrorTask/(:num)', 'Controllers\Api\Tasks@setErrorTask');

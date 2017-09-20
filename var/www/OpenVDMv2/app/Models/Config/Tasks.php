@@ -8,7 +8,25 @@ class Tasks extends Model {
     public function getTasks(){
         return $this->db->select("SELECT * FROM ".PREFIX."Tasks ORDER BY taskID");
     }
+
+    public function getActiveTasks(){
+
+        $_warehouseModel = new \Models\Warehouse();
+        if ($_warehouseModel->getShowLoweringComponents()) {
+            return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE enable = :enable ORDER BY taskID", array(':enable' => 1));
+        }
+        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering AND enable = :enable ORDER BY taskID", array(':cruiseOrLowering' => 0, ':enable' => 1));
+
+    }
+
+    public function getCruiseOnlyTasks(){
+        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY taskID", array(':cruiseOrLowering' => 0));
+    }
     
+    public function getLoweringOnlyTasks(){
+        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY taskID", array(':cruiseOrLowering' => 1));
+    }
+
     public function getTaskStatuses(){
         return $this->db->select("SELECT taskID, name, status FROM ".PREFIX."Tasks ORDER BY taskID");
     }

@@ -104,10 +104,17 @@ $(function () {
                 if (data.error) {
                     $(loweringID).html('Error');
                     $(loweringIDPanel).removeClass('panel-primary');
+                    $(loweringIDPanel).removeClass('panel-yellow');
                     $(loweringIDPanel).addClass('panel-red');
+                } else if (data.loweringID === '') {
+                    $(loweringID).html('Undefined');
+                    $(loweringIDPanel).removeClass('panel-red');
+                    $(loweringIDPanel).removeClass('panel-primary');
+                    $(loweringIDPanel).addClass('panel-yellow');
                 } else {
                     $(loweringID).html(data.loweringID);
                     $(loweringIDPanel).removeClass('panel-red');
+                    $(loweringIDPanel).removeClass('panel-yellow');
                     $(loweringIDPanel).addClass('panel-primary');
                 }
             }
@@ -124,10 +131,17 @@ $(function () {
                 if (data.error) {
                     $(loweringSize).html('Error');
                     $(loweringSizePanel).removeClass('panel-primary');
+                    $(loweringSizePanel).removeClass('panel-yellow');
                     $(loweringSizePanel).addClass('panel-red');
+                } else if (data.loweringSize === 'Undefined') {
+                    $(loweringSize).html(data.loweringSize);
+                    $(loweringSizePanel).removeClass('panel-red');
+                    $(loweringSizePanel).removeClass('panel-primary');
+                    $(loweringSizePanel).addClass('panel-yellow');
                 } else {
                     $(loweringSize).html(formatFilesize(data.loweringSize));
                     $(loweringSizePanel).removeClass('panel-red');
+                    $(loweringSizePanel).removeClass('panel-yellow');
                     $(loweringSizePanel).addClass('panel-primary');
                 }
             }
@@ -145,10 +159,25 @@ $(function () {
                 if (data.error) {
                     $(freeSpace).html('Error');
                     $(freeSpacePanel).removeClass('panel-primary');
+                    $(freeSpacePanel).removeClass('panel-yellow');
                     $(freeSpacePanel).addClass('panel-red');
+
+                } else if (data.freeSpace/data.totalSpace <= .1) {
+                    $(freeSpace).html(formatFilesize(data.freeSpace));
+                    $(freeSpacePanel).removeClass('panel-primary');
+                    $(freeSpacePanel).removeClass('panel-yellow');
+                    $(freeSpacePanel).addClass('panel-red');
+
+                } else if (data.freeSpace/data.totalSpace <= .25) {
+                    $(freeSpace).html(formatFilesize(data.freeSpace));
+                    $(freeSpacePanel).removeClass('panel-primary');
+                    $(freeSpacePanel).removeClass('panel-red');
+                    $(freeSpacePanel).addClass('panel-yellow');
+
                 } else {
                     $(freeSpace).html(formatFilesize(data.freeSpace));
                     $(freeSpacePanel).removeClass('panel-red');
+                    $(freeSpacePanel).removeClass('panel-yellow');
                     $(freeSpacePanel).addClass('panel-primary');
                 }
             }

@@ -45,9 +45,6 @@ gearmanServer: "localhost:4730"
 # current cruise. (Yes|No))
 showOnlyCurrentCruiseDir: No
 
-# Whether or not to hide all vehicle-related components (Yes|No))
-showVehicleComponents: No
-
 # The dashboardData section defines where the dashboardData processing scripts reside
 # and the expected suffix for each processing file.  It should include 2 directives:
 # processingScriptDir --> the full path containing the dashboardData processing scripts

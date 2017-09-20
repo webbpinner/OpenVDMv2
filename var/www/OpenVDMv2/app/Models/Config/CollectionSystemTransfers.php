@@ -8,11 +8,17 @@ class CollectionSystemTransfers extends Model {
     public function getCollectionSystemTransfers(){
         return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers ORDER BY name");
     }
-    
-    public function getCollectionSystemTransfersStatuses(){
-        return $this->db->select("SELECT collectionSystemTransferID, name, longName, status, enable FROM ".PREFIX."CollectionSystemTransfers ORDER BY name");
-    }
 
+    public function getActiveCollectionSystemTransfers(){
+
+        $_warehouseModel = new \Models\Warehouse();
+        if ($_warehouseModel->getShowLoweringComponents()) {
+            return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE enable = :enable ORDER BY name", array(':enable' => 1));
+        }
+        return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE cruiseOrLowering = :cruiseOrLowering AND enable = :enable ORDER BY name", array(':cruiseOrLowering' => 0, ':enable' => 1));
+
+    }
+    
     public function getCruiseOnlyCollectionSystemTransfers(){
         return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY name", array(':cruiseOrLowering' => 0));
     }
@@ -21,6 +27,10 @@ class CollectionSystemTransfers extends Model {
         return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY name", array(':cruiseOrLowering' => 1));
     }
     
+    public function getCollectionSystemTransfersStatuses(){
+        return $this->db->select("SELECT collectionSystemTransferID, name, longName, status, enable FROM ".PREFIX."CollectionSystemTransfers ORDER BY name");
+    }
+
     public function getCollectionSystemTransfer($id){
         return $this->db->select("SELECT * FROM ".PREFIX."CollectionSystemTransfers WHERE collectionSystemTransferID = :id",array(':id' => $id));
     }

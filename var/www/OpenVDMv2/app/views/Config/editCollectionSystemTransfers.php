@@ -50,16 +50,9 @@ $_warehouseModel = new \Models\Warehouse();
                                     <label>Skip files create/modified outside of cruise start/stop times?</label><?php echo FormCustom::radioInline($data['useStartDateOptions'], $data['row'][0]->useStartDate); ?>
                                 </div>
                                 <div class="form-group"><label>Transfer bandwidth limit (in kB/s): <?php echo Form::input( array('name'=>'bandwidthLimit', 'value'=> $data['row'][0]->bandwidthLimit, 'size'=>'7', 'length'=>'8')); ?></label></div>
-<?php
-    if ($_warehouseModel->showLoweringComponents()) {
-?>
                                 <div class="form-group">
                                     <label>Cruise or Lowering?</label><?php echo FormCustom::radioInline($data['cruiseOrLoweringOptions'], $data['row'][0]->cruiseOrLowering); ?>
                                 </div>
-<?php
-    }
-?>
-
                                 <div class="form-group">
                                     <label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $data['row'][0]->transferType); ?>
                                 </div>

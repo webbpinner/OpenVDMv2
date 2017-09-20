@@ -43,17 +43,36 @@ use Helpers\Session;
                     <td>
                         <a href='<?php echo DIR; ?>config/collectionSystemTransfers/edit/<?php echo $row->collectionSystemTransferID; ?>'>Edit</a> / 
                         <a href='#confirmDeleteModal' data-toggle="modal" data-item-name="Collection System Transfer" data-delete-url="<?php echo DIR; ?>config/collectionSystemTransfers/delete/<?php echo $row->collectionSystemTransferID; ?>">Delete</a> / 
-                        <a href='<?php echo DIR; ?>config/collectionSystemTransfers/test/<?php echo $row->collectionSystemTransferID; ?>'>Test</a> / 
 <?php
-            if($row->status === "1"){
+            if ( !$data['showLoweringComponents'] && $row->cruiseOrLowering === '1') {
 ?>
-                        <a id="runStop<?php echo $row->collectionSystemTransferID; ?>" href='<?php echo DIR; ?>config/collectionSystemTransfers/stop/<?php echo $row->collectionSystemTransferID; ?>'>Stop</a>
- <?php
+                        <span class="text-muted">Test</span> /
+<?php
             } else {
 ?>
-                        <a id="runStop<?php echo $row->collectionSystemTransferID; ?>" href='<?php echo DIR; ?>config/collectionSystemTransfers/run/<?php echo $row->collectionSystemTransferID; ?>'>Run</a>
+                        <a href='<?php echo DIR; ?>config/collectionSystemTransfers/test/<?php echo $row->collectionSystemTransferID; ?>'>Test</a> /
 <?php
             }
+?>
+
+<?php
+            if ( !$data['showLoweringComponents'] && $row->cruiseOrLowering === '1') {
+?>
+                        <span class="text-muted">Run</span>
+<?php
+            } else {
+
+                if($row->status === "1"){
+?>
+                            <a id="runStop<?php echo $row->collectionSystemTransferID; ?>" href='<?php echo DIR; ?>config/collectionSystemTransfers/stop/<?php echo $row->collectionSystemTransferID; ?>'>Stop</a>
+ <?php
+                } else {
+?>
+                            <a id="runStop<?php echo $row->collectionSystemTransferID; ?>" href='<?php echo DIR; ?>config/collectionSystemTransfers/run/<?php echo $row->collectionSystemTransferID; ?>'>Run</a>
+<?php
+                }
+            }
+
             if($row->status === "3") {
 ?>
                         <span class="pull-right"><i class="fa fa-warning text-danger"></i></span>
@@ -63,14 +82,28 @@ use Helpers\Session;
                     </td>
                     <td style='text-align:center'>
 <?php
-            if($row->enable === "0"){
+            if ( !$data['showLoweringComponents'] && $row->cruiseOrLowering === '1') {
+                if($row->enable === "0"){
+?>
+                        <div class="btn btn-xs btn-danger disabled">Off</div>
+<?php
+                } else {
+?>
+                        <div class="btn btn-xs btn-success disabled">On</div>
+<?php
+                }
+                        
+            } else {
+
+                if($row->enable === "0"){
 ?>
                         <a class="btn btn-xs btn-danger" href='<?php echo DIR; ?>config/collectionSystemTransfers/enable/<?php echo $row->collectionSystemTransferID;?> '>Off</a>
 <?php
-            } else {
+                } else {
 ?>
                         <a class="btn btn-xs btn-success" href='<?php echo DIR; ?>config/collectionSystemTransfers/disable/<?php echo $row->collectionSystemTransferID; ?>'>On</a>
 <?php
+                }
             }
 ?>
                     </td>
