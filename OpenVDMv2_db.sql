@@ -100,7 +100,7 @@ CREATE TABLE `OVDM_CoreVars` (
   `name` tinytext NOT NULL,
   `value` tinytext,
   PRIMARY KEY (`coreVarID`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_CoreVars` WRITE;
 /*!40000 ALTER TABLE `OVDM_CoreVars` DISABLE KEYS */;
@@ -320,7 +320,7 @@ CREATE TABLE `OVDM_Tasks` (
   PRIMARY KEY (`taskID`),
   KEY `ProcessStatus` (`status`),
   CONSTRAINT `ProcessStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_Tasks` WRITE;
 /*!40000 ALTER TABLE `OVDM_Tasks` DISABLE KEYS */;
@@ -352,7 +352,7 @@ CREATE TABLE `OVDM_TransferTypes` (
   `transferTypeID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `transferType` tinytext,
   PRIMARY KEY (`transferTypeID`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_TransferTypes` WRITE;
 /*!40000 ALTER TABLE `OVDM_TransferTypes` DISABLE KEYS */;
@@ -362,8 +362,7 @@ VALUES
   (1,'Local Directory'),
   (2,'Rsync Server'),
   (3,'SMB Share'),
-  (4,'SSH Server'),
-  (5,'NFS Share');
+  (4,'SSH Server');
 
 /*!40000 ALTER TABLE `OVDM_TransferTypes` ENABLE KEYS */;
 UNLOCK TABLES;
