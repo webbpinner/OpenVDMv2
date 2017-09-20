@@ -121,7 +121,9 @@ VALUES
   (12,'shipToShoreBWLimit','128'),
   (13,'shipToShoreBWLimitStatus','Off'),
   (14,'md5FilesizeLimit','10'),
-  (15,'md5FilesizeLimitStatus','On');
+  (15,'md5FilesizeLimitStatus','On'),
+  (16,'showLoweringComponents','No');
+  
 
 /*!40000 ALTER TABLE `OVDM_CoreVars` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -311,6 +313,7 @@ CREATE TABLE `OVDM_Tasks` (
   `taskID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` tinytext NOT NULL,
   `longName` tinytext NOT NULL,
+  `cruiseOrLowering` tinyint(1) NOT NULL DEFAULT '0',
   `status` int(11) unsigned NOT NULL DEFAULT '3',
   `enable` tinyint(1) NOT NULL DEFAULT '0',
   `pid` int(10) unsigned NOT NULL DEFAULT '0',
@@ -324,17 +327,17 @@ LOCK TABLES `OVDM_Tasks` WRITE;
 
 INSERT INTO `OVDM_Tasks` (`taskID`, `name`, `longName`, `status`, `enable`, `pid`)
 VALUES
-  (1,'setupNewCruise','Setup New Cruise',2,1,0),
-  (2,'finalizeCurrentCruise','Finalize Current Cruise',2,1,0),
-  (3,'rebuildMD5Summary','Rebuild MD5 Summary',2,1,0),
-  (4,'rebuildDataDashboard','Rebuild Data Dashboard',2,1,0),
-  (5,'rebuildCruiseDirectory','Rebuild Cruise Directory',2,1,0),
-  (6,'exportOVDMConfig','Re-export the OpenVDM Configuration',2,1,0),
-  (7,'rsyncPublicDataToCruiseData','Copy PublicData to Cruise Data',2,1,0),
-  (8,'setupNewLowering','Setup New Lowering',2,1,0),
-  (9,'finalizeCurrentCruise','Finalize Current Cruise',2,1,0),
-  (10,'rebuildLoweringDirectory','Rebuild Lowering Directory',2,1,0),
-  (11,'exportLoweringConfig','Re-export the Lowering Configuration',2,1,0);
+  (1,'setupNewCruise','Setup New Cruise',0,2,1,0),
+  (2,'finalizeCurrentCruise','Finalize Current Cruise',0,2,1,0),
+  (3,'rebuildMD5Summary','Rebuild MD5 Summary',0,2,1,0),
+  (4,'rebuildDataDashboard','Rebuild Data Dashboard',0,2,1,0),
+  (5,'rebuildCruiseDirectory','Rebuild Cruise Directory',0,2,1,0),
+  (6,'exportOVDMConfig','Re-export the OpenVDM Configuration',0,2,1,0),
+  (7,'rsyncPublicDataToCruiseData','Copy PublicData to Cruise Data',0,2,1,0),
+  (8,'setupNewLowering','Setup New Lowering',1,2,1,0),
+  (9,'finalizeCurrentCruise','Finalize Current Cruise',1,2,1,0),
+  (10,'rebuildLoweringDirectory','Rebuild Lowering Directory',1,2,1,0),
+  (11,'exportLoweringConfig','Re-export the Lowering Configuration',1,2,1,0);
 
 /*!40000 ALTER TABLE `OVDM_Tasks` ENABLE KEYS */;
 UNLOCK TABLES;
