@@ -50,16 +50,9 @@ class Config
         define('DASHBOARD_CONF', '/usr/local/etc/openvdm/datadashboard.yaml');
 
         /*
-         * Whether or not to hide all directories in the CruiseData directory other than the
-         * current cruise. (Yes|No))
-         */
-        define('SHOW_LOWERING_COMPONENTS', 'No');
-
-        /*
          * Directory within cruise directory to store vehicle data. (i.e. 'Vehicle')
          */
         define('LOWERINGDATA_BASEDIR', 'Vehicle');
-
 
         /*
          * Set default controller and method for legacy calls.
@@ -117,7 +110,7 @@ class Config
         /*
          * Optional create a constant for the name of the site.
          */
-        define('SITETITLE', 'Open Vessel Data Management v2.3b');
+        define('SITETITLE', 'Open Vessel Data Management v2.3');
 
         /*
          * Optionall set a site email address.
