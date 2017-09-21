@@ -82,7 +82,6 @@ class Warehouse extends Model {
 
     public function getShowLoweringComponents(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'showLoweringComponents'");
-#        if(strcmp(SHOW_LOWERING_COMPONENTS, "Yes") == 0 ){
         if(strcmp($row[0]->value, "Yes") == 0 ){
             return true;
         } else {
