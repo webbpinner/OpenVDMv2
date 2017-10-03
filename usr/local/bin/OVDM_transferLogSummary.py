@@ -188,7 +188,7 @@ class CustomGearmanWorker(gearman.GearmanWorker):
 
     def on_job_exception(self, current_job, exc_info):
         print "Job failed, CAN stop last gasp GEARMAN_COMMAND_WORK_FAIL"
-        self.send_job_data(current_job, json.dumps([{"partName": "Unknown Part of Task", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown"}]))
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         setError_task(current_job, self.taskID, "Unknown Part: " + str(exc_tb.tb_lineno))
@@ -216,7 +216,7 @@ class CustomGearmanWorker(gearman.GearmanWorker):
         self.stop = True
 
 
-def task_callback(gearman_worker, job):
+def task_updateShipboardTransferLogSummary(gearman_worker, job):
 
     job_results = {'parts':[]}
 
@@ -284,7 +284,7 @@ def task_callback(gearman_worker, job):
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
-def task_callback2(gearman_worker, job):
+def task_updateShipboardFilenameErrorLogSummary(gearman_worker, job):
 
     job_results = {'parts':[]}
 
@@ -364,7 +364,7 @@ def task_callback2(gearman_worker, job):
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
 
-def task_callback3(gearman_worker, job):
+def task_updateShipToShoreTransferLogSummary(gearman_worker, job):
 
     job_results = {'parts':[]}
 
@@ -428,7 +428,7 @@ def task_callback3(gearman_worker, job):
     gearman_worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)    
         
-def task_callback4(gearman_worker, job):
+def task_rebuildTransferLogSummary(gearman_worker, job):
 
     job_results = {'parts':[]}
 
@@ -573,9 +573,9 @@ def sigquit_handler(_signo, _stack_frame):
 signal.signal(signal.SIGQUIT, sigquit_handler)
 
 new_worker.set_client_id('transferLogSummary.py')
-new_worker.register_task("updateShipboardTransferLogSummary", task_callback)
-new_worker.register_task("updateShipboardFilenameErrorLogSummary", task_callback2)
-new_worker.register_task("updateShipToShoreTransferLogSummary", task_callback3)
-new_worker.register_task("rebuildTransferLogSummary", task_callback4)
+new_worker.register_task("updateShipboardTransferLogSummary", task_updateShipboardTransferLogSummary)
+new_worker.register_task("updateShipboardFilenameErrorLogSummary", task_updateShipboardFilenameErrorLogSummary)
+new_worker.register_task("updateShipToShoreTransferLogSummary", task_updateShipToShoreTransferLogSummary)
+new_worker.register_task("rebuildTransferLogSummary", task_rebuildTransferLogSummary)
 
 new_worker.work()

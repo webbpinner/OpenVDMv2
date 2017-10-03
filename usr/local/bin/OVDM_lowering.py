@@ -64,6 +64,60 @@ def errPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def setOwnerGroupPermissions(worker, path):
+
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+
+    reason = []
+
+    uid = pwd.getpwnam(warehouseUser).pw_uid
+    gid = grp.getgrnam(warehouseUser).gr_gid
+    # Set the file permission and ownership for the current directory
+
+    if os.path.isfile(path):
+        try:
+            debugPrint("Setting ownership/permissions for", path)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0644)
+        except OSError:
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
+    else: #directory
+        try:
+            debugPrint("Setting ownership/permissions for", path)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0755)
+        except OSError:
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                fname = os.path.join(root, file)
+                try:
+                    debugPrint("Setting ownership/permissions for", file)
+                    os.chown(fname, uid, gid)
+                    os.chmod(fname, 0644)
+                except OSError:
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
+
+            for momo in dirs:
+                dname = os.path.join(root, momo)
+                try:
+                    debugPrint("Setting ownership/permissions for", momo)
+                    os.chown(dname, uid, gid)
+                    os.chmod(dname, 0755)
+                except OSError:
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
+
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
+
 def output_JSONDataToFile(worker, filePath, contents):
     
     try:
@@ -71,9 +125,7 @@ def output_JSONDataToFile(worker, filePath, contents):
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             errPrint("Unable to create parent directory for data file")
-            return False
-#    finally:
-#        setOwnerGroupPermissions(worker, os.path.dirname(filePath))
+            return {'verdict': False, 'reason': 'Unable to create parent directory(ies) for data file: ' + filePath }
     
     try:
         JSONFile = open(filePath, 'w')
@@ -83,63 +135,13 @@ def output_JSONDataToFile(worker, filePath, contents):
 
     except IOError:
         errPrint("Error Saving JSON file:", filePath)
-        return False
+        return {'verdict': False, 'reason': 'Unable to create data file: ' + filePath }
 
     finally:
         #debugPrint("Closing JSON file", filePath)
         JSONFile.close()
 
-    return True
-
-
-def setOwnerGroupPermissions(worker, path):
-
-    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
-
-    debugPrint(path)
-
-    uid = pwd.getpwnam(warehouseUser).pw_uid
-    gid = grp.getgrnam(warehouseUser).gr_gid
-    # Set the file permission and ownership for the current directory
-
-    if os.path.isfile(path):
-        try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
-            os.chown(path, uid, gid)
-            os.chmod(path, 0644)
-        except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
-    else: #directory
-        try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
-            os.chown(path, uid, gid)
-            os.chmod(path, 0755)
-        except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                fname = os.path.join(root, file)
-                try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
-                    os.chown(fname, uid, gid)
-                    os.chmod(fname, 0644)
-                except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
-
-            for momo in dirs:
-                dname = os.path.join(root, momo)
-                try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
-                    os.chown(dname, uid, gid)
-                    os.chmod(dname, 0755)
-                except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
-
-    return True
+    return {'verdict': True}
 
 
 def build_filelist(worker, sourceDir):
@@ -156,94 +158,6 @@ def build_filelist(worker, sourceDir):
     
     return returnFiles
 
-def transfer_PublicDataDir(worker, job):
-
-    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
-    scienceDir = os.path.join(cruiseDir, worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir'])
-    
-    #debugPrint("Build file list")
-    files = build_filelist(worker, publicDataDir)
-
-    count = 1
-    fileCount = len(files['include'])
-    
-    # Create temp directory
-    tmpdir = tempfile.mkdtemp()
-    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
-        
-    try:
-        rsyncFileListFile = open(rsyncFileListPath, 'w')
-
-        localTransferFileList = files['include']
-        localTransferFileList = [filename.replace(publicDataDir, '', 1) for filename in localTransferFileList]
-
-        rsyncFileListFile.write('\n'.join([str(x) for x in localTransferFileList]))
-
-    except IOError:
-        errPrint("Error Saving temporary rsync filelist file")
-        rsyncFileListFile.close()
-            
-        # Cleanup
-        shutil.rmtree(tmpdir)
-            
-        return files    
-
-    finally:
-        rsyncFileListFile.close()
-    
-    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, publicDataDir + '/', scienceDir]
-    debugPrint("Command:", ' '.join(command))
-    
-    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
-    lines_iterator = iter(popen.stdout.readline, b"")
-    for line in lines_iterator:
-        #debugPrint("Line:",line) # yield line
-        if line.startswith( '>f+++++++++' ):
-            filename = line.split(' ',1)[1].rstrip('\n')
-            files['new'].append(filename)
-            worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-            count += 1
-        elif line.startswith( '>f.' ):
-            filename = line.split(' ',1)[1].rstrip('\n')
-            files['updated'].append(filename)
-            worker.send_job_status(job, int(round(20 + (70*count/fileCount),0)), 100)
-            count += 1
-            
-        if worker.stop:
-            errPrint("Stopping")
-            break
-    
-    # Cleanup
-    shutil.rmtree(tmpdir)    
-    return files
-
-def clear_publicDataDir(worker):
-
-    publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    debugPrint("PublicData Dir", publicDataDir)
-    
-    returnObj = True
-    # Clear out PublicData
-    for root, dirs, pdFiles in os.walk(publicDataDir + '/', topdown=False):
-        for dir in dirs:
-            dirPath = os.path.join(root, dir)
-            try:
-                os.rmdir(dirPath)
-            except OSError:
-                errPrint("Directory", dirPath, "is not empty and will not be removed")
-                returnObj = False
-
-        for pdFile in pdFiles:
-            filePath = os.path.join(root, pdFile)
-            try:
-                os.remove(filePath)
-            except OSError:
-                errPrint("File", filePath, "could not be removed")
-                returnObj = False
-
-    return returnObj
-
     
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
@@ -254,7 +168,6 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.cruiseID = ''
         self.loweringID = ''
         self.loweringStartDate = ''
-        self.systemStatus = ''
         self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         self.task = None
@@ -274,13 +187,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_execute(self, current_job):
         self.get_task(current_job)
         payloadObj = json.loads(current_job.data)
-        debugPrint(current_job)
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         
         self.cruiseID = self.OVDM.getCruiseID()
         self.loweringID = self.OVDM.getLoweringID()
         self.loweringStartDate = self.OVDM.getLoweringStartDate()
-        self.systemStatus = self.OVDM.getSystemStatus()
         if len(payloadObj) > 0:
             try:
                 payloadObj['loweringID']
@@ -309,11 +220,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail", "reason": "Worker crashed"}]))
         if int(self.task['taskID']) > 0:
-            self.OVDM.setError_task(self.task['taskID'], "Unknown Part of Task")
+            self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
-            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Unknown Part of Task')
+            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -324,7 +235,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
         
-        jobData = {'loweringID':'', 'self.loweringStartDate':''}
+        jobData = {}
         jobData['loweringID'] = self.loweringID
         jobData['loweringStartDate'] = self.loweringStartDate
         
@@ -346,9 +257,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['reason'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.setIdle_task(self.task['taskID'])
         else:
@@ -419,7 +330,7 @@ def task_setupNewLowering(worker, job):
         job_results['parts'].append({"partName": "Create lowering data directory structure", "result": "Pass"})
     else:
         errPrint("Failed to create lowering data directory")
-        job_results['parts'].append({"partName": "Create lowering data directory structure", "result": "Fail"})
+        job_results['parts'].append({"partName": "Create lowering data directory structure", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 5, 10)
@@ -452,22 +363,35 @@ def task_setupNewLowering(worker, job):
     #    job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Fail"})
     #    return json.dumps(job_results)
     
-    worker.send_job_status(job, 9, 10)
+    worker.send_job_status(job, 8, 10)
 
     #build lowering Config file
     debugPrint('Exporting Lowering Configuration')
     loweringConfig = worker.OVDM.getLoweringConfig()
 
     #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig):
+
+    output_results = output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Export lowering config data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export lowering config data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export lowering config data to file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
-    if not setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN)):
-        job_results['parts'].append({"partName": "Set lowering config file ownership", "result": "Fail"})
+    output_results = setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN))
+
+    if not output_results['verdict']:
+        job_results['parts'].append({"partName": "Set lowering config file ownership", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
+
+    worker.send_job_status(job, 9, 10)
+
+    debugPrint("Updating Lowering Size")
+    loweringSize = subprocess.check_output(['du','-sb', loweringDir]).split()[0].decode('utf-8')
+    # print cruiseSize
+
+    worker.OVDM.set_loweringSize(loweringSize)
     
     worker.send_job_status(job, 10, 10)
 
@@ -482,23 +406,18 @@ def task_finalizeCurrentLowering(worker, job):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
+
     loweringDataBaseDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
     loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
-
-    #publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    #debugPrint('PublicData Dir:', publicDataDir)
-
-    #scienceDir = worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir']
-    #debugPrint('Science Dir:', scienceDir)
 
     if os.path.exists(loweringDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         errorPrint("Failed to find lowering directory:", loweringDir)
-        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail", "reason": "Lowering directory: " + loweringDir + " could not be found"})
         return json.dumps(job_results)
 
-    worker.send_job_status(job, 2, 10)
+    worker.send_job_status(job, 3, 10)
     debugPrint('Queuing Collection System Transfers')
 
     gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
@@ -513,7 +432,7 @@ def task_finalizeCurrentLowering(worker, job):
     
     collectionSystemTransferJobs = []
     
-    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    collectionSystemTransfers = worker.OVDM.getActiveCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
 
@@ -524,95 +443,39 @@ def task_finalizeCurrentLowering(worker, job):
             collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
 
     
-    worker.send_job_status(job, 3, 10)
+    worker.send_job_status(job, 5, 10)
 
     debugPrint('Initiating Collection System Transfers')
     submitted_job_request = gm_client.submit_multiple_jobs(collectionSystemTransferJobs, background=False, wait_until_complete=False)
     
-    worker.send_job_status(job, 4, 10)
+    worker.send_job_status(job, 7, 10)
     
     time.sleep(1)
     completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
     debugPrint('Collection System Transfers Complete')
 
-    worker.send_job_status(job, 5, 10)
-    
-    #debugPrint('Transferring files from PublicData to the lowering data directory')
-    
-    #if os.path.exists(os.path.join(loweringDir, scienceDir)):
-    #    job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
-    #else:
-    #    job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail"})
-    #    return json.dumps(job_results)
-
-    #if os.path.exists(publicDataDir):
-    #    job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Pass"})
-    #else:
-    #    job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Fail"})
-    #    return json.dumps(job_results)
-
-
-    #files = transfer_PublicDataDir(worker, job)
-    #debugPrint('PublicData Transfer complete')
-    #debugPrint("PublicData Files Transferred:", json.dumps(files, indent=2))
-
-    #if files:
-    #    job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Pass"})
-    #else:
-    #    job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Fail"})
-    #    return json.dumps(job_results)
-
-    #if(clear_publicDataDir(worker)):
-    #    job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Pass"})
-    #else:
-    #    job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Fail"})
-    #    return json.dumps(job_results)
-
-    
     worker.send_job_status(job, 9, 10)
-    
-    #if len(files['new']) > 0 or len(files['updated']) > 0:
-
-    #    if setOwnerGroupPermissions(worker, os.path.join(loweringDir, scienceDir)):
-    #        job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
-    #    else:
-    #        job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
-    #        return json.dumps(job_results)
-        
-    #worker.send_job_status(job, 95, 100)
     
     #build Lowering Config file
     debugPrint('Exporting Lowering Configuration')
     loweringConfig = worker.OVDM.getLoweringConfig()
 
     #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig):
+    output_results = output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Export Lowering config data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export Lowering config data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export Lowering config data to file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
-    if setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN)):
+    output_results = setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN))
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Set Lowering config file ownership", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set Lowering config file ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Set Lowering config file ownership", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
-
-    #debugPrint("Initiating MD5 Summary Task")
-
-    #gmData = {}
-    #gmData['loweringID'] = worker.loweringID
-    #gmData['files'] = files
-    #gmData['files']['new'] = [scienceDir + '/' + filename for filename in gmData['files']['new']]
-    #gmData['files']['updated'] = [scienceDir + '/' + filename for filename in gmData['files']['updated']]
-    
-    #gmData['files']['updated'].append(loweringConfigFN)
-       
-    #completed_job_request = gm_client.submit_job("updateMD5Summary", json.dumps(gmData))
-    
-    #debugPrint("MD5 Summary Task Complete")
-
-    # need to add code for lowering data transfers
 
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
@@ -632,7 +495,7 @@ def task_exportLoweringConfig(worker, job):
     if os.path.exists(loweringDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail", "result": "Fail", "reason": "Unable to locate the lowering directory: " + loweringDir})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 3, 10)
@@ -641,18 +504,22 @@ def task_exportLoweringConfig(worker, job):
     loweringConfig = worker.OVDM.getLoweringConfig()
 
     #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig):
+    output_results = output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Export data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export data to file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 6, 10)
     
-    if setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN)):
+    output_results = setOwnerGroupPermissions(worker, os.path.join(loweringDir,loweringConfigFN))
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Set file ownership", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set file ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Set file ownership", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 10, 10)

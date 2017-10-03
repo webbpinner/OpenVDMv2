@@ -10,7 +10,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
 #      CREATED:  2016-03-04
-#     REVISION:  2017-05-08
+#     REVISION:  2016-09-08
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
@@ -114,6 +114,52 @@
 #      visType: tms
 #
 
+- title: Vehicle
+  page: vehicle
+  view: default
+  cssArray:
+  - leaflet
+  jsArray:
+  - dataDashboardDefault
+  - highcharts
+  - leaflet
+  - lowering
+  placeholderArray:
+  - plotType: map
+    id: map
+    heading: Position
+    dataArray:
+    - dataType: rov-gga
+      visType: geoJSON
+    - dataType: rov-pauv
+      visType: geoJSON
+    - dataType: geotiff
+      visType: tms
+  - plotType: chart
+    id: hdt
+    heading: Heading
+    dataArray:
+    - dataType: rov-hdt
+      visType: json
+  - plotType: chart
+    id: dpt
+    heading: Depth
+    dataArray:
+    - dataType: rov-dpt
+      visType: json
+  - plotType: chart
+    id: vtg
+    heading: SOG/COG
+    dataArray:
+    - dataType: rov-vtg
+      visType: json
+  - plotType: chart
+    id: hpr
+    heading: Heading/Pitch/Roll
+    dataArray:
+    - dataType: rov-hpr
+      visType: json
+
 - title: Position
   page: position
   view: default
@@ -123,6 +169,7 @@
   - dataDashboardDefault
   - highcharts
   - leaflet
+  - lowering
   placeholderArray:
   - plotType: map
     id: map
@@ -132,6 +179,23 @@
       visType: geoJSON
     - dataType: geotiff
       visType: tms
+
+#- title: Interactive
+#  page: lowering
+#  view: lowering
+#  cssArray:
+#  - leaflet
+#  jsArray:
+#  - highcharts
+#  - leaflet
+#  - lowering
+#  placeholderArray:
+#  - plotType: map
+#    id: map
+#    heading: Position
+#    dataArray:
+#    - dataType: rov-pauv
+#      visType: geoJSON
 
 - title: Weather
   page: weather

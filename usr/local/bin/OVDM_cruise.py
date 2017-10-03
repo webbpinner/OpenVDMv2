@@ -72,7 +72,7 @@ def output_JSONDataToFile(worker, filePath, contents):
     except OSError as exception:
         if exception.errno != errno.EEXIST:
             errPrint("Unable to create parent directory for data file")
-            return False
+            return {'verdict': False, 'reason': 'Unable to create parent directory(ies) for data file: ' + filePath }
 #    finally:
 #        setOwnerGroupPermissions(worker, os.path.dirname(filePath))
     
@@ -84,13 +84,13 @@ def output_JSONDataToFile(worker, filePath, contents):
 
     except IOError:
         errPrint("Error Saving JSON file:", filePath)
-        return False
+        return {'verdict': False, 'reason': 'Unable to create data file: ' + filePath }
 
     finally:
         #debugPrint("Closing JSON file", filePath)
         JSONFile.close()
 
-    return True
+    return {'verdict': True}
 
 
 def setOwnerGroupPermissions(worker, path):
@@ -99,48 +99,55 @@ def setOwnerGroupPermissions(worker, path):
 
     debugPrint(path)
 
+    reason = []
+
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
     if os.path.isfile(path):
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0644)
         except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
     else: #directory
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0755)
         except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
         for root, dirs, files in os.walk(path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
 
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
 
-    return True
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
 
 
 def build_filelist(worker, sourceDir):
@@ -187,8 +194,8 @@ def transfer_PublicDataDir(worker, job):
             
         # Cleanup
         shutil.rmtree(tmpdir)
-            
-        return files    
+        
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file', 'files': files }
 
     finally:
         rsyncFileListFile.close()
@@ -217,14 +224,14 @@ def transfer_PublicDataDir(worker, job):
     
     # Cleanup
     shutil.rmtree(tmpdir)    
-    return files
+    return {'verdict': True, 'files':files }
 
 def clear_publicDataDir(worker):
 
     publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    debugPrint("PublicData Dir", publicDataDir)
     
-    returnObj = True
+    reason = []
+
     # Clear out PublicData
     for root, dirs, pdFiles in os.walk(publicDataDir + '/', topdown=False):
         for dir in dirs:
@@ -233,7 +240,7 @@ def clear_publicDataDir(worker):
                 os.rmdir(dirPath)
             except OSError:
                 errPrint("Directory", dirPath, "is not empty and will not be removed")
-                returnObj = False
+                reason.append("Directory" + dirPath + "is not empty and will not be removed")
 
         for pdFile in pdFiles:
             filePath = os.path.join(root, pdFile)
@@ -241,11 +248,14 @@ def clear_publicDataDir(worker):
                 os.remove(filePath)
             except OSError:
                 errPrint("File", filePath, "could not be removed")
-                returnObj = False
+                reason.append("File" + filePath + "could not be removed")
 
-    return returnObj
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
 
-    
+    return {'verdict': True}
+
+
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
@@ -254,7 +264,6 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
         self.cruiseStartDate = ''
-        self.systemStatus = ''
         self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         self.task = None
@@ -278,7 +287,6 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
         self.cruiseID = self.OVDM.getCruiseID()
         self.cruiseStartDate = self.OVDM.getCruiseStartDate()
-        self.systemStatus = self.OVDM.getSystemStatus()
         if len(payloadObj) > 0:
             try:
                 payloadObj['cruiseID']
@@ -307,11 +315,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Worker crashed"}]))
         if int(self.task['taskID']) > 0:
-            self.OVDM.setError_task(self.task['taskID'], "Unknown Part of Task")
+            self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
-            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Unknown Part of Task')
+            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -322,7 +330,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
         
-        jobData = {'cruiseID':'', 'self.cruiseStartDate':''}
+        jobData = {}
         jobData['cruiseID'] = self.cruiseID
         jobData['cruiseStartDate'] = self.cruiseStartDate
         
@@ -331,6 +339,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
             for task in self.OVDM.getTasksForHook('setupNewCruise'):
+                debugPrint("Adding post task:", task);
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
                 
         elif current_job.task == 'finalizeCurrentCruise':
@@ -343,9 +352,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['reason'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.setIdle_task(self.task['taskID'])
         else:
@@ -402,7 +411,7 @@ def task_setupNewCruise(worker, job):
         job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
     else:
         errPrint("Failed to lockdown the CruiseData directory")
-        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail"})
+        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
         return json.dumps(job_results)
 
     debugPrint("Creating cruise data directory")
@@ -414,55 +423,67 @@ def task_setupNewCruise(worker, job):
         job_results['parts'].append({"partName": "Create cruise data directory structure", "result": "Pass"})
     else:
         errPrint("Failed to create cruise data directory")
-        job_results['parts'].append({"partName": "Create cruise data directory structure", "result": "Fail"})
+        job_results['parts'].append({"partName": "Create cruise data directory structure", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 5, 10)
     
+    #build OpenVDM Config file
+    debugPrint('Exporting Cruise Configuration')
+    ovdmConfig = worker.OVDM.getOVDMConfig()
+
+    #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
+    
+    output_results = output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig)
+    
+    if output_results['verdict']:
+        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Pass"})
+    else:
+        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Fail", "reason": output_results['reason']})
+        return json.dumps(job_results)
+    
+    output_results = setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN))
+
+    if not output_results['verdict']:
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail", "reason": output_results['reason']})
+        return json.dumps(job_results)
+    
+    worker.send_job_status(job, 7, 10)
+
     debugPrint("Creating MD5 summary files")
     completed_job_request = gm_client.submit_job("rebuildMD5Summary", job.data)
 
     resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results rebuildMD5Summary:', json.dumps(resultObj, indent=2)
 
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Pass"})
     else:
         errPrint("Failed to create MD5 summary files")
-        job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Fail"})
+        job_results['parts'].append({"partName": "Create MD5 summary files", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
         return json.dumps(job_results)
-    
-    worker.send_job_status(job, 7, 10)
+
+    worker.send_job_status(job, 8, 10)
 
     debugPrint("Creating data dashboard directory structure and manifest file")
     completed_job_request = gm_client.submit_job("rebuildDataDashboard", job.data)
 
     resultObj = json.loads(completed_job_request.result)
-    #print 'DECODED Results from rebuildDataDashboard:', json.dumps(resultObj, indent=2)
 
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Pass"})
     else:
         errPrint("Failed to create data dashboard directory structure and/or manifest file")
-        job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Create data dashboard directory structure and manifest file", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
         return json.dumps(job_results)
-    
+
     worker.send_job_status(job, 9, 10)
 
-    #build OpenVDM Config file
-    debugPrint('Exporting OpenVDM Configuration')
-    ovdmConfig = worker.OVDM.getOVDMConfig()
+    debugPrint("Updating Cruise Size")
+    cruiseSize = subprocess.check_output(['du','-sb', cruiseDir]).split()[0].decode('utf-8')
+    # print cruiseSize
 
-    #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig):
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Fail"})
-        return json.dumps(job_results)
-    
-    if not setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN)):
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail"})
-        return json.dumps(job_results)
+    worker.OVDM.set_cruiseSize(cruiseSize)
+    worker.OVDM.set_loweringSize("0")
     
     worker.send_job_status(job, 10, 10)
 
@@ -487,7 +508,7 @@ def task_finalizeCurrentCruise(worker, job):
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail", "reason": "Cruise directory: " + cruiseDir + " could not be found"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -505,14 +526,15 @@ def task_finalizeCurrentCruise(worker, job):
     
     collectionSystemTransferJobs = []
     
-    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    collectionSystemTransfers = worker.OVDM.getActiveCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
 
-        debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
-        gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
+        if collectionSystemTransfer['cruiseOrLowering'] == '0':
+            debugPrint('Adding', collectionSystemTransfer['name'], 'to the queue')        
+            gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
         
-        collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
+            collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
 
     
     worker.send_job_status(job, 3, 10)
@@ -533,41 +555,48 @@ def task_finalizeCurrentCruise(worker, job):
     if os.path.exists(os.path.join(cruiseDir, scienceDir)):
         job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail", "reason": "Science directory: " + os.path.join(cruiseDir, scienceDir) + " could not be found"})
         return json.dumps(job_results)
 
     if os.path.exists(publicDataDir):
         job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Fail", "reason": "PublicData directory: " + publicDataDir+ " could not be found"})
         return json.dumps(job_results)
 
+    output_results = transfer_PublicDataDir(worker, job)
+    debugPrint("Transfer Complete")
 
-    files = transfer_PublicDataDir(worker, job)
-    debugPrint('PublicData Transfer complete')
+    if not output_results['verdict']:
+        job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Fail", "reason": output_results['reason']})
+        return json.dumps(job_results)
+
+    job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Pass"})
+
+    files = output_results['files']
+
     debugPrint("PublicData Files Transferred:", json.dumps(files, indent=2))
 
-    if files:
-        job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Transfer PublicData files", "result": "Fail"})
-        return json.dumps(job_results)
+    debugPrint('Clearing files from PublicData')
+    output_results = clear_publicDataDir(worker)
+    debugPrint("Clearing Complete")
 
-    if(clear_publicDataDir(worker)):
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Fail"})
+        job_results['parts'].append({"partName": "Clear out PublicData files", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
-
     
     worker.send_job_status(job, 9, 10)
     
     if len(files['new']) > 0 or len(files['updated']) > 0:
 
-        if setOwnerGroupPermissions(worker, os.path.join(cruiseDir, scienceDir)):
+        output_results = setOwnerGroupPermissions(worker, os.path.join(cruiseDir, scienceDir))
+
+        if output_results['verdict']:
             job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
         else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
+            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
         
     worker.send_job_status(job, 95, 100)
@@ -577,16 +606,21 @@ def task_finalizeCurrentCruise(worker, job):
     ovdmConfig = worker.OVDM.getOVDMConfig()
 
     #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig):
+
+    output_results = output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
-    if setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN)):
+    output_results = setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN))
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     debugPrint("Initiating MD5 Summary Task")
@@ -626,37 +660,44 @@ def task_rsyncPublicDataToCruiseData(worker, job):
     if os.path.exists(os.path.join(cruiseDir, scienceDir)):
         job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail", "reason": "Unable to locate the Science directory: " + os.path.join(cruiseDir, scienceDir)})
         return json.dumps(job_results)
 
     if os.path.exists(publicDataDir):
         job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Public Data Directory exists", "result": "Fail", "reason": "Unable to locate the PublicData directory: " + publicDataDir})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 5, 10)
     
-    files = transfer_PublicDataDir(worker, job)
-    debugPrint("Files Transferred:", json.dumps(files, indent=2))
-
-    if files:
-        job_results['parts'].append({"partName": "Transfer files", "result": "Pass"})
-    else:
-        job_results['parts'].append({"partName": "Transfer files", "result": "Fail"})
+    output_results = transfer_PublicDataDir(worker, job)
+    
+    if not output_results['verdict']:
+        job_results['parts'].append({"partName": "Transfer files", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
-    worker.send_job_status(job, 9, 10)
+    job_results['parts'].append({"partName": "Transfer files", "result": "Pass"})
+
+    files = output_results['files']
+
+    debugPrint("Files Transferred:", json.dumps(files, indent=2))
+
+    worker.send_job_status(job, 8, 10)
     
     if len(files['new']) > 0 or len(files['updated']) > 0:
 
-        if setOwnerGroupPermissions(worker, os.path.join(cruiseDir, scienceDir)):
+        debugPrint("Set file permissions")
+        output_results = setOwnerGroupPermissions(worker, os.path.join(cruiseDir, scienceDir))
+        debugPrint("Set file permissions - Success")
+
+        if output_results['verdict']:
             job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
         else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
+            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
         
-        worker.send_job_status(job, 95, 100)
+        worker.send_job_status(job, 9, 100)
 
         debugPrint("Initiating MD5 Summary Task")
 
@@ -681,18 +722,17 @@ def task_exportOVDMConfig(worker, job):
 
     job_results = {'parts':[]}
 
-    cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
-    #debugPrint('cruiseDir:', cruiseDir)
-
+    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    
     publicDataDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    #debugPrint('publicDataDir:', publicDataDir)
     
     worker.send_job_status(job, 1, 10)
 
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail", "reason": "Unable to locate the cruise directory: " + cruiseDir})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 3, 10)
@@ -701,18 +741,22 @@ def task_exportOVDMConfig(worker, job):
     ovdmConfig = worker.OVDM.getOVDMConfig()
 
     #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    if output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig):
+    output_results = output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Export data to file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Export data to file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Export data to file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 6, 10)
     
-    if setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN)):
+    output_results = setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN))
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Set file ownership", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set file ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Set file ownership", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 10, 10)

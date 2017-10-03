@@ -117,7 +117,7 @@ class Config
         /*
          * Optional create a constant for the name of the site.
          */
-        define('SITETITLE', 'Open Vessel Data Management v2.3b');
+        define('SITETITLE', 'Open Vessel Data Management v2.3');
 
         /*
          * Optionall set a site email address.

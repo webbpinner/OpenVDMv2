@@ -100,48 +100,55 @@ def setOwnerGroupPermissions(worker, path):
 
     debugPrint(path)
 
+    reason = []
+
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
     if os.path.isfile(path):
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0644)
         except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
     else: #directory
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0755)
         except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
         for root, dirs, files in os.walk(path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
 
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
 
-    return True
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
 
 def output_JSONDataToFile(worker, filePath, contents):
     
@@ -149,28 +156,24 @@ def output_JSONDataToFile(worker, filePath, contents):
         os.makedirs(os.path.dirname(filePath))
     except OSError as exception:
         if exception.errno != errno.EEXIST:
-            raise
-            worker.stopJob()
             errPrint("Unable to create parent directory for data file")
-            return False
-#    finally:
-#        setOwnerGroupPermissions(worker, os.path.dirname(filePath))
+            return {'verdict': False, 'reason': 'Unable to create parent directory(ies) for data file: ' + filePath }
     
     try:
-        #print "Open JSON file"
         JSONFile = open(filePath, 'w')
 
         debugPrint("Saving JSON file:", filePath)
-        json.dump(contents, JSONFile)
+        json.dump(contents, JSONFile, indent=4)
 
     except IOError:
         errPrint("Error Saving JSON file:", filePath)
-        return False
+        return {'verdict': False, 'reason': 'Unable to create data file: ' + filePath }
 
     finally:
+        #debugPrint("Closing JSON file", filePath)
         JSONFile.close()
 
-    return True
+    return {'verdict': True}
 
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -181,6 +184,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
         self.loweringID = ''
+        self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         self.task = None
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
@@ -207,6 +211,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
 
         self.cruiseID = self.OVDM.getCruiseID()
+        self.loweringID = self.OVDM.getLoweringID()
+        self.collectionSystemTransfer['name'] = 'Unknown'
         if len(payloadObj) > 0:
             try:
                 payloadObj['cruiseID']
@@ -222,6 +228,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             else:
                 self.loweringID = payloadObj['loweringID']
 
+            try:
+                payloadObj['collectionSystemTransferID']
+            except KeyError:
+                self.collectionSystemTransfer['name'] = 'Unknown'
+            else:
+                self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])
+
         if int(self.task['taskID']) > 0:
 
             self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
@@ -236,7 +249,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown, contact Webb :-)"}]))
         if int(self.task['taskID']) > 0:
             self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
@@ -276,9 +289,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['reason'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['reason'])
             else:
                 if int(self.task['taskID']) > 0:
                     self.OVDM.setIdle_task(self.task['taskID'])
@@ -333,7 +346,7 @@ def task_updateDataDashboard(worker, job):
     
     dataDashboardDir = os.path.join(cruiseDir, worker.OVDM.getRequiredExtraDirectoryByName('Dashboard Data')['destDir'])
     dataDashboardManifestFilePath = os.path.join(dataDashboardDir, dataDashboardManifestFN)
-    collectionSystemTransfer = worker.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID'])
+    collectionSystemTransfer = worker.collectionSystemTransfer
 
     worker.send_job_status(job, 5, 100)
 
@@ -381,8 +394,13 @@ def task_updateDataDashboard(worker, job):
         rawFilePath = os.path.join(cruiseDir, filename)
         jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
 
+        if not os.path.isfile(rawFilePath):
+            job_results['parts'].append({"partName": "Verify data file exists", "result": "Fail", "reason": "Unable to find data file: " + filename})
+            debugPrint("File not found, skipping")
+            continue
+
         if os.stat(rawFilePath).st_size == 0:
-            debugPrint("File is empty")
+            debugPrint("File is empty, skipping")
             continue
 
         command = ['python', processingScriptFilename, '--dataType', rawFilePath]
@@ -411,7 +429,7 @@ def task_updateDataDashboard(worker, job):
                     outObj = json.loads(out)
                 except:
                     errPrint("Error parsing JSON output from file", filename)
-                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
+                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": "Error parsing JSON output from file: " + filename})
                     continue
                 else:
                     if 'error' in outObj:
@@ -420,19 +438,21 @@ def task_updateDataDashboard(worker, job):
                         errPrint(errorTitle + ': ', errorBody)
                         worker.OVDM.sendMsg(errorTitle,errorBody)
                     else:
-                        if output_JSONDataToFile(worker, jsonFilePath, outObj):
+                        output_results = output_JSONDataToFile(worker, jsonFilePath, outObj)
+
+                        if output_results['verdict']:
                             job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
                         else:
-                            errorTitle = 'Datafile Parsing error'
-                            errorBody = "Error Writing DashboardData file: " + filename
+                            errorTitle = 'Data Dashboard Processing failed'
+                            errorBody = "Error Writing DashboardData file: " + filename + ". Reason: " + output_results['reason']
                             errPrint(errorTitle + ':', errorBody)
                             worker.OVDM.sendMsg(errorTitle,errorBody)
-                            job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail"})
+                            job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail", "reason": output_results['reason']})
 
                         newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
             else:
-                errorTitle = 'No JSON output recieved from file'
-                errorBody = 'Parsing Command: ' + s.join(command)
+                errorTitle = 'Data Dashboard Processing failed'
+                errorBody = 'No JSON output recieved from file.  Parsing Command: ' + s.join(command)
                 errPrint(errorTitle + ': ', errorBody)
                 worker.OVDM.sendMsg(errorTitle,errorBody)
                 removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
@@ -465,7 +485,7 @@ def task_updateDataDashboard(worker, job):
 
         except IOError:
             errPrint("Error Reading Dashboard Manifest file")
-            job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Fail"})
+            job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Fail", "reason": "Error reading dashboard manifest file: " + dataDashboardManifestFilePath})
             return json.dumps(job_results)
 
         finally:
@@ -505,20 +525,24 @@ def task_updateDataDashboard(worker, job):
         if row_removed:
             debugPrint(row_removed, "row(s) removed")
 
-        if output_JSONDataToFile(worker, dataDashboardManifestFilePath, existingManifestEntries):
+        output_results = output_JSONDataToFile(worker, dataDashboardManifestFilePath, existingManifestEntries)
+
+        if output_results['verdict']:
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
         else:
             errPrint("Error Writing Dashboard manifest file")
-            job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail"})
+            job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
     
         worker.send_job_status(job, 9, 10)
         debugPrint("Setting file permissions")
 
-        if setOwnerGroupPermissions(worker, dataDashboardDir):
+        output_results = setOwnerGroupPermissions(worker, dataDashboardDir)
+
+        if output_results['verdict']:
             job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
         else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail"})
+            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
 
     worker.send_job_status(job, 10, 10)
@@ -543,6 +567,13 @@ def task_rebuildDataDashboard(worker, job):
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
     dataDashboardDir = os.path.join(cruiseDir, worker.OVDM.getRequiredExtraDirectoryByName('Dashboard Data')['destDir'])
     dataDashboardManifestFilePath = os.path.join(dataDashboardDir, dataDashboardManifestFN)
+
+    if os.path.exists(dataDashboardDir):
+        job_results['parts'].append({"partName": "Verify Data Dashboard Directory exists", "result": "Pass"})
+    else:
+        errPrint("Data dashboard directory not found")
+        job_results['parts'].append({"partName": "Verify Data Dashboard Directory exists", "result": "Fail", "reason": "Unable to locate the data dashboard directory: " + dataDashboardDir})
+        return json.dumps(job_results)
 
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
     
@@ -624,18 +655,20 @@ def task_rebuildDataDashboard(worker, job):
                         errorBody = 'Invalid JSON output recieved from processing. Command: ' + s.join(command)
                         errPrint(errorTitle + ':', errorBody)
                         worker.OVDM.sendMsg(errorTitle,errorBody)
-                        job_results['parts'].append({"partName": "Parsing JSON output " + filename, "result": "Fail"})
+                        job_results['parts'].append({"partName": "Parsing JSON output " + filename, "result": "Fail", "reason": errorTitle + ':' + errorBody})
                     else:
                         if 'error' in outObj:
                             errorTitle = 'Error processing file'
                             errorBody = outObj['error']
                             errPrint(errorTitle + ':', errorBody)
                             worker.OVDM.sendMsg(errorTitle,errorBody)
-                            job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Fail"})
+                            job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Fail", "reason": errorTitle + ':' + errorBody})
 
                         else:
                             #job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Pass"})
-                            if output_JSONDataToFile(worker, jsonFilePath, outObj):
+                            output_results = output_JSONDataToFile(worker, jsonFilePath, outObj)
+
+                            if output_results['verdict']:
                                 job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
                             else:
                                 errorTitle = 'Error writing file'
@@ -643,7 +676,7 @@ def task_rebuildDataDashboard(worker, job):
                                 errPrint(errorTitle + ':', errorBody)
                                 worker.OVDM.sendMsg(errorTitle,errorBody)
 
-                                job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail"})
+                                job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail", "reason": output_results['verdict']})
 
                             newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
                 else:
@@ -651,7 +684,7 @@ def task_rebuildDataDashboard(worker, job):
                     errorBody = 'No JSON output recieved from file. Processing Command: ' + s.join(command)
                     errPrint(errorTitle + ':', errorBody)
                     worker.OVDM.sendMsg(errorTitle,errorBody)
-                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
+                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": errorTitle + ': ' + errorBody})
                     
                     if err:
                         errPrint('err:', err)
@@ -672,21 +705,25 @@ def task_rebuildDataDashboard(worker, job):
     worker.send_job_status(job, 90, 100)
 
     debugPrint("Update Dashboard Manifest file")
-    if output_JSONDataToFile(worker, dataDashboardManifestFilePath, newManifestEntries):
+    output_results = output_JSONDataToFile(worker, dataDashboardManifestFilePath, newManifestEntries)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Updating manifest file", "result": "Pass"})
     else:
         errPrint("Error updating manifest file")
-        job_results['parts'].append({"partName": "Updating manifest file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Updating manifest file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 95, 100)
 
     debugPrint("Setting file permissions")
-    if(setOwnerGroupPermissions(worker, dataDashboardDir)):
+    output_results = setOwnerGroupPermissions(worker, dataDashboardDir)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
     else:
         errPrint("Error Setting file/directory ownership")
-        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 99, 100)

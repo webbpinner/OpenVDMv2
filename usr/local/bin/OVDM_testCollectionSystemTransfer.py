@@ -81,16 +81,17 @@ def test_localSourceDir(worker):
     sourceDir = build_sourceDir(worker)
     debugPrint('Source Dir:', sourceDir)
     if not os.path.isdir(sourceDir):
-        returnVal.append({"testName": "Source Directory", "result": "Fail"})
+        returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " on the Data Warehouse"})
+        if worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
+            returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " on the Data Warehouse"})
     else:
         returnVal.append({"testName": "Source Directory", "result": "Pass"})
 
         if worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
             if not os.path.ismount(sourceDir):
-                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail"})
+                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail", "reason": "Source directory: " + sourceDir + " is not a mountpoint on the Data Warehouse "})
             else:
                 returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Pass"})
-
 
     return returnVal
 
@@ -105,7 +106,6 @@ def test_smbSourceDir(worker):
     # Verify the server exists
     if worker.collectionSystemTransfer['smbUser'] == 'guest':
         command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-N']
-        debugPrint('huh?')
     else:
         command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
 
@@ -121,9 +121,10 @@ def test_smbSourceDir(worker):
             foundServer = True
 
     if not foundServer:
-        returnVal.append({"testName": "SMB Server", "result": "Fail"})
-        returnVal.append({"testName": "SMB Share", "result": "Fail"})
-        returnVal.append({"testName": "Source Directory", "result": "Fail"})
+        debugPrint("Server Test Failed")
+        returnVal.append({"testName": "SMB Server", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.collectionSystemTransfer['smbServer'] + " as " + worker.collectionSystemTransfer['smbUser']})
+        returnVal.append({"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.collectionSystemTransfer['smbServer'] + " as " + worker.collectionSystemTransfer['smbUser']})
+        returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.collectionSystemTransfer['smbServer'] + " as " + worker.collectionSystemTransfer['smbUser']})
     else:
         returnVal.append({"testName": "SMB Server", "result": "Pass"})
 
@@ -144,8 +145,9 @@ def test_smbSourceDir(worker):
         proc.communicate()
 
         if proc.returncode != 0:
-            returnVal.append({"testName": "SMB Share", "result": "Fail"})
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
+            debugPrint("Connection Test Failed")
+            returnVal.append({"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Share: " + worker.collectionSystemTransfer['smbServer'] + " as " + worker.collectionSystemTransfer['smbUser']})
+            returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Share: " + worker.collectionSystemTransfer['smbServer'] + " as " + worker.collectionSystemTransfer['smbUser']})
         else:
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
@@ -154,7 +156,8 @@ def test_smbSourceDir(worker):
             if os.path.isdir(sourceDir):
                 returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
-                returnVal.append({"testName": "Source Directory", "result": "Fail"})
+                debugPrint("Source Directory Test Failed")
+                returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " within the SMB Share: " + worker.collectionSystemTransfer['smbServer']})
 
             # Unmount SMB Share
             subprocess.call(['sudo', 'umount', mntPoint])
@@ -185,7 +188,7 @@ def test_rsyncSourceDir(worker):
 
     except IOError:
         errPrint("Error Saving temporary rsync password file")
-        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail", "reason": "Unable to create temporary rsync password file: " + rsyncPasswordFilePath})
         rsyncPasswordFile.close()
 
         # Cleanup
@@ -205,7 +208,12 @@ def test_rsyncSourceDir(worker):
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
 
-    if proc.returncode == 0:
+    if proc.returncode != 0:
+        debugPrint("Connection Test Failed")
+        returnVal.append({"testName": "Rsync Connection", "result": "Fail", "reason": "Unable to connect to rsync server: " + worker.collectionSystemTransfer['rsyncServer'] + " as " + worker.collectionSystemTransfer['rsyncUser']})
+        returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to connect to rsync server: " + worker.collectionSystemTransfer['rsyncServer'] + " as " + worker.collectionSystemTransfer['rsyncUser']})
+
+    else:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
         sourceDir = build_sourceDir(worker)
@@ -219,13 +227,11 @@ def test_rsyncSourceDir(worker):
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
-        if proc.returncode == 0:
-            returnVal.append({"testName": "Source Directory", "result": "Pass"})
+        if proc.returncode != 0:
+            debugPrint("Source Directory Test Failed")
+            returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " on the Rsync Server: " + worker.collectionSystemTransfer['rsyncServer']})
         else:
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
-    else:
-        returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
-        returnVal.append({"testName": "Source Directory", "result": "Fail"})
+            returnVal.append({"testName": "Source Directory", "result": "Pass"})
 
     # Cleanup
     shutil.rmtree(tmpdir)
@@ -250,8 +256,12 @@ def test_sshSourceDir(worker):
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     proc.communicate()
 
-    debugPrint(proc.returncode)
-    if proc.returncode == 0:
+    #debugPrint(proc.returncode)
+    if proc.returncode != 0:
+        debugPrint("Connection Test Failed")
+        returnVal.append({"testName": "SSH Connection", "result": "Fail", "reason": "Unable to connect to ssh server: " + worker.collectionSystemTransfer['sshServer'] + " as " + worker.collectionSystemTransfer['sshUser']})
+        returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to connect to ssh server: " + worker.collectionSystemTransfer['sshServer'] + " as " + worker.collectionSystemTransfer['sshUser']})
+    else:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
         sourceDir = build_sourceDir(worker)
@@ -268,87 +278,13 @@ def test_sshSourceDir(worker):
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         proc.communicate()
 
-        if proc.returncode == 0:
-            returnVal.append({"testName": "Source Directory", "result": "Pass"})
+        if proc.returncode != 0:
+            debugPrint("Source Directory Test Failed")
+            returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " on the SSH Server: " + worker.collectionSystemTransfer['sshServer']})
         else:
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
-    else:
-        returnVal.append({"testName": "SSH Connection", "result": "Fail"})
-        returnVal.append({"testName": "Source Directory", "result": "Fail"})
+            returnVal.append({"testName": "Source Directory", "result": "Pass"})
         
     #print json.dumps(returnVal, indent=2)
-    return returnVal
-
-
-def test_nfsSourceDir(worker):
-    returnVal = []
-
-    # Create temp directory
-    tmpdir = tempfile.mkdtemp()
-    
-    command = ['rpcinfo', '-s', worker.collectionSystemTransfer['nfsServer'].split(":")[0]]
-    
-    s = ' '
-    debugPrint('Connection Command:', s.join(command))
-    
-    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    lines_iterator = iter(proc.stdout.readline, b"")
-    
-    foundNFS = False
-    foundMountd = False
-    
-    for line in lines_iterator:
-        if foundNFS and foundMountd:
-            break
-        lineArray = line.split()
-        if lineArray[3] == 'nfs':
-            foundNFS = True
-            continue
-        if lineArray[3] == 'mountd':
-            foundMountd = True
-            continue
-    
-    if not foundNFS or not foundMountd:
-        returnVal.append({"testName": "NFS Server", "result": "Fail"})
-        returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})        
-        returnVal.append({"testName": "Source Directory", "result": "Fail"})
-    else:
-        returnVal.append({"testName": "NFS Server", "result": "Pass"})
-    
-        # Create mountpoint
-        mntPoint = os.path.join(tmpdir, 'mntpoint')
-        os.mkdir(mntPoint, 0755)
-
-        # Mount NFS Share
-
-        command = ['sudo', 'mount', '-t', 'nfs', worker.collectionSystemTransfer['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
-
-        s = ' '
-        debugPrint('Connection Command:', s.join(command))
-
-        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        proc.communicate()
-
-        if proc.returncode != 0:
-            returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})
-            returnVal.append({"testName": "Source Directory", "result": "Fail"})
-        else:
-            returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
-
-            # If mount is successful, test source directory
-            sourceDir = os.path.join(mntPoint, build_sourceDir(worker))
-            debugPrint('Source Dir:', sourceDir)
-            if os.path.isdir(sourceDir):
-                returnVal.append({"testName": "Source Directory", "result": "Pass"})
-            else:
-                returnVal.append({"testName": "Source Directory", "result": "Fail"})
-
-            # Unmount SMB Share
-            subprocess.call(['sudo', 'umount', mntPoint])
-
-    # Cleanup
-    shutil.rmtree(tmpdir)
-
     return returnVal
 
 
@@ -366,8 +302,8 @@ def test_destDir(worker):
     if os.path.isdir(destDir):
         return [{"testName": "Destination Directory", "result": "Pass"}]
     else:
-        debugPrint(destDir)
-        return [{"testName": "Destination Directory", "result": "Fail"}]
+        debugPrint("Destination directory test failed")
+        return [{"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " on Data Warehouse"}]
 
     
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -426,7 +362,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "connection test failed at:    ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail", "reason": "Unknown"},{"testName": "Final Verdict", "result": "Fail", "reason": "Worker crashed for unknown reason"}]))
         
         self.OVDM.sendMsg(current_job.handle, 'Worker crashed testing ' + self.collectionSystemTransfer['name'])
         
@@ -443,14 +379,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
         if self.collectionSystemTransfer['collectionSystemTransferID'] != None: # collectionSystemTransferID == None would be testing a new, unsaved config
             if resultsObj['parts'][-1]['result'] == "Fail":
-                for test in resultsObj['parts']:
-                    if test['result'] == "Fail":
-                        self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], 'Reason: ' + test['testName'])
-                        break
+                self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
-
-
 
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "connection test ended at:    ", time.strftime("%D %T", time.gmtime()))
 
@@ -484,7 +415,7 @@ def task_testCollectionSystemTransfer(worker, job):
 
     worker.send_job_status(job, 1, 4)
     
-    debugPrint("Test Source Directory")
+    #debugPrint("Test Source Directory")
     if worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
         job_results['parts'] = test_localSourceDir(worker)
     elif  worker.collectionSystemTransfer['transferType'] == "2": # Rsync Server
@@ -493,23 +424,25 @@ def task_testCollectionSystemTransfer(worker, job):
         job_results['parts'] += test_smbSourceDir(worker)
     elif  worker.collectionSystemTransfer['transferType'] == "4": # SSH Server
         job_results['parts'] += test_sshSourceDir(worker)
-    elif  worker.collectionSystemTransfer['transferType'] == "5": # NFS Server/Path
-        job_results['parts'] += test_nfsSourceDir(worker)
 
     worker.send_job_status(job, 2, 4)
 
-    debugPrint(json.dumps(worker.collectionSystemTransfer))
+    #debugPrint(json.dumps(worker.collectionSystemTransfer))
     if worker.collectionSystemTransfer['enable'] == '1':
-        debugPrint("Test Destination Directory")
+        #debugPrint("Test Destination Directory")
         job_results['parts'] += test_destDir(worker)
         worker.send_job_status(job, 3, 4)
         
-    verdict = "Pass"
+    verdict = True
     for test in job_results['parts']:
         if test['result'] == "Fail":
-            verdict = "Fail"
+            verdict = False
+            job_results['parts'].append({"testName": "Final Verdict", "result": "Fail", "reason": test['reason']})
+            break
 
-    job_results['parts'].append({"testName": "Final Verdict", "result": verdict})
+    if verdict:
+        job_results['parts'].append({"testName": "Final Verdict", "result": "Pass"})
+
     worker.send_job_status(job, 4, 4)
 
     return json.dumps(job_results)

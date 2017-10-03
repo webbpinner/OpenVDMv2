@@ -37,6 +37,12 @@ class CruiseDataTransfers extends Controller {
         return $trueFalse;
     }
     
+    private function _buildIncludeOVDMFilesOptions() {
+        
+        $trueFalse = array(array('id'=>'includeOVDMFilesOptions0', 'name'=>'includeOVDMFiles', 'value'=>'0', 'label'=>'No'), array('id'=>'includeOVDMFilesOptions1', 'name'=>'includeOVDMFiles', 'value'=>'1', 'label'=>'Yes'));
+        return $trueFalse;
+    }
+
     public function __construct(){
         if(!Session::get('loggedin')){
             Url::redirect('config/login');
@@ -61,10 +67,13 @@ class CruiseDataTransfers extends Controller {
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($_POST['transferType']);
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
+        $data['includeOVDMFilesOptions'] = $this->_buildIncludeOVDMFilesOptions();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
             $longName = $_POST['longName'];
+            $includeOVDMFiles = $_POST['includeOVDMFiles'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
             $transferType = $_POST['transferType'];
             $destDir = $_POST['destDir'];
             $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
@@ -79,9 +88,6 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
-            $nfsServer = $_POST['nfsServer'];
-            //$nfsUser = $_POST['nfsUser'];
-            //$nfsPass = $_POST['nfsPass'];
             $status = 3;
             $enable = 0;
 
@@ -99,7 +105,11 @@ class CruiseDataTransfers extends Controller {
 
             if($destDir == ''){
                 $error[] = 'Destination Directory is required';
-            } 
+            }
+
+            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+                $error[] = 'Transfer limit must be an integer';
+            }
 
             if ($transferType == 1) { //local directory
                 $smbServer = '';
@@ -113,10 +123,7 @@ class CruiseDataTransfers extends Controller {
                 $sshUser = '';
                 $sshUseKey = '0';
                 $sshPass = '';
-                $nfsServer = '';
-                //$nfsUser = '';
-                //$nfsPass = '';
-            
+
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
                 if($rsyncServer == ''){
@@ -144,9 +151,6 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshUseKey = '0';
                     $sshPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 3) { // SMB Share
@@ -180,9 +184,6 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshUseKey = '0';
                     $sshPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
                 }
                         
             } elseif ($transferType == 4) { // SSH Server
@@ -211,41 +212,6 @@ class CruiseDataTransfers extends Controller {
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
-                }
-
-            } elseif ($transferType == 5) { // NFS Server
-                $nfsDataCheck = true;
-                if($nfsServer == ''){
-                    $error[] = 'NFS Server is required';
-                    $nfsDataCheck = false;
-                } 
-
-                //if($nfsUser == ''){
-                //    $error[] = 'NFS Username is required';
-                //    $nfsDataCheck = false;
-                //} 
-
-                //if($nfsUser != 'anonymous' && $nfsPass == ''){
-                //    $error[] = 'NFS Password is required';
-                //    $nfsDataCheck = false;
-                //}
-                
-                if($nfsDataCheck) {
-                    $localDirIsMountPoint = '0';
-                    $smbServer = '';
-                    $smbUser = '';
-                    $smbDomain = '';
-                    $smbPass = '';
-                    $rsyncServer = '';
-                    $rsyncUser = '';
-                    $rsyncPass = '';
-                    $sshServer = '';
-                    $sshUser = '';
-                    $sshUseKey = '0';
-                    $sshPass = '';
                 }
             }
 
@@ -253,6 +219,8 @@ class CruiseDataTransfers extends Controller {
                 $postdata = array(
                     'name' => $name,
                     'longName' => $longName,
+                    'includeOVDMFiles' => $includeOVDMFiles,
+                    'bandwidthLimit' => $bandwidthLimit,
                     'transferType' => $transferType,
                     'destDir' => $destDir,
                     'localDirIsMountPoint' => $localDirIsMountPoint,
@@ -267,9 +235,6 @@ class CruiseDataTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
-                    'nfsServer' => $nfsServer,
-                    //'nfsUser' => $nfsUser,
-                    //'nfsPass' => $nfsPass,
                     'status' => $status,
                     'enable' => $enable
                 );
@@ -281,6 +246,8 @@ class CruiseDataTransfers extends Controller {
         } elseif(isset($_POST['inlineTest'])){
             $name = $_POST['name'];
             $longName = $_POST['longName'];
+            $includeOVDMFiles = $_POST['includeOVDMFiles'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
             $transferType = $_POST['transferType'];
             $destDir = $_POST['destDir'];
             $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
@@ -295,9 +262,6 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
-            $nfsServer = $_POST['nfsServer'];
-            //$nfsUser = $_POST['nfsUser'];
-            //$nfsPass = $_POST['nfsPass'];
             $status = 3;
             $enable = 0;
 
@@ -317,11 +281,15 @@ class CruiseDataTransfers extends Controller {
                 $error[] = 'Destination Directory is required';
             } 
 
+            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+                $error[] = 'Transfer limit must be an integer';
+            }
+
             if ($transferType == 1) { //local directory
                 $smbServer = '';
                 $smbUser = '';
-                $smbDomain = '';
                 $smbPass = '';
+                $smbDomain = '';
                 $rsyncServer = '';
                 $rsyncUser = '';
                 $rsyncPass = '';
@@ -329,9 +297,6 @@ class CruiseDataTransfers extends Controller {
                 $sshUser = '';
                 $sshUseKey = '0';
                 $sshPass = '';
-                $nfsServer = '';
-                //$nfsUser = '';
-                //$nfsPass = '';
             
             } elseif ($transferType == 2) { // Rsync Server
                 $rsyncDataCheck = true;
@@ -360,9 +325,6 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshUseKey = '0';
                     $sshPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 3) { // SMB Share
@@ -396,9 +358,6 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshUseKey = '0';
                     $sshPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
                 }
             
             } elseif ($transferType == 4) { // SSH Server
@@ -427,42 +386,7 @@ class CruiseDataTransfers extends Controller {
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
-                }
-                
-            } elseif ($transferType == 5) { // NFS Server
-                $nfsDataCheck = true;
-                if($nfsServer == ''){
-                    $error[] = 'NFS Server is required';
-                    $nfsDataCheck = false;
-                } 
-
-                //if($nfsUser == ''){
-                //    $error[] = 'NFS Username is required';
-                //    $nfsDataCheck = false;
-                //} 
-
-                //if($nfsUser != 'anonymous' && $nfsPass == ''){
-                //    $error[] = 'NFS Password is required';
-                //    $nfsDataCheck = false;
-                //}
-                
-                if($nfsDataCheck) {
-                    $localDirIsMountPoint = '0';
-                    $smbServer = '';
-                    $smbUser = '';
-                    $smbDomain = '';
-                    $smbPass = '';
-                    $rsyncServer = '';
-                    $rsyncUser = '';
-                    $rsyncPass = '';
-                    $sshServer = '';
-                    $sshUser = '';
-                    $sshUseKey = '0';
-                    $sshPass = '';
-                }
+                }                
             }
 
             if(!$error){
@@ -470,6 +394,8 @@ class CruiseDataTransfers extends Controller {
                 $gmData['cruiseDataTransfer'] = (object)array(
                     'name' => $name,
                     'longName' => $longName,
+                    'includeOVDMFiles' => $includeOVDMFiles,
+                    'bandwidthLimit' => $bandwidthLimit,
                     'transferType' => $transferType,
                     'destDir' => $destDir,
                     'localDirIsMountPoint' => $localDirIsMountPoint,
@@ -484,12 +410,9 @@ class CruiseDataTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
-                    'nfsServer' => $nfsServer,
-                    //'nfsUser' => $nfsUser,
-                    //'nfsPass' => $nfsPass,
                     'status' => '4',
                     'enable' => '0'
-                    );
+                );
             
                 # create the gearman client
                 $gmc= new \GearmanClient();
@@ -512,14 +435,18 @@ class CruiseDataTransfers extends Controller {
     public function edit($id){
         $data['title'] = 'Edit Cruise Data Transfer';
         $data['javascript'] = array('cruiseDataTransfersFormHelper');
-        $data['transferTypeOptions'] = $this->_buildTransferTypesOptions($data['row'][0]->transferType);
+        $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
+        $data['includeOVDMFilesOptions'] = $this->_buildIncludeOVDMFilesOptions();
+
         $data['row'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id);
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
             $longName = $_POST['longName'];
+            $includeOVDMFiles = $_POST['includeOVDMFiles'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
             $transferType = $_POST['transferType'];
             $destDir = $_POST['destDir'];
             $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
@@ -534,9 +461,6 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
-            $nfsServer = $_POST['nfsServer'];
-            //$nfsUser = $_POST['nfsUser'];
-            //$nfsPass = $_POST['nfsPass'];
 
             if($name == ''){
                 $error[] = 'Name is required';
@@ -552,13 +476,17 @@ class CruiseDataTransfers extends Controller {
 
             if($destDir == ''){
                 $error[] = 'Destination Directory is required';
-            } 
+            }
+
+            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+                $error[] = 'Transfer limit must be an integer';
+            }
 
             if ($transferType == 1) { //local directory
                 $smbServer = '';
                 $smbUser = '';
-                $smbDomain = '';
                 $smbPass = '';
+                $smbDomain = '';
                 $rsyncServer = '';
                 $rsyncUser = '';
                 $rsyncPass = '';
@@ -566,9 +494,6 @@ class CruiseDataTransfers extends Controller {
                 $sshUser = '';
                 $sshUseKey = '0';
                 $sshPass = '';
-                $nfsServer = '';
-                //$nfsUser = '';
-                //$nfsPass = '';
             
             } elseif ($transferType == 2) { //rsync
                 $rsyncDataCheck = true;
@@ -597,9 +522,6 @@ class CruiseDataTransfers extends Controller {
                     $sshUser = '';
                     $sshUseKey = '0';
                     $sshPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
                 }
 
             } elseif ($transferType == 3) { //smb
@@ -614,10 +536,10 @@ class CruiseDataTransfers extends Controller {
                     $smbDataCheck = false;
                 } 
 
-                if($smbUser != 'guest' && $smbPass == ''){
-                    $error[] = 'SMB Password is required';
-                    $smbDataCheck = false;
-                } 
+//                if($smbUser != 'guest' && $smbPass == ''){
+//                    $error[] = 'SMB Password is required';
+//                    $smbDataCheck = false;
+//                } 
                         
                 if($smbDomain == ''){
                     $smbDomain = 'WORKGROUP';
@@ -632,9 +554,197 @@ class CruiseDataTransfers extends Controller {
                     $sshServer = '';
                     $sshUser = '';
                     $sshPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
+                }
+            } elseif ($transferType == 4) { // SSH Server
+                $sshDataCheck = true;
+                if($sshServer == ''){
+                    $error[] = 'SSH Server is required';
+                    $sshDataCheck = false;
+                } 
+
+                if($sshUser == ''){
+                    $error[] = 'SSH Username is required';
+                    $sshDataCheck = false;
+                } 
+
+                if(($sshPass == '') && ($sshUseKey == '0')){
+                    $error[] = 'SSH Password is required';
+                    $sshDataCheck = false;
+                } 
+                
+                if($sshDataCheck) {
+                    $localDirIsMountPoint = '0';
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                }
+            }
+                
+            if(!$error){
+                $postdata = array(
+                    'name' => $name,
+                    'longName' => $longName,
+                    'includeOVDMFiles' => $includeOVDMFiles,
+                    'bandwidthLimit' => $bandwidthLimit,
+                    'transferType' => $transferType,
+                    'destDir' => $destDir,
+                    'localDirIsMountPoint' => $localDirIsMountPoint,
+                    'rsyncServer' => $rsyncServer,
+                    'rsyncUser' => $rsyncUser,
+                    'rsyncPass' => $rsyncPass,
+                    'smbServer' => $smbServer,
+                    'smbUser' => $smbUser,
+                    'smbPass' => $smbPass,
+                    'smbDomain' => $smbDomain,
+                    'sshServer' => $sshServer,
+                    'sshUser' => $sshUser,
+                    'sshUseKey' => $sshUseKey,
+                    'sshPass' => $sshPass,
+                );
+                
+                $where = array('cruiseDataTransferID' => $id);
+                $this->_cruiseDataTransfersModel->updateCruiseDataTransfer($postdata,$where);
+                
+                Session::set('message','Cruise Data Transfers Updated');
+                Url::redirect('config/cruiseDataTransfers');
+            } else {
+                
+                $data['row'][0]->name = $name;
+                $data['row'][0]->longName = $longName;
+                $data['row'][0]->includeOVDMFiles = $includeOVDMFiles;
+                $data['row'][0]->bandwidthLimit = $bandwidthLimit;
+                $data['row'][0]->transferType = $transferType;
+                $data['row'][0]->destDir = $destDir;
+                $data['row'][0]->localDirIsMountPoint = $localDirIsMountPoint;
+                $data['row'][0]->rsyncServer = $rsyncServer;
+                $data['row'][0]->rsyncUser = $rsyncUser;
+                $data['row'][0]->rsyncPass = $rsyncPass;
+                $data['row'][0]->smbServer = $smbServer;
+                $data['row'][0]->smbUser = $smbUser;
+                $data['row'][0]->smbPass = $smbPass;
+                $data['row'][0]->smbDomain = $smbDomain;
+                $data['row'][0]->sshServer = $sshServer;
+                $data['row'][0]->sshUser = $sshUser;
+                $data['row'][0]->sshUseKey = $sshUseKey;
+                $data['row'][0]->sshPass = $sshPass;
+            }
+        } else if(isset($_POST['inlineTest'])){
+
+            $name = $_POST['name'];
+            $longName = $_POST['longName'];
+            $includeOVDMFiles = $_POST['includeOVDMFiles'];
+            $bandwidthLimit = $_POST['bandwidthLimit'];
+            $transferType = $_POST['transferType'];
+            $destDir = $_POST['destDir'];
+            $localDirIsMountPoint = $_POST['localDirIsMountPoint'];
+            $rsyncServer = $_POST['rsyncServer'];
+            $rsyncUser = $_POST['rsyncUser'];
+            $rsyncPass = $_POST['rsyncPass'];
+            $smbServer = $_POST['smbServer'];
+            $smbUser = $_POST['smbUser'];
+            $smbPass = $_POST['smbPass'];
+            $smbDomain = $_POST['smbDomain'];
+            $sshServer = $_POST['sshServer'];
+            $sshUser = $_POST['sshUser'];
+            $sshUseKey = $_POST['sshUseKey'];
+            $sshPass = $_POST['sshPass'];
+
+            if($name == ''){
+                $error[] = 'Name is required';
+            } 
+
+            if($longName == ''){
+                $error[] = 'Long name is required';
+            } 
+
+            if($transferType == ''){
+                $error[] = 'Transfer type is required';
+            } 
+
+            if($destDir == ''){
+                $error[] = 'Destination Directory is required';
+            }
+
+            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+                $error[] = 'Transfer limit must be an integer';
+            }
+
+            if ($transferType == 1) { //local directory
+                $smbServer = '';
+                $smbUser = '';
+                $smbPass = '';
+                $smbDomain = '';
+                $rsyncServer = '';
+                $rsyncUser = '';
+                $rsyncPass = '';
+                $sshServer = '';
+                $sshUser = '';
+                $sshUseKey = '0';
+                $sshPass = '';
+            
+            } elseif ($transferType == 2) { //rsync
+                $rsyncDataCheck = true;
+                if($rsyncServer == ''){
+                    $error[] = 'Rsync Server is required';
+                    $rsyncDataCheck = false;
+                } 
+
+                if($rsyncUser == ''){
+                    $error[] = 'Rsync Username is required';
+                    $rsyncDataCheck = false;
+                } 
+
+                if($rsyncUser != 'anonymous' && $rsyncPass == ''){
+                    $error[] = 'Rsync Password is required';
+                    $rsyncDataCheck = false;
+                }
+                
+                if($rsyncDataCheck) {
+                    $localDirIsMountPoint = '0';
+                    $smbServer = '';
+                    $smbUser = '';
+                    $smbDomain = '';
+                    $smbPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshUseKey = '0';
+                    $sshPass = '';
+                }
+
+            } elseif ($transferType == 3) { //smb
+                $smbDataCheck = true;
+                if($smbServer == ''){
+                    $error[] = 'SMB Server is required';
+                    $smbDataCheck = false;
+                } 
+
+                if($smbUser == ''){
+                    $error[] = 'SMB Username is required';
+                    $smbDataCheck = false;
+                } 
+
+//                if($smbUser != 'guest' && $smbPass == ''){
+//                    $error[] = 'SMB Password is required';
+//                    $smbDataCheck = false;
+//                } 
+                        
+                if($smbDomain == ''){
+                    $smbDomain = 'WORKGROUP';
+                    $smbDataCheck = false;
+                }
+                
+                if($smbDataCheck) {
+                    $localDirIsMountPoint = '0';
+                    $rsyncServer = '';
+                    $rsyncUser = '';
+                    $rsyncPass = '';
+                    $sshServer = '';
+                    $sshUser = '';
+                    $sshPass = '';
                 }
             } elseif ($transferType == 4) { //ssh
                 $sshDataCheck = true;
@@ -662,156 +772,65 @@ class CruiseDataTransfers extends Controller {
                     $rsyncServer = '';
                     $rsyncUser = '';
                     $rsyncPass = '';
-                    $nfsServer = '';
-                    //$nfsUser = '';
-                    //$nfsPass = '';
-                }
-                
-            } elseif ($transferType == 5) { //nfs
-                $nfsDataCheck = true;
-                if($nfsServer == ''){
-                    $error[] = 'NFS Server is required';
-                    $nfsDataCheck = false;
-                } 
-
-                //if($nfsUser == ''){
-                //    $error[] = 'NFS Username is required';
-                //    $nfsDataCheck = false;
-                //} 
-
-                //if($nfsUser != 'anonymous' && $nfsPass == ''){
-                //    $error[] = 'NFS Password is required';
-                //    $nfsDataCheck = false;
-                //} 
-                
-                if($nfsDataCheck) {
-                    $localDirIsMountPoint = '0';
-                    $smbServer = '';
-                    $smbUser = '';
-                    $smbDomain = '';
-                    $smbPass = '';
-                    $rsyncServer = '';
-                    $rsyncUser = '';
-                    $rsyncPass = '';
-                    $sshServer = '';
-                    $sshUser = '';
-                    $sshUseKey = '0';
-                    $sshPass = '';
                 }
             }
                 
             if(!$error){
-                $postdata = array(
-                    'name' => $name,
-                    'longName' => $longName,
-                    'transferType' => $transferType,
-                    'destDir' => $destDir,
-                    'localDirIsMountPoint' => $localDirIsMountPoint,
-                    'rsyncServer' => $rsyncServer,
-                    'rsyncUser' => $rsyncUser,
-                    'rsyncPass' => $rsyncPass,
-                    'smbServer' => $smbServer,
-                    'smbUser' => $smbUser,
-                    'smbPass' => $smbPass,
-                    'smbDomain' => $smbDomain,
-                    'sshServer' => $sshServer,
-                    'sshUser' => $sshUser,
-                    'sshUseKey' => $sshUseKey,
-                    'sshPass' => $sshPass,
-                    'nfsServer' => $nfsServer,
-                    //'nfsUser' => $nfsUser,
-                    //'nfsPass' => $nfsPass,
 
-                );
+                $gmData['cruiseDataTransfer'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0];
                 
-                $where = array('cruiseDataTransferID' => $id);
-                $this->_cruiseDataTransfersModel->updateCruiseDataTransfer($postdata,$where);
+                $gmData['cruiseDataTransfer']->name = $name;
+                $gmData['cruiseDataTransfer']->longName = $longName;
+                $gmData['cruiseDataTransfer']->includeOVDMFiles = $includeOVDMFiles;
+                $gmData['cruiseDataTransfer']->bandwidthLimit = $bandwidthLimit;
+                $gmData['cruiseDataTransfer']->transferType = $transferType;
+                $gmData['cruiseDataTransfer']->destDir = $destDir;
+                $gmData['cruiseDataTransfer']->localDirIsMountPoint = $localDirIsMountPoint;
+                $gmData['cruiseDataTransfer']->rsyncServer = $rsyncServer;
+                $gmData['cruiseDataTransfer']->rsyncUser = $rsyncUser;
+                $gmData['cruiseDataTransfer']->rsyncPass = $rsyncPass;
+                $gmData['cruiseDataTransfer']->smbServer = $smbServer;
+                $gmData['cruiseDataTransfer']->smbUser = $smbUser;
+                $gmData['cruiseDataTransfer']->smbPass = $smbPass;
+                $gmData['cruiseDataTransfer']->smbDomain = $smbDomain;
+                $gmData['cruiseDataTransfer']->sshServer = $sshServer;
+                $gmData['cruiseDataTransfer']->sshUser = $sshUser;
+                $gmData['cruiseDataTransfer']->sshUseKey = $sshUseKey;
+                $gmData['cruiseDataTransfer']->sshPass = $sshPass;
                 
-                Session::set('message','Cruise Data Transfers Updated');
-                Url::redirect('config/cruiseDataTransfers');
-            } else {
-                
-                $data['row'][0]->name = $name;
-                $data['row'][0]->longName = $longName;
-                $data['row'][0]->transferType = $transferType;
-                $data['row'][0]->destDir = $destDir;
-                $data['row'][0]->localDirIsMountPoint = $localDirIsMountPoint;
-                $data['row'][0]->rsyncServer = $rsyncServer;
-                $data['row'][0]->rsyncUser = $rsyncUser;
-                $data['row'][0]->rsyncPass = $rsyncPass;
-                $data['row'][0]->smbServer = $smbServer;
-                $data['row'][0]->smbUser = $smbUser;
-                $data['row'][0]->smbPass = $smbPass;
-                $data['row'][0]->smbDomain = $smbDomain;
-                $data['row'][0]->sshServer = $sshServer;
-                $data['row'][0]->sshUser = $sshUser;
-                $data['row'][0]->sshUseKey = $sshUseKey;
-                $data['row'][0]->sshPass = $sshPass;
-                $data['row'][0]->nfsServer = $nfsServer;
-                //$data['row'][0]->nfsUser = $nfsUser;
-                //$data['row'][0]->nfsPass = $nfsPass;
+                # create the gearman client
+                $gmc= new \GearmanClient();
+
+                # add the default server (localhost)
+                $gmc->addServer();
+
+                #submit job to Gearman, wait for results
+                $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)), true);
+//                $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;      
             }
-        } else if(isset($_POST['inlineTest'])){
-            $_warehouseModel = new \Models\Warehouse();
-            $gmData['cruiseDataTransfer'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0];
-            
-            $gmData['cruiseDataTransfer']->name = $_POST['name'];
-            $gmData['cruiseDataTransfer']->longName = $_POST['longName'];
-            $gmData['cruiseDataTransfer']->transferType = $_POST['transferType'];
-            $gmData['cruiseDataTransfer']->destDir = $_POST['destDir'];
-            $gmData['cruiseDataTransfer']->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
-            $gmData['cruiseDataTransfer']->rsyncServer = $_POST['rsyncServer'];
-            $gmData['cruiseDataTransfer']->rsyncUser = $_POST['rsyncUser'];
-            $gmData['cruiseDataTransfer']->rsyncPass = $_POST['rsyncPass'];
-            $gmData['cruiseDataTransfer']->smbServer = $_POST['smbServer'];
-            $gmData['cruiseDataTransfer']->smbUser = $_POST['smbUser'];
-            $gmData['cruiseDataTransfer']->smbPass = $_POST['smbPass'];
-            $gmData['cruiseDataTransfer']->smbDomain = $_POST['smbDomain'];
-            $gmData['cruiseDataTransfer']->sshServer = $_POST['sshServer'];
-            $gmData['cruiseDataTransfer']->sshUser = $_POST['sshUser'];
-            $gmData['cruiseDataTransfer']->sshUseKey = $_POST['sshUseKey'];
-            $gmData['cruiseDataTransfer']->sshPass = $_POST['sshPass'];
-            $gmData['cruiseDataTransfer']->nfsServer = $_POST['nfsServer'];
-            //$gmData['cruiseDataTransfer']->nfsUser = $_POST['nfsUser'];
-            //$gmData['cruiseDataTransfer']->nfsPass = $_POST['nfsPass'];
-            
-            # create the gearman client
-            $gmc= new \GearmanClient();
-
-            # add the default server (localhost)
-            $gmc->addServer();
-
-            #submit job to Gearman, wait for results
-            $data['testResults'] = json_decode($gmc->doNormal("testCruiseDataTransfer", json_encode($gmData)), true);
 
             #additional data needed for view
-            $data['row'][0]->name = $_POST['name'];
-            $data['row'][0]->longName = $_POST['longName'];
-            $data['row'][0]->transferType = $_POST['transferType'];
-            $data['row'][0]->destDir = $_POST['destDir'];
-            $data['row'][0]->localDirIsMountPoint = $_POST['localDirIsMountPoint'];
-            $data['row'][0]->rsyncServer = $_POST['rsyncServer'];
-            $data['row'][0]->rsyncUser = $_POST['rsyncUser'];
-            $data['row'][0]->rsyncPass = $_POST['rsyncPass'];
-            $data['row'][0]->smbServer = $_POST['smbServer'];
-            $data['row'][0]->smbUser = $_POST['smbUser'];
-            $data['row'][0]->smbPass = $_POST['smbPass'];
-            $data['row'][0]->smbDomain = $_POST['smbDomain'];
-            $data['row'][0]->sshServer = $_POST['sshServer'];
-            $data['row'][0]->sshUser = $_POST['sshUser'];
-            $data['row'][0]->sshUseKey = $_POST['sshUseKey'];
-            $data['row'][0]->sshPass = $_POST['sshPass'];
-            $data['row'][0]->nfsServer = $_POST['nfsServer'];
-            //$data['row'][0]->nfsUser = $_POST['nfsUser'];
-            //$data['row'][0]->nfsPass = $_POST['nfsPass'];
-            
-            $data['testCruiseDataTransferName'] = $gmData['cruiseDataTransfer']->name;      
+            $data['row'][0]->name = $name;
+            $data['row'][0]->longName = $longName;
+            $data['row'][0]->includeOVDMFiles = $includeOVDMFiles;
+            $data['row'][0]->bandwidthLimit = $bandwidthLimit;
+            $data['row'][0]->transferType = $transferType;
+            $data['row'][0]->destDir = $destDir;
+            $data['row'][0]->localDirIsMountPoint = $localDirIsMountPoint;
+            $data['row'][0]->rsyncServer = $rsyncServer;
+            $data['row'][0]->rsyncUser = $rsyncUser;
+            $data['row'][0]->rsyncPass = $rsyncPass;
+            $data['row'][0]->smbServer = $smbServer;
+            $data['row'][0]->smbUser = $smbUser;
+            $data['row'][0]->smbPass = $smbPass;
+            $data['row'][0]->smbDomain = $smbDomain;
+            $data['row'][0]->sshServer = $sshServer;
+            $data['row'][0]->sshUser = $sshUser;
+            $data['row'][0]->sshUseKey = $sshUseKey;
+            $data['row'][0]->sshPass = $sshPass;
+                
         }
         
-        $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
-        $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
-        $data['localDirIsMountPoint'] = $this->_buildUseLocalMountPointOptions();
-
         View::rendertemplate('header',$data);
         View::render('Config/editCruiseDataTransfers',$data,$error);
         View::rendertemplate('footer',$data);

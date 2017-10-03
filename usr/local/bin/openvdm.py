@@ -148,6 +148,13 @@ class OpenVDM():
         returnVal = json.loads(r.text)
         return returnVal['cruiseID']
     
+    def getCruiseSize(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getCruiseSize'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal
+    
     
     def getCruiseStartDate(self):
         
@@ -171,7 +178,13 @@ class OpenVDM():
         returnVal = json.loads(r.text)
         return returnVal['loweringID']
     
-    
+    def getLoweringSize(self):
+        
+        url = self.config['siteRoot'] + 'api/warehouse/getLoweringSize'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal
+
     def getLoweringStartDate(self):
         
         url = self.config['siteRoot'] + 'api/warehouse/getLoweringStartDate'
@@ -244,7 +257,6 @@ class OpenVDM():
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal
-    
     
     def getShipToShoreBWLimit(self):
         
@@ -553,3 +565,18 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/gearman/newJob/' + jobHandle
         payload = {'jobName': jobName, 'jobPid': jobPID}
         r = requests.post(url, data=payload)
+
+
+    def set_cruiseSize(self, sizeInBytes):
+
+        # Set Error for current tranfer in DB via API
+        url = self.config['siteRoot'] + 'api/warehouse/setCruiseSize'
+        payload = {'bytes': sizeInBytes}
+        r = requests.post(url, data=payload)
+
+    def set_loweringSize(self, sizeInBytes):
+
+        # Set Error for current tranfer in DB via API
+        url = self.config['siteRoot'] + 'api/warehouse/setLoweringSize'
+        payload = {'bytes': sizeInBytes}
+        r = requests.post(url, data=payload) 

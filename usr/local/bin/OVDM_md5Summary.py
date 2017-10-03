@@ -149,48 +149,55 @@ def setOwnerGroupPermissions(worker, path):
 
     debugPrint(path)
 
+    reason = []
+
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
     if os.path.isfile(path):
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0644)
         except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
     else: #directory
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0755)
         except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
         for root, dirs, files in os.walk(path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
 
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
 
-    return True
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
 
 def build_MD5Summary_MD5(worker):
 
@@ -218,14 +225,16 @@ def build_MD5Summary_MD5(worker):
         MD5SummaryMD5File.write(md5SummaryMD5Hash)
 
     except IOError:
-        errPrint("Error Saving MD5 Summary MD5 file")
-        return False
+        errPrint("Error Saving MD5 Summary MD5 file:", md5SummaryMD5Filepath)
+        return {"verdict": False, "reason": "Error Saving MD5 Summary MD5 file: " + md5SummaryMD5Filepath}
 
     finally:
         MD5SummaryMD5File.close()
-        setOwnerGroupPermissions(worker, md5SummaryMD5Filepath)
+        output_results = setOwnerGroupPermissions(worker, md5SummaryMD5Filepath)
+        if not output_results['verdict']:
+            return {"verdict": False, "reason": output_results['reason']}
 
-    return True
+    return {"verdict": True}
 
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -284,7 +293,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown, contact Webb :-)"}]))
         if int(self.task['taskID']) > 0:
             self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
@@ -298,13 +307,16 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
+        debugPrint('Job Results:', json.dumps(resultsObj['parts'], indent=2))
+
+        debugPrint('Task:', json.dumps(self.task, indent=2))
 
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['reason'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['reason'])
             else:
                 if int(self.task['taskID']) > 0:
                     self.OVDM.setIdle_task(self.task['taskID'])
@@ -392,15 +404,15 @@ def task_updateMD5Summary(worker, job):
             (md5Hash, filename) = line.split(' ', 1)
             existingHashes.append({'hash': md5Hash, 'filename': filename.rstrip('\n')})
 
+        MD5SummaryFile.close()
+
     except IOError:
-        errPrint("Error Reading MD5 Summary file")
-        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Fail"})
+        errPrint("Error Reading pre-existing MD5 Summary file:", md5SummaryFilepath)
+        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Fail", "reason": "Error Reading MD5 Summary file: " + md5SummaryFilepath})
         return json.dumps(job_results)
 
-    finally:
-        MD5SummaryFile.close()
-        #debugPrint('Existing Hashes:', json.dumps(existingHashes, indent=2))
-        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Pass"})
+    #debugPrint('Existing Hashes:', json.dumps(existingHashes, indent=2))
+    job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Pass"})
 
     row_added = 0
     row_updated = 0
@@ -438,8 +450,8 @@ def task_updateMD5Summary(worker, job):
             MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
 
     except IOError:
-        errPrint("Error updating MD5 Summary file")
-        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail"})
+        errPrint("Error updating MD5 Summary file:", md5SummaryFilepath)
+        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail", "reason": "Error updating MD5 Summary file: " + md5SummaryFilepath})
         MD5SummaryFile.close()
         return json.dumps(job_results)    
 
@@ -451,10 +463,13 @@ def task_updateMD5Summary(worker, job):
     worker.send_job_status(job, 9, 10)
 
     debugPrint("Building MD5 Summary MD5 file")
-    if build_MD5Summary_MD5(worker):
+
+    output_results = build_MD5Summary_MD5(worker)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail", "reason": output_results['reason']})
 
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)
@@ -471,6 +486,13 @@ def task_rebuildMD5Summary(worker, job):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
     md5SummaryFilepath = os.path.join(cruiseDir, md5SummaryFN)
+
+    if os.path.exists(cruiseDir):
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
+    else:
+        errPrint("Cruise directory not found")
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail", "reason": "Unable to locate the cruise directory: " + cruiseDir})
+        return json.dumps(job_results)
     
     fileList = build_filelist(worker)
     debugPrint('Filelist:', json.dumps(fileList, indent=2))
@@ -486,7 +508,7 @@ def task_rebuildMD5Summary(worker, job):
     worker.send_job_status(job, 8, 10)
     
     if worker.stop:
-        job_results['parts'].append({"partName": "Calculate Hashes", "result": "Fail"})
+        job_results['parts'].append({"partName": "Calculate Hashes", "result": "Fail", "reason": "Job was stopped by user"})
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Pass"})
@@ -507,8 +529,8 @@ def task_rebuildMD5Summary(worker, job):
             MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
 
     except IOError:
-        errPrint("Error saving MD5 Summary file")
-        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail"})
+        errPrint("Error saving MD5 Summary file:", md5SummaryFilepath)
+        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail", "reason": "Error saving MD5 Summary file: " + md5SummaryFilepath})
         MD5SummaryFile.close()
         return json.dumps(job_results)    
 
@@ -520,10 +542,12 @@ def task_rebuildMD5Summary(worker, job):
     worker.send_job_status(job, 95, 100)
 
     debugPrint("Building MD5 Summary MD5 file")
-    if build_MD5Summary_MD5(worker):
+
+    output_results = build_MD5Summary_MD5(worker)
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail"})
+        job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail", "reason": output_results['reason']})
 
     worker.send_job_status(job, 10, 10)
     return json.dumps(job_results)

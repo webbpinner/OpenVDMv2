@@ -97,37 +97,31 @@ def build_directorylist(worker):
             destDir = build_destDir(worker, collectionSystemTransfer['destDir'])
             returnDirectories.append(os.path.join(loweringDir, destDir))
 
-    #requiredExtraDirectories = worker.OVDM.getRequiredExtraDirectories()
-    #for requiredExtraDirectory in requiredExtraDirectories:
-    #    destDir = build_destDir(worker, requiredExtraDirectory['destDir'])
-    #    returnDirectories.append(os.path.join(loweringDir, destDir))
-
-    #extraDirectories = worker.OVDM.getExtraDirectories()
-    #for extraDirectory in extraDirectories:
-    #    if extraDirectory['enable'] == "1":
-    #        destDir = build_destDir(worker, extraDirectory['destDir'])
-    #        returnDirectories.append(os.path.join(loweringDir, destDir))
-
     return returnDirectories
 
 
 def create_directories(worker, directoryList):
 
+    reason = []
     for directory in directoryList:
         try:
             os.makedirs(directory)
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 errPrint("Unable to create directory:", directory)
-                return False
-    return True
+                reason.append("Unable to create directory " + directory)
+                
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
 
 
 def setOwnerGroupPermissions(worker, path):
 
     warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 
-    debugPrint(path)
+    reason = []
 
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
@@ -135,43 +129,49 @@ def setOwnerGroupPermissions(worker, path):
 
     if os.path.isfile(path):
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0644)
         except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
     else: #directory
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0755)
         except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
         for root, dirs, files in os.walk(path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
 
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
 
-    return True
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
     
+
 def lockdown_directory(worker):
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     loweringDir = os.path.join(baseDir,worker.loweringID)
@@ -188,8 +188,6 @@ def lockdown_directory(worker):
             os.chmod(directory, 0700)
 #        else:
 #            debugPrint('Skipping:', directory)
-
-
 
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -259,7 +257,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
 
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown"}]))
         if int(self.task['taskID']) > 0:
             self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
@@ -277,9 +275,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['partName'])
+                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['reason'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['partName'])
+                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['reason'])
             else:
                 if int(self.task['taskID']) > 0:
                     self.OVDM.setIdle_task(self.task['taskID'])
@@ -320,7 +318,7 @@ def task_createLoweringDirectory(worker, job):
     job_results = {'parts':[]}
 
     payloadObj = json.loads(job.data)
-    debugPrint('Payload:', json.dumps(payloadObj, indent=2))
+    #debugPrint('Payload:', json.dumps(payloadObj, indent=2))
 
     worker.send_job_status(job, 1, 10)
 
@@ -331,32 +329,25 @@ def task_createLoweringDirectory(worker, job):
     loweringDir = os.path.join(loweringDataBaseDir, worker.loweringID)
 
 
-    if os.path.exists(baseDir):
-        job_results['parts'].append({"partName": "Verify Base Directory exists", "result": "Pass"})
-    else:
-        errPrint("Failed to find base directory:", baseDir)
-        job_results['parts'].append({"partName": "Verify Base Directory exists", "result": "Fail"})
-        return json.dumps(job_results)
-
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
-        errPrint("Lowering directory already exists:", loweringDir)
-        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail"})
+        errPrint("Unable to find cruise directory:", loweringDir)
+        job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail", "reason": "Unable to find cruise directory: " + cruiseDir})
         return json.dumps(job_results)
 
     if os.path.exists(loweringDataBaseDir) and (worker.loweringID != ''):
         job_results['parts'].append({"partName": "Verify Lowering Data Directory exists", "result": "Pass"})
     else:
-        errPrint("Lowering directory already exists:", loweringDir)
-        job_results['parts'].append({"partName": "Verify Lowering Data Directory exists", "result": "Fail"})
+        errPrint("Unable to find lowering data base directory:", loweringDataBaseDir)
+        job_results['parts'].append({"partName": "Verify Lowering Data Directory exists", "result": "Fail", "reason": "Unable to find lowering data base directory: " + loweringDataBaseDir})
         return json.dumps(job_results)
 
     if not os.path.exists(loweringDir):
         job_results['parts'].append({"partName": "Verify Lowering Directory does not exists", "result": "Pass"})
     else:
         errPrint("Lowering directory already exists:", loweringDir)
-        job_results['parts'].append({"partName": "Verify Lowering Directory does not exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Lowering Directory does not exists", "result": "Fail", "reason": "Lowering directory " + loweringDir + " already exists"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -368,16 +359,18 @@ def task_createLoweringDirectory(worker, job):
         job_results['parts'].append({"partName": "Build Directory List", "result": "Pass"})
     else:
         errPrint("Directory list is empty")
-        job_results['parts'].append({"partName": "Build Directory List", "result": "Fail"})
+        job_results['parts'].append({"partName": "Build Directory List", "result": "Fail", "reason": "Unable to build list of directories to create"})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 5, 10)
 
-    if create_directories(worker, directoryList):
+    output_results = create_directories(worker, directoryList)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Create Directories", "result": "Pass"})
     else:
-        errPrint("Failed to create any/all of the lowering data directory structure")
-        job_results['parts'].append({"partName": "Create Directories", "result": "Fail"})
+        errPrint("Unable to create any/all of the lowering data directory structure")
+        job_results['parts'].append({"partName": "Create Directories", "result": "Fail", "reason": output_results['reason']})
 
     worker.send_job_status(job, 7, 10)
 
@@ -388,11 +381,13 @@ def task_createLoweringDirectory(worker, job):
 
     worker.send_job_status(job, 8, 10)
 
-    if setOwnerGroupPermissions(worker, loweringDir):
+    output_results = setOwnerGroupPermissions(worker, loweringDir)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
-        errPrint("Failed to set directory ownership")
-        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail"})
+        errPrint("Unable to set directory ownership")
+        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail", "reason": output_results['reason']})
 
     worker.send_job_status(job, 10, 10)
 
@@ -457,7 +452,7 @@ def task_rebuildLoweringDirectory(worker, job):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         errPrint("Lowering directory not found")
-        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail"})
+        job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail", "reason": "Unable to find lowering directory: " + loweringDir})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -470,26 +465,31 @@ def task_rebuildLoweringDirectory(worker, job):
         job_results['parts'].append({"partName": "Build Directory List", "result": "Pass"})
     else:
         errPrint("Directory list is empty")
-        job_results['parts'].append({"partName": "Build Directory List", "result": "Fail"})
+        job_results['parts'].append({"partName": "Build Directory List", "result": "Fail", "reason": "Unable to build list of directories to create"})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 5, 10)
     
     debugPrint("Create directories")
-    if create_directories(worker, directoryList):
+
+    output_results = create_directories(worker, directoryList)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Create Directories", "result": "Pass"})
     else:
-        errPrint("Failed to create any/all of the lowering data directory structure")
-        job_results['parts'].append({"partName": "Create Directories", "result": "Fail"})
+        errPrint("Unable to create any/all of the lowering data directory structure")
+        job_results['parts'].append({"partName": "Create Directories", "result": "Fail", "reason": output_results['reason']})
 
     worker.send_job_status(job, 7, 10)
     
     debugPrint("Set directory permissions")
-    if setOwnerGroupPermissions(worker, loweringDir):
+    output_results = setOwnerGroupPermissions(worker, loweringDir)
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Pass"})
     else:
-        errPrint("Failed to set directory ownership")
-        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail"})
+        errPrint("Unable to set directory ownership")
+        job_results['parts'].append({"partName": "Set Directory Permissions", "result": "Fail", "reason": output_results['reason']})
 
     worker.send_job_status(job, 10, 10)
     

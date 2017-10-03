@@ -73,35 +73,39 @@ def getCommands(worker):
 
     try:
         f = open(commandFile, 'r')
-        Commands = yaml.load(f.read())
+        commandsFromFile = yaml.load(f.read())
         f.close()
     except:
         errPrint("ERROR: Could not process configuration file:", commandFile + "!")
-        return None
+        return {"verdict": False, "reason": "Could not process configuration file: " + commandFile}
     
-    try:
-        returnCommandList = Commands['commandList']
+    if commandsFromFile:
+        #debugPrint("Commands to Process:")
+        returnCommandList = commandsFromFile['commandList']
+        #debugPrint("Commands:", json.dumps(returnCommandList, indent=2))
         for command in returnCommandList:
-            #debugPrint(" Raw Command:", ' '.join(command['command']))
+            #debugPrint("Raw Command:", json.dumps(command, indent=2))
+            #print "Replacing cruiseID"
             command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
-            #debugPrint("Proc Command:", ' '.join(command['command']))
-        return returnCommandList
-    except AttributeError:
-        errPrint('Command list file is malformed', Commands)
-        return []
+            
+        #debugPrint("Processed Command:", json.dumps(returnCommandList, indent=2))
+        return {"verdict": True, "commandList": returnCommandList}
+    else:
+        debugPrint('Command list file is empty')
 
-    debugPrint('No commands found')
-    return []
-    
+    return {"verdict": True, "commandList": []}
 
-def runCommands(commands, worker):    
+
+def runCommands(worker, commands):    
+
+    reason = []
 
     for command in commands:
     
         try:
             s = ' '
             debugPrint("Executing:", s.join(command['command']))
-            proc = subprocess.Popen(s.join(command['command']), shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             out, err = proc.communicate()            
             
             if len(out) > 0:
@@ -115,6 +119,13 @@ def runCommands(commands, worker):
         except:
             errPrint("Error executing the: " + command['name'] + " script: ", s.join(command['command']))
             worker.OVDM.sendMsg("Error executing postSetupNewCruise script", command['name'])
+            reason.append("Error executing postPostSetupNewCruise script: " + command['name'])
+
+    if len(reason)>0:
+        return {"verdict": False, "reason": reason.join("\n")}
+
+    return {"verdict": True}
+
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
     
@@ -157,17 +168,6 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             else:
                 self.cruiseID = payloadObj['cruiseID']
                 debugPrint('Setting cruiseID to:', self.cruiseID)
-
-        if len(payloadObj) > 0:
-            try:
-                payloadObj['files']
-            except KeyError:
-                self.files = {
-                    "new": [],
-                    "updated": []
-                }
-            else:
-                self.files = payloadObj['files']
 
         if int(self.task['taskID']) > 0:
 
@@ -250,34 +250,35 @@ def task_postSetupNewCruise(worker, job):
     
     #check to see if file exists, if False, end task.
     if not os.path.isfile(commandFile):
+        job_results['parts'].append({"partName": "Command File", "result": "Fail", "reason": "Unable to find command file: " + commandFile})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
-
     
     #print "Get Commands"
-    commands = getCommands(worker)
+    output_results = getCommands(worker)
     
-    if commands == None:
-        job_results['parts'].append({"partName": "Get Commands", "result": "Fail"})
+    if not output_results['verdict']:
+        job_results['parts'].append({"partName": "Get Commands", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
-    else:
-        job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
-        debugPrint("Commands:", json.dumps(commands, indent=2))
-        if len(commands) == 0:
-            #debugPrint("Nothing to do")
-            return json.dumps(job_results)
+
+    job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
+        
+    debugPrint("Commands:", json.dumps(output_results['commandList'], indent=2))
+    if len(output_results['commandList']) == 0:
+        #debugPrint("Nothing to do")
+        return json.dumps(job_results)
     
     worker.send_job_status(job, 3, 10)
 
     debugPrint("Run Commands")
-    runCommands(commands, worker)
+    runCommands(worker, output_results['commandList'])
 
-    debugPrint("done")
+    job_results['parts'].append({"partName": "Run Commands", "result": "Pass"})
     
     worker.send_job_status(job, 10, 10)
 
-    return json.dumps(job_results)   
+    return json.dumps(job_results)
 
 
 # -------------------------------------------------------------------------------------

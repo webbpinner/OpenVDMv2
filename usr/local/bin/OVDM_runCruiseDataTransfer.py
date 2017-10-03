@@ -11,7 +11,7 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
 #      CREATED:  2015-01-01
-#     REVISION:  2017-08-05
+#     REVISION:  2017-10-01
 #
 # LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
@@ -43,6 +43,8 @@ import time
 import fnmatch
 import subprocess
 import signal
+import grp
+import pwd
 import openvdm
 from random import randint
 
@@ -61,22 +63,110 @@ def errPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def build_filelist(sourceDir, filters):
+def setOwnerGroupPermissions(worker, path):
+
+    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+
+    debugPrint(path)
+
+    reason = []
+
+    uid = pwd.getpwnam(warehouseUser).pw_uid
+    gid = grp.getgrnam(warehouseUser).gr_gid
+    # Set the file permission and ownership for the current directory
+
+    debugPrint(uid)
+    debugPrint(gid)
+
+    if os.path.isfile(path):
+        try:
+            debugPrint("Setting ownership/permissions for", path)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0644)
+        except OSError:
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
+    else: #directory
+        try:
+            debugPrint("Setting ownership/permissions for", path)
+            os.chown(path, uid, gid)
+            os.chmod(path, 0755)
+        except OSError:
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                fname = os.path.join(root, file)
+                try:
+                    debugPrint("Setting ownership/permissions for", file)
+                    os.chown(fname, uid, gid)
+                    os.chmod(fname, 0644)
+                except OSError:
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
+
+            for momo in dirs:
+                dname = os.path.join(root, momo)
+                try:
+                    debugPrint("Setting ownership/permissions for", momo)
+                    os.chown(dname, uid, gid)
+                    os.chmod(dname, 0755)
+                except OSError:
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
+
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
+
+
+def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+
+    debugPrint(returnFiles)
+
+    filters = build_filters(worker)
+
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
-            if not fnmatch.fnmatch(filename, filters['includeFilter']) and not fnmatch.fnmatch(filename, filters['ignoreFilter']):
-                returnFiles['exclude'].append(os.path.join(root, filename))
-        for filename in fnmatch.filter(filenames, filters['includeFilter']):
-            if not fnmatch.fnmatch(filename, filters['excludeFilter']) and not fnmatch.fnmatch(filename, filters['ignoreFilter']):
-                returnFiles['include'].append(os.path.join(root, filename))
-            if fnmatch.fnmatch(filename, filters['excludeFilter']) and not fnmatch.fnmatch(filename, filters['ignoreFilter']):
-                returnFiles['exclude'].append(os.path.join(root, filename))
+            exclude = False
+            ignore = False
+            include = False
+            for filt in filters['ignoreFilter'].split(','):
+                #print filt
+                if fnmatch.fnmatch(os.path.join(root, filename), filt):
+                    debugPrint(filename, "ignored")
+                    ignore = True
+                    break
+            if not ignore:
+                for filt in filters['includeFilter'].split(','): 
+                    if fnmatch.fnmatch(filename, filt):
+                        for filt in filters['excludeFilter'].split(','): 
+                            if fnmatch.fnmatch(filename, filt):
+                                debugPrint(filename, "excluded")
+                                returnFiles['exclude'].append(os.path.join(root, filename))
+                                exclude = True
+                                break
+                        if not exclude:
+                            if os.path.islink(os.path.join(root, filename)):
+                                continue
 
-    returnFiles['include'] = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles['include']]
-    returnFiles['exclude'] = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles['exclude']]
-    
+                            debugPrint(filename, "included")
+                            returnFiles['include'].append(os.path.join(root, filename))
+                            include = True
+
+                if not include and not exclude:
+                    debugPrint(filename, "excluded")
+                    returnFiles['exclude'].append(os.path.join(root, filename))
+
+    returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
+    returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
+
+    debugPrint(returnFiles)
     return returnFiles
 
 
@@ -87,6 +177,24 @@ def build_destDirectories(destDir, files):
         if not os.path.isdir(dirname):
             debugPrint("Creating Directory:", dirname)
             os.makedirs(dirname)
+
+
+def build_filters(worker):
+    
+    returnFilters = {'includeFilter': '*','excludeFilter': '','ignoreFilter': ''}
+
+    if worker.cruiseDataTransfer['includeOVDMFiles'] == '0':
+        dashboardDataDir = worker.OVDM.getRequiredExtraDirectoryByName("Dashboard Data")
+        transferLogs = worker.OVDM.getRequiredExtraDirectoryByName("Transfer Logs")
+
+        returnFilters['ignoreFilter'] = "*/{cruiseID}/" + dashboardDataDir['destDir'] + "/*,*/{cruiseID}/" + transferLogs['destDir'] + "/*"
+    
+    returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
+    
+    debugPrint(returnFilters)
+    return returnFilters
 
             
 def transfer_localDestDir(worker, job):
@@ -101,7 +209,7 @@ def transfer_localDestDir(worker, job):
     debugPrint('destDir:', destDir)
 
     debugPrint("Build file list")
-    files = build_filelist(cruiseDir, filters)
+    files = build_filelist(worker, cruiseDir)
     
     fileIndex = 0
     fileCount = len(files['include'])
@@ -126,7 +234,14 @@ def transfer_localDestDir(worker, job):
         #debugPrint("Closing rsync filelist file")
         rsyncFileListFile.close()    
     
-    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, baseDir, destDir]
+
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
+    
+    command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + rsyncFileListPath, baseDir, destDir]
+    # command = ['rsync', '-tri',               '--files-from=' + rsyncFileListPath, baseDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -153,6 +268,9 @@ def transfer_localDestDir(worker, job):
     files['new'] = [os.path.join(baseDir,filename) for filename in files['new']]
     files['updated'] = [os.path.join(baseDir,filename) for filename in files['updated']]
 
+    debugPrint("Setting file permissions")
+    setOwnerGroupPermissions(worker, destDir)
+
     # Cleanup
     shutil.rmtree(tmpdir)    
     return files
@@ -175,7 +293,7 @@ def transfer_smbDestDir(worker, job):
     debugPrint("Mounting SMB Share")
     if worker.cruiseDataTransfer['smbUser'] == 'guest':
         
-        command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' +  'domain=' + worker.cruiseDataTransfer['smbDomain']]
+        command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' +  'domain=' + worker.cruiseDataTransfer['smbDomain']]
         
         s = ' '
         debugPrint(s.join(command))
@@ -184,7 +302,7 @@ def transfer_smbDestDir(worker, job):
         proc.communicate()
 
     else:
-        command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username=' + worker.cruiseDataTransfer['smbUser'] + ',password='+worker.cruiseDataTransfer['smbPass'] + ',domain='+worker.cruiseDataTransfer['smbDomain']]
+        command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username=' + worker.cruiseDataTransfer['smbUser'] + ',password='+worker.cruiseDataTransfer['smbPass'] + ',domain='+worker.cruiseDataTransfer['smbDomain']]
         
         s = ' '
         debugPrint(s.join(command))
@@ -199,7 +317,7 @@ def transfer_smbDestDir(worker, job):
     destDir = os.path.join(mntPoint, worker.cruiseDataTransfer['destDir'].rstrip('/')) + '/'
 
     debugPrint("Build file list")
-    files = build_filelist(cruiseDir, filters)
+    files = build_filelist(worker, cruiseDir)
     
     fileIndex = 0
     fileCount = len(files['include'])
@@ -223,7 +341,15 @@ def transfer_smbDestDir(worker, job):
     finally:
         rsyncFileListFile.close()
     
-    command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
+
+
+    command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    #command = ['rsync', '-tri',                '--files-from=' + rsyncFileListPath, sourceDir, destDir]
     
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -250,10 +376,10 @@ def transfer_smbDestDir(worker, job):
     
     files['new'] = [os.path.join(baseDir,filename) for filename in files['new']]
     files['updated'] = [os.path.join(baseDir,filename) for filename in files['updated']]
-    
+
     #print "Cleanup"
     debugPrint("Unmount SMB Share")
-    subprocess.call(['sudo', 'umount', mntPoint])
+    subprocess.call(['umount', mntPoint])
     shutil.rmtree(tmpdir)
 
     return files
@@ -274,7 +400,7 @@ def transfer_rsyncDestDir(worker, job):
     #debugPrint("Destinstation Dir:", destDir)
     
     debugPrint("Build file list")
-    files = build_filelist(sourceDir, filters)
+    files = build_filelist(worker, sourceDir)
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -319,7 +445,14 @@ def transfer_rsyncDestDir(worker, job):
     finally:
         rsyncFileListFile.close()
     
-    command = ['rsync', '-tri', '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+
+    if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
+
+    
+    command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+    #command = ['rsync', '-tri',                '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
     
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -369,7 +502,7 @@ def transfer_sshDestDir(worker, job):
     debugPrint("Destinstation Dir:", destDir)
 
     debugPrint("Build file list")
-    files = build_filelist(sourceDir, filters)
+    files = build_filelist(worker, sourceDir)
         
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -395,12 +528,19 @@ def transfer_sshDestDir(worker, job):
     finally:
         sshFileListFile.close()
 
-    comand = ''
+    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
 
+    if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
+        bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
+    
+    command = ''
+    
     if worker.cruiseDataTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-tri', '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]        
+        command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        #command = ['rsync', '-tri',                '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]        
     else:
-        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        #command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri',                '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
     s = ' '
     debugPrint('Transfer Command:',s.join(command))
@@ -429,93 +569,6 @@ def transfer_sshDestDir(worker, job):
     files['updated'] = [os.path.join(baseDir,filename) for filename in files['updated']]
 
     # Cleanup
-    shutil.rmtree(tmpdir)
-
-    return files
-
-
-def transfer_nfsDestDir(worker, job):
-    
-    debugPrint("Transfer from NFS Server")
-
-    filters = {'includeFilter': '*','excludeFilter': '','ignoreFilter': ''}
-
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
-
-    # Create temp directory
-    tmpdir = tempfile.mkdtemp()
-    mntPoint = os.path.join(tmpdir, 'mntpoint')
-    os.mkdir(mntPoint, 0755)
-
-    debugPrint("Mount NFS Server")
-
-    command = ['sudo', 'mount', '-t', 'nfs', worker.cruiseDataTransfer['nfsServer'], mntPoint, '-o', 'rw' + ',vers=2' + ',hard' + ',intr']
-
-    s = ' '
-    debugPrint('Mount Command:', s.join(command))
-
-    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    proc.communicate()
-
-    sourceDir = cruiseDir
-    destDir = os.path.join(mntPoint,worker.cruiseDataTransfer['destDir'].rstrip('/')).rstrip('/')
-
-    debugPrint("Build file list")
-    files = build_filelist(sourceDir, filters)
-    
-    fileIndex = 0
-    fileCount = len(files['include'])
-    
-    rsyncFileListPath = os.path.join(tmpdir, 'rsyncFileList.txt')
-        
-    try:
-        rsyncFileListFile = open(rsyncFileListPath, 'w')
-        rsyncFileListFile.write('\n'.join([worker.cruiseID + '/' + str(x) for x in files['include']]))
-
-    except IOError:
-        errPrint("Error Saving temporary rsync filelist file")
-        rsyncFileListFile.close()
-            
-        # Cleanup
-        shutil.rmtree(tmpdir)
-            
-        return False
-
-    finally:
-        rsyncFileListFile.close()
-    
-    command = ['rsync', '-rlptDi', '--files-from=' + rsyncFileListPath, sourceDir, destDir]
-    
-    s = ' '
-    debugPrint('Transfer Command:', s.join(command))
-    
-    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
-
-    lines_iterator = iter(popen.stdout.readline, b"")
-    for line in lines_iterator:
-        #debugPrint('line', line.rstrip('\n'))
-        if line.startswith( '>f+++++++++' ):
-            filename = line.split(' ',1)[1].rstrip('\n')
-            files['new'].append(filename)
-            worker.send_job_status(job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
-            fileIndex += 1
-        elif line.startswith( '>f.' ):
-            filename = line.split(' ',1)[1].rstrip('\n')
-            files['updated'].append(filename)
-            worker.send_job_status(job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
-            fileIndex += 1
-            
-        if worker.stop:
-            debugPrint("Stopping")
-            break
-
-    files['new'] = [os.path.join(baseDir,filename) for filename in files['new']]
-    files['updated'] = [os.path.join(baseDir,filename) for filename in files['updated']]
-
-    # Cleanup
-    debugPrint('Unmounting NFS Share')
-    subprocess.call(['sudo', 'umount', mntPoint])
     shutil.rmtree(tmpdir)
 
     return files
@@ -565,8 +618,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "transfer failed at:  ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
-        self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], 'Reason: Worker crashed')
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", 'reason': 'Unknown'}]))
+        self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], 'Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -583,7 +636,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
                     for test in resultsObj['parts']:
                         if test['result'] == "Fail":
-                            self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], 'Reason: ' +  test['partName'])
+                            self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], test['reason'])
                             break
             else:
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
@@ -630,7 +683,7 @@ def task_runCruiseDataTransfer(worker, job):
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     else:
         debugPrint("Transfer is already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Transfer is already in-progress"})
         return json.dumps(job_results)
 
     if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
@@ -662,7 +715,7 @@ def task_runCruiseDataTransfer(worker, job):
         job_results['parts'].append({'partName': 'Connection Test', 'result': 'Pass'})
     else:
         debugPrint("Connection Test: Failed")
-        job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail'})
+        job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail', 'reason': resultsObj['parts'][-1]['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -676,9 +729,9 @@ def task_runCruiseDataTransfer(worker, job):
         job_results['files'] = transfer_smbDestDir(worker, job)
     elif  worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
         job_results['files'] = transfer_sshDestDir(worker, job)
-    elif  worker.cruiseDataTransfer['transferType'] == "5": # NFS Server
-        job_results['files'] = transfer_nfsDestDir(worker, job)
 
+    debugPrint(job_results)
+    
     debugPrint("Transfer Complete")
     if len(job_results['files']['new']) > 0:
         debugPrint(len(job_results['files']['new']), 'file(s) added')

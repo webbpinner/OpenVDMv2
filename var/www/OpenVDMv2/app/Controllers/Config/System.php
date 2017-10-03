@@ -63,10 +63,20 @@ class System extends Controller {
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
         $data['links'] = $this->_linksModel->getLinks();
         $data['shipboardDataWarehouseStatus'] = $this->_coreValuesModel->getShipboardDataWarehouseStatus();
-        $data['shipToShoreBWLimit'] = $this->_coreValuesModel->getShipToShoreBWLimit();
         $data['shipToShoreBWLimitStatus'] = $this->_coreValuesModel->getShipToShoreBWLimitStatus();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
         $data['md5FilesizeLimitStatus'] = $this->_coreValuesModel->getMd5FilesizeLimitStatus();
+
+
+        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+                
+        foreach($requiredCruiseDataTransfers as $row) {
+            if(strcmp($row->name, 'SSDW') === 0 ) {
+
+                $data['shipToShoreBWLimit'] = $row->bandwidthLimit;
+                break;
+            }
+        }
 
         $this->_linksModel->processLinkURL($data['links']);
         
@@ -298,23 +308,37 @@ class System extends Controller {
     public function editShipToShoreBWLimit(){
         $data['title'] = 'Edit Ship-to-Shore Bandwidth Limit';
         $data['javascript'] = array();
-        $data['shipToShoreBWLimit'] = $this->_coreValuesModel->getShipToShoreBWLimit();
+
+        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+
+        $ssdw = null;
+        
+        foreach($requiredCruiseDataTransfers as $row) {
+            if(strcmp($row->name, 'SSDW') === 0 ) {
+                $ssdw = $row;
+                break;
+            }
+        }
+
+        $data['shipToShoreBWLimit'] = $ssdw->bandwidthLimit;
 
         if(isset($_POST['submit'])){
             $shipToShoreBWLimit = $_POST['shipToShoreBWLimit'];
 
             if($shipToShoreBWLimit == ''){
                 $error[] = 'Bandwidth limit is required';
-            } elseif (!is_numeric($shipToShoreBWLimit)){
-                $error[] = 'Bandwidth limit must be a number';
+            } elseif (!((string)(int)$shipToShoreBWLimit == $shipToShoreBWLimit)){
+                $error[] = 'Bandwidth limit must be an integer';
             }
                 
             if(!$error){
-                $postdata = array(
-                    'value' => $shipToShoreBWLimit
-                );
 
-                $this->_coreValuesModel->setShipToShoreBWLimit($postdata);
+                $postdata = array(
+                    'bandwidthLimit' => (int)$shipToShoreBWLimit
+                );
+                $where = array('cruiseDataTransferID' => $ssdw->cruiseDataTransferID);
+                $this->_cruiseDataTransfersModel->updateCruiseDataTransfer($postdata,$where);
+
                 Session::set('message','Ship-to-Shore Bandwidth Limit Updated');
                 Url::redirect('config/system');
             } else {

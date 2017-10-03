@@ -31,10 +31,6 @@ class Main extends Controller {
             
         $data['title'] = 'Configuration';
         $data['javascript'] = array('main_config');
-        $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
-        $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
-        $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['tasks'] = $this->_tasksModel->getActiveTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
@@ -270,10 +266,6 @@ class Main extends Controller {
         #additional data needed for view
         $data['title'] = 'Configuration';
         $data['javascript'] = array('main_config');
-        $data['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        $data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
-        $data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
-        $data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['tasks'] = $this->_tasksModel->getActiveTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
@@ -306,10 +298,6 @@ class Main extends Controller {
         #additional data needed for view
         $data['title'] = 'Configuration';
         $data['javascript'] = array('main_config');
-        #$data['cruiseID'] = $this->_warehouseModel->getCruiseID();
-        #$data['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
-        #$data['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
-        #$data['systemStatus'] = $this->_warehouseModel->getSystemStatus();
         $data['tasks'] = $this->_tasksModel->getActiveTasks();
         $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
@@ -648,12 +636,20 @@ class Main extends Controller {
 
         #submit job to Gearman
         #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
-        $data['jobResults'] = json_decode($gmc->doBackground("exportOVDMConfig", json_encode($gmData)));
+        $data['jobResults'] = json_decode($gmc->doNormal("exportOVDMConfig", json_encode($gmData)));
         
-        sleep(1);
+        $data['title'] = 'Configuration';
+        $data['javascript'] = array('main_config');
+        $data['tasks'] = $this->_tasksModel->getActiveTasks();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
+        $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+        $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
+        
+        $data['jobName'] = 'Export OpenVDM Configuration';
 
-        Url::redirect('config');
-    
+        View::rendertemplate('header',$data);
+        View::render('Config/main',$data);
+        View::rendertemplate('footer',$data);
     }
     
     public function exportLoweringConfig() {
@@ -668,11 +664,20 @@ class Main extends Controller {
 
         #submit job to Gearman
         #$job_handle = $gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData));
-        $data['jobResults'] = json_decode($gmc->doBackground("exportLoweringConfig", json_encode($gmData)));
+        $data['jobResults'] = json_decode($gmc->doNormal("exportLoweringConfig", json_encode($gmData)));
         
-        sleep(1);
+        $data['title'] = 'Configuration';
+        $data['javascript'] = array('main_config');
+        $data['tasks'] = $this->_tasksModel->getActiveTasks();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getActiveCollectionSystemTransfers();
+        $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+        $data['cruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfers();
+        
+        $data['jobName'] = 'Export Lowering Configuration';
 
-        Url::redirect('config');
+        View::rendertemplate('header',$data);
+        View::render('Config/main',$data);
+        View::rendertemplate('footer',$data);
     
     }
 

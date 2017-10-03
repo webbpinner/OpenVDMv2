@@ -33,39 +33,55 @@ class Warehouse extends Model {
     }
 
    	public function getCruiseSize() {
-        $baseDir = $this->getShipboardDataWarehouseBaseDir();
-        $cruiseID = $this->getCruiseID();
-        if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID)){
-            try {
-                $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID);
-                $data['cruiseSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
-            } catch (Exception $e) {
-                $data['error'] = '(getCruiseSize) Unable to get size of cruise directory';                            
-            }
-
-        } else {
-            $data['error'] = '(getCruiseSize) Cruise Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . ' is not a directory';            
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'cruiseSize'");
+        $data['cruiseSize'] = intval($row[0]->value);
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'cruiseSizeUpdated'");
+        $data['cruiseSizeUpdated'] = $row[0]->value;
+        if ($data['cruiseSize'] === 0) {
+            $data['error'] = '(getCruiseSize) Unable to get size of cruise directory';
         }
+
+        // $baseDir = $this->getShipboardDataWarehouseBaseDir();
+        // $cruiseID = $this->getCruiseID();
+        // if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID)){
+        //     try {
+        //         $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID);
+        //         $data['cruiseSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+        //     } catch (Exception $e) {
+        //         $data['error'] = '(getCruiseSize) Unable to get size of cruise directory';                            
+        //     }
+
+        // } else {
+        //     $data['error'] = '(getCruiseSize) Cruise Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . ' is not a directory';            
+        // }
         
         return $data;
     }
 
     public function getLoweringSize() {
-        $baseDir = $this->getShipboardDataWarehouseBaseDir();
-        $cruiseID = $this->getCruiseID();
-        $loweringDataBaseDir = $this->getLoweringDataBaseDir();
-        $loweringID = $this->getLoweringID();
-        if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID)){
-            try {
-                $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID);
-                $data['loweringSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
-            } catch (Exception $e) {
-                $data['error'] = '(getLoweringSize) Unable to get size of lowering directory';                            
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringSize'");
+        $data['loweringSize'] = intval($row[0]->value);
+        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringSizeUpdated'");
+        $data['loweringSizeUpdated'] = $row[0]->value;
+            if ($data['loweringSize'] === 0) {
+                $data['error'] = '(getLoweringSize) Unable to get size of lowering directory';
             }
 
-        } else {
-            $data['error'] = '(getLoweringSize) Lowering Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID . ' is not a directory';            
-        }
+        // $baseDir = $this->getShipboardDataWarehouseBaseDir();
+        // $cruiseID = $this->getCruiseID();
+        // $loweringDataBaseDir = $this->getLoweringDataBaseDir();
+        // $loweringID = $this->getLoweringID();
+        // if (is_dir($baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID)){
+        //     try {
+        //         $output = exec('du -sk ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID);
+        //         $data['loweringSize'] = trim(str_replace($file_directory, '', $output)) * 1024;
+        //     } catch (Exception $e) {
+        //         $data['error'] = '(getLoweringSize) Unable to get size of lowering directory';                            
+        //     }
+
+        // } else {
+        //     $data['error'] = '(getLoweringSize) Lowering Directory: ' . $baseDir . DIRECTORY_SEPARATOR . $cruiseID . DIRECTORY_SEPARATOR . $loweringDataBaseDir . DIRECTORY_SEPARATOR . $loweringID . ' is not a directory';            
+        // }
         
         return $data;
     }
@@ -124,7 +140,6 @@ class Warehouse extends Model {
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringEndDate'");
         return $row[0]->value;
     }
-
 
     public function getShipToShoreBWLimit(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipToShoreBWLimit'");
@@ -264,6 +279,15 @@ class Warehouse extends Model {
         $this->db->update(PREFIX."CoreVars",$data, $where);
     }
 
+    public function setCruiseSize($data){
+        $where = array('name' => 'cruiseSize');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+
+        $where = array('name' => 'cruiseSizeUpdated');
+        $data = array('value' => gmdate('Y/m/d H:i:s'));
+        $this->db->update(PREFIX."CoreVars", $data, $where);
+    }
+
     public function setLoweringID($data){
         $where = array('name' => 'loweringID');
         $this->db->update(PREFIX."CoreVars",$data, $where);
@@ -279,6 +303,15 @@ class Warehouse extends Model {
         $this->db->update(PREFIX."CoreVars",$data, $where);
     }
 
+    public function setLoweringSize($data){
+        $where = array('name' => 'loweringSize');
+        $this->db->update(PREFIX."CoreVars",$data, $where);
+
+        $where = array('name' => 'loweringSizeUpdated');
+        $data = array('value' => gmdate('Y/m/d H:i:s'));
+        $this->db->update(PREFIX."CoreVars", $data, $where);
+
+    }
 
     public function setShipboardDataWarehouseConfig($data){
         $where = array('name' => 'shipboardDataWarehouseIP');

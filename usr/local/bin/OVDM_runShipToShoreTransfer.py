@@ -54,6 +54,7 @@ new_worker = None
 
 
 def debugPrint(*args, **kwargs):
+    global DEBUG
     if DEBUG:
         errPrint(*args, **kwargs)
 
@@ -143,48 +144,55 @@ def setOwnerGroupPermissions(worker, path):
 
     debugPrint(path)
 
+    reason = []
+
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
     if os.path.isfile(path):
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0644)
         except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
     else: #directory
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0755)
         except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
         for root, dirs, files in os.walk(path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
 
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
 
-    return True
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
 
 def writeLogFile(worker, logfileName, fileList):
 
@@ -201,14 +209,17 @@ def writeLogFile(worker, logfileName, fileList):
 
     except IOError:
         errPrint("Error Saving transfer logfile")
-        return False
+        return {'verdict': False, 'reason': 'Error Saving transfer logfile: ' + logfilePath}
 
     finally:
-        #print "Closing MD5 Summary MD5 file"
         Logfile.close()
-        setOwnerGroupPermissions(worker, logfilePath)
 
-    return True
+    output_results = setOwnerGroupPermissions(worker, logfilePath)
+
+    if not output_results['verdict']:
+        return {'verdict': False, 'reason': output_results['reason']}
+
+    return {'verdict': True}
             
     
 def transfer_sshDestDir(worker, job):
@@ -255,8 +266,8 @@ def transfer_sshDestDir(worker, job):
 
     bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
 
-    if worker.bandwidthLimit != '0' and worker.bandwidthLimitStatus:
-        bandwidthLimit = '--bwlimit=' + worker.bandwidthLimit
+    if worker.cruiseDataTransfer['bandwidthLimit'] != '0' and worker.bandwidthLimitStatus:
+        bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
 
     if worker.cruiseDataTransfer['sshUseKey'] == '1':
         command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
@@ -302,9 +313,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
+        self.loweringID = ''
         self.transferStartDate = ''
         self.systemStatus = ''
-        self.bandwidthLimit = 0
         self.cruiseDataTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
@@ -322,9 +333,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         #debugPrint("Payload:", json.dumps(payloadObj))
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         self.cruiseDataTransfer = self.getShipToShoreTransfer()
-        self.bandwidthLimit = self.OVDM.getShipToShoreBWLimit()
         self.bandwidthLimitStatus = self.OVDM.getShipToShoreBWLimitStatus()
         self.cruiseID = self.OVDM.getCruiseID()
+        self.loweringID = self.OVDM.getLoweringID()
         self.transferStartDate = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
         self.systemStatus = self.OVDM.getSystemStatus()
         
@@ -345,6 +356,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = payloadObj['cruiseID']
 
             try:
+                payloadObj['loweringID']
+            except KeyError:
+                self.loweringID = self.OVDM.getLoweringID()
+            else:
+                self.loweringID = payloadObj['loweringID']
+
+            try:
                 payloadObj['systemStatus']
             except KeyError:
                 self.systemStatus = self.OVDM.getSystemStatus()
@@ -359,8 +377,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "transfer failed at:  ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
-        self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], "Worker Crashed")
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Worker crashed"}]))
+        self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], "Worker crashed")
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -419,7 +437,7 @@ def task_runShipToShoreTransfer(worker, job):
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     else:
         debugPrint("Transfer is already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Ship-to-shore transfer already in progress"})
         return json.dumps(job_results)
 
     if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
@@ -451,7 +469,7 @@ def task_runShipToShoreTransfer(worker, job):
         job_results['parts'].append({'partName': 'Connection Test', 'result': 'Pass'})
     else:
         debugPrint("Connection Test: Failed")
-        job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail'})
+        job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail', 'reason': resultsObj['parts'][-1]['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
@@ -469,7 +487,7 @@ def task_runShipToShoreTransfer(worker, job):
         job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
     else:
         errPrint("Error: Unknown Transfer Type")
-        job_results['parts'].append({"partName": "Transfer Files", "result": "Fail"})
+        job_results['parts'].append({"partName": "Transfer Files", "result": "Fail", "reason": "Unknown transfer type"})
         return json.dumps(job_results)
     
     worker.send_job_status(job, 9, 10)
@@ -480,7 +498,7 @@ def task_runShipToShoreTransfer(worker, job):
 
         warehouseTransferLogDir = build_logfileDirPath(worker)
 
-        if warehouseTransferLogDir:
+        if os.path.exists(warehouseTransferLogDir):
     
             logfileName = worker.cruiseDataTransfer['name'] + '_' + worker.transferStartDate + '.log'
             
@@ -489,13 +507,14 @@ def task_runShipToShoreTransfer(worker, job):
             logContents['files']['updated'] = job_results['files']['updated']
             #debugPrint('logContents',logContents)
             
-            if writeLogFile(worker, logfileName, logContents['files']):
+            output_results = writeLogFile(worker, logfileName, logContents['files'])
+            if output_results['verdict']:
                 job_results['parts'].append({"partName": "Write transfer logfile", "result": "Pass"})
             else:
-                job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail"})
+                job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail", "reason": output_results['reason']})
                 return job_results
         else:
-            job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail"})
+            job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail", "reason": "Unable to find transfer log directory: " + warehouseTransferLogDir})
 
     worker.send_job_status(job, 10, 10)
     

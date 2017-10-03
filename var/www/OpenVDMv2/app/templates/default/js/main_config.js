@@ -60,8 +60,18 @@ $(function () {
                     } else if (data[i].name === 'finalizeCurrentCruise') {
                         if (data[i].status === "1") {
                             $('#finalizeCurrentCruise').addClass('disabled');
+                            $('#finalizeCurrentCruise').html("Running End-of-Cruise Tasks... please standby.")
                         } else {
                             $('#finalizeCurrentCruise').removeClass('disabled');
+                            $('#finalizeCurrentCruise').html("Run End-of-Cruise Tasks")
+                        }
+                    } else if (data[i].name === 'finalizeCurrentLowering') {
+                        if (data[i].status === "1") {
+                            $('#finalizeCurrentLowering').addClass('disabled');
+                            $('#finalizeCurrentLowering').html("Running End-of-Lowering Tasks... please standby.")
+                        } else {
+                            $('#finalizeCurrentLowering').removeClass('disabled');
+                            $('#finalizeCurrentLowering').html("Run End-of-Lowering Tasks")
                         }
                     }
                     output += '</div>';

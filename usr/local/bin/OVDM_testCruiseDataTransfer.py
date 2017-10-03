@@ -81,22 +81,30 @@ def test_localDestDir(worker):
     destDir = worker.cruiseDataTransfer['destDir']
 
     if not os.path.isdir(destDir):
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Destination directory: " + destDir + " does not exist on the Data Warehouse"})
+        if worker.cruiseDataTransfer['localDirIsMountPoint'] == '1':
+            returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail", "reason": "Destination directory: " + destDir + " does not exist on the Data Warehouse"})
+        returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Destination directory: " + destDir + " does not exist on the Data Warehouse"})
 
     else:
         returnVal.append({"testName": "Destination Directory", "result": "Pass"})
 
         if worker.cruiseDataTransfer['localDirIsMountPoint'] == '1':
             if not os.path.ismount(destDir):
-                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail"})
+                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail", "reason": "Destination directory: " + destDir + " is not a mountpoint"})
+                returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Destination directory: " + destDir + " is not a mountpoint"})
             else:
                 returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Pass"})
 
-        if not writeTest(destDir):
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
+                if not writeTest(destDir):
+                    returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write data to desination directory: " + destDir})
+                else:
+                    returnVal.append({"testName": "Write Test", "result": "Pass"})
         else:
-            returnVal.append({"testName": "Write Test", "result": "Pass"})
+            if not writeTest(destDir):
+                returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write data to desination directory: " + destDir})
+            else:
+                returnVal.append({"testName": "Write Test", "result": "Pass"})
 
     return returnVal
 
@@ -126,10 +134,10 @@ def test_smbDestDir(worker):
             foundServer = True
     
     if not foundServer:
-        returnVal.append({"testName": "SMB Server", "result": "Fail"})
-        returnVal.append({"testName": "SMB Share", "result": "Fail"})
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
+        returnVal.append({"testName": "SMB Server", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
+        returnVal.append({"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
+        returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
     else:
         returnVal.append({"testName": "SMB Server", "result": "Pass"})
     
@@ -139,9 +147,9 @@ def test_smbDestDir(worker):
 
         # Mount SMB Share
         if worker.cruiseDataTransfer['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']]
+            command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']]
         else:
-            command = ['sudo', 'mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']]
+            command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']]
 
         s = ' '
         debugPrint('Connect Command:', s.join(command))
@@ -150,22 +158,22 @@ def test_smbDestDir(worker):
         proc.communicate()
 
         if proc.returncode != 0:
-            returnVal.append({"testName": "SMB Share", "result": "Fail"})
-            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
+            returnVal.append({"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Share: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
+            returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Could not connect to SMB Share: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
+            returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Could not connect to SMB Share: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
         else:
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
             destDir = os.path.join(mntPoint, worker.cruiseDataTransfer['destDir'])
             if not os.path.isdir(destDir):
-                returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-                returnVal.append({"testName": "Write Test", "result": "Fail"})
+                returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " within the SMB Share: " + worker.cruiseDataTransfer['smbServer']})
+                returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " within the SMB Share: " + worker.cruiseDataTransfer['smbServer']})
 
             else:
                 returnVal.append({"testName": "Destination Directory", "result": "Pass"})
 
                 if not writeTest(destDir):
-                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+                    returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: " + destDir + " within the SMB Share: " + worker.cruiseDataTransfer['smbServer']})
                 else:
                     returnVal.append({"testName": "Write Test", "result": "Pass"})
 
@@ -174,6 +182,8 @@ def test_smbDestDir(worker):
 
     # Cleanup
     shutil.rmtree(tmpdir)
+
+    debugPrint(returnVal)
 
     return returnVal
 
@@ -198,7 +208,7 @@ def test_rsyncDestDir(worker):
 
     except IOError:
         errPrint("Error Saving temporary rsync password file")
-        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail"})
+        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail", "reason": "Unable to create temporary rsync password file: " + rsyncPasswordFilePath})
         rsyncPasswordFile.close()
 
         # Cleanup
@@ -219,9 +229,9 @@ def test_rsyncDestDir(worker):
     proc.communicate()
 
     if proc.returncode != 0:
-    	returnVal.append({"testName": "Rsync Connection", "result": "Fail"})
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
+    	returnVal.append({"testName": "Rsync Connection", "result": "Fail", "reason": "Unable to connect to rsync server: " + worker.cruiseDataTransfer['rsyncServer'] + " as " + worker.cruiseDataTransfer['rsyncUser']})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to connect to rsync server: " + worker.cruiseDataTransfer['rsyncServer'] + " as " + worker.cruiseDataTransfer['rsyncUser']})
+        returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to connect to rsync server: " + worker.cruiseDataTransfer['rsyncServer'] + " as " + worker.cruiseDataTransfer['rsyncUser']})
 
     else:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
@@ -237,8 +247,8 @@ def test_rsyncDestDir(worker):
         proc.communicate()
 
         if proc.returncode != 0:
-            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
+            returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " on the Rsync Server: " + worker.cruiseDataTransfer['rsyncServer']})
+            returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " on the Rsync Server: " + worker.cruiseDataTransfer['rsyncServer']})
 
         else:
             returnVal.append({"testName": "Destination Directory", "result": "Pass"})
@@ -263,7 +273,7 @@ def test_rsyncDestDir(worker):
                 errPrint('Err:', err)
 
             if proc.returncode != 0:
-            	returnVal.append({"testName": "Write Test", "result": "Fail"})
+            	returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: " + destDir + " on the Rsync Server: " + worker.cruiseDataTransfer['rsyncServer']})
                 
             else:
 
@@ -283,7 +293,7 @@ def test_rsyncDestDir(worker):
                     errPrint('Err:', err)
 
                 if proc.returncode != 0:
-                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+                    returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: " + destDir + " on the Rsync Server: " + worker.cruiseDataTransfer['rsyncServer']})
 
                 else:
                     returnVal.append({"testName": "Write Test", "result": "Pass"})
@@ -312,9 +322,9 @@ def test_sshDestDir(worker):
     proc.communicate()
 
     if proc.returncode != 0:
-        returnVal.append({"testName": "SSH Connection", "result": "Fail"})
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
+        returnVal.append({"testName": "SSH Connection", "result": "Fail", "reason": "Unable to connect to ssh server: " + worker.cruiseDataTransfer['sshServer'] + " as " + worker.cruiseDataTransfer['sshUser']})
+        returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to connect to ssh server: " + worker.cruiseDataTransfer['sshServer'] + " as " + worker.cruiseDataTransfer['sshUser']})
+        returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to connect to ssh server: " + worker.cruiseDataTransfer['sshServer'] + " as " + worker.cruiseDataTransfer['sshUser']})
     else:
         returnVal.append({"testName": "SSH Connection", "result": "Pass"})
 
@@ -332,8 +342,8 @@ def test_sshDestDir(worker):
         proc.communicate()
 
         if proc.returncode != 0:
-            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
+            returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " on the SSH Server: " + worker.cruiseDataTransfer['sshServer']})
+            returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " on the SSH Server: " + worker.cruiseDataTransfer['sshServer']})
         else:
             returnVal.append({"testName": "Destination Directory", "result": "Pass"})
 
@@ -349,7 +359,7 @@ def test_sshDestDir(worker):
             proc.communicate()
 
             if proc.returncode != 0:
-            	returnVal.append({"testName": "Write Test", "result": "Fail"})
+            	returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: " + destDir + " on the SSH Server: " + worker.cruiseDataTransfer['sshServer']})
                 
             else:
                 if worker.cruiseDataTransfer['sshUseKey'] == '1':
@@ -364,94 +374,12 @@ def test_sshDestDir(worker):
                 proc.communicate()
 
                 if proc.returncode != 0:
-                    returnVal.append({"testName": "Write Test", "result": "Fail"})
+                    returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: " + destDir + " on the SSH Server: " + worker.cruiseDataTransfer['sshServer']})
 
                 else:
                     returnVal.append({"testName": "Write Test", "result": "Pass"})
         
     #print json.dumps(returnVal, indent=2)
-    return returnVal
-
-
-def test_nfsDestDir(worker):
-    returnVal = []
-
-    # Create temp directory
-    tmpdir = tempfile.mkdtemp()
-    
-    command = ['rpcinfo', '-s', worker.cruiseDataTransfer['nfsServer'].split(":")[0]]
-    
-    s = ' '
-    debugPrint('Connection Command:', s.join(command))
-    
-    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    lines_iterator = iter(proc.stdout.readline, b"")
-    
-    foundNFS = False
-    foundMountd = False
-    
-    for line in lines_iterator:
-        if foundNFS and foundMountd:
-            break
-        lineArray = line.split()
-        if lineArray[3] == 'nfs':
-            foundNFS = True
-            continue
-        if lineArray[3] == 'mountd':
-            foundMountd = True
-            continue
-    
-    if not foundNFS or not foundMountd:
-        returnVal.append({"testName": "NFS Server", "result": "Fail"})
-        returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})        
-        returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-        returnVal.append({"testName": "Write Test", "result": "Fail"})
-
-    else:
-        returnVal.append({"testName": "NFS Server", "result": "Pass"})
-    
-        # Create mountpoint
-        mntPoint = os.path.join(tmpdir, 'mntpoint')
-        os.mkdir(mntPoint, 0755)
-
-        # Mount NFS Share
-
-        command = ['sudo', 'mount', '-t', 'nfs', worker.cruiseDataTransfer['nfsServer'], mntPoint, '-o', 'ro' + ',vers=2' + ',hard' + ',intr']
-
-        s = ' '
-        debugPrint('Connection Command:', s.join(command))
-
-        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        proc.communicate()
-
-        if proc.returncode != 0:
-            returnVal.append({"testName": "NFS Server/Path", "result": "Fail"})
-            returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-            returnVal.append({"testName": "Write Test", "result": "Fail"})
-
-        else:
-            returnVal.append({"testName": "NFS Server/Path", "result": "Pass"})
-
-            # If mount is successful, test source directory
-            destDir = os.path.join(mntPoint, worker.cruiseDataTransfer['destDir'])
-            if not os.path.isdir(destDir):
-                returnVal.append({"testName": "Destination Directory", "result": "Fail"})
-                returnVal.append({"testName": "Write Test", "result": "Fail"})
-
-            else:
-                returnVal.append({"testName": "Destination Directory", "result": "Pass"})
-
-                if not writeTest(destDir):
-                    returnVal.append({"testName": "Write Test", "result": "Fail"})
-                else:
-                    returnVal.append({"testName": "Write Test", "result": "Pass"})
-
-            # Unmount SMB Share
-            subprocess.call(['sudo', 'umount', mntPoint])
-
-    # Cleanup
-    shutil.rmtree(tmpdir)
-
     return returnVal
 
 
@@ -464,7 +392,7 @@ def test_sourceDir(worker):
     if os.path.isdir(sourceDir):
         return [{"testName": "Source Directory", "result": "Pass"}]
     else:
-        return [{"testName": "Source Directory", "result": "Fail"}]
+        return [{"testName": "Source Directory", "result": "Fail", "reason": "Unable to find cruise directory: " + sourceDir + " on the Data Warehouse"}]
 
     
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -477,7 +405,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 #        self.cruiseStartDate = ''
 #        self.systemStatus = ''
         self.startTime = time.gmtime(0)
-        self.CruiseDataTransfer = {}
+        self.cruiseDataTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
         
@@ -491,7 +419,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             try:
                 payloadObj['cruiseDataTransfer']['cruiseDataTransferID']
             except KeyError:
-                self.cruiseDataTransfer = None
+                debugPrint("Just testing a transfer configuration")
+                self.cruiseDataTransfer = payloadObj['cruiseDataTransfer']
+                self.cruiseDataTransfer['cruiseDataTransferID'] = None
             else:
                 self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
                 self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])                    
@@ -501,18 +431,19 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
-                
-        if self.cruiseDataTransfer != None:
-            self.OVDM.setRunning_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
         
+        if self.cruiseDataTransfer['cruiseDataTransferID'] != None:
+            self.OVDM.setRunning_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
+
         errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test started at:  ", time.strftime("%D %T", time.gmtime()))
 
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
+
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.cruiseDataTransfer['name'], "connection test failed at:    ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail"},{"testName": "Final Verdict", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail", "reason": "Unknown"},{"testName": "Final Verdict", "result": "Fail", "reason": "Working crashed for unknown reason"}]))
         
         self.OVDM.sendMsg(current_job.handle, 'Worker crashed testing ' + self.cruiseDataTransfer['name'])
         
@@ -529,10 +460,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
         if self.cruiseDataTransfer['cruiseDataTransferID'] != None: # cruiseDataTransferID == None would be testing a new, unsaved config
             if resultsObj['parts'][-1]['result'] == "Fail":
-                for test in resultsObj['parts']:
-                    if test['result'] == "Fail":
-                        self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], 'Reason: ' + test['testName'])
-                        break
+                self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.clearError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], self.cruiseDataTransfer['status'])
 
@@ -582,17 +510,19 @@ def task_testCruiseDataTransfer(worker, job):
         job_results['parts'] += test_smbDestDir(worker)
     elif  worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
         job_results['parts'] += test_sshDestDir(worker)
-    elif  worker.cruiseDataTransfer['transferType'] == "5": # NFS Server/Path
-        job_results['parts'] += test_nfsDestDir(worker)
 
     worker.send_job_status(job, 3, 4)
         
-    verdict = "Pass"
+    verdict = True
     for test in job_results['parts']:
         if test['result'] == "Fail":
-            verdict = "Fail"
+            verdict = False
+            job_results['parts'].append({"testName": "Final Verdict", "result": "Fail", "reason": test['reason']})
+            break
 
-    job_results['parts'].append({"testName": "Final Verdict", "result": verdict})
+    if verdict:
+        job_results['parts'].append({"testName": "Final Verdict", "result": "Pass"})
+
     worker.send_job_status(job, 4, 4)
 
     return json.dumps(job_results)

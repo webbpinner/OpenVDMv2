@@ -172,7 +172,7 @@ def build_rsyncFilelist(worker, sourceDir):
         # Cleanup
         shutil.rmtree(tmpdir)
 
-        return False    
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync password file: ' + rsyncPasswordFilePath}
 
     finally:
         rsyncPasswordFile.close()
@@ -235,7 +235,7 @@ def build_rsyncFilelist(worker, sourceDir):
 
     #debugPrint('returnFiles:', json.dumps(returnFiles, indent=2))
 
-    return returnFiles
+    return {'verdict': True, 'files': returnFiles}
 
 
 def build_sshFilelist(worker, sourceDir):
@@ -325,8 +325,13 @@ def build_filters(worker):
     #print json.dumps(rawFilters, indent=2)
     
     returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{loweringID}', worker.loweringID)
+
     returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{loweringID}', worker.loweringID)
+    
     returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
+    returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{loweringID}', worker.loweringID)
     
     #print json.dumps(returnFilters, indent=2)
     return returnFilters
@@ -377,48 +382,55 @@ def setOwnerGroupPermissions(worker, path):
 
     debugPrint(path)
 
+    reason = []
+
     uid = pwd.getpwnam(warehouseUser).pw_uid
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
     if os.path.isfile(path):
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0644)
         except OSError:
-            errPrint("Unable to set file permissions for", path)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
     else: #directory
         try:
-            debugPrint("Setting ownership for", path, "to", warehouseUser + ":" + warehouseUser)
+            debugPrint("Setting ownership/permissions for", path)
             os.chown(path, uid, gid)
             os.chmod(path, 0755)
         except OSError:
-            errPrint("Unable to set file permissions for", fname)
-            return False
+            errPrint("Unable to set ownership/permissions for", path)
+            reason.append("Unable to set ownership/permissions for " + path)
+
         for root, dirs, files in os.walk(path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("Setting ownership for", file, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
-                    errPrint("Unable to set file permissions for", fname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", file)
+                    reason.append("Unable to set ownership/permissions for " + file)
 
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("Setting ownership for", momo, "to", warehouseUser + ":" + warehouseUser)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:
-                    errPrint("Unable to set file permissions for", dname)
-                    return False
+                    errPrint("Unable to set ownership/permissions for", momo)
+                    reason.append("Unable to set ownership/permissions for " + momo)
 
-    return True
+    if len(reason) > 0:
+        return {'verdict': False, 'reason': reason.join('\n')}
+
+    return {'verdict': True}
 
 def writeLogFile(worker, logfileName, fileList):
 
@@ -435,13 +447,17 @@ def writeLogFile(worker, logfileName, fileList):
 
     except IOError:
         errPrint("Error Saving transfer logfile")
-        return False
+        return {'verdict': False, 'reason': 'Error Saving transfer logfile: ' + logfilePath}
 
     finally:
         Logfile.close()
-        setOwnerGroupPermissions(worker, logfilePath)
 
-    return True
+    output_results = setOwnerGroupPermissions(worker, logfilePath)
+
+    if not output_results['verdict']:
+        return {'verdict': False, 'reason': output_results['reason']}
+
+    return {'verdict': True}
     
 
 def transfer_localSourceDir(worker, job):
@@ -484,7 +500,7 @@ def transfer_localSourceDir(worker, job):
             
         # Cleanup
         shutil.rmtree(tmpdir)            
-        return False
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file: ' + rsyncFileListPath, 'files': []}
 
     finally:
         #debugPrint("Closing rsync filelist file")
@@ -524,7 +540,8 @@ def transfer_localSourceDir(worker, job):
 
     # Cleanup
     shutil.rmtree(tmpdir)
-    return files
+
+    return {'verdict': True, 'files': files}
 
 
 def transfer_smbSourceDir(worker, job):
@@ -596,7 +613,7 @@ def transfer_smbSourceDir(worker, job):
         subprocess.call(['sudo', 'umount', mntPoint])
         shutil.rmtree(tmpdir)
             
-        return False
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file: ' + rsyncFileListPath, 'files': []}
 
     finally:
         rsyncFileListFile.close()
@@ -640,7 +657,7 @@ def transfer_smbSourceDir(worker, job):
     subprocess.call(['sudo', 'umount', mntPoint])
     shutil.rmtree(tmpdir)
 
-    return files
+    return {'verdict': True, 'files': files}
 
 def transfer_rsyncSourceDir(worker, job):
 
@@ -660,7 +677,12 @@ def transfer_rsyncSourceDir(worker, job):
     debugPrint("Destinstation Dir:", destDir)
     
     debugPrint("Build file list")
-    files = build_rsyncFilelist(worker, sourceDir)
+    output_results = build_rsyncFilelist(worker, sourceDir)
+
+    if not output_results['verdict']:
+        return {'verdict': False, 'reason': output_results['reason'], 'files':[]}
+
+    files = output_results['files']
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -681,7 +703,7 @@ def transfer_rsyncSourceDir(worker, job):
         # Cleanup
         shutil.rmtree(tmpdir)
 
-        return False    
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync password file: ' + rsyncPasswordFilePath}
 
     finally:
         rsyncPasswordFile.close()
@@ -700,7 +722,7 @@ def transfer_rsyncSourceDir(worker, job):
         # Cleanup
         shutil.rmtree(tmpdir)
             
-        return False
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file: ' + rsyncFileListPath, 'files':[]}
 
     finally:
         rsyncFileListFile.close()
@@ -742,7 +764,7 @@ def transfer_rsyncSourceDir(worker, job):
     # Cleanup
     shutil.rmtree(tmpdir)
 
-    return files
+    return {'verdict': True, 'files': files}
 
 
 def transfer_sshSourceDir(worker, job):
@@ -785,7 +807,7 @@ def transfer_sshSourceDir(worker, job):
         # Cleanup
         shutil.rmtree(tmpdir)
             
-        return False
+        return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file: ' + sshFileListPath, 'files':[]}
 
     finally:
         sshFileListFile.close()
@@ -831,104 +853,7 @@ def transfer_sshSourceDir(worker, job):
     # Cleanup
     shutil.rmtree(tmpdir)
 
-    return files
-
-
-def transfer_nfsSourceDir(worker, job):
-
-    debugPrint("Transfer from NFS Server")
-
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
-
-    tmpdir = tempfile.mkdtemp()
-    mntPoint = os.path.join(tmpdir, 'mntpoint')
-    os.mkdir(mntPoint, 0755)
-
-    debugPrint("Mount NFS Server")
-        
-    command = ['sudo', 'mount', '-t', 'nfs', worker.collectionSystemTransfer['nfsServer'], mntPoint, '-o', 'ro'+ ',vers=2' + ',hard' + ',intr']
-
-    s = ' '
-    debugPrint('Mount Command:', s.join(command))
-
-    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    proc.communicate()
-        
-    if worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
-      destDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID, build_destDir(worker).rstrip('/'))
-    else:
-      destDir = os.path.join(cruiseDir, build_destDir(worker).rstrip('/'))
-
-    sourceDir = os.path.join(mntPoint, build_sourceDir(worker).rstrip('/')).rstrip('/')
-    debugPrint("Source Dir:", sourceDir)
-    debugPrint("Destinstation Dir:", destDir)
-    
-    debugPrint("Build file list")
-    files = build_filelist(worker, sourceDir)
-    
-    fileIndex = 0
-    fileCount = len(files['include'])
-    
-    rsyncFileListPath = os.path.join(tmpdir, '/rsyncFileList.txt')
-        
-    try:
-        rsyncFileListFile = open(rsyncFileListPath, 'w')
-        rsyncFileListFile.write('\n'.join(files['include']))
-
-    except IOError:
-        errPrint("Error Saving temporary rsync filelist file")
-        rsyncFileListFile.close()
-            
-        # Cleanup
-        shutil.rmtree(tmpdir)
-            
-        return False
-
-    finally:
-        rsyncFileListFile.close()
-
-    bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
-
-    if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
-        bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
-
-    
-    command = ['rsync', '-trim', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir, destDir]
-    
-    s = ' '
-    debugPrint('Transfer Command:', s.join(command))
-
-    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
-
-    lines_iterator = iter(popen.stdout.readline, b"")
-    for line in lines_iterator:
-        #debugPrint('line', line.rstrip('\n')
-        if line.startswith( '>f+++++++++' ):
-            filename = line.split(' ',1)[1].rstrip('\n')
-            files['new'].append(filename)
-            worker.send_job_status(job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
-            fileIndex += 1
-        elif line.startswith( '>f.' ):
-            filename = line.split(' ',1)[1].rstrip('\n')
-            files['updated'].append(filename)
-            worker.send_job_status(job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
-            fileIndex += 1
-            
-        if worker.stop:
-            debugPrint("Stopping")
-            break
-    
-    files['new'] = [os.path.join(destDir.replace(cruiseDir, '').lstrip('/').rstrip('/'),filename) for filename in files['new']]
-    files['updated'] = [os.path.join(destDir.replace(cruiseDir, '').lstrip('/').rstrip('/'),filename) for filename in files['updated']]
-
-    # Cleanup
-    debugPrint('Unmounting NFS Share')
-    subprocess.call(['sudo', 'umount', mntPoint])
-    shutil.rmtree(tmpdir)
-
-    return files
-
+    return {'verdict': True, 'files': files}
 
 
 class OVDMGearmanWorker(gearman.GearmanWorker):
@@ -957,7 +882,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
         if not self.collectionSystemTransfer:
-            return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+            return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find configuration data for collection system transfer"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
         
@@ -1041,8 +966,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "transfer failed at:   ", time.strftime("%D %T", time.gmtime()))
         
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail"}]))
-        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], 'Reason: Worker crashed')
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown"}]))
+        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], 'Worker crashed')
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1071,10 +996,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
-                    for test in resultsObj['parts']:
-                        if test['result'] == "Fail":
-                            self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], 'Reason: ' +  test['partName'])
-                            break
+                    self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.setIdle_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'])
         else:
@@ -1130,7 +1052,7 @@ def task_runCollectionSystemTransfer(worker, job):
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     else:
         debugPrint("Transfer is already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail"})
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Transfer is already in-progress"})
         return json.dumps(job_results)
         
     if worker.collectionSystemTransfer['enable'] == "1" and worker.systemStatus == "On":
@@ -1162,24 +1084,29 @@ def task_runCollectionSystemTransfer(worker, job):
         job_results['parts'].append({"partName": "Connection Test", "result": "Pass"})
     else:
         debugPrint("Connection Test: Failed")
-        job_results['parts'].append({"partName": "Connection Test", "result": "Fail"})
+        job_results['parts'].append({"partName": "Connection Test", "result": "Fail", "reason": resultsObj['parts'][-1]['reason']})
         return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
         
     debugPrint("Start Transfer")
     if worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
-        job_results['files'] = transfer_localSourceDir(worker, job)
+        output_results = transfer_localSourceDir(worker, job)
     elif  worker.collectionSystemTransfer['transferType'] == "2": # Rsync Server
-        job_results['files'] = transfer_rsyncSourceDir(worker, job)
+        output_results = transfer_rsyncSourceDir(worker, job)
     elif  worker.collectionSystemTransfer['transferType'] == "3": # SMB Server
-        job_results['files'] = transfer_smbSourceDir(worker, job)
+        output_results = transfer_smbSourceDir(worker, job)
     elif  worker.collectionSystemTransfer['transferType'] == "4": # SSH Server
-        job_results['files'] = transfer_sshSourceDir(worker, job)
-    elif  worker.collectionSystemTransfer['transferType'] == "5": # NFS Server
-        job_results['files'] = transfer_nfsSourceDir(worker, job)
+        output_results = transfer_sshSourceDir(worker, job)
+
+    if not output_results['verdict']:
+        job_results['parts'].append({"partName": "Transfer Files", "result": "Fail", "reason": output_results['reason']})
+        return job_results
 
     debugPrint("Transfer Complete")
+    job_results['files'] = output_results['files']
+    job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
+
     if len(job_results['files']['new']) > 0:
         debugPrint(len(job_results['files']['new']), 'file(s) added')
     if len(job_results['files']['updated']) > 0:
@@ -1187,7 +1114,6 @@ def task_runCollectionSystemTransfer(worker, job):
     if len(job_results['files']['exclude']) > 0:
         debugPrint(len(job_results['files']['exclude']), 'misnamed file(s) encounted')
 
-    job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
 
     worker.send_job_status(job, 9, 10)
     
@@ -1197,14 +1123,14 @@ def task_runCollectionSystemTransfer(worker, job):
 
         permission_status = True
         #for filename in job_results['files']['new']:
-        if not setOwnerGroupPermissions(worker, collectionSystemDestDir):
+
+        output_results = setOwnerGroupPermissions(worker, collectionSystemDestDir)
+
+        if not output_results['verdict']:
             errPrint("Error Setting file/directory ownership")
-            permission_status = False
+            job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail", "reason": output_results['reason']})
     
-        if permission_status:
-            job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
-        else:
-            job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Fail"})
+        job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
 
         debugPrint("Building Logfiles")
 
@@ -1217,10 +1143,12 @@ def task_runCollectionSystemTransfer(worker, job):
 
         #debugPrint('logContents',logContents)
 
-        if writeLogFile(worker, logfileName, logContents['files']):
+        output_results = writeLogFile(worker, logfileName, logContents['files'])
+
+        if output_results['verdict']:
             job_results['parts'].append({"partName": "Write transfer logfile", "result": "Pass"})
         else:
-            job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail"})
+            job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail", "reason": output_results['reason']})
             return job_results
             
     #if job_results['files']['exclude']:
@@ -1232,10 +1160,12 @@ def task_runCollectionSystemTransfer(worker, job):
     logContents = {'files':{'exclude':[]}}
     logContents['files']['exclude'] = job_results['files']['exclude']
 
-    if writeLogFile(worker, logfileName, logContents['files']):
+    output_results =  writeLogFile(worker, logfileName, logContents['files'])
+
+    if output_results['verdict']:
         job_results['parts'].append({"partName": "Write exclude logfile", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Write exclude logfile", "result": "Fail"})
+        job_results['parts'].append({"partName": "Write exclude logfile", "result": "Fail", "reason": output_results['reason']})
         return job_results
 
     worker.send_job_status(job, 10, 10)

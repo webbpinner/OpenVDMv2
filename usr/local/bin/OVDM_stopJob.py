@@ -99,7 +99,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
     def on_job_exception(self, current_job, exc_info):
         errPrint("Job:", current_job.handle + ",", "Killing PID:", self.jobPID, "failed at:   ", time.strftime("%D %T", time.gmtime()))
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail"}]))
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail", "reason": "Unknown"}]))
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -163,8 +163,8 @@ def task_stopJob(worker, current_job):
             os.kill(int(worker.jobInfo['pid']), signal.SIGQUIT)
 
         except OSError:
-            errPrint("Error killing PID")
-            job_results['parts'].append({"partName": "Stopped Job", "result": "Fail"})
+            errPrint("Error killing PID:", worker.jobInfo['pid'])
+            job_results['parts'].append({"partName": "Stopped Job", "result": "Fail", "reason": "Error killing PID: " + worker.jobInfo['pid']})
 
         else:
             if worker.jobInfo['type'] == 'collectionSystemTransfer':
@@ -179,7 +179,8 @@ def task_stopJob(worker, current_job):
                             
             job_results['parts'].append({"partName": "Stopped Job", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Valid OpenVDM Job", "result": "Fail"})
+        errPrint("Unknown job type:", worker.jobInfo['type'])
+        job_results['parts'].append({"partName": "Valid OpenVDM Job", "result": "Fail", "reason": "Unknown job type: " + worker.jobInfo['type']})
 
     return json.dumps(job_results)
 

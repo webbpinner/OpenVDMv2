@@ -67,7 +67,16 @@ class Warehouse extends Controller {
 	// getCruiseSize - return the size of the cruise directory.
 	public function getCruiseSize() {
 
-        echo json_encode($this->_warehouseModel->getCruiseSize());
+        if(strcmp($this->_warehouseModel->getCruiseID(), '') === 0){
+            $data['cruiseSize'] = '';
+            $data['cruiseSizeUpdated'] = '1970/01/01 00:00:00';
+            echo json_encode($data);
+
+        } else {
+
+            echo json_encode($this->_warehouseModel->getCruiseSize());
+
+        }
     }
     
     // getCruiseID - return the current cruise ID.
@@ -96,6 +105,7 @@ class Warehouse extends Controller {
 
         if(strcmp($this->_warehouseModel->getLoweringID(), '') === 0){
             $data['loweringSize'] = 'Undefined';
+            $data['loweringSizeUpdated'] = '1970/01/01 00:00:00';
             echo json_encode($data);
 
         } else {
@@ -236,5 +246,14 @@ class Warehouse extends Controller {
         echo json_encode($response);
     
     }
+
+    public function setCruiseSize() {
+
+        $this->_warehouseModel->setCruiseSize(array('value' => $_POST['bytes']));
+    }
     
+    public function setLoweringSize() {
+    
+        $this->_warehouseModel->setLoweringSize(array('value' => $_POST['bytes']));
+    }
 }
