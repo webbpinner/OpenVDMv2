@@ -166,14 +166,7 @@ class Warehouse extends Controller {
             echo "{}";
         }
     }
-    
-    // getShipToShoreBWLimit - return the ship-to-shore bandwidth limit
-	public function getShipToShoreBWLimit() {
-
-        $response['shipToShoreBWLimit'] = $this->_warehouseModel->getShipToShoreBWLimit();
-        echo json_encode($response);
-    }
-    
+        
     // getShipToShoreBWLimitStatus - return the ship-to-shore bandwidth limit status
 	public function getShipToShoreBWLimitStatus() {
 

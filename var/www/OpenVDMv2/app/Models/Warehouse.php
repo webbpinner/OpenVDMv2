@@ -139,11 +139,6 @@ class Warehouse extends Model {
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'loweringEndDate'");
         return $row[0]->value;
     }
-
-    public function getShipToShoreBWLimit(){
-        $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipToShoreBWLimit'");
-        return $row[0]->value;
-    }
     
     public function getShipToShoreBWLimitStatus(){
         $row = $this->db->select("SELECT * FROM ".PREFIX."CoreVars WHERE name = 'shipToShoreBWLimitStatus'");
@@ -226,11 +221,6 @@ class Warehouse extends Model {
     public function hideLoweringComponents(){
         $data = array('value' => 'No');   
         $where = array('name' => 'showLoweringComponents');
-        $this->db->update(PREFIX."CoreVars",$data, $where);
-    }
-
-    public function setShipToShoreBWLimit($data){
-        $where = array('name' => 'shipToShoreBWLimit');
         $this->db->update(PREFIX."CoreVars",$data, $where);
     }
     

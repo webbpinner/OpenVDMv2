@@ -326,7 +326,7 @@ class System extends Controller {
             $shipToShoreBWLimit = $_POST['shipToShoreBWLimit'];
 
             if($shipToShoreBWLimit == ''){
-                $error[] = 'Bandwidth limit is required';
+                $shipToShoreBWLimit = '0';
             } elseif (!((string)(int)$shipToShoreBWLimit == $shipToShoreBWLimit)){
                 $error[] = 'Bandwidth limit must be an integer';
             }
@@ -470,7 +470,6 @@ class System extends Controller {
         $data['requiredShipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getRequiredShipToShoreTransfers();
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
         $data['shipboardDataWarehouseStatus'] = $this->_coreValuesModel->getShipboardDataWarehouseStatus();
-        $data['shipToShoreBWLimit'] = $this->_coreValuesModel->getShipToShoreBWLimit();
         $data['shipToShoreBWLimitStatus'] = $this->_coreValuesModel->getShipToShoreBWLimitStatus();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
         $data['md5FilesizeLimitStatus'] = $this->_coreValuesModel->getMd5FilesizeLimitStatus();
@@ -526,7 +525,6 @@ class System extends Controller {
         $data['requiredCruiseDataTransfers'] = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
         $data['requiredShipToShoreTransfers'] = $this->_shipToShoreTransfersModel->getRequiredShipToShoreTransfers();
         $data['requiredExtraDirectories'] = $this->_extraDirectoriesModel->getRequiredExtraDirectories();
-        $data['shipToShoreBWLimit'] = $this->_coreValuesModel->getShipToShoreBWLimit();
         $data['shipToShoreBWLimitStatus'] = $this->_coreValuesModel->getShipToShoreBWLimitStatus();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
         $data['md5FilesizeLimitStatus'] = $this->_coreValuesModel->getMd5FilesizeLimitStatus();

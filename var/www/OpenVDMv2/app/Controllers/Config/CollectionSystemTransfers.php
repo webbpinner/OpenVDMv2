@@ -167,7 +167,9 @@ class CollectionSystemTransfers extends Controller {
                 $includeFilter = '*';
             }
 
-            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+            if ($bandwidthLimit === '') {
+                $bandwidthLimit = '0';
+            } elseif(!((string)(int)$bandwidthLimit == $bandwidthLimit)){
                 $error[] = 'Transfer limit must be an integer';
             }
             
@@ -356,7 +358,9 @@ class CollectionSystemTransfers extends Controller {
                 $error[] = 'Destination Directory is required';
             }
             
-            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+            if ($bandwidthLimit === '') {
+                $bandwidthLimit = '0';
+            } elseif(!((string)(int)$bandwidthLimit == $bandwidthLimit)){
                 $error[] = 'Transfer limit must be an integer';
             }
             
@@ -577,7 +581,9 @@ class CollectionSystemTransfers extends Controller {
                 $includeFilter = '*';
             }
             
-            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+            if ($bandwidthLimit === '') {
+                $bandwidthLimit = '0';
+            } elseif(!((string)(int)$bandwidthLimit == $bandwidthLimit)){
                 $error[] = 'Transfer limit must be an integer';
             }
 
@@ -801,7 +807,9 @@ class CollectionSystemTransfers extends Controller {
                 $includeFilter = '*';
             }
             
-            if(!((string)(int)$bandwidthLimit == $bandwidthLimit) || ($bandwidthLimit === '')){
+            if ($bandwidthLimit === '') {
+                $bandwidthLimit = '0';
+            } elseif(!((string)(int)$bandwidthLimit == $bandwidthLimit)){
                 $error[] = 'Transfer limit must be an integer';
             }
 

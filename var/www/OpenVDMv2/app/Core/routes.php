@@ -129,7 +129,6 @@ Router::any('api/warehouse/getMD5FilesizeLimit', 'Controllers\Api\Warehouse@getM
 Router::any('api/warehouse/getMD5FilesizeLimitStatus', 'Controllers\Api\Warehouse@getMD5FilesizeLimitStatus');
 Router::any('api/warehouse/getShipboardDataWarehouseConfig', 'Controllers\Api\Warehouse@getShipboardDataWarehouseConfig');
 Router::any('api/warehouse/getShipboardDataWarehouseStatus', 'Controllers\Api\Warehouse@getShipboardDataWarehouseStatus');
-Router::any('api/warehouse/getShipToShoreBWLimit', 'Controllers\Api\Warehouse@getShipToShoreBWLimit');
 Router::any('api/warehouse/getShipToShoreBWLimitStatus', 'Controllers\Api\Warehouse@getShipToShoreBWLimitStatus');
 Router::any('api/warehouse/getSystemStatus', 'Controllers\Api\Warehouse@getSystemStatus');
 Router::any('api/warehouse/getShowLoweringComponents', 'Controllers\Api\Warehouse@getShowLoweringComponents');

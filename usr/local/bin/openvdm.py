@@ -257,13 +257,6 @@ class OpenVDM():
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal
-    
-    def getShipToShoreBWLimit(self):
-        
-        url = self.config['siteRoot'] + 'api/warehouse/getShipToShoreBWLimit'
-        r = requests.get(url)
-        returnObj = json.loads(r.text)
-        return returnObj['shipToShoreBWLimit']
 
 
     def getShipToShoreBWLimitStatus(self):
