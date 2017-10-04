@@ -442,19 +442,21 @@ def task_finalizeCurrentLowering(worker, job):
         
             collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
 
-    
-    worker.send_job_status(job, 5, 10)
 
-    debugPrint('Initiating Collection System Transfers')
-    submitted_job_request = gm_client.submit_multiple_jobs(collectionSystemTransferJobs, background=False, wait_until_complete=False)
+    if len(collectionSystemTransferJobs) > 0:
     
-    worker.send_job_status(job, 7, 10)
-    
-    time.sleep(1)
-    completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
-    debugPrint('Collection System Transfers Complete')
+        worker.send_job_status(job, 5, 10)
 
-    worker.send_job_status(job, 9, 10)
+        debugPrint('Initiating Collection System Transfers')
+        submitted_job_request = gm_client.submit_multiple_jobs(collectionSystemTransferJobs, background=False, wait_until_complete=False)
+    
+        worker.send_job_status(job, 7, 10)
+    
+        time.sleep(1)
+        completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
+        debugPrint('Collection System Transfers Complete')
+
+        worker.send_job_status(job, 9, 10)
     
     #build Lowering Config file
     debugPrint('Exporting Lowering Configuration')

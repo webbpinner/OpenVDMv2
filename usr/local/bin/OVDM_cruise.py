@@ -539,14 +539,15 @@ def task_finalizeCurrentCruise(worker, job):
     
     worker.send_job_status(job, 3, 10)
 
-    debugPrint('Initiating Collection System Transfers')
-    submitted_job_request = gm_client.submit_multiple_jobs(collectionSystemTransferJobs, background=False, wait_until_complete=False)
+    if len(collectionSystemTransferJobs) > 0:
+        debugPrint('Initiating Collection System Transfers')
+        submitted_job_request = gm_client.submit_multiple_jobs(collectionSystemTransferJobs, background=False, wait_until_complete=False)
     
-    worker.send_job_status(job, 4, 10)
+        worker.send_job_status(job, 4, 10)
     
-    time.sleep(1)
-    completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
-    debugPrint('Collection System Transfers Complete')
+        time.sleep(1)
+        completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
+        debugPrint('Collection System Transfers Complete')
 
     worker.send_job_status(job, 5, 10)
     
