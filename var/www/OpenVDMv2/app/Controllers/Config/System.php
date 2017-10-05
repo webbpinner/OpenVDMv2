@@ -80,12 +80,6 @@ class System extends Controller {
 
         $this->_linksModel->processLinkURL($data['links']);
         
-        $freeSpace = $this->_coreValuesModel->getFreeSpace();
-        
-        if(isset($freeSpace['error'])){
-            $data['freeSpace'] = "Error";
-        }
-        
         View::rendertemplate('header',$data);
         View::render('Config/system',$data);
         View::rendertemplate('footer',$data);
@@ -473,14 +467,21 @@ class System extends Controller {
         $data['shipToShoreBWLimitStatus'] = $this->_coreValuesModel->getShipToShoreBWLimitStatus();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
         $data['md5FilesizeLimitStatus'] = $this->_coreValuesModel->getMd5FilesizeLimitStatus();
+        $data['links'] = $this->_linksModel->getLinks();
 
-        $freeSpace = $this->_coreValuesModel->getFreeSpace();
-        
-        if(isset($freeSpace['error'])){
-            $data['freeSpace'] = "Error";
+        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+
+        foreach($requiredCruiseDataTransfers as $row) {
+            if(strcmp($row->name, 'SSDW') === 0 ) {
+
+                $data['shipToShoreBWLimit'] = $row->bandwidthLimit;
+                break;
+            }
         }
 
-        #additional data needed for view
+        $this->_linksModel->processLinkURL($data['links']);
+
+        //additional data needed for view
         $data['testWarehouseName'] = 'Shipboard Data Warehouse';
 
         View::rendertemplate('header',$data);
@@ -528,14 +529,20 @@ class System extends Controller {
         $data['shipToShoreBWLimitStatus'] = $this->_coreValuesModel->getShipToShoreBWLimitStatus();
         $data['md5FilesizeLimit'] = $this->_coreValuesModel->getMd5FilesizeLimit();
         $data['md5FilesizeLimitStatus'] = $this->_coreValuesModel->getMd5FilesizeLimitStatus();
+        $data['links'] = $this->_linksModel->getLinks();
 
-        $freeSpace = $this->_coreValuesModel->getFreeSpace();
-        
-        if(isset($freeSpace['error'])){
-            $data['freeSpace'] = "Error";
+        $requiredCruiseDataTransfers = $this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers();
+
+        foreach($requiredCruiseDataTransfers as $row) {
+            if(strcmp($row->name, 'SSDW') === 0 ) {
+
+                $data['shipToShoreBWLimit'] = $row->bandwidthLimit;
+                break;
+            }
         }
 
-        #additional data needed for view
+        $this->_linksModel->processLinkURL($data['links']);
+
         $data['testWarehouseName'] = 'Shoreside Data Warehouse';
 
         View::rendertemplate('header',$data);
