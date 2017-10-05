@@ -39,6 +39,44 @@ class CruiseDataTransfers extends Model {
             $this->db->delete(PREFIX."CruiseDataTransfers", $where);
         } 
     }
+
+    public function clearCollectionSystemTransfer($collectionSystemTransferID) {
+        $cruiseDataTransfers = $this->db->select("SELECT * FROM ".PREFIX."CruiseDataTransfers");
+        foreach ($cruiseDataTransfers as $key => $value) {
+            $excludedCollectionSystems = explode(',', $value->excludedCollectionSystems);
+            $keyToRemove = array_keys($excludedCollectionSystems,$collectionSystemTransferID);
+            if (sizeof($keyToRemove) > 0) {
+                unset($excludedCollectionSystems[$keyToRemove[0]]);
+                $data = [];
+                if (sizeof($excludedCollectionSystems) > 0) {
+                    $data = array('excludedCollectionSystems' => join(',',$excludedCollectionSystems));
+                } else {
+                    $data = array('excludedCollectionSystems' => "0");
+                }
+                $where = array('cruiseDataTransferID' => $value->cruiseDataTransferID);
+                $this->db->update(PREFIX."CruiseDataTransfers",$data, $where);
+            }
+        }
+    }
+
+    public function clearExtraDirectory($extraDirectoryID) {
+        $cruiseDataTransfers = $this->db->select("SELECT * FROM ".PREFIX."CruiseDataTransfers");
+        foreach ($cruiseDataTransfers as $key => $value) {
+            $excludedExtraDirectories = explode(',', $value->excludedExtraDirectories);
+            $keyToRemove = array_keys($excludedExtraDirectories,$extraDirectoryID);
+            if (sizeof($keyToRemove) > 0) {
+                unset($excludedExtraDirectories[$keyToRemove[0]]);
+                $data = [];
+                if (sizeof($excludedExtraDirectories) > 0) {
+                    $data = array('excludedExtraDirectories' => join(',',$excludedExtraDirectories));
+                } else {
+                    $data = array('excludedExtraDirectories' => "0");
+                }
+                $where = array('cruiseDataTransferID' => $value->cruiseDataTransferID);
+                $this->db->update(PREFIX."CruiseDataTransfers",$data, $where);
+            }
+        }
+    }
     
     public function setErrorCruiseDataTransfer($id){
         $data = array('status' => '3', 'pid' => '0');

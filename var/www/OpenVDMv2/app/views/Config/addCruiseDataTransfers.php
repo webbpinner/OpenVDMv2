@@ -4,6 +4,14 @@ use Core\Error;
 use Helpers\Form;
 use Helpers\FormCustom;
 
+if(!isset($_POST['excludedCollectionSystems'])) {
+    $_POST['excludedCollectionSystems'] = ["0"];
+}
+
+if(!isset($_POST['excludedExtraDirectories'])) {
+    $_POST['excludedExtraDirectories'] = ["0"];
+}
+
 ?>
     <div class="row">
         <div class="col-lg-12">
@@ -52,6 +60,51 @@ use Helpers\FormCustom;
                                 <div class="form-group sshServer"><label>SSH Username</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshUser', 'value'=> $_POST['sshUser'])); ?></div>
                                 <div class="form-group sshServer"><label>Use SSH Public/Private key?</label><?php echo FormCustom::radioInline($data['useSSHKeyOptions'], $_POST['sshUseKey']); ?></div>
                                 <div class="form-group sshServer"><label>SSH Password</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sshPass', 'type'=>'password', 'value'=> $_POST['sshPass'])); ?></div>
+<?php
+    if ($data['collectionSystemTransfers']) {
+?>
+                                <div class="form-group">
+                                    <label for='excludedCollectionSystems[]'>Select the Collection Systems to EXCLUDE:</label><br>
+                                    <select multiple="multiple" name="excludedCollectionSystems[]">
+                                        <option value="0" <?php echo (in_array("0", $_POST['excludedCollectionSystems']))? 'selected="selected"': '' ?>></option>
+<?php
+        foreach ($data['collectionSystemTransfers'] as $key => $value) {
+?>
+                                        <option value=<?php echo $value->collectionSystemTransferID;?> <?php echo (in_array($value->collectionSystemTransferID, $_POST['excludedCollectionSystems']))? 'selected="selected"': '' ?>><?php echo $value->longName;?></option>
+<?php
+        }
+?>  
+                                    </select>
+                                </div>
+<?php
+    } else {
+?>
+                                <input type="hidden" name="excludedCollectionSystems[]" value="0"><?php
+    }
+?>
+
+<?php
+    if ($data['extraDirectories']) {
+?>
+                                <div class="form-group">
+                                    <label for='excludedExtraDirectories[]'>Select the Extra Directories to EXCLUDE:</label><br>
+                                    <select multiple="multiple" name="excludedExtraDirectories[]">
+                                    <option value="0" <?php echo (in_array("0", $_POST['excludedExtraDirectories']))? 'selected="selected"': '' ?>></option>
+<?php
+        foreach ($data['extraDirectories'] as $key => $value) {
+?>
+                                        <option value=<?php echo $value->extraDirectoryID;?> <?php echo (in_array($value->extraDirectoryID, $_POST['excludedExtraDirectories']))? 'selected="selected"': '' ?>><?php echo $value->longName;?></option>
+<?php
+        }
+?>  
+                                    </select>
+                                </div>
+<?php
+    } else {
+?>
+                                <input type="hidden" name="excludedExtraDirectories[]" value="0"><?php
+    }
+?>
                             </div>
                         </div>
                         <div class="row">    

@@ -75,9 +75,6 @@ def setOwnerGroupPermissions(worker, path):
     gid = grp.getgrnam(warehouseUser).gr_gid
     # Set the file permission and ownership for the current directory
 
-    debugPrint(uid)
-    debugPrint(gid)
-
     if os.path.isfile(path):
         try:
             debugPrint("Setting ownership/permissions for", path)
@@ -144,9 +141,9 @@ def build_filelist(worker, sourceDir):
                     break
             if not ignore:
                 for filt in filters['includeFilter'].split(','): 
-                    if fnmatch.fnmatch(filename, filt):
+                    if fnmatch.fnmatch(os.path.join(root, filename), filt):
                         for filt in filters['excludeFilter'].split(','): 
-                            if fnmatch.fnmatch(filename, filt):
+                            if fnmatch.fnmatch(os.path.join(root, filename), filt):
                                 debugPrint(filename, "excluded")
                                 returnFiles['exclude'].append(os.path.join(root, filename))
                                 exclude = True
@@ -183,15 +180,41 @@ def build_filters(worker):
     
     returnFilters = {'includeFilter': '*','excludeFilter': '','ignoreFilter': ''}
 
+    excludedFilterArray = []
+
     if worker.cruiseDataTransfer['includeOVDMFiles'] == '0':
         dashboardDataDir = worker.OVDM.getRequiredExtraDirectoryByName("Dashboard Data")
-        transferLogs = worker.OVDM.getRequiredExtraDirectoryByName("Transfer Logs")
+        excludedFilterArray.append("*/{cruiseID}/" + dashboardDataDir['destDir'] + "/*")
 
-        returnFilters['ignoreFilter'] = "*/{cruiseID}/" + dashboardDataDir['destDir'] + "/*,*/{cruiseID}/" + transferLogs['destDir'] + "/*"
-    
+        transferLogs = worker.OVDM.getRequiredExtraDirectoryByName("Transfer Logs")
+        excludedFilterArray.append("*/{cruiseID}/" + transferLogs['destDir'] + "/*")
+
+
+    excludedCollectionSystems = worker.cruiseDataTransfer['excludedCollectionSystems'].split(',')
+    for excludedCollectionSystem in excludedCollectionSystems:
+        collectionSystemTransfer = worker.OVDM.getCollectionSystemTransfer(excludedCollectionSystem)
+        if collectionSystemTransfer:
+            if collectionSystemTransfer['cruiseOrLowering'] == '0':
+                excludedFilterArray.append("*/{cruiseID}/" + collectionSystemTransfer['destDir'] + "/*")
+            else:
+                excludedFilterArray.append("*/{cruiseID}/*/{loweringID}/" + collectionSystemTransfer['destDir'] + "/*")
+
+    excludedExtraDirectories = worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
+    debugPrint(excludedExtraDirectories)
+    for excludedExtraDirectory in excludedExtraDirectories:
+        extraDirectory = worker.OVDM.getExtraDirectory(excludedExtraDirectory)
+        if extraDirectory:
+            excludedFilterArray.append("*/{cruiseID}/" + extraDirectory['destDir'] + "/*")
+
+    returnFilters['excludeFilter'] = ','.join(excludedFilterArray)
+
     returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
     returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{cruiseID}', worker.cruiseID)
     returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
+
+    returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{loweringID}', worker.loweringID)
+    returnFilters['excludeFilter'] = returnFilters['excludeFilter'].replace('{loweringID}', worker.loweringID)
+    returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{loweringID}', worker.loweringID)
     
     debugPrint(returnFilters)
     return returnFilters
@@ -581,6 +604,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.quit = False
         self.OVDM = openvdm.OpenVDM()
         self.cruiseID = ''
+        self.loweringID = ''
         self.systemStatus = ''
         self.cruiseDataTransfer = {}
         self.shipboardDataWarehouseConfig = {}
@@ -594,6 +618,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
         
         self.cruiseID = self.OVDM.getCruiseID()
+        self.loweringID = self.OVDM.getLoweringID()
         self.systemStatus = self.OVDM.getSystemStatus()
         if len(payloadObj) > 0:
             try:
@@ -602,6 +627,13 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
                 self.cruiseID = self.OVDM.getCruiseID()
             else:
                 self.cruiseID = payloadObj['cruiseID']
+
+            try:
+                payloadObj['loweringID']
+            except KeyError:
+                self.loweringID = self.OVDM.getLoweringID()
+            else:
+                self.loweringID = payloadObj['loweringID']
 
             try:
                 payloadObj['systemStatus']
@@ -716,7 +748,6 @@ def task_runCruiseDataTransfer(worker, job):
     else:
         debugPrint("Connection Test: Failed")
         job_results['parts'].append({'partName': 'Connection Test', 'result': 'Fail', 'reason': resultsObj['parts'][-1]['reason']})
-        return json.dumps(job_results)
 
     worker.send_job_status(job, 2, 10)
     
@@ -729,8 +760,6 @@ def task_runCruiseDataTransfer(worker, job):
         job_results['files'] = transfer_smbDestDir(worker, job)
     elif  worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
         job_results['files'] = transfer_sshDestDir(worker, job)
-
-    debugPrint(job_results)
     
     debugPrint("Transfer Complete")
     if len(job_results['files']['new']) > 0:
@@ -738,7 +767,7 @@ def task_runCruiseDataTransfer(worker, job):
     if len(job_results['files']['updated']) > 0:
         debugPrint(len(job_results['files']['updated']), 'file(s) updated')
     if len(job_results['files']['exclude']) > 0:
-        debugPrint(len(job_results['files']['exclude']), 'misnamed file(s) encounted')
+        debugPrint(len(job_results['files']['exclude']), 'file(s) intentionally skipped')
 
     job_results['parts'].append({"partName": "Transfer Files", "result": "Pass"})
 

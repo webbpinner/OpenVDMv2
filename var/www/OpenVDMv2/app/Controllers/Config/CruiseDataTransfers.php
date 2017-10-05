@@ -9,6 +9,8 @@ use Helpers\Session;
 class CruiseDataTransfers extends Controller {
 
     private $_cruiseDataTransfersModel,
+            $_collectionSystemTransfersModel,
+            $_extraDirectoriesModel,
             $_transferTypesModel;
     
     private function _buildTransferTypesOptions($checkedType = null) {
@@ -49,6 +51,8 @@ class CruiseDataTransfers extends Controller {
         }
 
         $this->_cruiseDataTransfersModel = new \Models\Config\CruiseDataTransfers();
+        $this->_collectionSystemTransfersModel = new \Models\Config\CollectionSystemTransfers();
+        $this->_extraDirectoriesModel = new \Models\Config\ExtraDirectories();
         $this->_transferTypesModel = new \Models\Config\TransferTypes();
     }
 
@@ -68,6 +72,8 @@ class CruiseDataTransfers extends Controller {
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
         $data['includeOVDMFilesOptions'] = $this->_buildIncludeOVDMFilesOptions();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $data['extraDirectories'] = $this->_extraDirectoriesModel->getExtraDirectories();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -90,6 +96,9 @@ class CruiseDataTransfers extends Controller {
             $sshPass = $_POST['sshPass'];
             $status = 3;
             $enable = 0;
+            $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
+            $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
+
 
             if($name == ''){
                 $error[] = 'Name is required';
@@ -238,7 +247,10 @@ class CruiseDataTransfers extends Controller {
                     'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'status' => $status,
-                    'enable' => $enable
+                    'enable' => $enable,
+                    'excludedCollectionSystems' => $excludedCollectionSystems,
+                    'excludedExtraDirectories' => $excludedExtraDirectories,
+
                 );
 
                 $this->_cruiseDataTransfersModel->insertCruiseDataTransfer($postdata);
@@ -266,6 +278,8 @@ class CruiseDataTransfers extends Controller {
             $sshPass = $_POST['sshPass'];
             $status = 3;
             $enable = 0;
+            $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
+            $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
 
             if($name == ''){
                 $error[] = 'Name is required';
@@ -415,7 +429,9 @@ class CruiseDataTransfers extends Controller {
                     'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
                     'status' => '4',
-                    'enable' => '0'
+                    'enable' => '0',
+                    'excludedCollectionSystems' => $excludedCollectionSystems,
+                    'excludedExtraDirectories' => $excludedExtraDirectories,
                 );
             
                 # create the gearman client
@@ -443,6 +459,8 @@ class CruiseDataTransfers extends Controller {
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
         $data['includeOVDMFilesOptions'] = $this->_buildIncludeOVDMFilesOptions();
+        $data['collectionSystemTransfers'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfers();
+        $data['extraDirectories'] = $this->_extraDirectoriesModel->getExtraDirectories();
 
         $data['row'] = $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id);
 
@@ -465,6 +483,10 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
+            $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
+            var_dump($_POST['excludedExtraDirectories']);
+            $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
+
 
             if($name == ''){
                 $error[] = 'Name is required';
@@ -610,6 +632,8 @@ class CruiseDataTransfers extends Controller {
                     'sshUser' => $sshUser,
                     'sshUseKey' => $sshUseKey,
                     'sshPass' => $sshPass,
+                    'excludedCollectionSystems' => $excludedCollectionSystems,
+                    'excludedExtraDirectories' => $excludedExtraDirectories,
                 );
                 
                 $where = array('cruiseDataTransferID' => $id);
@@ -637,6 +661,8 @@ class CruiseDataTransfers extends Controller {
                 $data['row'][0]->sshUser = $sshUser;
                 $data['row'][0]->sshUseKey = $sshUseKey;
                 $data['row'][0]->sshPass = $sshPass;
+                $data['row'][0]->excludedCollectionSystems = $excludedCollectionSystems;
+                $data['row'][0]->excludedExtraDirectories = $excludedExtraDirectories;
             }
         } else if(isset($_POST['inlineTest'])){
 
@@ -658,6 +684,9 @@ class CruiseDataTransfers extends Controller {
             $sshUser = $_POST['sshUser'];
             $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
+            $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
+            $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
+
 
             if($name == ''){
                 $error[] = 'Name is required';
@@ -805,6 +834,8 @@ class CruiseDataTransfers extends Controller {
                 $gmData['cruiseDataTransfer']->sshUser = $sshUser;
                 $gmData['cruiseDataTransfer']->sshUseKey = $sshUseKey;
                 $gmData['cruiseDataTransfer']->sshPass = $sshPass;
+                $gmData['cruiseDataTransfer']->excludedCollectionSystems = $excludedCollectionSystems;
+                $gmData['cruiseDataTransfer']->excludedExtraDirectories = $excludedExtraDirectories;
                 
                 # create the gearman client
                 $gmc= new \GearmanClient();
@@ -836,7 +867,9 @@ class CruiseDataTransfers extends Controller {
             $data['row'][0]->sshUser = $sshUser;
             $data['row'][0]->sshUseKey = $sshUseKey;
             $data['row'][0]->sshPass = $sshPass;
-                
+            $data['row'][0]->excludedCollectionSystems = $excludedCollectionSystems;
+            $data['row'][0]->excludedExtraDirectories = $excludedExtraDirectories;
+        
         }
         
         View::rendertemplate('header',$data);

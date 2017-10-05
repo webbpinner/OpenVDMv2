@@ -44,6 +44,10 @@ class CollectionSystemTransfers extends Model {
     }
     
     public function deleteCollectionSystemTransfer($where){
+
+        $cruiseDataTransfers = new \Models\Config\CruiseDataTransfers();
+        $cruiseDataTransfers->clearCollectionSystemTransfer($where['collectionSystemTransferID']);
+
         $this->db->delete(PREFIX."CollectionSystemTransfers", $where);
     }
     

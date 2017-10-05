@@ -206,7 +206,10 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/extraDirectories/getExtraDirectory/' + extraDirectoryID
         r = requests.get(url)
         returnVal = json.loads(r.text)
-        return returnVal[0]
+        if len(returnVal) > 0:
+            return returnVal[0]
+
+        return False
     
     def getExtraDirectoryByName(self, extraDirectoryName):
 
@@ -329,7 +332,10 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
         r = requests.get(url)
         returnVal = json.loads(r.text)
-        return returnVal
+        if len(returnVal) > 0:
+            return returnVal[0]
+
+        return False
 
     
     def getActiveCollectionSystemTransfers(self):
