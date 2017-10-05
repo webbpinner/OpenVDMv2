@@ -90,7 +90,7 @@ def build_directorylist(worker):
     if worker.OVDM.getShowLoweringComponents():
       returnDirectories.append(os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir']))
 
-    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    collectionSystemTransfers = worker.OVDM.getActiveCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
         if collectionSystemTransfer['enable'] == "1" and collectionSystemTransfer['cruiseOrLowering'] == "0":
@@ -103,10 +103,11 @@ def build_directorylist(worker):
         returnDirectories.append(os.path.join(cruiseDir, destDir))
 
     extraDirectories = worker.OVDM.getExtraDirectories()
-    for extraDirectory in extraDirectories:
-        if extraDirectory['enable'] == "1":
-            destDir = build_destDir(worker, extraDirectory['destDir'])
-            returnDirectories.append(os.path.join(cruiseDir, destDir))
+    if extraDirectories:
+        for extraDirectory in extraDirectories:
+            if extraDirectory['enable'] == "1":
+                destDir = build_destDir(worker, extraDirectory['destDir'])
+                returnDirectories.append(os.path.join(cruiseDir, destDir))
 
     return returnDirectories
 

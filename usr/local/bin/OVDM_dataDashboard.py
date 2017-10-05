@@ -575,7 +575,7 @@ def task_rebuildDataDashboard(worker, job):
         job_results['parts'].append({"partName": "Verify Data Dashboard Directory exists", "result": "Fail", "reason": "Unable to locate the data dashboard directory: " + dataDashboardDir})
         return json.dumps(job_results)
 
-    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    collectionSystemTransfers = worker.OVDM.getActiveCollectionSystemTransfers()
     
     worker.send_job_status(job, 1, 100)
 

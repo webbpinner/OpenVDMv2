@@ -406,7 +406,7 @@ def task_setupNewCruise(worker, job):
     completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", job.data)
     
     resultObj = json.loads(completed_job_request.result)
-    
+
     if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
         job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
     else:

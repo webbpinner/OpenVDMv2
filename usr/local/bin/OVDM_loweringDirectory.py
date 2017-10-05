@@ -89,7 +89,7 @@ def build_directorylist(worker):
 
     returnDirectories.append(loweringDir)
 
-    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    collectionSystemTransfers = worker.OVDM.getActiveCollectionSystemTransfers()
 
     for collectionSystemTransfer in collectionSystemTransfers:
 

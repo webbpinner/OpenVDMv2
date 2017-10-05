@@ -59,7 +59,7 @@ $data['row'][0]->excludedExtraDirectories = explode(',', $data['row'][0]->exclud
     if ($data['collectionSystemTransfers']) {
 ?>
                                 <div class="form-group">
-                                    <label for='excludedCollectionSystems[]'>Select the Collection Systems to EXCLUDE:</label><br>
+                                    <label for='excludedCollectionSystems[]'>Select any Collection Systems to EXCLUDE:</label><br>
                                     <select multiple="multiple" name="excludedCollectionSystems[]">
                                         <option value="0" <?php echo (in_array("0", $data['row'][0]->excludedCollectionSystems))? 'selected="selected"': '' ?>></option>
 <?php
@@ -82,7 +82,7 @@ $data['row'][0]->excludedExtraDirectories = explode(',', $data['row'][0]->exclud
     if ($data['extraDirectories']) {
 ?>
                                 <div class="form-group">
-                                    <label for='excludedExtraDirectories[]'>Select the Extra Directories to EXCLUDE:</label><br>
+                                    <label for='excludedExtraDirectories[]'>Select any Extra Directories to EXCLUDE:</label><br>
                                     <select multiple="multiple" name="excludedExtraDirectories[]">
                                     <option value="0" <?php echo (in_array("0", $data['row'][0]->excludedExtraDirectories))? 'selected="selected"': '' ?>></option>
 <?php
@@ -135,6 +135,7 @@ $data['row'][0]->excludedExtraDirectories = explode(',', $data['row'][0]->exclud
             <p class="sshServer">The <strong>SSH Username</strong> is the SSH username with permission to access the data on the Destination SSH Server (i.e. "shipTech").</p>
             <p class="sshServer">The <strong>Use SSH Public/Private key?</strong> instructs OpenVDM to authenticate this connection using SSH public/private keys instead of a password</p>
             <p class="sshServer">The <strong>SSH Password</strong> is the SSH password for the Rsync Username.</p>
+            <p>The <strong>Select any Collection Systems to EXCLUDE</strong> and <strong>Select any Collection Systems to EXCLUDE</strong> multi-selection boxes are for specifying if the data stored in the selected collection system directories and/or extra directories within the cruise data directory should be excluded from this transfer. (i.e if the operator wants to make a copy of all cruise data EXCEPT the 10TB of HD/4K video files)</p>
             <p>Click the <strong>Update</strong> button to submit the changes to OpenVDM.  Click the <strong>Cancel</strong> button to exit this form.  Click the <strong>Test Setup</strong> button to test the configuration currently in the form.  This DOES NOT save the configuration.  You will need to click the <strong>Update</strong> button to commit the changes.</p>
         </div>
     </div>
