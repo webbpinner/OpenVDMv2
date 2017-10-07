@@ -166,7 +166,7 @@ def test_smbDestDir(worker):
 
             destDir = os.path.join(mntPoint, worker.cruiseDataTransfer['destDir'])
             if not os.path.isdir(destDir):
-                returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " within the SMB Share: " + worker.cruiseDataTransfer['smbServer']})
+                returnVal.append({"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: " + worker.cruiseDataTransfer['destDir'] + " within the SMB Share: " + worker.cruiseDataTransfer['smbServer']})
                 returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to find destination directory: " + destDir + " within the SMB Share: " + worker.cruiseDataTransfer['smbServer']})
 
             else:

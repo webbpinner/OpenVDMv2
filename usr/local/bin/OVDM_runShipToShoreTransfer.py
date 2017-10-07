@@ -330,7 +330,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
     def on_job_execute(self, current_job):
         payloadObj = json.loads(current_job.data)
-        #debugPrint("Payload:", json.dumps(payloadObj))
+        debugPrint("Payload:", json.dumps(payloadObj))
         self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
         self.cruiseDataTransfer = self.getShipToShoreTransfer()
         self.bandwidthLimitStatus = self.OVDM.getShipToShoreBWLimitStatus()
@@ -428,23 +428,25 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
 def task_runShipToShoreTransfer(worker, job):
 
-    time.sleep(randint(0,5))
+    time.sleep(randint(0,2))
 
     job_results = {'parts':[], 'files':[]}
-
-    if worker.cruiseDataTransfer['status'] != "1": #running
-        debugPrint("Transfer is not already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
-    else:
-        debugPrint("Transfer is already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Ship-to-shore transfer already in progress"})
-        return json.dumps(job_results)
 
     if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
         debugPrint("Transfer Enabled")
         job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
         debugPrint("Transfer Disabled")
+        return json.dumps(job_results)
+
+    currentSST = worker.OVDM.getRequiredCruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'])
+
+    if currentSST['status'] != "1": #running
+        debugPrint("Transfer is not already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
+    else:
+        debugPrint("Transfer is already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Ship-to-shore transfer already in progress"})
         return json.dumps(job_results)
     
     #debugPrint("Set transfer status to 'Running'")
@@ -518,7 +520,7 @@ def task_runShipToShoreTransfer(worker, job):
 
     worker.send_job_status(job, 10, 10)
     
-    time.sleep(5)
+    time.sleep(2)
 
     return json.dumps(job_results)
 

@@ -57,6 +57,7 @@ def errPrint(*args, **kwargs):
 
 def getJobInfo(worker):
 
+
     collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
     for collectionSystemTransfer in collectionSystemTransfers:
         if collectionSystemTransfer['pid'] == worker.jobPID:
@@ -149,8 +150,7 @@ def task_stopJob(worker, current_job):
     job_results = {'parts':[]}
 
     payloadObj = json.loads(current_job.data)
-    debugPrint('Payload:',json.dumps(payloadObj, indent=2))
-
+    
     debugPrint('jobInfo:', json.dumps(worker.jobInfo, indent=2))
     
     job_results['parts'].append({"partName": "Retrieve Job Info", "result": "Pass"})
@@ -162,11 +162,16 @@ def task_stopJob(worker, current_job):
         try:
             os.kill(int(worker.jobInfo['pid']), signal.SIGQUIT)
 
-        except OSError:
-            errPrint("Error killing PID:", worker.jobInfo['pid'])
-            job_results['parts'].append({"partName": "Stopped Job", "result": "Fail", "reason": "Error killing PID: " + worker.jobInfo['pid']})
+        except OSError as error:
+            if error.errno == 3:
+                debugPrint("Unable to kill process because the process doesn't exist")
+                pass
+            else:
+                errPrint("Error killing PID:", worker.jobInfo['pid'])
+                errPrint(error)
+                job_results['parts'].append({"partName": "Stopped Job", "result": "Fail", "reason": "Error killing PID: " + worker.jobInfo['pid'] + " --> " + error})
 
-        else:
+        finally:
             if worker.jobInfo['type'] == 'collectionSystemTransfer':
                 worker.OVDM.setIdle_collectionSystemTransfer(worker.jobInfo['id'])
                 worker.OVDM.sendMsg("Manual Stop of transfer", worker.jobInfo['name'])

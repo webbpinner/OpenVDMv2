@@ -25,7 +25,12 @@ class CruiseDataTransfers extends Controller {
 
         echo json_encode($this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfers());
     }
-       
+
+    public function getRequiredCruiseDataTransfer($id){
+
+        echo json_encode($this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfer($id));
+    }
+    
     // getCruiseDataTransfersStatuses - return the names and statuses of the cruise data transfers.
 	public function getCruiseDataTransfersStatuses() {
         echo json_encode($this->_cruiseDataTransfersModel->getCruiseDataTransfersStatuses());

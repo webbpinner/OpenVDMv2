@@ -610,7 +610,8 @@ def transfer_smbSourceDir(worker, job):
         rsyncFileListFile.close()
             
         # Cleanup
-        subprocess.call(['sudo', 'umount', mntPoint])
+        time.sleep(2)
+        subprocess.call(['umount', mntPoint])
         shutil.rmtree(tmpdir)
             
         return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file: ' + rsyncFileListPath, 'files': []}
@@ -653,8 +654,9 @@ def transfer_smbSourceDir(worker, job):
     files['updated'] = [os.path.join(destDir.replace(cruiseDir, '').lstrip('/').rstrip('/'),filename) for filename in files['updated']]
 
     # Cleanup
+    time.sleep(2)
     debugPrint('Unmounting SMB Share')
-    subprocess.call(['sudo', 'umount', mntPoint])
+    subprocess.call(['umount', mntPoint])
     shutil.rmtree(tmpdir)
 
     return {'verdict': True, 'files': files}
@@ -1032,7 +1034,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
 def task_runCollectionSystemTransfer(worker, job):
 
-    time.sleep(randint(0,5))
+    time.sleep(randint(0,2))
     
     job_results = {'parts':[], 'files':{'new':[],'updated':[], 'exclude':[]}}
 
@@ -1170,7 +1172,7 @@ def task_runCollectionSystemTransfer(worker, job):
 
     worker.send_job_status(job, 10, 10)
     
-    time.sleep(5)
+    time.sleep(2)
 
     return json.dumps(job_results)
 

@@ -332,10 +332,10 @@ class OpenVDM():
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
         r = requests.get(url)
         returnVal = json.loads(r.text)
-        if len(returnVal) > 0:
-            return returnVal[0]
+        #if len(returnVal) > 0:
+        #    return returnVal[0]
 
-        return False
+        return returnVal
 
     
     def getActiveCollectionSystemTransfers(self):
@@ -384,6 +384,14 @@ class OpenVDM():
     def getCruiseDataTransfer(self, cruiseDataTransferID):
 
         url = self.config['siteRoot'] + 'api/cruiseDataTransfers/getCruiseDataTransfer/' + cruiseDataTransferID
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal[0]
+
+
+    def getRequiredCruiseDataTransfer(self, cruiseDataTransferID):
+
+        url = self.config['siteRoot'] + 'api/cruiseDataTransfers/getRequiredCruiseDataTransfer/' + cruiseDataTransferID
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal[0]
@@ -507,7 +515,6 @@ class OpenVDM():
         
         collectionSystemTransferName = self.getCollectionSystemTransfer(collectionSystemTransferID)['name']
 
-        #print "Set Running for current tranfer in DB via API"
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/setRunningCollectionSystemTransfer/' + collectionSystemTransferID
         payload = {'jobPid': jobPID}
         r = requests.post(url, data=payload)
@@ -528,7 +535,6 @@ class OpenVDM():
         
         cruiseDataTransferName = self.getCruiseDataTransfer(cruiseDataTransferID)['name']
 
-        #print "Set Running for current tranfer in DB via API"
         url = self.config['siteRoot'] + 'api/cruiseDataTransfers/setRunningCruiseDataTransfer/' + cruiseDataTransferID
         payload = {'jobPid': jobPID}
         r = requests.post(url, data=payload)

@@ -151,13 +151,14 @@ def test_smbSourceDir(worker):
         else:
             returnVal.append({"testName": "SMB Share", "result": "Pass"})
 
-            sourceDir = os.path.join(mntPoint, build_sourceDir(worker))
+            procSourceDir = build_sourceDir(worker)
+            sourceDir = os.path.join(mntPoint, procSourceDir)
             debugPrint('Source Dir:', sourceDir)
             if os.path.isdir(sourceDir):
                 returnVal.append({"testName": "Source Directory", "result": "Pass"})
             else:
                 debugPrint("Source Directory Test Failed")
-                returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " within the SMB Share: " + worker.collectionSystemTransfer['smbServer']})
+                returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + procSourceDir + " within the SMB Share: " + worker.collectionSystemTransfer['smbServer']})
 
             # Unmount SMB Share
             subprocess.call(['sudo', 'umount', mntPoint])

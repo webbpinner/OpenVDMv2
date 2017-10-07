@@ -356,7 +356,8 @@ def transfer_smbDestDir(worker, job):
         rsyncFileListFile.close()
             
         # Cleanup
-        subprocess.call(['sudo', 'umount', mntPoint])
+        time.sleep(2)
+        subprocess.call(['umount', mntPoint])
         shutil.rmtree(tmpdir)
             
         return False
@@ -401,6 +402,7 @@ def transfer_smbDestDir(worker, job):
     files['updated'] = [os.path.join(baseDir,filename) for filename in files['updated']]
 
     #print "Cleanup"
+    time.sleep(2)
     debugPrint("Unmount SMB Share")
     subprocess.call(['umount', mntPoint])
     shutil.rmtree(tmpdir)
@@ -706,7 +708,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         
 def task_runCruiseDataTransfer(worker, job):
 
-    time.sleep(randint(0,5))
+    time.sleep(randint(0,2))
     
     job_results = {'parts':[], 'files':[]}
 
@@ -773,7 +775,7 @@ def task_runCruiseDataTransfer(worker, job):
 
     worker.send_job_status(job, 9, 10)
 
-    time.sleep(5)
+    time.sleep(2)
 
     return json.dumps(job_results)
 

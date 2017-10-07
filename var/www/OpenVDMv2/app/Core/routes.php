@@ -148,6 +148,7 @@ Router::any('api/collectionSystemTransfers/setIdleCollectionSystemTransfer/(:num
 Router::any('api/cruiseDataTransfers/getCruiseDataTransfers', 'Controllers\Api\CruiseDataTransfers@getCruiseDataTransfers');
 Router::any('api/cruiseDataTransfers/getCruiseDataTransfer/(:num)', 'Controllers\Api\CruiseDataTransfers@getCruiseDataTransfer');
 Router::any('api/cruiseDataTransfers/getRequiredCruiseDataTransfers', 'Controllers\Api\CruiseDataTransfers@getRequiredCruiseDataTransfers');
+Router::any('api/cruiseDataTransfers/getRequiredCruiseDataTransfer/(:num)', 'Controllers\Api\CruiseDataTransfers@getRequiredCruiseDataTransfer');
 Router::any('api/cruiseDataTransfers/getCruiseDataTransfersStatuses', 'Controllers\Api\CruiseDataTransfers@getCruiseDataTransfersStatuses');
 Router::any('api/cruiseDataTransfers/getRequiredCruiseDataTransfersStatuses', 'Controllers\Api\CruiseDataTransfers@getRequiredCruiseDataTransfersStatuses');
 Router::any('api/cruiseDataTransfers/setErrorCruiseDataTransfer/(:num)', 'Controllers\Api\CruiseDataTransfers@setErrorCruiseDataTransfer');

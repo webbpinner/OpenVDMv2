@@ -24,6 +24,10 @@ class CruiseDataTransfers extends Model {
     public function getCruiseDataTransfer($id){
         return $this->db->select("SELECT * FROM ".PREFIX."CruiseDataTransfers WHERE cruiseDataTransferID = :id",array(':id' => $id));
     }
+
+    public function getRequiredCruiseDataTransfer($id){
+        return $this->db->select("SELECT * FROM ".PREFIX."CruiseDataTransfers WHERE cruiseDataTransferID = :id",array(':id' => $id));
+    }
     
     public function insertCruiseDataTransfer($data){
         $this->db->insert(PREFIX."CruiseDataTransfers",$data);
