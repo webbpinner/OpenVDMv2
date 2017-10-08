@@ -1,4 +1,13 @@
 <?php
+/*
+ * api/transferLogs - RESTful api interface to collection system and ship-
+ * to-shore transfers logs.
+ *
+ * @license   http://opensource.org/licenses/GPL-3.0
+ * @author Webb Pinner - oceandatarat@gmail.com - http://www.oceandatarat.org
+ * @version 2.3
+ * @date 2017-10-05
+ */
 
 namespace Controllers\Api;
 use Core\Controller;

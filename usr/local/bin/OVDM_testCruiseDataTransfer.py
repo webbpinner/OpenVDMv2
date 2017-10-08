@@ -1,4 +1,4 @@
- # ----------------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------------- #
 #
 #         FILE:  OVDM_testCruiseDataTransfer.py
 #
@@ -13,7 +13,7 @@
 #      CREATED:  2015-01-01
 #     REVISION:  2017-08-05
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify

@@ -4,19 +4,15 @@
 #
 #  DESCRIPTION:  This program reset OVDM state information in the database.
 #
-#        USAGE: OVDM_rebootReset.py <siteRoot>
-#
-#    ARGUMENTS: <siteRoot> The base URL to the OpenVDM installation on the Shipboard
-#                     Data Warehouse.
 #         BUGS:
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
 #      CREATED:  2015-06-22
-#     REVISION:  2017-08-05
+#     REVISION:  2017-10-05
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify

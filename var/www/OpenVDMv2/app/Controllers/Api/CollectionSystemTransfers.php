@@ -4,9 +4,9 @@
  * transfers.
  *
  * @license   http://opensource.org/licenses/GPL-3.0
- * @author Webb Pinner - webb@oceandatarat.org - http://www.oceandatarat.org
- * @version 2.0
- * @date May 31, 2015
+ * @author Webb Pinner - oceandatarat@gmail.com - http://www.oceandatarat.org
+ * @version 2.3
+ * @date 2017-10-05
  */
 
 namespace Controllers\Api;

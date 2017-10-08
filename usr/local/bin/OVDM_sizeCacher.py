@@ -2,26 +2,23 @@
 #
 #         FILE:  OVDM_sizeCacher.py
 #
-#  DESCRIPTION:  This program handles the scheduling of the transfer-related Gearman
-#                tasks.
+#  DESCRIPTION:  This program handles calculating the cruise and lowering
+#                    directory sizes.
 #
 #        USAGE: OVDM_sizeCacher.py [--interval <interval>]
 #
-#    ARGUMENTS: --interval <interval> The interval in minutes between transfer job
-#                    submissions.  If this argument is not provided the default inteval
-#                    is 5 minutes
+#    ARGUMENTS: --interval <interval> The minimum interval in second between directory
+#                    size calculations.
 #
-#                <siteRoot> The base URL to the OpenVDM installation on the Shipboard
-#                     Data Warehouse.
 #         BUGS:
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
 #      VERSION:  2.3
 #      CREATED:  2017-09-30
-#     REVISION:  
+#     REVISION:  2017-10-05
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify
