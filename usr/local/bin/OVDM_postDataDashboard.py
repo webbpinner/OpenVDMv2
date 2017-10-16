@@ -9,11 +9,11 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.2
+#      VERSION:  2.3
 #      CREATED:  2016-02-08
-#     REVISION:  2016-10-30
+#     REVISION:  2017-10-05
 #
-# LICENSE INFO: Open Vessel Data Management (OpenVDMv2)
+# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2017
 #
 #    This program is free software: you can redistribute it and/or modify
