@@ -364,8 +364,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "connection test failed at:    ", time.strftime("%D %T", time.gmtime()))
         
         self.send_job_data(current_job, json.dumps([{"testName": "Worker crashed", "result": "Fail", "reason": "Unknown"},{"testName": "Final Verdict", "result": "Fail", "reason": "Worker crashed for unknown reason"}]))
-        
-        self.OVDM.sendMsg(current_job.handle, 'Worker crashed testing ' + self.collectionSystemTransfer['name'])
+        self.OVDM.setError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], "Worker crashed")
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

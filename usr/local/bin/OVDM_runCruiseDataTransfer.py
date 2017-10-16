@@ -668,10 +668,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
-                    for test in resultsObj['parts']:
-                        if test['result'] == "Fail":
-                            self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], test['reason'])
-                            break
+                    self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
         else:
