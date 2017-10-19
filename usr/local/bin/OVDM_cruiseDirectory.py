@@ -163,7 +163,7 @@ def setOwnerGroupPermissions(worker, path):
             for file in files:
                 fname = os.path.join(root, file)
                 try:
-                    debugPrint("3Setting ownership/permissions for", file)
+                    debugPrint("Setting ownership/permissions for", file)
                     os.chown(fname, uid, gid)
                     os.chmod(fname, 0644)
                 except OSError:
@@ -173,7 +173,7 @@ def setOwnerGroupPermissions(worker, path):
             for momo in dirs:
                 dname = os.path.join(root, momo)
                 try:
-                    debugPrint("4Setting ownership/permissions for", momo)
+                    debugPrint("Setting ownership/permissions for", momo)
                     os.chown(dname, uid, gid)
                     os.chmod(dname, 0755)
                 except OSError:

@@ -17,6 +17,8 @@ $hooks = Hooks::get();
 <script type="text/javascript">
     var siteRoot = "<?php echo DIR . '";'; ?>
     
+    var lowering_name = "<?php echo LOWERING_NAME . '";'; ?>
+    
     <?php echo (isset($data['cruiseID']) ? 'var cruiseID = "' . $data['cruiseID'] . '";' : ''); ?>
     
     <?php echo (isset($data['dataWarehouseApacheDir']) ? 'var cruiseDataDir = "' . $data['dataWarehouseApacheDir'] . '";' : ''); ?>

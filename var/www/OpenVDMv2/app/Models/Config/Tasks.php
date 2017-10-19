@@ -5,26 +5,52 @@ use Core\Model;
 
 class Tasks extends Model {
 
+    private function buildTaskName($task) {
+        $task->longName = str_replace('{lowering_name}', LOWERING_NAME, $task->longName);
+        return $task;
+    }
+
     public function getTasks(){
-        return $this->db->select("SELECT * FROM ".PREFIX."Tasks ORDER BY taskID");
+        $tasks = $this->db->select("SELECT * FROM ".PREFIX."Tasks ORDER BY taskID");
+
+        foreach ($tasks as $task){
+            $task = $this->buildTaskName($task);
+        }
+        return $tasks;
     }
 
     public function getActiveTasks(){
 
         $_warehouseModel = new \Models\Warehouse();
         if ($_warehouseModel->getShowLoweringComponents()) {
-            return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE enable = :enable ORDER BY taskID", array(':enable' => 1));
+            $tasks = $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE enable = :enable ORDER BY taskID", array(':enable' => 1));
+            foreach ($tasks as $task){
+                $task = $this->buildTaskName($task);
+            }
+            return $tasks;
         }
-        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering AND enable = :enable ORDER BY taskID", array(':cruiseOrLowering' => 0, ':enable' => 1));
 
+        $tasks = $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering AND enable = :enable ORDER BY taskID", array(':cruiseOrLowering' => 0, ':enable' => 1));
+        foreach ($tasks as $task){
+            $task = $this->buildTaskName($task);
+        }
+        return $tasks;
     }
 
     public function getCruiseOnlyTasks(){
-        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY taskID", array(':cruiseOrLowering' => 0));
+        $tasks = $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY taskID", array(':cruiseOrLowering' => 0));
+        foreach ($tasks as $task){
+            $task = $this->buildTaskName($task);
+        }
+        return $tasks;
     }
     
     public function getLoweringOnlyTasks(){
-        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY taskID", array(':cruiseOrLowering' => 1));
+        $tasks = $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE cruiseOrLowering = :cruiseOrLowering ORDER BY taskID", array(':cruiseOrLowering' => 1));
+        foreach ($tasks as $task){
+            $task = $this->buildTaskName($task);
+        }
+        return $tasks;
     }
 
     public function getTaskStatuses(){
@@ -32,7 +58,11 @@ class Tasks extends Model {
     }
     
     public function getTask($id){
-        return $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE taskID = :id",array(':id' => $id));
+        $tasks = $this->db->select("SELECT * FROM ".PREFIX."Tasks WHERE taskID = :id",array(':id' => $id));
+        foreach ($tasks as $task){
+            $task = $this->buildTaskName($task);
+        }
+        return $tasks;
     }
     
     public function insertTask($data){

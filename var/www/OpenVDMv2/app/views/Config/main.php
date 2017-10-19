@@ -42,11 +42,11 @@ $_warehouseModel = new \Models\Warehouse();
     if ($_warehouseModel->getShowLoweringComponents()) {
 ?>
             <div class="panel panel-default">
-                <div class="panel-heading">Lowering Control</div>
+                <div class="panel-heading"><?php echo LOWERING_NAME; ?> Control</div>
                 <div class="panel-body">
-                    <a href="<?php echo DIR ?>config/setupNewLowering" class="btn-lg btn btn-primary btn-block">Setup New Lowering</a>
-                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block">Run End-of-Lowering Tasks</a>
-                    <a href="<?php echo DIR ?>config/editLowering" class="btn-lg btn btn-primary btn-block">Edit Current Lowering</a>
+                    <a href="<?php echo DIR ?>config/setupNewLowering" class="btn-lg btn btn-primary btn-block">Setup New <?php echo LOWERING_NAME; ?></a>
+                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block">Run End-of-<?php echo LOWERING_NAME; ?> Tasks</a>
+                    <a href="<?php echo DIR ?>config/editLowering" class="btn-lg btn btn-primary btn-block">Edit Current <?php echo LOWERING_NAME; ?></a>
                 </div>
             </div>
 <?php

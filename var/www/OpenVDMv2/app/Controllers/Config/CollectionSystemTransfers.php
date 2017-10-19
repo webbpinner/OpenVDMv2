@@ -52,7 +52,7 @@ class CollectionSystemTransfers extends Controller {
 
     private function _buildCruiseOrLoweringOptions() {
         
-        $output = array(array('id'=>'cruiseOrLowering0', 'name'=>'cruiseOrLowering', 'value'=>'0', 'label'=>'Cruise'), array('id'=>'cruiseOrLowering1', 'name'=>'cruiseOrLowering', 'value'=>'1', 'label'=>'Lowering'));
+        $output = array(array('id'=>'cruiseOrLowering0', 'name'=>'cruiseOrLowering', 'value'=>'0', 'label'=>'Cruise'), array('id'=>'cruiseOrLowering1', 'name'=>'cruiseOrLowering', 'value'=>'1', 'label'=>LOWERING_NAME));
         return $output;
     }
 

@@ -55,6 +55,11 @@ class Config
         define('LOWERINGDATA_BASEDIR', 'Vehicle');
 
         /*
+         * Define what to call the lowering. (i.e. 'Lowering', 'Dive', 'Deployment')
+         */
+        define('LOWERING_NAME', 'Lowering');
+
+        /*
          * Set default controller and method for legacy calls.
          */
         define('DEFAULT_CONTROLLER', 'welcome');

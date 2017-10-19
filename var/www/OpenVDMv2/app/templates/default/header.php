@@ -379,7 +379,7 @@ use Helpers\Hooks;
                 <div id="loweringIDPanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="loweringID" class="huge"><?php echo $data['loweringID']; ?></div>
-                        <div class="text-right">Lowering ID</div>
+                        <div class="text-right"><?php echo LOWERING_NAME; ?> ID</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
 <?php
@@ -388,7 +388,7 @@ use Helpers\Hooks;
                 <div id="loweringIDPanel" class="panel panel-yellow">
                     <div class="panel-heading">
                         <div id="loweringID" class="huge">Undefined</div>
-                        <div class="text-right">Lowering ID</div>
+                        <div class="text-right"><?php echo LOWERING_NAME; ?> ID</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
 <?php
@@ -402,7 +402,7 @@ use Helpers\Hooks;
                 <div id="loweringSizePanel" class="panel panel-primary">
                     <div class="panel-heading">
                         <div id="loweringSize" class="huge"><?php echo $data['loweringSize']; ?></div>
-                        <div class="text-right">Lowering Size</div>
+                        <div class="text-right"><?php echo LOWERING_NAME; ?> Size</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
 <?php
@@ -411,7 +411,7 @@ use Helpers\Hooks;
                 <div id="loweringSizePanel" class="panel panel-yellow">
                     <div class="panel-heading">
                         <div id="loweringSize" class="huge">Undefined</div>
-                        <div class="text-right">Lowering Size</div>
+                        <div class="text-right"><?php echo LOWERING_NAME; ?> Size</div>
                     </div> <!-- .panel-heading -->
                 </div> <!-- .panel .panel-primary -->
 <?php

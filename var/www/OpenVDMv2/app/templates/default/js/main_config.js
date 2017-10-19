@@ -68,10 +68,10 @@ $(function () {
                     } else if (data[i].name === 'finalizeCurrentLowering') {
                         if (data[i].status === "1") {
                             $('#finalizeCurrentLowering').addClass('disabled');
-                            $('#finalizeCurrentLowering').html("Running End-of-Lowering Tasks... please standby.")
+                            $('#finalizeCurrentLowering').html("Running End-of-" + lowering_name + " Tasks... please standby.")
                         } else {
                             $('#finalizeCurrentLowering').removeClass('disabled');
-                            $('#finalizeCurrentLowering').html("Run End-of-Lowering Tasks")
+                            $('#finalizeCurrentLowering').html("Run End-of-" + lowering_name + " Tasks")
                         }
                     }
                     output += '</div>';
