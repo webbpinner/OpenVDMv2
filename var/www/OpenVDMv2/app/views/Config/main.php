@@ -34,7 +34,7 @@ $_warehouseModel = new \Models\Warehouse();
                 <div class="panel-heading">Cruise Control</div>
                 <div class="panel-body">
                     <a href="<?php echo DIR ?>config/setupNewCruise" class="btn-lg btn btn-primary btn-block">Setup New Cruise</a>
-                    <a id="finalizeCurrentCruise" href="<?php echo DIR ?>config/finalizeCurrentCruise" class="btn-lg btn btn-primary btn-block">Run End-of-Cruise Tasks</a>
+                    <a id="finalizeCurrentCruise" href="<?php echo DIR ?>config/finalizeCurrentCruise" class="btn-lg btn btn-primary btn-block"><?php echo ($data['cruiseFinalizedOn'] === null) ? '' : '<i class="fa fa-check"></i>';?> Run End-of-Cruise Tasks</a>
                     <a href="<?php echo DIR ?>config/editCruise" class="btn-lg btn btn-primary btn-block">Edit Current Cruise</a>
                 </div>
             </div>
@@ -45,8 +45,15 @@ $_warehouseModel = new \Models\Warehouse();
                 <div class="panel-heading"><?php echo LOWERING_NAME; ?> Control</div>
                 <div class="panel-body">
                     <a href="<?php echo DIR ?>config/setupNewLowering" class="btn-lg btn btn-primary btn-block">Setup New <?php echo LOWERING_NAME; ?></a>
-                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block">Run End-of-<?php echo LOWERING_NAME; ?> Tasks</a>
+
+<?php
+        if($data['loweringID']) {
+?>
+                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block"><?php echo ($data['loweringFinalizedOn'] === null) ? '' : '<i class="fa fa-check"></i>';?>Run End-of-<?php echo LOWERING_NAME; ?> Tasks</a>
                     <a href="<?php echo DIR ?>config/editLowering" class="btn-lg btn btn-primary btn-block">Edit Current <?php echo LOWERING_NAME; ?></a>
+<?php
+        }
+?>
                 </div>
             </div>
 <?php

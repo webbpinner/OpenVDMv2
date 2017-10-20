@@ -605,6 +605,7 @@ def task_finalizeCurrentCruise(worker, job):
     #build OpenVDM Config file
     debugPrint('Exporting OpenVDM Configuration')
     ovdmConfig = worker.OVDM.getOVDMConfig()
+    ovdmConfig['cruiseFinalizedOn'] = ovdmConfig['configCreatedOn']
 
     #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
 
@@ -741,8 +742,27 @@ def task_exportOVDMConfig(worker, job):
     #build OpenVDM Config file
     ovdmConfig = worker.OVDM.getOVDMConfig()
 
+    ovdmConfigFilePath = os.path.join(cruiseDir,cruiseConfigFN)
+
+    if os.path.isfile(ovdmConfigFilePath):
+        try:
+
+            with open(ovdmConfigFilePath) as json_file:  
+                data = json.load(json_file)
+                if "cruiseFinalizedOn" in data:
+                    ovdmConfig['cruiseFinalizedOn'] = data['cruiseFinalizedOn']
+        
+        except OSError as error:
+            job_results['parts'].append({"partName": "Read existing configuration file", "result": "Fail", "reason": error})
+            return json.dumps(job_results)
+
+        else:
+            job_results['parts'].append({"partName": "Read existing configuration file", "result": "Pass"})
+
+
+
     #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
-    output_results = output_JSONDataToFile(worker, os.path.join(cruiseDir,cruiseConfigFN), ovdmConfig)
+    output_results = output_JSONDataToFile(worker, ovdmConfigFilePath, ovdmConfig)
 
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Export data to file", "result": "Pass"})
@@ -752,7 +772,7 @@ def task_exportOVDMConfig(worker, job):
 
     worker.send_job_status(job, 6, 10)
     
-    output_results = setOwnerGroupPermissions(worker, os.path.join(cruiseDir,cruiseConfigFN))
+    output_results = setOwnerGroupPermissions(worker, ovdmConfigFilePath)
 
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Set file ownership", "result": "Pass"})

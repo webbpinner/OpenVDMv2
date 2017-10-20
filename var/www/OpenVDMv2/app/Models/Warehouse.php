@@ -463,6 +463,34 @@ class Warehouse extends Model {
         }
     }
 
+    public function getCruiseFinalizedDate($cruiseID = '') {
+        if (strcmp($cruiseID, '') == 0 ){
+            $cruiseID = $this->getCruiseID();
+        }
+
+        $cruiseDir = $this->getShipboardDataWarehouseBaseDir() . DIRECTORY_SEPARATOR . $cruiseID;
+        #var_dump($cruiseDir);
+        if (is_dir($cruiseDir)) {
+            //Check cruise Directory for ovdmConfig.json
+            $cruiseFileList = scandir($cruiseDir);
+            #var_dump($cruiseList);
+            foreach ($cruiseFileList as $cruiseKey => $cruiseValue){
+                #var_dump($cruiseValue);
+                if (in_array($cruiseValue,array(self::CONFIG_FN))){
+                    #var_dump($baseDir . DIRECTORY_SEPARATOR . $rootValue . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                    $ovdmConfigContents = file_get_contents($cruiseDir . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                    $ovdmConfigJSON = json_decode($ovdmConfigContents,true);
+                    
+                    return array('cruiseFinalizedOn' => $ovdmConfigJSON['cruiseFinalizedOn']); 
+                }
+            }
+            return array("Error"=>"Could not find cruise config file.", 'cruiseFinalizedOn' => null);
+
+        } else {
+            return array("Error"=>"Could not find cruise directory.", 'cruiseFinalizedOn' => null);
+        }
+    }
+
     public function getLatestLowering() {
         return $this->getLowerings()[0];
     }
@@ -492,6 +520,34 @@ class Warehouse extends Model {
 
         } else {
             return array("Error"=>"Could not find lowering directory.");
+        }
+    }
+
+    public function getLoweringFinalizedDate($loweringID = '') {
+        if (strcmp($loweringID, '') == 0 ){
+            $loweringID = $this->getLoweringID();
+        }
+
+        $loweringDir = $this->getShipboardDataWarehouseBaseDir() . DIRECTORY_SEPARATOR . $this->getCruiseID() . DIRECTORY_SEPARATOR . $this->getLoweringDataBaseDir() . DIRECTORY_SEPARATOR . $loweringID;
+        #var_dump($loweringDir);
+        if (is_dir($loweringDir)) {
+            //Check lowering Directory for ovdmConfig.json
+            $loweringFileList = scandir($loweringDir);
+            #var_dump($loweringList);
+            foreach ($loweringFileList as $loweringKey => $loweringValue){
+                #var_dump($loweringValue);
+                if (in_array($loweringValue,array(self::LOWERING_CONFIG_FN))){
+                    #var_dump($baseDir . DIRECTORY_SEPARATOR . $rootValue . DIRECTORY_SEPARATOR . self::CONFIG_FN);
+                    $loweringConfigContents = file_get_contents($loweringDir . DIRECTORY_SEPARATOR . self::LOWERING_CONFIG_FN);
+                    $loweringConfigJSON = json_decode($loweringConfigContents,true);
+                    
+                    return array('loweringFinalizedOn' => $loweringConfigJSON['loweringFinalizedOn']); 
+                }
+            }
+            return array("Error"=>"Could not find lowering config file.", 'loweringFinalizedOn' => null);
+
+        } else {
+            return array("Error"=>"Could not find lowering directory.", 'loweringFinalizedOn' => null);
         }
     }
 

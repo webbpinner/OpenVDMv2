@@ -461,6 +461,7 @@ def task_finalizeCurrentLowering(worker, job):
     #build Lowering Config file
     debugPrint('Exporting Lowering Configuration')
     loweringConfig = worker.OVDM.getLoweringConfig()
+    loweringConfig['loweringFinalizedOn'] = loweringConfig['configCreatedOn']
 
     #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
     output_results = output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig)
@@ -505,8 +506,26 @@ def task_exportLoweringConfig(worker, job):
     #build OpenVDM Config file
     loweringConfig = worker.OVDM.getLoweringConfig()
 
+
+    loweringConfigFilePath = os.path.join(loweringDir,loweringConfigFN)
+
+    if os.path.isfile(loweringConfigFilePath):
+        try:
+
+            with open(loweringConfigFilePath) as json_file:  
+                data = json.load(json_file)
+                if "loweringFinalizedOn" in data:
+                    loweringConfig['loweringFinalizedOn'] = data['loweringFinalizedOn']
+        
+        except OSError as error:
+            job_results['parts'].append({"partName": "Read existing configuration file", "result": "Fail", "reason": error})
+            return json.dumps(job_results)
+
+        else:
+            job_results['parts'].append({"partName": "Read existing configuration file", "result": "Pass"})
+
     #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
-    output_results = output_JSONDataToFile(worker, os.path.join(loweringDir,loweringConfigFN), loweringConfig)
+    output_results = output_JSONDataToFile(worker, loweringConfigFilePath, loweringConfig)
 
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Export data to file", "result": "Pass"})

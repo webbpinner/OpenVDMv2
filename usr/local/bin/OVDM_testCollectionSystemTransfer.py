@@ -292,13 +292,21 @@ def test_sshSourceDir(worker):
 def test_destDir(worker):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    destDir = os.path.join(baseDir, worker.cruiseID)
+    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+
+    destDir = ''
 
     if worker.collectionSystemTransfer['cruiseOrLowering'] != '0':
-        destDir = os.path.join(destDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID)
+        loweringDir = os.path.join(cruiseDir, worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], worker.loweringID)
+        debugPrint("LoweringID:",worker.loweringID)
+        if worker.loweringID == '':
+            return [{"testName": "Destination Directory", "result": "Fail", "reason": "Lowering ID is undefined" }]
 
-    destDir = os.path.join(destDir, build_destDir(worker))
-    debugPrint('Destination Dir:', destDir)
+        destDir = os.path.join(loweringDir, build_destDir(worker))
+    else:
+        destDir = os.path.join(cruiseDir, build_destDir(worker))
+
+    debugPrint('Destination Directory:', destDir)
 
     if os.path.isdir(destDir):
         return [{"testName": "Destination Directory", "result": "Pass"}]

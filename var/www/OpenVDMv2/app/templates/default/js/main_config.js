@@ -39,7 +39,45 @@ $(function () {
             }, 5000);
         });
     }
+
+    function updateFinalizedCruiseButton(status) {
+        if (status === "3") {
+            $('#finalizeCurrentCruise').html('<i class="fa fa-warning"></i> Run End-of-Cruise Tasks');
+        } else {
+            var finalizedStatusURL = siteRoot + 'api/warehouse/getCruiseFinalizedDate'
+            $.getJSON(finalizedStatusURL, function (data, status) {
+                if (status === 'success' && data !== null) {
+                    if (data.cruiseFinalizedOn) {
+                        $('#finalizeCurrentCruise').html('<i class="fa fa-check"></i> Run End-of-Cruise Tasks');
+                    } else {
+                        $('#finalizeCurrentCruise').html("Run End-of-Cruise Tasks");
+                    }
+                } else {
+                    $('#finalizeCurrentCruise').html("Run End-of-Cruise Tasks");
+                }
+            });
+        }
+    }
     
+    function updateFinalizedLoweringButton(status) {
+        if (status === "3") {
+            $('#finalizeCurrentLowering').html('<i class="fa fa-warning"></i> Run End-of-' + lowering_name + ' Tasks');
+        } else {
+            var finalizedStatusURL = siteRoot + 'api/warehouse/getLoweringFinalizedDate'
+            $.getJSON(finalizedStatusURL, function (data, status) {
+                if (status === 'success' && data !== null) {
+                    if (data.loweringFinalizedOn) {
+                        $('#finalizeCurrentLowering').html('<i class="fa fa-check"></i> Run End-of-' + lowering_name + ' Tasks');
+                    } else {
+                        $('#finalizeCurrentLowering').html('Run End-of-' + lowering_name + ' Tasks');
+                    }
+                } else {
+                    $('#finalizeCurrentLowering').html('Run End-of-' + lowering_name + ' Tasks');
+                }
+            });
+        }
+    }
+
     function updateTaskStatusList(taskList) {
         var taskStatusURL = siteRoot + 'api/tasks/getActiveTasks'
         $.getJSON(taskStatusURL, function (data, status) {
@@ -63,7 +101,8 @@ $(function () {
                             $('#finalizeCurrentCruise').html("Running End-of-Cruise Tasks... please standby.")
                         } else {
                             $('#finalizeCurrentCruise').removeClass('disabled');
-                            $('#finalizeCurrentCruise').html("Run End-of-Cruise Tasks")
+                            //$('#finalizeCurrentCruise').html("Run End-of-Cruise Tasks")
+                            updateFinalizedCruiseButton(data[i].status);
                         }
                     } else if (data[i].name === 'finalizeCurrentLowering') {
                         if (data[i].status === "1") {
@@ -71,7 +110,8 @@ $(function () {
                             $('#finalizeCurrentLowering').html("Running End-of-" + lowering_name + " Tasks... please standby.")
                         } else {
                             $('#finalizeCurrentLowering').removeClass('disabled');
-                            $('#finalizeCurrentLowering').html("Run End-of-" + lowering_name + " Tasks")
+                            //$('#finalizeCurrentLowering').html("Run End-of-" + lowering_name + " Tasks")
+                            updateFinalizedLoweringButton(data[i].status);
                         }
                     }
                     output += '</div>';
