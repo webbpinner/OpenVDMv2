@@ -953,12 +953,16 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         else:
             #set temporal bounds for transfer based on whether the transfer should use cruise or lowering start/end times
             if self.collectionSystemTransfer['cruiseOrLowering'] == "0":
-                self.dataStart_time = self.cruiseStartDate
-                self.dataEnd_time = self.cruiseEndDate
+                debugPrint("Using cruise Time bounds")
+                self.dataStartDate = self.cruiseStartDate
+                self.dataEndDate = self.cruiseEndDate
             else:
-                self.dataStart_time = self.loweringStartDate
-                self.dataEnd_time = self.loweringEndDate
+                debugPrint("Using lowering Time bounds")
+                self.dataStartDate = self.loweringStartDate
+                self.dataEndDate = self.loweringEndDate
 
+        debugPrint("Start:", self.dataStartDate)
+        debugPrint("End:", self.dataEndDate)
         
         errPrint("Job:", current_job.handle + ",", self.collectionSystemTransfer['name'], "transfer started at:  ", time.strftime("%D %T", time.gmtime()))
         
