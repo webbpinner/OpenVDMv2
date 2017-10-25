@@ -171,6 +171,14 @@ class OpenVDM():
         returnVal = json.loads(r.text)
         return returnVal['cruiseEndDate']
 
+
+    def getCruisess(self):
+        url = self.config['siteRoot'] + 'api/warehouse/getCruises'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal
+
+
     def getLoweringID(self):
         
         url = self.config['siteRoot'] + 'api/warehouse/getLoweringID'
@@ -178,12 +186,14 @@ class OpenVDM():
         returnVal = json.loads(r.text)
         return returnVal['loweringID']
     
+
     def getLoweringSize(self):
         
         url = self.config['siteRoot'] + 'api/warehouse/getLoweringSize'
         r = requests.get(url)
         returnVal = json.loads(r.text)
         return returnVal
+
 
     def getLoweringStartDate(self):
         
@@ -200,6 +210,13 @@ class OpenVDM():
         returnVal = json.loads(r.text)
         return returnVal['loweringEndDate']
     
+
+    def getLowerings(self):
+        url = self.config['siteRoot'] + 'api/warehouse/getLowerings'
+        r = requests.get(url)
+        returnVal = json.loads(r.text)
+        return returnVal
+
     
     def getExtraDirectory(self, extraDirectoryID):
         
@@ -540,7 +557,9 @@ class OpenVDM():
         r = requests.post(url, data=payload)
 
         # Add to gearman job tracker
-        self.trackGearmanJob('Transfer for ' + cruiseDataTransferName, jobPID, jobHandle) 
+        self.trackGearmanJob('Transfer for ' + cruiseDataTransferName, jobPID, jobHandle)
+
+        return r.text
         
     
     def setRunning_cruiseDataTransferTest(self, cruiseDataTransferID, jobPID, jobHandle):

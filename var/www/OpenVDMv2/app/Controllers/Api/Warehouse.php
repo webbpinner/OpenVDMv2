@@ -115,6 +115,11 @@ class Warehouse extends Controller {
         echo json_encode($response);
     }
 
+    public function getCruises() {
+
+        $response = $this->_warehouseModel->getCruises();
+        echo json_encode($response);
+    }
 
     // getLoweringSize - return the size of the lowering directory.
     public function getLoweringSize() {
@@ -156,6 +161,13 @@ class Warehouse extends Controller {
     public function getLoweringFinalizedDate() {
 
         $response = $this->_warehouseModel->getLoweringFinalizedDate();
+        echo json_encode($response);
+    }
+
+
+    public function getLowerings() {
+
+        $response = $this->_warehouseModel->getLowerings();
         echo json_encode($response);
     }
 

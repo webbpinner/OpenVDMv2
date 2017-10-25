@@ -49,7 +49,7 @@ $_warehouseModel = new \Models\Warehouse();
 <?php
         if($data['loweringID']) {
 ?>
-                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block"><?php echo ($data['loweringFinalizedOn'] === null) ? '' : '<i class="fa fa-check"></i>';?>Run End-of-<?php echo LOWERING_NAME; ?> Tasks</a>
+                    <a id="finalizeCurrentLowering" href="<?php echo DIR ?>config/finalizeCurrentLowering" class="btn-lg btn btn-primary btn-block"><?php echo ($data['loweringFinalizedOn'] === null) ? '' : '<i class="fa fa-check"></i>';?> Run End-of-<?php echo LOWERING_NAME; ?> Tasks</a>
                     <a href="<?php echo DIR ?>config/editLowering" class="btn-lg btn btn-primary btn-block">Edit Current <?php echo LOWERING_NAME; ?></a>
 <?php
         }

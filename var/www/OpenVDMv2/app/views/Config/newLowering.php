@@ -29,22 +29,22 @@ use Helpers\Form;
     <div class="row">
         <div class="col-lg-6">
             <div class="panel panel-default">
-                <div class="panel-heading">Create New Lowering</div>
+                <div class="panel-heading">Create New <?php echo LOWERING_NAME ?></div>
                 <div class="panel-body">
                     <?php echo Form::open(array('role'=>'form', 'method'=>'post')); ?>
                         <div class="row">
                             <div class="col-lg-12">
                                 <div class="form-group">
-                                    <label>Lowering ID</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'loweringID', 'value'=>$data['loweringID'])); ?>
+                                    <label><?php echo LOWERING_NAME ?> ID</label><?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'loweringID', 'value'=>$data['loweringID'])); ?>
                                 </div>
-                                <label>Lowering Start Date/Time</label>
+                                <label><?php echo LOWERING_NAME ?> Start Date/Time</label>
                                 <div class="form-group">
-                                    <div class="input-group date datetimepickerToday">
+                                    <div class="input-group date datetimepickerNow">
                                         <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'loweringStartDate', 'value'=>$data['loweringStartDate'])); ?>
                                         <span class="input-group-addon"><i class="fa fa-calendar"></i></span>
                                     </div>
                                 </div>
-                                <label>Lowering End Date/Time</label>
+                                <label><?php echo LOWERING_NAME ?> End Date/Time</label>
                                 <div class="form-group">
                                     <div class="input-group date datetimepicker">
                                         <?php echo Form::input(array('class'=>'form-control', 'type'=>'text', 'name'=>'loweringEndDate', 'value'=>$data['loweringEndDate'])); ?>
@@ -88,11 +88,11 @@ use Helpers\Form;
         </div>
         <div class="col-lg-6">
             <h3>Page Guide</h3>
-            <p>This page is for creating a new loweringID and associated lowering data directory.  This page is NOT for configuring OpenVDM to use a previously created loweringID.  If you are trying to configure OpenVDM to use a previously created loweringID click <a href="<?php echo DIR; ?>config/editLowering">here</a>.</p>
-            <p>The <strong>Lowering ID</strong> is the unique indentifier for the lowering (i.e. CS-001)</p>
-            <p>The <strong>Lowering Start Date/Time </strong> is the designated start date/time of the lowering. This date/time is exported as part of the lowering finialization process and optionally used for identifying old data files that should be skipped during file transfers.  The required format of this date is mm/dd/yyyy hh:mm (i.e. 05/12/2015 00:00).</p>
-            <p>The <strong>Collection Systems</strong> table is for specifying what collection system will be used during the lowering.  These can always be changed later from the Collection System Transfers tab.</p>
-            <p>Click the <strong>Create</strong> button to save the change and exit back to the main configuration page.  If you enter a loweringID for a lowering that already exists you will be asked to enter a different loweringID.</p>
-            <p>Click the <strong>Cancel</strong> button to exit back to the main configuration page without creating a new lowering.</p>
+            <p>This page is for creating a new <?php echo LOWERING_NAME ?>ID and associated <?php echo LOWERING_NAME ?> data directory.  This page is NOT for configuring OpenVDM to use a previously created <?php echo LOWERING_NAME ?>ID.  If you are trying to configure OpenVDM to use a previously created loweringID click <a href="<?php echo DIR; ?>config/editLowering">here</a>.</p>
+            <p>The <strong><?php echo LOWERING_NAME ?> ID</strong> is the unique indentifier for the <?php echo LOWERING_NAME ?> (i.e. CS-001)</p>
+            <p>The <strong><?php echo LOWERING_NAME ?> Start Date/Time </strong> is the designated start date/time of the lowering. This date/time is exported as part of the <?php echo LOWERING_NAME ?> finialization process and optionally used for identifying old data files that should be skipped during file transfers.  The required format of this date is mm/dd/yyyy hh:mm (i.e. 05/12/2015 00:00).</p>
+            <p>The <strong>Collection Systems</strong> table is for specifying what collection system will be used during the <?php echo LOWERING_NAME ?>.  These can always be changed later from the Collection System Transfers tab.</p>
+            <p>Click the <strong>Create</strong> button to save the change and exit back to the main configuration page.  If you enter a <?php echo LOWERING_NAME ?>ID for a <?php echo LOWERING_NAME ?> that already exists you will be asked to enter a different <?php echo LOWERING_NAME ?>ID.</p>
+            <p>Click the <strong>Cancel</strong> button to exit back to the main configuration page without creating a new <?php echo LOWERING_NAME ?>.</p>
         </div>
     </div>
