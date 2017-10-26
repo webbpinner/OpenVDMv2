@@ -20,6 +20,11 @@ $(function () {
                         href = '#';
                         $('#runStop' + data[i].cruiseDataTransferID).addClass("text-muted");                        
                         $('#runStop' + data[i].cruiseDataTransferID).attr("disabled", "disabled");
+                    } else if (data[i].status === "6") {
+                        output = 'Starting';
+                        href = '#';
+                        $('#runStop' + data[i].cruiseDataTransferID).addClass("text-muted");                        
+                        $('#runStop' + data[i].cruiseDataTransferID).attr("disabled", "disabled");
                     } else {
                         output = 'Run';
                         href = siteRoot + 'config/cruiseDataTransfers/run/' + data[i].cruiseDataTransferID;

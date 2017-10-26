@@ -929,6 +929,8 @@ class CruiseDataTransfers extends Controller {
     
     public function run($id) {
         
+        $this->_cruiseDataTransfersModel->setStartingCruiseDataTransfer($id);
+
         $_warehouseModel = new \Models\Warehouse();
         $gmData['siteRoot'] = DIR;
         $gmData['shipboardDataWarehouse'] = $_warehouseModel->getShipboardDataWarehouseConfig();

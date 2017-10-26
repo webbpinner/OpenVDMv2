@@ -53,6 +53,10 @@ use Helpers\Session;
             } else if($row->status === "5") {
 ?>
                         <a class="text-muted" id="runStop<?php echo $row->cruiseDataTransferID ?>" href='#'>Stopping</a>
+<?php
+            } else if($row->status === "6") {
+?>
+                        <a class="text-muted" id="runStop<?php echo $row->cruiseDataTransferID ?>" href='#'>Starting</a>
  <?php
             } else {
 ?>

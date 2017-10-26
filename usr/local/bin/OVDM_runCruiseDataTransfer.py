@@ -271,7 +271,7 @@ def build_excludeList(worker):
 
     #excludedFilterArray = ["--exclude=\"" + s + "\"" for s in excludedFilterArray]
 
-    # debugPrint("\n".join(excludedFilterArray))
+    #debugPrint("\n".join(excludedFilterArray))
     return excludedFilterArray
 
             
@@ -282,13 +282,14 @@ def transfer_localDestDir(worker, job):
     
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
-    destDir = os.path.join(worker.cruiseDataTransfer['destDir'].rstrip('/'), worker.cruiseID)
+    destDir = os.path.join(worker.cruiseDataTransfer['destDir'], worker.cruiseID)
 
     debugPrint('destDir:', destDir)
 
     try:
         if not os.path.exists(destDir):
-            os.path.mkdir(destDir)
+            debugPrint("Creating Cruise folder within destinstation directory")
+            os.mkdir(destDir)
     except IOError:
         errPrint("Error Creating cruise directory at destinstation location")
         return False
@@ -411,10 +412,12 @@ def transfer_smbDestDir(worker, job):
 
     try:
         if not os.path.exists(destDir):
-            os.path.mkdir(destDir)
+            debugPrint("Creating Cruise folder within destinstation directory")
+            os.mkdir(destDir)
     except IOError:
         errPrint("Error Creating cruise directory at destinstation location")
         return False
+
 
     debugPrint("Build file list")
 #    files = build_filelist(worker, cruiseDir)
@@ -539,6 +542,7 @@ def transfer_rsyncDestDir(worker, job):
     try:
         rsyncExcludeListFile = open(rsyncExcludeListPath, 'w')
         rsyncExcludeListFile.write('\n'.join([str(x) for x in excludeList]))
+        debugPrint('\n'.join([str(x) for x in excludeList]))
 
     except IOError:
         errPrint("Error Saving temporary rsync filelist file")
@@ -557,8 +561,13 @@ def transfer_rsyncDestDir(worker, job):
     if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
         bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
 
-    
-    command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir + '/', 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+    # Work around to create CruiseID at the destination
+    os.mkdir(os.path.join(tmpdir, worker.cruiseID))
+    command = ['rsync', '-a', bandwidthLimit, '--no-motd', '--password-file=' + rsyncPasswordFilePath, os.path.join(tmpdir, worker.cruiseID), 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+    popen = subprocess.Popen(command, stdout=subprocess.PIPE)
+
+
+    command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, cruiseDir + '/', 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/' + worker.cruiseID + '/']
     #command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
     #command = ['rsync', '-tri',                '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
     
@@ -625,6 +634,7 @@ def transfer_sshDestDir(worker, job):
     try:
         sshExcludeListFile = open(sshExcludeListPath, 'w')
         sshExcludeListFile.write('\n'.join([str(x) for x in excludeList]))
+        debugPrint('\n'.join([str(x) for x in excludeList]))
 
     except IOError:
         errPrint("Error Saving temporary ssh filelist file")
@@ -644,12 +654,20 @@ def transfer_sshDestDir(worker, job):
         bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
     
     command = ''
-    
+
     if worker.cruiseDataTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        command = ['ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'mkdir ' + os.path.join(destDir, worker.cruiseID)]
+    else:
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'ssh', worker.cruiseDataTransfer['sshServer'], '-l', worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'mkdir ' + os.path.join(destDir, worker.cruiseID)]
+
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE)
+    proc.communicate()
+
+    if worker.cruiseDataTransfer['sshUseKey'] == '1':
+        command = ['rsync', '-tri', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + os.path.join(destDir, worker.cruiseID)]
         #command = ['rsync', '-tri',                '--files-from=' + sshExcludeListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]        
     else:
-        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--files-from=' + sshExcludeListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + os.path.join(destDir, worker.cruiseID)]
         #command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri',                '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
     s = ' '

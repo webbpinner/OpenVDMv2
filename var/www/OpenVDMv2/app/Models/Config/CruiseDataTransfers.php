@@ -94,6 +94,14 @@ class CruiseDataTransfers extends Model {
         $this->db->update(PREFIX."CruiseDataTransfers",$data, $where);
     }
 
+
+    public function setStartingCruiseDataTransfer($id){
+        $data = array('status' => '6');
+        $where = array('cruiseDataTransferID' => $id);
+        $this->db->update(PREFIX."CruiseDataTransfers",$data, $where);
+    }
+
+
     public function setRunningCruiseDataTransfer($id, $pid){
         $data = array('status' => '1', 'pid' => $pid);
         $where = array('cruiseDataTransferID' => $id);

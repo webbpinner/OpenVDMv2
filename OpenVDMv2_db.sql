@@ -26,7 +26,9 @@ VALUES
 	(1,'Running'),
 	(2,'Idle'),
 	(3,'Error'),
-	(4,'Off');
+	(4,'Off'),
+	(4,'Stopping'),
+	(4,'Starting');
 
 /*!40000 ALTER TABLE `ODVM_Status` ENABLE KEYS */;
 UNLOCK TABLES;
