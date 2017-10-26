@@ -49,6 +49,11 @@ class CruiseDataTransfers extends Controller {
         echo json_encode($this->_cruiseDataTransfersModel->getRequiredCruiseDataTransfersStatuses());
     }
 
+    // setStoppingCruiseDataTransfer
+    public function setStoppingCruiseDataTransfer($id) {
+        $this->_cruiseDataTransfersModel->setStoppingCruiseDataTransfer($id);
+    }
+
     // setErrorCruiseDataTransfer
 	public function setErrorCruiseDataTransfer($id) {
         $this->_cruiseDataTransfersModel->setErrorCruiseDataTransfer($id);

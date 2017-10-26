@@ -14,9 +14,16 @@ $(function () {
                     if (data[i].status === "1") {
                         output = 'Stop';
                         href = siteRoot + 'config/cruiseDataTransfers/stop/' + data[i].cruiseDataTransferID;
+                        $('#runStop' + data[i].cruiseDataTransferID).removeClass("text-muted");
+                    } else if (data[i].status === "5") {
+                        output = 'Stopping';
+                        href = '#';
+                        $('#runStop' + data[i].cruiseDataTransferID).addClass("text-muted");                        
+                        $('#runStop' + data[i].cruiseDataTransferID).attr("disabled", "disabled");
                     } else {
                         output = 'Run';
                         href = siteRoot + 'config/cruiseDataTransfers/run/' + data[i].cruiseDataTransferID;
+                        $('#runStop' + data[i].cruiseDataTransferID).removeClass("text-muted");
                     }
                     
                     $('#runStop' + data[i].cruiseDataTransferID).attr("href", href);

@@ -70,7 +70,7 @@ def setOwnerGroupPermissions(worker, path):
 
     warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 
-    debugPrint(path)
+    #debugPrint(path)
 
     reason = []
 
@@ -139,7 +139,7 @@ def build_filelist(worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
 
-    debugPrint(returnFiles)
+    #debugPrint(returnFiles)
 
     filters = build_filters(worker)
 
@@ -167,7 +167,7 @@ def build_filelist(worker, sourceDir):
                             if os.path.islink(os.path.join(root, filename)):
                                 continue
 
-                            debugPrint(filename, "included")
+                            #debugPrint(filename, "included")
                             returnFiles['include'].append(os.path.join(root, filename))
                             include = True
 
@@ -217,7 +217,7 @@ def build_filters(worker):
                     excludedFilterArray.append("*/{cruiseID}/*/" + lowering + "/" + collectionSystemTransfer['destDir'] + "/*")
 
     excludedExtraDirectories = worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
-    debugPrint(excludedExtraDirectories)
+    #debugPrint(excludedExtraDirectories)
     for excludedExtraDirectory in excludedExtraDirectories:
         extraDirectory = worker.OVDM.getExtraDirectory(excludedExtraDirectory)
         if extraDirectory:
@@ -752,11 +752,11 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         # If the last part of the results failed
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress": # A failed Transfer in-progress test should not cause an error.
+                if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress" and resultsObj['parts'][-1]['partName'] != "Transfer Enabled": # A failed Transfer in-progress or Transfer enabled test should not cause an error.
                     self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], resultsObj['parts'][-1]['reason'])
-            else:
+            else: # last test passed
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
-        else:
+        else: # there were no results
             self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
 
         debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
@@ -794,20 +794,21 @@ def task_runCruiseDataTransfer(worker, job):
     
     job_results = {'parts':[], 'files':[]}
 
-    if worker.cruiseDataTransfer['status'] != "1": #running
-        debugPrint("Transfer is not already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
-    else:
-        debugPrint("Transfer is already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Transfer is already in-progress"})
-        return json.dumps(job_results)
-
     if worker.cruiseDataTransfer['enable'] == "1" and worker.systemStatus == "On":
         debugPrint("Transfer Enabled")
         job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
         debugPrint("Transfer Disabled")
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"})
         return json.dumps(job_results)
+
+    if worker.cruiseDataTransfer['status'] == "1": #running
+        debugPrint("Transfer is already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Transfer is already in-progress"})
+        return json.dumps(job_results)
+    else: #not running
+        debugPrint("Transfer is not already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
 
     #debugPrint("Set transfer status to 'Running'")
     worker.OVDM.setRunning_cruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), job.handle)

@@ -391,7 +391,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         # If the last part of the results failed
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                if resultsObj['parts'][-1]['partName'] != 'Transfer In-Progress': # only if the part names are not these is there a problem
+                if resultsObj['parts'][-1]['partName'] != "Transfer In-Progress" and resultsObj['parts'][-1]['partName'] != "Transfer Enabled": # A failed Transfer in-progress or Transfer enabled test should not cause an error.
                     self.OVDM.setError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], resultsObj['parts'][-1]['reason'])
             else:
                 self.OVDM.setIdle_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'])
@@ -437,17 +437,18 @@ def task_runShipToShoreTransfer(worker, job):
         job_results['parts'].append({"partName": "Transfer Enabled", "result": "Pass"})
     else:
         debugPrint("Transfer Disabled")
+        job_results['parts'].append({"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"})
         return json.dumps(job_results)
 
     currentSST = worker.OVDM.getRequiredCruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'])
 
-    if currentSST['status'] != "1": #running
-        debugPrint("Transfer is not already in-progress")
-        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
-    else:
+    if currentSST['status'] == "1": #running
         debugPrint("Transfer is already in-progress")
         job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Fail", "reason": "Ship-to-shore transfer already in progress"})
         return json.dumps(job_results)
+    else:
+        debugPrint("Transfer is not already in-progress")
+        job_results['parts'].append({"partName": "Transfer In-Progress", "result": "Pass"})
     
     #debugPrint("Set transfer status to 'Running'")
     worker.OVDM.setRunning_cruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), job.handle)

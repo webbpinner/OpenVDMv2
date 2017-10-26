@@ -953,10 +953,14 @@ class CruiseDataTransfers extends Controller {
     }
         
     public function stop($id) {
+
+        $this->_cruiseDataTransfersModel->setStoppingCruiseDataTransfer($id);
         
         $gmData = array(
             'pid' => $this->_cruiseDataTransfersModel->getCruiseDataTransfer($id)[0]->pid
         );
+
+        //var_dump($gmData);
         
         # create the gearman client
         $gmc= new \GearmanClient();

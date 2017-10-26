@@ -36,8 +36,8 @@ use Helpers\Session;
                     <th style='width:20px;'>Enabled</th>
                 </tr>
 <?php
-    if($data['cruiseDataTransfers']){
-        foreach($data['cruiseDataTransfers'] as $row){
+    if($data['cruiseDataTransfers']) {
+        foreach($data['cruiseDataTransfers'] as $row) {
 ?>
                 <tr>
                     <td><?php echo $row->longName; ?></td>
@@ -46,9 +46,13 @@ use Helpers\Session;
                         <a href='#confirmDeleteModal' data-toggle="modal" data-item-name="Cruise Data Transfer" data-delete-url="<?php echo DIR; ?>config/cruiseDataTransfers/delete/<?php echo $row->cruiseDataTransferID; ?>">Delete</a> / 
                         <a href='<?php echo DIR; ?>config/cruiseDataTransfers/test/<?php echo $row->cruiseDataTransferID; ?>'>Test</a> / 
 <?php
-            if($row->status === "1"){
+            if($row->status === "1") {
 ?>
                         <a id="runStop<?php echo $row->cruiseDataTransferID ?>" href='<?php echo DIR; ?>config/cruiseDataTransfers/stop/<?php echo $row->cruiseDataTransferID; ?>'>Stop</a>
+<?php
+            } else if($row->status === "5") {
+?>
+                        <a class="text-muted" id="runStop<?php echo $row->cruiseDataTransferID ?>" href='#'>Stopping</a>
  <?php
             } else {
 ?>
