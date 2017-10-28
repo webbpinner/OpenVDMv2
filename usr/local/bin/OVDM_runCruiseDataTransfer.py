@@ -130,7 +130,7 @@ def setOwnerGroupPermissions(worker, path):
                 break
 
     if len(reason) > 0:
-        return {'verdict': False, 'reason': reason.join('\n')}
+        return {'verdict': False, 'reason': '\n'.join(reason)}
 
     return {'verdict': True}
 

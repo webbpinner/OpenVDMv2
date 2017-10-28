@@ -190,7 +190,7 @@ def setOwnerGroupPermissions(worker, path):
                     reason.append("Unable to set ownership/permissions for " + momo)
 
     if len(reason) > 0:
-        return {'verdict': False, 'reason': reason.join('\n')}
+        return {'verdict': False, 'reason': '\n'.join(reason)}
 
     return {'verdict': True}
 
