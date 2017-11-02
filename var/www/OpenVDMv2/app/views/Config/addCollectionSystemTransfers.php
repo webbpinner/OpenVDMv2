@@ -46,7 +46,13 @@ $_warehouseModel = new \Models\Warehouse();
                                 <div class="form-group"><label>Skip files being actively written to?</label><?php echo FormCustom::radioInline($data['stalenessOptions'], $_POST['staleness']); ?></div>
                                 <div class="form-group"><label>Skip files create/modified outside of cruise start/stop times?</label><?php echo FormCustom::radioInline($data['useStartDateOptions'], $_POST['useStartDate']); ?></div>
                                 <div class="form-group"><label>Transfer bandwidth limit (in kB/s): <?php echo Form::input( array('name'=>'bandwidthLimit', 'value'=> $_POST['bandwidthLimit'], 'size'=>'7', 'length'=>'8')); ?></label></div>
+<?php
+  if ( $data['showLoweringComponents']) {
+?>
                                 <div class="form-group"><label>Cruise or <?php echo LOWERING_NAME;?>?</label><?php echo FormCustom::radioInline($data['cruiseOrLoweringOptions'], $_POST['cruiseOrLowering']); ?></div>
+<?php
+  }
+?>
                                 <div class="form-group"><label>Transfer Type</label><?php echo FormCustom::radioInline($data['transferTypeOptions'], $_POST['transferType']); ?></div>
                                 <div class="form-group"><label>Source Directory</label><?php echo Form::input( array('class'=>'form-control', 'name'=>'sourceDir', 'value'=> $_POST['sourceDir'])); ?></div>
                                 <div class="form-group localDir"><label>Source Directory is mountpoint?</label><?php echo FormCustom::radioInline($data['useLocalMountPointOptions'], $_POST['localDirIsMountPoint']); ?></div>
@@ -84,7 +90,13 @@ $_warehouseModel = new \Models\Warehouse();
             <p>The <strong>Skip files being actively written to?</strong> option instructs OpenVDM on whether to copy all files in the source directory or to skip any files OpenVDM determines may be actively written to by the data acquisition system (DAS) on the collection system workstation.  This option should be selected for DAS software that does not close the active data file between writes (a.k.a. SBE Seasave).</p>
             <p>The <strong>Skip files last modified before cruise start date?</strong> option instructs OpenVDM to NOT copy any files in the source directory with a modification date that preceeds the cruise start date.</p>
             <p>The <strong>Transfer bandwidth limit</strong> option will limit the amount of network bandwidth use for the collection system transfer.  Setting this option to 0 or leaving it empty will removing any bandwidth restrictions</p>
+<?php
+  if ( $data['showLoweringComponents']) {
+?>
             <p>The <strong>Cruise or <?php echo LOWERING_NAME;?>?</strong> option instructs OpenVDM on whether the transfer is a Cruise-wide (normal) transfer or specific to lowerings.</p>
+<?php
+  }
+?>
             <p>The <strong>Transfer Type</strong> defines how OpenVDM will transfer the data from the Collection System to the Data Warehouse.  <strong>Local Directory</strong> is a transfer of data that is located on the Data Warehouse but is outside of the Cruise Data Directory.  <strong>Rsync Server</strong> is a transfer of data from a Collection System running Rsync and SSH servers. <strong>SMB Share</strong> is a transfer of data from a Collection System with a SMB (Windows) Share.  <strong>SSH Server</strong> is a transfer of cruise data to a destination system via Secure Shell (SSH).</p>
             <p>The <strong>Source Directory</strong> is the location of the data files on the collection system.</p>
             <p class="localDir">The <strong>Source Directory is mountpoint</strong> specifies whether OpenVDM should confirm a device (external HDD) is connected at that location.</p>
