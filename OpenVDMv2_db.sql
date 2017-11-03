@@ -7,30 +7,30 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 
-# Dump of table ODVM_Status
+# Dump of table OVDM_Status
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `ODVM_Status`;
+DROP TABLE IF EXISTS `OVDM_Status`;
 
-CREATE TABLE `ODVM_Status` (
+CREATE TABLE `OVDM_Status` (
   `statusID` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `status` tinytext,
   PRIMARY KEY (`statusID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-LOCK TABLES `ODVM_Status` WRITE;
-/*!40000 ALTER TABLE `ODVM_Status` DISABLE KEYS */;
+LOCK TABLES `OVDM_Status` WRITE;
+/*!40000 ALTER TABLE `OVDM_Status` DISABLE KEYS */;
 
-INSERT INTO `ODVM_Status` (`statusID`, `status`)
+INSERT INTO `OVDM_Status` (`statusID`, `status`)
 VALUES
 	(1,'Running'),
 	(2,'Idle'),
 	(3,'Error'),
 	(4,'Off'),
-	(4,'Stopping'),
-	(4,'Starting');
+	(5,'Stopping'),
+	(6,'Starting');
 
-/*!40000 ALTER TABLE `ODVM_Status` ENABLE KEYS */;
+/*!40000 ALTER TABLE `OVDM_Status` ENABLE KEYS */;
 UNLOCK TABLES;
 
 
@@ -71,7 +71,7 @@ CREATE TABLE `OVDM_CollectionSystemTransfers` (
   PRIMARY KEY (`collectionSystemTransferID`),
   KEY `CollectionSystemTransferStatus` (`status`),
   KEY `CollectionSystemTransferType` (`transferType`),
-  CONSTRAINT `CollectionSystemTransferStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`),
+  CONSTRAINT `CollectionSystemTransferStatus` FOREIGN KEY (`status`) REFERENCES `OVDM_Status` (`statusID`),
   CONSTRAINT `CollectionSystemTransferType` FOREIGN KEY (`transferType`) REFERENCES `OVDM_TransferTypes` (`transferTypeID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -101,12 +101,12 @@ VALUES
 	(6,'cruiseStartDate','2017/10/05 00:00'),
 	(7,'cruiseEndDate',''),
 	(8,'cruiseSize','0'),
-	(9,'cruiseSizeUpdated','2017/10/05 00:00'),
+	(9,'cruiseSizeUpdated','2017/10/05 00:00:00'),
 	(10,'loweringID',''),
 	(11,'loweringStartDate',''),
 	(12,'loweringEndDate',''),
 	(13,'loweringSize','0'),
-	(14,'loweringSizeUpdated','2017/10/05 00:00'),
+	(14,'loweringSizeUpdated','2017/10/05 00:00:00'),
 	(15,'systemStatus','Off'),
 	(16,'shipToShoreBWLimitStatus','Off'),
 	(17,'md5FilesizeLimit','10'),
@@ -151,7 +151,7 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
   PRIMARY KEY (`cruiseDataTransferID`),
   KEY `CruiseDataTransferStatus` (`status`),
   KEY `CruiseDataTransferType` (`transferType`),
-  CONSTRAINT `CruiseDataTransferStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`),
+  CONSTRAINT `CruiseDataTransferStatus` FOREIGN KEY (`status`) REFERENCES `OVDM_Status` (`statusID`),
   CONSTRAINT `CruiseDataTransferType` FOREIGN KEY (`transferType`) REFERENCES `OVDM_TransferTypes` (`transferTypeID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -160,7 +160,7 @@ LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 
 INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `status`, `enable`, `required`, `pid`, `bandwidthLimit`, `includeOVDMFiles`, `excludedCollectionSystems`, `excludedExtraDirectories`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','127.0.0.1','survey',0,'password',2,1,1,0,128,0,'0','0'),
+	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','127.0.0.1','survey',0,'password',2,1,1,0,128,0,'0','0');
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -284,7 +284,7 @@ VALUES
 	(1,'DashboardData','Dashboard Data',1,0,2,'*',1,1),
 	(2,'TransferLogs','Transfer Logs',1,0,1,'*',0,1),
 	(3,'MD5Summary','MD5 Summary',1,0,0,'MD5_Summary.txt MD5_Summary.md5 ',1,1),
-	(4,'OVDM_Config','OpenVDM Configuration',1,0,0,'ovdmConfig.json',1,1),
+	(4,'OVDM_Config','OpenVDM Configuration',1,0,0,'ovdmConfig.json',1,1);
 
 /*!40000 ALTER TABLE `OVDM_ShipToShoreTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -305,7 +305,7 @@ CREATE TABLE `OVDM_Tasks` (
   `pid` int(10) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`taskID`),
   KEY `ProcessStatus` (`status`),
-  CONSTRAINT `ProcessStatus` FOREIGN KEY (`status`) REFERENCES `ODVM_Status` (`statusID`)
+  CONSTRAINT `ProcessStatus` FOREIGN KEY (`status`) REFERENCES `OVDM_Status` (`statusID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 LOCK TABLES `OVDM_Tasks` WRITE;

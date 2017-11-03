@@ -106,6 +106,8 @@ class CollectionSystemTransfers extends Controller {
     }
 
     public function add(){
+        $_warehouseModel = new \Models\Warehouse();
+
         $data['title'] = 'Add Collection System Transfers';
         $data['javascript'] = array('collectionSystemTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
@@ -114,6 +116,7 @@ class CollectionSystemTransfers extends Controller {
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
         $data['cruiseOrLoweringOptions'] = $this->_buildCruiseOrLoweringOptions();
+        $data['showLoweringComponents'] = $_warehouseModel->getShowLoweringComponents();
 
         if(isset($_POST['submit'])){
             $name = $_POST['name'];
@@ -520,6 +523,8 @@ class CollectionSystemTransfers extends Controller {
     }
         
     public function edit($id) {
+        $_warehouseModel = new \Models\Warehouse();
+
         $data['title'] = 'Collection System Transfers';
         $data['javascript'] = array('collectionSystemTransfersFormHelper');
         $data['transferTypeOptions'] = $this->_buildTransferTypesOptions();
@@ -528,6 +533,7 @@ class CollectionSystemTransfers extends Controller {
         $data['useSSHKeyOptions'] = $this->_buildUseSSHKeyOptions();
         $data['useLocalMountPointOptions'] = $this->_buildUseLocalMountPointOptions();
         $data['cruiseOrLoweringOptions'] = $this->_buildCruiseOrLoweringOptions();
+        $data['showLoweringComponents'] = $_warehouseModel->getShowLoweringComponents();
 
         $data['row'] = $this->_collectionSystemTransfersModel->getCollectionSystemTransfer($id);        
         
