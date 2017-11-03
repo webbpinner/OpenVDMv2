@@ -259,7 +259,7 @@ class CollectionSystemTransfers extends Controller {
 
                 } 
 
-                if(($sshPass == '') && ($sshUseKey == "0")){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -452,7 +452,7 @@ class CollectionSystemTransfers extends Controller {
 
                 } 
 
-                if($sshPass == ''){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -673,7 +673,7 @@ class CollectionSystemTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if(($sshPass == '') && ($sshUseKey == '0')){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -899,7 +899,7 @@ class CollectionSystemTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if(($sshPass == '') && ($sshUseKey == '0')){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }

@@ -202,18 +202,18 @@ class CruiseDataTransfers extends Controller {
                 if($sshServer == ''){
                     $error[] = 'SSH Server is required';
                     $sshDataCheck = false;
-                } 
+                }
 
                 if($sshUser == ''){
                     $error[] = 'SSH Username is required';
                     $sshDataCheck = false;
-                } 
+                }
 
-                if(($sshPass == '') && ($sshUseKey == 0)){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
-                
+
                 if($sshDataCheck) {
                     $localDirIsMountPoint = '0';
                     $smbServer = '';
@@ -390,7 +390,7 @@ class CruiseDataTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if(($sshPass == '') && ($sshUseKey == '0')){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 }
@@ -595,7 +595,7 @@ class CruiseDataTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if(($sshPass == '') && ($sshUseKey == '0')){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 } 
@@ -795,7 +795,7 @@ class CruiseDataTransfers extends Controller {
                     $sshDataCheck = false;
                 } 
 
-                if(($sshPass == '') && ($sshUseKey == '0')){
+                if((($sshPass == '') || is_null($sshPass)) && ($sshUseKey == 0)){
                     $error[] = 'SSH Password is required';
                     $sshDataCheck = false;
                 } 
