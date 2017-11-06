@@ -122,12 +122,12 @@ def runCommands(worker, commands):
         try:
             s = ' '
             debugPrint("Executing:", s.join(command['command']))
-            proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE)
+            proc = subprocess.Popen(command['command'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = proc.communicate()            
             
-            # if len(out) > 0:
-            #     debugPrint("stdout:")
-            #     debugPrint(out)
+            if len(out) > 0:
+                debugPrint("stdout:")
+                debugPrint(out)
                 
             if len(err) > 0:
                 errPrint("stderr:")
