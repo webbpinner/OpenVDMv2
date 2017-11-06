@@ -66,3 +66,5 @@
 # - '{collectionSystemTransferName}' --> the name of the collectionSystemTransfer that just occurred 
 # - '{newFiles}' --> JSON-formatted array of all new files that were just transferred
 # - '{updatedFile}' --> JSON-formatted array of all updated files that were just transferred
+#
+# **** NOTE: Wild cards must be in quotes (') or will not work ****

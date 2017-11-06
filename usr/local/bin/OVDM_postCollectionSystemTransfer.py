@@ -71,12 +71,15 @@ def errPrint(*args, **kwargs):
 
 def getCommands(worker):
 
+    debugPrint("Files:", worker.files)
+
     try:
         f = open(commandFile, 'r')
         commandsFromFile = yaml.load(f.read())
         f.close()
-    except:
+    except Exception as error:
         errPrint("ERROR: Could not process configuration file:", commandFile + "!")
+        errPrint("error:", error)
         return {"verdict": False, "reason": "Could not process configuration file: " + commandFile}
     
     if commandsFromFile:
@@ -88,7 +91,7 @@ def getCommands(worker):
                 returnCommandList = collectionSystemCommands['commandList']
                 #debugPrint("Commands:", json.dumps(returnCommandList, indent=2))
                 for command in returnCommandList:
-                    #debugPrint("Raw Command:", json.dumps(command, indent=2))
+                    debugPrint("Raw Command:", json.dumps(command, indent=2))
                     #print "Replacing cruiseID"
                     command['command'] = [arg.replace('{cruiseID}', worker.cruiseID) for arg in command['command']]
                     #print "Replacing loweringID"
@@ -98,11 +101,11 @@ def getCommands(worker):
                     #print "Replacing collectionSystemTransferName"
                     command['command'] = [arg.replace('{collectionSystemTransferName}', worker.collectionSystemTransfer['name']) for arg in command['command']]
                     #print "Replacing newFiles"
-                    command['command'] = [arg.replace('{newFiles}', "'" + json.dumps(worker.files['new']) + "'") for arg in command['command']]
+                    command['command'] = [arg.replace('{newFiles}', json.dumps(worker.files['new'])) for arg in command['command']]
                     #print "Replacing updatedFiles"
-                    command['command'] = [arg.replace('{updatedFiles}', "'" + json.dumps(worker.files['updated']) + "'" ) for arg in command['command']]
+                    command['command'] = [arg.replace('{updatedFiles}', json.dumps(worker.files['updated']) ) for arg in command['command']]
                     
-                #debugPrint("Processed Command:", json.dumps(returnCommandList, indent=2))
+                debugPrint("Processed Command:", json.dumps(returnCommandList, indent=2))
                 return {"verdict": True, "commandList": returnCommandList}
     else:
         debugPrint('Command list file is empty')
@@ -119,12 +122,12 @@ def runCommands(worker, commands):
         try:
             s = ' '
             debugPrint("Executing:", s.join(command['command']))
-            proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            proc = subprocess.Popen(command['command'], stderr=subprocess.PIPE)
             out, err = proc.communicate()            
             
-            if len(out) > 0:
-                debugPrint("stdout:")
-                debugPrint(out)
+            # if len(out) > 0:
+            #     debugPrint("stdout:")
+            #     debugPrint(out)
                 
             if len(err) > 0:
                 errPrint("stderr:")

@@ -81,6 +81,8 @@ class CollectionSystemTransfers extends Controller {
                 $job_handle = $gmc->doBackground("rebuildLoweringDirectory", json_encode($gmData));
             }
         }
+
+        ### There should be some error handling here
     }
 
     public function __construct(){
@@ -123,7 +125,7 @@ class CollectionSystemTransfers extends Controller {
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $sourceDir = $_POST['sourceDir'];
-            $destDir = $_POST['destDir'];
+            $destDir = (strcmp($_POST['destDir'], '/') == 0)? $_POST['destDir']: ltrim($_POST['destDir'], '/');
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
@@ -318,7 +320,7 @@ class CollectionSystemTransfers extends Controller {
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $sourceDir = $_POST['sourceDir'];
-            $destDir = $_POST['destDir'];
+            $destDir = (strcmp($_POST['destDir'], '/') == 0)? $_POST['destDir']: ltrim($_POST['destDir'], '/');
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
@@ -542,7 +544,7 @@ class CollectionSystemTransfers extends Controller {
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $sourceDir = $_POST['sourceDir'];
-            $destDir = $_POST['destDir'];
+            $destDir = (strcmp($_POST['destDir'], '/') == 0)? $_POST['destDir']: ltrim($_POST['destDir'], '/');
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
@@ -768,7 +770,7 @@ class CollectionSystemTransfers extends Controller {
             $longName = $_POST['longName'];
             $transferType = $_POST['transferType'];
             $sourceDir = $_POST['sourceDir'];
-            $destDir = $_POST['destDir'];
+            $destDir = (strcmp($_POST['destDir'], '/') == 0)? $_POST['destDir']: ltrim($_POST['destDir'], '/');
             $staleness = $_POST['staleness'];
             $useStartDate = $_POST['useStartDate'];
             $bandwidthLimit = $_POST['bandwidthLimit'];
