@@ -257,7 +257,7 @@ def build_excludeList(worker):
             else:
                 lowerings = worker.OVDM.getLowerings()
                 for lowering in lowerings:
-                    excludedFilterArray.append("/Subastian/" + lowering + "/" + collectionSystemTransfer['destDir'])
+                    excludedFilterArray.append("/" + worker.shipboardDataWarehouseConfig['loweringDataBaseDir'] + "/" + lowering + "/" + collectionSystemTransfer['destDir'])
 
     excludedExtraDirectories = worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
     debugPrint(excludedExtraDirectories)
