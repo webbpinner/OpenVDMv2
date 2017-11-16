@@ -711,6 +711,7 @@ Restart the Samba service
 sudo systemctl restart samba-ad-dc.service
 ```
 
+### All done... almost ###
 At this point the warehouse should have a working installation of OpenVDMv2 however the vessel operator will still need to configure data dashboard collection system transfers, cruise data transfers and the shoreside data warehouse.
 
 To access the OpenVDM web-application goto: <http://127.0.0.1/OpenVDMv2/>
@@ -724,5 +725,11 @@ Goto <http://127.0.0.1/OpenVDMv2/config/system> and scroll down to the bottom of
 In the "Data Warehouses" section Click "Edit" next to Shipboard Data Warehouse (SBDW)
 
 Set the Server Username to match the user that was created for the data warehouse, in this guide the username was 'survey'
+
+### An error has been reported ###
+
+If at anypoint you see this message in the OpenVDM web-interface you can see what the error was by going to: <http://127.0.0.1/OpenVDMv2/errorlog.html>.  That should hopefully provide you with enough information as to what's gone wrong.  
+
+
 
 
