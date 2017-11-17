@@ -85,6 +85,11 @@ def build_filelist(worker, sourceDir):
 
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
+
+            if os.path.islink(os.path.join(root, filename)):
+                debugPrint(filename, "is a symlink, skipping")
+                continue
+
             exclude = False
             ignore = False
             include = False
@@ -99,13 +104,11 @@ def build_filelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
-                                debugPrint(filename, "excluded")
+                                debugPrint(filename, "excluded by exclude filter")
                                 returnFiles['exclude'].append(os.path.join(root, filename))
                                 exclude = True
                                 break
                         if not exclude:
-                            if os.path.islink(os.path.join(root, filename)):
-                                continue
                             #debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             #debugPrint("file_mod_time:",file_mod_time)
@@ -114,12 +117,12 @@ def build_filelist(worker, sourceDir):
                                 returnFiles['include'].append(os.path.join(root, filename))
                                 returnFiles['filesize'].append(os.stat(os.path.join(root, filename)).st_size)
                             else:
-                                debugPrint(filename, "skipped for time reasons")
+                                debugPrint(filename, "ignored for time reasons")
 
                             include = True
 
                 if not include and not exclude:
-                    debugPrint(filename, "excluded")
+                    debugPrint(filename, "excluded because file does not match any include or ignore filters")
                     returnFiles['exclude'].append(os.path.join(root, filename))
 
     if not worker.collectionSystemTransfer['staleness'] == '0':
