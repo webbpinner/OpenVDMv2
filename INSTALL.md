@@ -588,42 +588,42 @@ sudo nano /etc/apache2/sites-available/000-default.conf
 
 Copy text below into the Apache2 configuration file just above `</VirtualHost>`.  If you changed the default URL for OpenVDM you will need to edit the Alias definition.  You will need to alter the directory locations to match the locations selected for the **CruiseData**, **PublicData** and **VisitorInformation** directories:
 ```
-  Alias /OpenVDMv2 /var/www/OpenVDMv2
-  <Directory "/var/www/OpenVDMv2">
-    AllowOverride all
-  </Directory>
+Alias /OpenVDMv2 /var/www/OpenVDMv2
+<Directory "/var/www/OpenVDMv2">
+  AllowOverride all
+</Directory>
 
-  <IfModule mod_rewrite.c>
-    RewriteEngine on
-    RewriteRule ^/$ /OpenVDMv2/ [R]
-  </IfModule>
+<IfModule mod_rewrite.c>
+  RewriteEngine on
+  RewriteRule ^/$ /OpenVDMv2/ [R]
+</IfModule>
 
-  Alias /CruiseData/ /vault/FTPRoot/CruiseData/
-  <Directory "/vault/FTPRoot/CruiseData">
-    AllowOverride None
-    Options +Indexes -FollowSymLinks +MultiViews
-    Order allow,deny
-    Allow from all
-    Require all granted
-  </Directory>
+Alias /CruiseData/ /vault/FTPRoot/CruiseData/
+<Directory "/vault/FTPRoot/CruiseData">
+  AllowOverride None
+  Options +Indexes -FollowSymLinks +MultiViews
+  Order allow,deny
+  Allow from all
+  Require all granted
+</Directory>
   
-  Alias /PublicData/ /vault/FTPRoot/PublicData/
-  <Directory "/vault/FTPRoot/PublicData">
-    AllowOverride None
-    Options +Indexes -FollowSymLinks +MultiViews
-    Order allow,deny
-    Allow from all
-    Require all granted
-  </Directory>
+Alias /PublicData/ /vault/FTPRoot/PublicData/
+<Directory "/vault/FTPRoot/PublicData">
+  AllowOverride None
+  Options +Indexes -FollowSymLinks +MultiViews
+  Order allow,deny
+  Allow from all
+  Require all granted
+</Directory>
 
-  Alias /VisitorInformation/ /vault/FTPRoot/VisitorInformation/
-  <Directory "/vault/FTPRoot/VisitorInformation">
-    AllowOverride None
-    Options +Indexes -FollowSymLinks +MultiViews
-    Order allow,deny
-    Allow from all
-    Require all granted
-  </Directory>
+Alias /VisitorInformation/ /vault/FTPRoot/VisitorInformation/
+<Directory "/vault/FTPRoot/VisitorInformation">
+  AllowOverride None
+  Options +Indexes -FollowSymLinks +MultiViews
+  Order allow,deny
+  Allow from all
+  Require all granted
+</Directory>
 ```
 
 Reload Apache2
@@ -631,9 +631,15 @@ Reload Apache2
 sudo service apache2 reload
 ```
 
-Additionally a log directory must be created for the OpenVDMv2 web-application
+A log directory must be created for the OpenVDMv2 web-application
 ```
 sudo mkdir /var/log/OpenVDM
+```
+
+An errorlog file must be created for the OpenVDMv2 web-application
+```
+sudo touch /var/www/OpenVDMv2/errorlog.html
+sudo chmod 777 /var/www/OpenVDMv2/errorlog.html
 ```
 
 #### Install OpenVDMv2 Processes
