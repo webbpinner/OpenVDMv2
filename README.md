@@ -26,7 +26,7 @@ Added ability to define whether a the destination directory for a cruise data tr
 
 ## Installation ##
 
-For installation instruction please read the INSTALL.md file located in this repository.
+For installation instruction please read the [INSTALL.md](INSTALL.md) file located in this repository.
 
 ## Supporting the development effort ##
 
