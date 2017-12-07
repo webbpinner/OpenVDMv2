@@ -30,12 +30,13 @@ For installation instruction please read the [INSTALL.md](INSTALL.md) file locat
 
 ## Supporting the development effort ##
 
-What to join in the fun?  Please join the [#openvdm](https://oceandatarat.slack.com/messages/C3R1Z084Q) Slack channel!  You'll need an invite so please send a email request to oceandatarat at gmail dot com. Once in the channel please introduce yourself and let us know how you're using OpenVDM and how you'd like to contribute to the project.
+Want to join in the fun?  Please join the [#openvdm](https://oceandatarat.slack.com/messages/C3R1Z084Q) Slack channel!  You'll need an invite so please send a email request to oceandatarat at gmail dot com. Once in the channel please introduce yourself and let us know how you're using OpenVDM and how you'd like to contribute to the project.
 
 ## Vessel's Currently using OpenVDMv2 ##
-- *R/V Falkor* (Schmidt Ocean Institute)
-- *R/V Endeavor* (URI Graduate School of Oceanography)
-- *R/V Annie* (Global Foundation for Ocean Exploration)
+- *[R/V Falkor](https://schmidtocean.org/rv-falkor/)* (Schmidt Ocean Institute)
+- *[R/V Endeavor](https://techserv.gso.uri.edu/)* (URI Graduate School of Oceanography)
+- *[R/V Annie](http://engineeringfordiscovery.org/technology/rv-annie/)* (Global Foundation for Ocean Exploration)
+- *[R/V Helmer Hanssen](https://en.uit.no/om/enhet/artikkel?p_document_id=151541&p_dimension_id=88172&men=42374)* (UiT The Arctic University of Norway)
 
 ## Thanks and acknowledgments ##
 
