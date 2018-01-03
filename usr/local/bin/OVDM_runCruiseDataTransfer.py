@@ -249,6 +249,7 @@ def build_excludeList(worker):
         excludedFilterArray.append("/" + transferLogs['destDir'])
 
     excludedCollectionSystems = worker.cruiseDataTransfer['excludedCollectionSystems'].split(',')
+
     for excludedCollectionSystem in excludedCollectionSystems:
         collectionSystemTransfer = worker.OVDM.getCollectionSystemTransfer(excludedCollectionSystem)
         if collectionSystemTransfer:
@@ -261,6 +262,7 @@ def build_excludeList(worker):
 
     excludedExtraDirectories = worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
     debugPrint(excludedExtraDirectories)
+
     for excludedExtraDirectory in excludedExtraDirectories:
         extraDirectory = worker.OVDM.getExtraDirectory(excludedExtraDirectory)
         if extraDirectory:
@@ -423,7 +425,6 @@ def transfer_smbDestDir(worker, job):
 #    files = build_filelist(worker, cruiseDir)
     files = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
     excludeList = build_excludeList(worker)
-    
     #fileIndex = 0
     #fileCount = len(files['include'])
     

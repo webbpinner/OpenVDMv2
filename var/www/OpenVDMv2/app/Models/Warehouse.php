@@ -419,7 +419,12 @@ class Warehouse extends Model {
                     }
                 }
             }
-            #var_dump($this->_lowerings);
+            //var_dump($this->_lowerings);
+
+            //If there are no lowerings
+            if(!$this->_lowerings) {
+                return array();
+            }
 
             if(sizeof($this->_lowerings) > 0) {
                 rsort($this->_lowerings);
