@@ -10,6 +10,8 @@
 /usr/local/etc/openvdm/datadashboard.yaml
 /usr/local/etc/openvdm/openvdm.yaml
 /usr/local/bin/openvdm.pyc
+/usr/local/bin/buildCruiseTracks.py
+/usr/local/bin/OVDM_dashboardDataScripts/*.py
 /usr/local/bin/OVDM_dashboardDataScripts/*.py
 composer.lock
 
