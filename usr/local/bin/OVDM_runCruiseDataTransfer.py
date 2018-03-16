@@ -383,8 +383,18 @@ def transfer_smbDestDir(worker, job):
     # Mount SMB Share
     debugPrint("Mounting SMB Share")
     if worker.cruiseDataTransfer['smbUser'] == 'guest':
+
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-N']
+    
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        lines_iterator = iter(proc.stdout.readline, b"")
+        vers = ""
+        for line in lines_iterator:
         
-        command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' +  'domain=' + worker.cruiseDataTransfer['smbDomain']]
+            if line.startswith('OS=[Windows 5.1]'):
+                vers=",vers=1.0"
+        
+        command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' +  'domain=' + worker.cruiseDataTransfer['smbDomain']+vers]
         
         s = ' '
         debugPrint(s.join(command))
@@ -393,7 +403,18 @@ def transfer_smbDestDir(worker, job):
         proc.communicate()
 
     else:
-        command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username=' + worker.cruiseDataTransfer['smbUser'] + ',password='+worker.cruiseDataTransfer['smbPass'] + ',domain='+worker.cruiseDataTransfer['smbDomain']]
+
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
+    
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        lines_iterator = iter(proc.stdout.readline, b"")
+        vers = ""
+        for line in lines_iterator:
+        
+            if line.startswith('OS=[Windows 5.1]'):
+                vers=",vers=1.0"
+
+        command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username=' + worker.cruiseDataTransfer['smbUser'] + ',password='+worker.cruiseDataTransfer['smbPass'] + ',domain='+worker.cruiseDataTransfer['smbDomain']+vers]
         
         s = ' '
         debugPrint(s.join(command))

@@ -115,10 +115,14 @@ def test_smbSourceDir(worker):
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     lines_iterator = iter(proc.stdout.readline, b"")
     foundServer = False
+    vers = ""
     for line in lines_iterator:
         #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
+
+        if line.startswith('OS=[Windows 5.1]'):
+            vers=",vers=1.0"
 
     if not foundServer:
         debugPrint("Server Test Failed")
@@ -134,9 +138,9 @@ def test_smbSourceDir(worker):
 
         # Mount SMB Share
         if worker.collectionSystemTransfer['smbUser'] == 'guest':
-            command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+worker.collectionSystemTransfer['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+worker.collectionSystemTransfer['smbDomain']+vers]
         else:
-            command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+worker.collectionSystemTransfer['smbUser']+',password='+worker.collectionSystemTransfer['smbPass']+',domain='+worker.collectionSystemTransfer['smbDomain']]
+            command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+worker.collectionSystemTransfer['smbUser']+',password='+worker.collectionSystemTransfer['smbPass']+',domain='+worker.collectionSystemTransfer['smbDomain']+vers]
 
         s = ' '
         debugPrint('Connect Command:', s.join(command))

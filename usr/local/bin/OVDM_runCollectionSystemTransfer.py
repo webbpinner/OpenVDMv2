@@ -576,8 +576,17 @@ def transfer_smbSourceDir(worker, job):
     # Mount SMB Share
     debugPrint("Mounting SMB Share")
     if worker.collectionSystemTransfer['smbUser'] == 'guest':
+
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-N']
+
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        lines_iterator = iter(proc.stdout.readline, b"")
+        vers = ""
+        for line in lines_iterator:
+            if line.startswith('OS=[Windows 5.1]'):
+                vers=",vers=1.0"
         
-        command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+ ',guest' + ',domain='+worker.collectionSystemTransfer['smbDomain']]
+        command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+ ',guest' + ',domain='+worker.collectionSystemTransfer['smbDomain']+vers]
         
         s = ' '
         debugPrint(s.join(command))
@@ -586,7 +595,16 @@ def transfer_smbSourceDir(worker, job):
         proc.communicate()
         
     else:
-        command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+ ',username='+worker.collectionSystemTransfer['smbUser']+',password='+worker.collectionSystemTransfer['smbPass']+',domain='+worker.collectionSystemTransfer['smbDomain']]
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
+
+        proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        lines_iterator = iter(proc.stdout.readline, b"")
+        vers = ""
+        for line in lines_iterator:
+            if line.startswith('OS=[Windows 5.1]'):
+                vers=",vers=1.0"
+
+        command = ['sudo', 'mount', '-t', 'cifs', worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+ ',username='+worker.collectionSystemTransfer['smbUser']+',password='+worker.collectionSystemTransfer['smbPass']+',domain='+worker.collectionSystemTransfer['smbDomain']+vers]
         
         s = ' '
         debugPrint(s.join(command))

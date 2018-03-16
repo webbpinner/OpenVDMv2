@@ -128,10 +128,14 @@ def test_smbDestDir(worker):
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     lines_iterator = iter(proc.stdout.readline, b"")
     foundServer = False
+    vers = ""
     for line in lines_iterator:
         #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
+
+        if line.startswith('OS=[Windows 5.1]'):
+            vers=",vers=1.0"
     
     if not foundServer:
         returnVal.append({"testName": "SMB Server", "result": "Fail", "reason": "Could not connect to SMB Server: " + worker.cruiseDataTransfer['smbServer'] + " as " + worker.cruiseDataTransfer['smbUser']})
@@ -147,9 +151,9 @@ def test_smbDestDir(worker):
 
         # Mount SMB Share
         if worker.cruiseDataTransfer['smbUser'] == 'guest':
-            command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']]
+            command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+worker.cruiseDataTransfer['smbDomain']+vers]
         else:
-            command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']]
+            command = ['mount', '-t', 'cifs', worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+worker.cruiseDataTransfer['smbUser']+',password='+worker.cruiseDataTransfer['smbPass']+',domain='+worker.cruiseDataTransfer['smbDomain']+vers]
 
         s = ' '
         debugPrint('Connect Command:', s.join(command))
