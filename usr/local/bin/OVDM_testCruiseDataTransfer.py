@@ -126,14 +126,17 @@ def test_smbDestDir(worker):
     debugPrint('Connect Command:', s.join(command))
     
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    lines_iterator = iter(proc.stdout.readline, b"")
+    stdout_iterator = iter(proc.stdout.readline, b"")
+    stderr_iterator = iter(proc.stderr.readline, b"")
     foundServer = False
     vers = ""
-    for line in lines_iterator:
+    for line in stdout_iterator:
         #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
 
+    for line in stderr_iterator:
+        #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith('OS=[Windows 5.1]'):
             vers=",vers=1.0"
     

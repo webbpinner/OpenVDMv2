@@ -580,9 +580,9 @@ def transfer_smbSourceDir(worker, job):
         command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-N']
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        lines_iterator = iter(proc.stdout.readline, b"")
+        stderr_iterator = iter(proc.stderr.readline, b"")
         vers = ""
-        for line in lines_iterator:
+        for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
         
@@ -598,9 +598,9 @@ def transfer_smbSourceDir(worker, job):
         command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        lines_iterator = iter(proc.stdout.readline, b"")
+        stderr_iterator = iter(proc.stderr.readline, b"")
         vers = ""
-        for line in lines_iterator:
+        for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
 
