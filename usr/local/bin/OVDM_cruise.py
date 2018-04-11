@@ -65,6 +65,21 @@ def errPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def check_filenames(worker, files):
+
+    problemFiles = []
+
+    for file in files:
+        try:
+            str(file)
+        except:
+ #           debugPrint("Bad Filename:", file)
+            problemFiles.append(file)
+
+ #   debugPrint("problemFiles:", problemFiles)
+    return problemFiles
+
+
 def output_JSONDataToFile(worker, filePath, contents):
     
     try:
@@ -170,16 +185,26 @@ def transfer_PublicDataDir(worker, job):
     cruiseDir = os.path.join(worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], worker.cruiseID)
     scienceDir = os.path.join(cruiseDir, worker.OVDM.getRequiredExtraDirectoryByName('Science')['destDir'])
     
-    #debugPrint("Build file list")
+#    debugPrint("Build file list")
     files = build_filelist(worker, publicDataDir)
 
+    files['problems'] = check_filenames(worker, files['include'])
+
+#    debugPrint(files['problems'])
+#    debugPrint(len(files['problems']))
+    if len(files['problems']) > 0:
+        return {'verdict': False, 'reason': 'Non-ASCii filenames in ' + publicDataDir + ': ' + ', '.join(files['problems']) , 'files': files }
+
+#    debugPrint("Files:", files)
     count = 1
     fileCount = len(files['include'])
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
+    #debugPrint("tmpdir:",tmpdir)
     rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
-        
+    #debugPrint("rsyncFileListPath:", rsyncFileListPath)
+
     try:
         rsyncFileListFile = open(rsyncFileListPath, 'w')
 
@@ -191,10 +216,10 @@ def transfer_PublicDataDir(worker, job):
     except IOError:
         errPrint("Error Saving temporary rsync filelist file")
         rsyncFileListFile.close()
-            
+
         # Cleanup
         shutil.rmtree(tmpdir)
-        
+
         return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file', 'files': files }
 
     finally:
@@ -553,18 +578,21 @@ def task_finalizeCurrentCruise(worker, job):
     
     debugPrint('Transferring files from PublicData to the cruise data directory')
     
+#    debugPrint('Verify PublicData Directory exists within the cruise data directory')
     if os.path.exists(os.path.join(cruiseDir, scienceDir)):
         job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Science Directory exists", "result": "Fail", "reason": "Science directory: " + os.path.join(cruiseDir, scienceDir) + " could not be found"})
         return json.dumps(job_results)
 
+#    debugPrint('Verify PublicData Directory exists')
     if os.path.exists(publicDataDir):
         job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify PublicData Directory exists", "result": "Fail", "reason": "PublicData directory: " + publicDataDir+ " could not be found"})
         return json.dumps(job_results)
 
+#    debugPrint("Start transfer")
     output_results = transfer_PublicDataDir(worker, job)
     debugPrint("Transfer Complete")
 
