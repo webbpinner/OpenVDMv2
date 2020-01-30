@@ -62,12 +62,18 @@ sudo apt-get install mysql-server
 ```
 When installing MySQL you will be prompted to provide a 'root' password.  This is different than the 'root' password for the operating system but just as important to remember. 
 
-### PHP7.0
+### PHP7.3
 The language used to write the OpenVDMv2 web-interface is PHP.
 
 To install PHP open a terminal window and type:
 ```
-sudo apt-get install php7.0 php7.0-cli php7.0-mysql php7.0-dev php7.0-zip php7.0-curl
+sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
+sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/apache2
+sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/pkg-gearman
+
+sudo apt-get update
+
+sudo apt-get install php7.3 php7.3-cli php7.3-mysql php7.3-dev php7.3-zip php7.3-curl php7.3-gearman php-yaml
 ```
 
 ### Apache2 Web-server
@@ -75,7 +81,7 @@ The OpenVDM web-application is served by the Warehouse via the Apache2 Web-Serve
 
 To install Apache open a terminal window and type:
 ```
-sudo apt-get install apache2 libapache2-mod-php7.0
+sudo apt-get install apache2 libapache2-mod-php7.3
 ```
 
 Apache2 is installed by Xubuntu by default but an Apache2 module must be enabled.  To enable the additional module open a terminal window and type:
@@ -366,74 +372,6 @@ Verify the installation works by going to: <http://127.0.0.1/mapproxy/demo/>
 
 ```
 sudo apt-get install python-requests python-yaml
-```
-
-#### Installing the gearman php module
-The gearman extension team at pecl has not yet updated the gearman php module to work with php7.0.  Luckily the open-source community has come to the rescue.
-
-Download the module
-```
-cd ~
-git clone https://github.com/wcgallego/pecl-gearman.git ~/pecl-gearman
-```
-
-Build the module
-```
-cd ~/pecl-gearman
-phpize
-./configure
-make
-sudo make install
-```
-
-Create the file `/etc/php/7.0/mods-available/gearman.ini`
-```
-sudo nano /etc/php/7.0/mods-available/gearman.ini
-```
-
-Copy the following into `gearman.ini`
-```
-; configuration for php common module
-; priority=20
-extension=gearman.so
-```
-
-Enable the new module
-```
-sudo phpenmod gearman
-```
-
-Restart apache
-```
-sudo service apache2 restart
-```
-
-#### Installing the yaml php module
-```
-sudo apt-get install libyaml-dev
-sudo pecl install yaml-2.0.0
-```
-
-Create the file `/etc/php/7.0/mods-available/yaml.ini`
-```
-sudo nano /etc/php/7.0/mods-available/yaml.ini
-```
-
-Copy the following into `yaml.ini`
-```
-; configuration for php common module
-; priority=20
-extension=yaml.so
-```
-
-Enable the new module
-```
-sudo phpenmod yaml
-```
-
-Restart apache
-```
-sudo service apache2 restart
 ```
 
 #### Create the Required Directories
