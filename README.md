@@ -15,7 +15,7 @@ Added ability to define whether a the source directory for a collection system t
 Added ability to define whether a the destination directory for a cruise data transfer to a local directory is a mount point.  This is useful is the destination directory is actually an externally connected device such as a USB HDD.
 
 #### Demo Site ####
-<http://162.243.201.175/OpenVDMv2/>
+<http://openvdm.oceandatarat.org/OpenVDMv2/>
 - Username: ***admin***
 - Password: ***demo***
 
