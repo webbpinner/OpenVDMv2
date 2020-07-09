@@ -76,7 +76,7 @@ use Helpers\Session;
             <a class="btn btn-sm btn-primary" href="<?php echo DIR; ?>config/shipToShoreTransfers/add">Add New Ship-to-Shore Transfer</a>
             <span class="pull-right">
 <?php
-    if(strcmp($data[ssdwStatus], "1") === 0) {
+    if(strcmp($data['ssdwStatus'], "1") === 0) {
 ?>
             <a id="runStop" class="btn btn-sm btn-danger" href="<?php echo DIR; ?>config/shipToShoreTransfers/stop">Stop Ship-to-Shore Transfer</a>
 <?php
