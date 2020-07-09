@@ -415,7 +415,8 @@ CREATE DATABASE OpenVDMv2;
 
 Now create a new MySQL user specifically for interacting with only the OpenVDM database.  In the example provided below the name of the user is `openvdmDBUser` and the password for that new user is `oxhzbeY8WzgBL3`.
 ```
-GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';
+CREATE USER openvdmDBUser@localhost IDENTIFIED BY 'oxhzbeY8WzgBL3';
+GRANT ALL PRIVILEGES ON OpenVDMv2.* To openvdmDBUser@localhost;
 ```
 
 It is not important what the name and password are for this new user however it is important to remember the designated username/password as it will be reference later in the installation.
