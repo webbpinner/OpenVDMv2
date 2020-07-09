@@ -6,6 +6,9 @@ Beyond this core functionally OpenVDMv2 includes a plugin architecture allowing 
 
 OpenVDMv2 also includes full RESTful API, allowing vessel operators to built their own custom web-based and stand-alone applications that leverage information stored within OpenVDMv2 for their own, vessel-specific needs.
 
+![Main Screen](/docs/OVDM_Config_Main.png)
+![Data Dashboard](/docs/OVDM_DataDashboard_Main.png)
+
 #### New in v2.3 ####
 
 Added support for vessel with dedicated vehicles such as ROVs and AUVs.  This supoort includes the ability to define multiple lowerings within a cruise.  Lowerings have their own ID, start and stop times.  Collection System Transfers can be configured to save data on a cruise-basis or lowering basis.
