@@ -27,11 +27,12 @@ Added ability to define whether a the destination directory for a cruise data tr
 
 ![Shipboard Dataflow](/docs/Shipboard_Dataflow.png)
 
-- The vessel operators tells OpenVDM where the data files live on the ship's network and howto connect to it (Direct connection, Samba, Rsync or SSH).
-- The vessel operator defines which remote data files to pull (include/exclude filters)
-- The vessel operator defines how pulled data files should be organized within the cruise directory on the OpenVDM Server
+1. The vessel operators tells OpenVDM where the data files live on the ship's network and howto connect to it (Direct connection, Samba, Rsync or SSH).
+2. The vessel operator defines which remote data files to pull (include/exclude filters)
+3. The vessel operator defines how pulled data files should be organized within the cruise directory on the OpenVDM Server
 
-At the start of a cruise the vessel operator sets the cruise ID and start/stop dates.  Finally the operators sets the System Status to "On" and ***SHAZAAM!!!***... OpenVDM starts pulling in data files and organizing per the vessel operator's specification.
+4. At the start of a cruise the vessel operator sets the cruise ID and start/stop dates.
+5. Finally the operators sets the System Status to "On" and ***SHAZAAM!!!***... OpenVDM starts pulling in data files and organizing per the vessel operator's specification.
 
 As the data files roll in, OpenVDM ensures the crew and shipboard science party have immediate, safe and read-only access.  This workflow reduces the workload for marine techicians and improves access for the science party. (No more waking up techs in the middle of the night to get scientists their data!!!)
 
