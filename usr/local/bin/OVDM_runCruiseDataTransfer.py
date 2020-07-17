@@ -214,7 +214,7 @@ def build_filters(worker):
             else:
                 lowerings = worker.OVDM.getLowerings()
                 for lowering in lowerings:
-                    excludedFilterArray.append("*/{cruiseID}/*/" + lowering + "/" + collectionSystemTransfer['destDir'] + "/*")
+                    excludedFilterArray.append("*/{cruiseID}/*/" + lowering + "/" + collectionSystemTransfer['destDir'].replace('{loweringID}', lowering) + "/*")
 
     excludedExtraDirectories = worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
     #debugPrint(excludedExtraDirectories)
@@ -258,7 +258,7 @@ def build_excludeList(worker):
             else:
                 lowerings = worker.OVDM.getLowerings()
                 for lowering in lowerings:
-                    excludedFilterArray.append("/" + worker.shipboardDataWarehouseConfig['loweringDataBaseDir'] + "/" + lowering + "/" + collectionSystemTransfer['destDir'])
+                    excludedFilterArray.append("/" + worker.shipboardDataWarehouseConfig['loweringDataBaseDir'] + "/" + lowering + "/" + collectionSystemTransfer['destDir'].replace('{loweringID}', lowering))
 
     excludedExtraDirectories = worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
     debugPrint(excludedExtraDirectories)

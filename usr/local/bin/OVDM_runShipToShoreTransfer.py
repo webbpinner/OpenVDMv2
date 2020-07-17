@@ -92,22 +92,24 @@ def build_filelist(worker):
                         shipToShoreFilters = ['*/' + worker.cruiseID + '/' + shipToShoreFilter for shipToShoreFilter in shipToShoreFilters]
                         rawFilters['includeFilter'] = rawFilters['includeFilter'] + shipToShoreFilters
 
-    #debugPrint("Raw Filters:", json.dumps(rawFilters, indent=2))
+    debugPrint("Raw Filters:", json.dumps(rawFilters, indent=2))
     
     procfilters = build_filters(worker, rawFilters)
-    #debugPrint("Processed Filters:", json.dumps(rawFilters, indent=2))
+    debugPrint("Processed Filters:", json.dumps(rawFilters, indent=2))
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
     returnFiles = {'include':[], 'new':[], 'updated':[]}
-    for includeFilter in procfilters['includeFilter']:
-        for root, dirnames, filenames in os.walk(cruiseDir):
-            for filename in filenames:
+    for root, dirnames, filenames in os.walk(cruiseDir):
+        for filename in filenames:
+            for includeFilter in procfilters['includeFilter']:
+                # debugPrint(filename)
                 if fnmatch.fnmatch(os.path.join(root, filename), includeFilter):
                     returnFiles['include'].append(os.path.join(root, filename))
 
     returnFiles['include'] = [filename.replace(baseDir + '/', '', 1) for filename in returnFiles['include']]
+    debugPrint("Returned Files:", returnFiles)
     return returnFiles
 
 
@@ -239,6 +241,7 @@ def transfer_sshDestDir(worker, job):
 
     debugPrint("Build file list")
     files = build_filelist(worker)
+    debugPrint("Done")
         
     # Create temp directory
     tmpdir = tempfile.mkdtemp()

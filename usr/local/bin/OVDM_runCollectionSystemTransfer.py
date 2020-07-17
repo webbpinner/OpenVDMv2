@@ -109,17 +109,23 @@ def build_filelist(worker, sourceDir):
                                 exclude = True
                                 break
                         if not exclude:
-                            #debugPrint('Filename:', os.path.join(root, filename))
+                            debugPrint('Filename:', os.path.join(root, filename))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             #debugPrint("file_mod_time:",file_mod_time)
-                            if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
-                                debugPrint(filename, "included")
-                                returnFiles['include'].append(os.path.join(root, filename))
-                                returnFiles['filesize'].append(os.stat(os.path.join(root, filename)).st_size)
+                            try:
+                                filename.decode('ascii')
+                            except UnicodeEncodeError:
+                                debugPrint(filename, "is not an ascii-encoded unicode string")
+                                returnFiles['exclude'].append(os.path.join(root, filename))
                             else:
-                                debugPrint(filename, "ignored for time reasons")
+                                if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
+                                    debugPrint(filename, "included")
+                                    returnFiles['include'].append(os.path.join(root, filename))
+                                    returnFiles['filesize'].append(os.stat(os.path.join(root, filename)).st_size)
+                                else:
+                                    debugPrint(filename, "ignored for time reasons")
 
-                            include = True
+                                include = True
 
                 if not include and not exclude:
                     debugPrint(filename, "excluded because file does not match any include or ignore filters")
@@ -153,7 +159,7 @@ def build_rsyncFilelist(worker, sourceDir):
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S") 
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
     cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
-    
+
     debugPrint("Threshold:",threshold_time)
     debugPrint("Start:",cruiseStart_time)
     debugPrint("End:",cruiseEnd_time)
@@ -182,19 +188,19 @@ def build_rsyncFilelist(worker, sourceDir):
         os.chmod(rsyncPasswordFilePath, 0600)
 
     command = ['rsync', '-r', '--password-file=' + rsyncPasswordFilePath, '--no-motd', 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
-    
+
     s = ' '
     debugPrint(s.join(command))
-    
+
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     rsyncFileList = out
 
     # Cleanup
     shutil.rmtree(tmpdir)
-        
+
     #print "rsyncFileListOut: " + rsyncFileList
-    
+
     for line in rsyncFileList.splitlines():
         #debugPrint('line:', line.rstrip('\n'))
         fileOrDir, size, mdate, mtime, filename = line.split(None, 4)
@@ -218,16 +224,22 @@ def build_rsyncFilelist(worker, sourceDir):
                                 exclude = True
                                 break
                         if not exclude:
-                            file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
-                            file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                            #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
-                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
-                                #debugPrint("include")
-                                returnFiles['include'].append(filename)
+                            try:
+                                filename.decode('ascii')
+                            except UnicodeEncodeError:
+                                debugPrint(filename, "is not an ascii-encoded unicode string")
+                                returnFiles['exclude'].append(os.path.join(root, filename))
                             else:
-                                debugPrint(filename, "skipped for time reasons")
+                                file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
+                                file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
+                                #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
+                                if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
+                                    #debugPrint("include")
+                                    returnFiles['include'].append(filename)
+                                else:
+                                    debugPrint(filename, "skipped for time reasons")
 
-                            include = True
+                                include = True
 
                 if not include:
                     #print "exclude"
@@ -485,38 +497,46 @@ def transfer_localSourceDir(worker, job):
 
     fileIndex = 0
     fileCount = len(files['include'])
-    
+
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
     rsyncFileListPath = os.path.join(tmpdir, 'rsyncFileList.txt')
-        
+
+    debugPrint("Mod file list")
     localTransferFileList = files['include']
     localTransferFileList = [filename.replace(sourceDir, '', 1) for filename in localTransferFileList]
 
+    debugPrint("Start")
     try:
         rsyncFileListFile = open(rsyncFileListPath, 'w')
-        rsyncFileListFile.write('\n'.join([str(file) for file in localTransferFileList]))
 
     except IOError:
         errPrint("Error Saving temporary rsync filelist file")
         rsyncFileListFile.close()
-            
+
         # Cleanup
-        shutil.rmtree(tmpdir)            
+        shutil.rmtree(tmpdir)
         return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file: ' + rsyncFileListPath, 'files': []}
 
-    finally:
-        #debugPrint("Closing rsync filelist file")
-        rsyncFileListFile.close()
+    debugPrint("Done")
 
+    for file in localTransferFileList:
+        try:
+            rsyncFileListFile.write(str(file) + '\n')
+        except Exception as error:
+            debugPrint("File not ascii:", file)
+            debugPrint(error)
+
+    #debugPrint("Closing rsync filelist file")
+    rsyncFileListFile.close()
 
     bandwidthLimit = '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
 
     if worker.collectionSystemTransfer['bandwidthLimit'] != '0':
         bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
-    
+
     command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir + '/', destDir]
-    
+
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
     

@@ -370,7 +370,7 @@ $(function () {
                             formatter: function() {
                                 var toolTipStr = '<span style="font-size: 10px">Time: ' + Highcharts.dateFormat('%b %e %Y - %H:%M:%S', this.x) + '</span>';
                                 $.each(this.points, function (i) {
-                                    toolTipStr += '<br/>' + '<span style="font-size: 10px; color:' + this.series.color + '">\u25CF</span><span style="font-size: 10px"> ' + data[i].label + ': ' + this.y +  ' ' + data[i].unit + '</span>';
+                                    toolTipStr += '<br/>' + '<span style="font-size: 10px; color:' + this.series.color + '">\u25CF</span><span style="font-size: 10px"> ' + this.series.name + ': ' + this.y +  ' </span>';
                                 });
                                 return toolTipStr;
                             }
@@ -399,6 +399,7 @@ $(function () {
                         //}
                     };
 
+//                    console.log('chartOptions:', chartOptions)
                     $(placeholder).highcharts(chartOptions);
                 }
             }

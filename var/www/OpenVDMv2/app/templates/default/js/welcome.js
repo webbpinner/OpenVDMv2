@@ -142,8 +142,11 @@ $(function () {
                             errorFilesOutput += '                   <h5>' + data[i].collectionSystemName + '</h5>';
                             errorFilesOutput += '                   <ul>';
                             var j = 0;
-                            for (j = 0; j < data[i].errorFiles.length; j++) {
+                            for (j = 0; j < 20; j++) {
                                 errorFilesOutput += '                       <li><small>' + data[i].errorFiles[j] + '</small></li>';
+                            }
+                            if(data[i].errorFiles.length > 20){
+                                errorFilesOutput += '                       <li><small>... and <strong>' + data[i].errorFiles.length-20 '</strong> other files</small></li>';
                             }
                             errorFilesOutput += '                   </ul>';
                         }
