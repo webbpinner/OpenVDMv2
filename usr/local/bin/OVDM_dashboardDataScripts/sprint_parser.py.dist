@@ -1,8 +1,8 @@
 # =================================================================================== #
 #
-#         FILE:  gga_parser.py
+#         FILE:  sprint_parser.py
 #
-#        USAGE:  gga_parser.py [-h] [-c] <dataFile>
+#        USAGE:  sprint_parser.py [-h] [-c] <dataFile>
 #
 #  DESCRIPTION:  Parse the supplied NMEA-formtted GGA file (w/ SCS formatted timestamp)
 #                and return the json-formatted string used by OpenVDM as part of it's
@@ -59,8 +59,8 @@ from itertools import (takewhile,repeat)
 # statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
 # qualityTestObj = {"testName": "", "results": ""}
 
-RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
-PROC_COLUMNS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
+RAW_COLUMNS = ['date','time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used']
+PROC_COLUMNS = ['date_time','latitude','longitude']
 CROP_COLUMNS = ['date_time','latitude','longitude']
 
 MAX_VELOCITY = 13.8 #Max speed of vessel (mph)
@@ -135,7 +135,7 @@ def parseFile(filePath):
         (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
         debugPrint('Error: ', errors)
     
-    rawIntoDf = {'date_time':[],'latitude':[],'longitude':[],'num_satellites':[],'hdop':[],'altitude':[],'height_wgs84':[]}
+    rawIntoDf = {'date_time':[],'latitude':[],'longitude':[]}
 
     csvfile = open(outfile, 'r')
     reader = csv.DictReader( csvfile, RAW_COLUMNS)
@@ -146,36 +146,9 @@ def parseFile(filePath):
 
             line_date_time = line['date'] + ' ' + line['time']
 
-            longitude_degrees = float(line['longitude'][:3])
-            longitude_dminutes = float(line['longitude'][3:])/60
-            lon_hemisphere = 1.0
+            line_longitude = float(line['longitude'])
 
-            if line['EW'] == 'W':
-                lon_hemisphere = -1.0
-
-            line_longitude = ((longitude_degrees + longitude_dminutes) * lon_hemisphere)
-
-            latitude_degrees = float(line['latitude'][:2])
-            latitude_dminutes = float(line['latitude'][2:])/60
-            lat_hemisphere = 1.0
-
-            if line['NS'] == 'S':
-                lat_hemisphere = -1.0
-
-            line_latitude = ((latitude_degrees + latitude_dminutes) * lat_hemisphere)
-
-            line_num_satellites = int(line['num_satellites'])
-            line_hdop = float(line['hdop'])
-
-            if line['altitude'] == '':
-                line_altitude = float(0)
-            else:
-                line_altitude = float(line['altitude'])
-
-            if line['height_wgs84'] == '':
-                line_height_wgs84 = float(0)
-            else:
-                line_height_wgs84 = float(line['height_wgs84'])
+            line_latitude = float(line['latitude'])
 
         except:
             debugPrint('Parsing error: ', line)
@@ -200,10 +173,6 @@ def parseFile(filePath):
             rawIntoDf['date_time'].append(line_date_time)
             rawIntoDf['latitude'].append(line_latitude)
             rawIntoDf['longitude'].append(line_longitude)
-            rawIntoDf['num_satellites'].append(line_num_satellites)
-            rawIntoDf['hdop'].append(line_hdop)
-            rawIntoDf['altitude'].append(line_altitude)
-            rawIntoDf['height_wgs84'].append(line_height_wgs84)
 
     shutil.rmtree(tmpdir)
 
@@ -214,10 +183,10 @@ def parseFile(filePath):
 
     df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
-    if START_TS:
+    if START_TS != None:
         df_proc = df_proc[(df_proc['date_time'] >= START_TS)]
 
-    if STOP_TS:
+    if STOP_TS != None:
         df_proc = df_proc[(df_proc['date_time'] <= STOP_TS)]
 
     if df_proc.shape[0] == 0:
@@ -269,19 +238,6 @@ def parseFile(filePath):
 
     deltaTValidityStat = {'statName':'DeltaT Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
     output['stats'].append(deltaTValidityStat)
-
-    num_satellitesStat = {'statName': 'Number of Satellites','statUnit': 'sats', 'statType':'bounds', 'statData':[round(df_proc.num_satellites.min(),3), round(df_proc.num_satellites.max(),3)]}
-    output['stats'].append(num_satellitesStat)
-
-    hdopStat = {'statName': 'Horizontal Degree of Precision','statUnit': '', 'statType':'bounds', 'statData':[round(df_proc.hdop.min(),3), round(df_proc.hdop.max(),3)]}
-    output['stats'].append(hdopStat)
-
-    altitudeStat = {'statName': 'Altitude','statUnit': 'm', 'statType':'bounds', 'statData':[round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)]}
-    output['stats'].append(altitudeStat)
-
-    height_wgs84Stat = {'statName': 'Height WGS84','statUnit': 'm', 'statType':'bounds', 'statData':[round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)]}
-    output['stats'].append(height_wgs84Stat)
-
 
     rowQualityTest = {"testName": "Rows", "results": "Passed"}
     if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
@@ -392,7 +348,7 @@ def parseFile(filePath):
 # -------------------------------------------------------------------------------------
 def main(argv):
 
-    parser = argparse.ArgumentParser(description='Parse NMEA GGA data')
+    parser = argparse.ArgumentParser(description='Parse SPRINT data')
     parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
     parser.add_argument('-c', '--csvkit', action='store_true', help=' clean datafile using CSVKit')

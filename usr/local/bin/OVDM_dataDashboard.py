@@ -71,6 +71,7 @@ def errPrint(*args, **kwargs):
 
 def build_filelist(sourceDir):
 
+    debugPrint("sourceDir:",sourceDir)
     returnFiles = []
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
@@ -596,13 +597,25 @@ def task_rebuildDataDashboard(worker, job):
             collectionSystemTransferIndex += 1
             continue
 
-        collectionSystemTransferInputDir = os.path.join(cruiseDir, collectionSystemTransfer['destDir'])
-        collectionSystemTransferOutputDir = os.path.join(dataDashboardDir, collectionSystemTransfer['destDir'])
+        # collectionSystemTransferOutputDir = os.path.join(dataDashboardDir, collectionSystemTransfer['destDir'])
         
         #build filelist
-        fileList = build_filelist(collectionSystemTransferInputDir)
-        fileList = [os.path.join(collectionSystemTransfer['destDir'], filename) for filename in fileList]
+        fileList = []
+        if collectionSystemTransfer['cruiseOrLowering'] == "0":
+            collectionSystemTransferInputDir = os.path.join(cruiseDir, collectionSystemTransfer['destDir'])
+            fileList.extend(build_filelist(collectionSystemTransferInputDir))
+            fileList = [os.path.join(collectionSystemTransfer['destDir'], filename) for filename in fileList]
 
+        else:
+            lowerings = worker.OVDM.getLowerings()
+            loweringBaseDir = worker.shipboardDataWarehouseConfig['loweringDataBaseDir']
+
+            for lowering in lowerings:
+                collectionSystemTransferInputDir = os.path.join(cruiseDir, loweringBaseDir, lowering, collectionSystemTransfer['destDir'])
+                debugPrint(os.path.join(cruiseDir, loweringBaseDir, lowering, collectionSystemTransfer['destDir']))
+                loweringFileList = build_filelist(collectionSystemTransferInputDir)
+                fileList.extend([os.path.join(loweringBaseDir, lowering, collectionSystemTransfer['destDir'], filename) for filename in loweringFileList])
+ 
         debugPrint("FileList:", json.dumps(fileList, indent=2))
 
         fileCount = len(fileList)
@@ -616,11 +629,11 @@ def task_rebuildDataDashboard(worker, job):
 
             debugPrint("Processing file:", filename)
             jsonFileName = os.path.splitext(filename)[0] + '.json'
-            #debugPrint('jsonFileName:', jsonFileName)
+            debugPrint('jsonFileName:', jsonFileName)
             rawFilePath = os.path.join(cruiseDir, filename)
-            #debugPrint('rawFilePath:', rawFilePath)
+            debugPrint('rawFilePath:', rawFilePath)
             jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
-            #debugPrint('jsonFilePath:', jsonFilePath)
+            debugPrint('jsonFilePath:', jsonFilePath)
 
             if os.stat(rawFilePath).st_size == 0:
                 debugPrint("File is empty")

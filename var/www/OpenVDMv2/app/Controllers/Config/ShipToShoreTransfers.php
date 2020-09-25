@@ -27,7 +27,7 @@ class shipToShoreTransfers extends Controller {
         }
 
         if(!isset($checkedType)) {
-            $output[count($output)-1]['checked']='1';
+            $output[sizeOf($output)-1]['checked']='1';
         }        
         return $output;
     }

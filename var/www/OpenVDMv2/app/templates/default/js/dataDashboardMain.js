@@ -34,7 +34,7 @@ $(function () {
                             }
                         };
 
-                        if (reversedY) {
+                        if (reversedY || data[i].label == "Depth") {
                             yAxes[i].reversed = true;
                         }
 

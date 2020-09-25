@@ -7,6 +7,24 @@ $(function () {
         colors: ['#337ab7', '#5cb85c', '#d9534f', '#f0ad4e', '#606060']
     });
     
+    var greenIcon = new L.Icon({
+        iconUrl: '/OpenVDMv2/bower_components/leaflet-color-markers/img/marker-icon-green.png',
+        shadowUrl: '/OpenVDMv2/bower_components/leaflet/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+       shadowSize: [41, 41]
+    });
+
+    var redIcon = new L.Icon({
+        iconUrl: '/OpenVDMv2/bower_components/leaflet-color-markers/img/marker-icon-red.png',
+        shadowUrl: '/OpenVDMv2/bower_components/leaflet/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+       shadowSize: [41, 41]
+    });
+
     var chartHeight = 200;
 
     var mapObjects = [],
@@ -142,6 +160,8 @@ $(function () {
         $( '#' + mapObject['objectListID']).find(':checkbox:checked').each(function() {
             if ($(this).hasClass("lp-checkbox")) {
                 addLatestPositionToMap(mapObject, $(this).val());
+            } else if ($(this).hasClass("se-checkbox")) {
+                addStartEndPositionsToMap(mapObject, $(this).val());
             } else if ($(this).hasClass("geoJSON-checkbox")) {
                 //alert($(this).val());
                 addGeoJSONToMap(mapObject, $(this).val());
@@ -153,9 +173,6 @@ $(function () {
     }
     
     function chartChecked(chartObject) {
-        //alert('#' + chartObject['objectListID']);        
-        //alert($( '#' + chartObject['objectListID']).length);
-        //alert($( '#' + chartObject['objectListID']).find(':radio:checked').length);
         $( '#' + chartObject['objectListID']).find(':radio:checked').each(function() {
             if ($(this).hasClass( "json-reversed-y-radio" )) {
                 updateChart(chartObjects[i], $(this).val(), true);
@@ -196,12 +213,80 @@ $(function () {
         });
     }
 
+    function addStartEndPositionsToMap(mapObject, dataType) {
+        var loweringID = $('#lowering_sel').val();        
+        var getDashboardDataFilesURL = siteRoot + 'api/dashboardData/getDataObjectsByType/' + cruiseID + '/' + dataType;
+        $.getJSON(getDashboardDataFilesURL, function (data, status) {
+            if (status === 'success' && data !== null) {
+               
+               var files = data[0].filter(function(object) {
+                   return object['raw_data'].includes(loweringID)
+               })
+               
+               var getVisualizerDataURL = siteRoot + 'api/dashboardData/getDashboardObjectVisualizerDataByJsonName/' + cruiseID + '/' + files[0]['dd_json'];
+               $.getJSON(getVisualizerDataURL, function (data, status) {
+                    if (status === 'success' && data !== null) {
+
+                        if ('error' in data) {
+                            $('#' + mapObject['placeholderID']).html('<strong>Error: ' + data.error + '</strong>');
+                        } else {
+                    
+                            //Get the last coordinate from the latest trackline
+                            var firstCoordinate = data[0].features[data[0].features.length - 1].geometry.coordinates[0];
+                            var startPosition = L.latLng(firstCoordinate[1], firstCoordinate[0]);
+
+                            if (firstCoordinate[0] < 0) {
+                                startPosition = startPosition.wrap(360, 0);
+                            } else {
+                                startPosition = startPosition.wrap();
+                            }
+
+                            var lastCoordinate = data[0].features[data[0].features.length - 1].geometry.coordinates[data[0].features[data[0].features.length - 1].geometry.coordinates.length - 1];
+                            var endPosition = L.latLng(lastCoordinate[1], lastCoordinate[0]);
+
+                            if (lastCoordinate[0] < 0) {
+                                endPosition = endPosition.wrap(360, 0);
+                            } else {
+                                endPosition = endPosition.wrap();
+                            }
+
+                            var bounds = new L.LatLngBounds([startPosition, endPosition]);
+                            mapObject['mapBounds']['StartEndPositions-' + dataType] = bounds;
+
+                            // Add marker at the last coordinate
+                            mapObject['markers']['StartPosition-' + dataType] = L.marker(startPosition, {icon: greenIcon});
+                            mapObject['markers']['StartPosition-' + dataType].addTo(mapObject['map']);
+
+                            mapObject['markers']['EndPosition-' + dataType] = L.marker(endPosition, {icon: redIcon});
+                            mapObject['markers']['EndPosition-' + dataType].addTo(mapObject['map']);
+
+                            updateBounds(mapObject);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+
+    function removeStartEndPositionsFromMap(mapObject, dataType) {
+        mapObject['map'].removeLayer(mapObject['markers']['StartPosition-' + dataType]);
+        mapObject['map'].removeLayer(mapObject['markers']['EndPosition-' + dataType]);
+            
+        //remove the bounds and re-center/re-zoom the map
+        delete mapObject['markers']['StartPositios-' + dataType];
+        delete mapObject['markers']['EndPosition-' + dataType];
+        delete mapObject['mapBounds']['StartEndPositions-' + dataType]
+ 
+        updateBounds(mapObject);
+    }
+
     function removeLatestPositionFromMap(mapObject, dataType) {
         mapObject['map'].removeLayer(mapObject['markers']['LatestPosition-' + dataType]);
             
         //remove the bounds and re-center/re-zoom the map
         delete mapObject['markers']['LatestPosition-' + dataType];
-        
+        delete mapObject['mapBounds']['LatestPosition-' + dataType]
         updateBounds(mapObject);
     }
 
@@ -348,7 +433,7 @@ $(function () {
                             yAxes[i].opposite = true;
                         }
 
-                        if (reversedY) {
+                        if (reversedY || data[i].label == "Depth") {
                             yAxes[i].reversed = true;
                         }
 
@@ -441,7 +526,10 @@ $(function () {
     $.each(mapObjects, function(i) {        
         $( '#' + mapObjects[i]['objectListID']).find(':checkbox:checked').change(function() {
             if ($(this).is(":checked")) {
-                if ($(this).hasClass("lp-checkbox")) {
+                if ($(this).hasClass("se-checkbox")) {
+                    //alert($(this).val());
+                    addStartEndPositionsToMap(mapObjects[i], $(this).val());
+                } else if ($(this).hasClass("lp-checkbox")) {
                     //alert($(this).val());
                     addLatestPositionToMap(mapObjects[i], $(this).val());
                 } else if ($(this).hasClass("geoJSON-checkbox")) {
@@ -452,7 +540,10 @@ $(function () {
                     addTMSToMap(mapObjects[i], $(this).val());
                 }
             } else {
-                if ($(this).hasClass("lp-checkbox")) {
+                if ($(this).hasClass("se-checkbox")) {
+                    //alert($(this).val());
+                    removeStartEndPositionsFromMap(mapObjects[i], $(this).val());
+                } else if ($(this).hasClass("lp-checkbox")) {
                     //alert($(this).val());
                     removeLatestPositionFromMap(mapObjects[i], $(this).val());
                 } else if ($(this).hasClass("geoJSON-checkbox")) {

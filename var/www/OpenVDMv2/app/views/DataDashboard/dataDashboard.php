@@ -59,7 +59,7 @@ $loadingImage = '<img height="50" src="' . Url::templatePath() . 'images/loading
                                             <div class="row">
                                                 <div class="col-lg-12"><strong><?php echo $data['placeholders'][$i]->dataFiles[$j][0]['type']; ?></strong></div>
 <?php
-            if(is_array($data['placeholders'][$i]->dataFiles[$j]) && sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0){
+            if(sizeof($data['placeholders'][$i]->dataFiles[$j]) > 0){
                 if(strcmp($data['placeholders'][$i]->dataTypes[$j], 'geoJSON')===0) {
 ?>
                                                 <div class='col-lg-12'>

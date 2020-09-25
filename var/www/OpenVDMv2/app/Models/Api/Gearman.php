@@ -74,7 +74,7 @@ class Gearman extends Model {
         while($clearingJobs){
             $jobs = $this->db->select("SELECT jobID FROM ".PREFIX."Gearman ORDER BY jobID DESC LIMIT 25");
 
-            if(is_array($jobs) && sizeof($jobs) > 0){
+            if(sizeof($jobs) > 0){
                 foreach($jobs as $row) {
                     $where = array("jobID" => $row->jobID);
                     $this->deleteJob($where);

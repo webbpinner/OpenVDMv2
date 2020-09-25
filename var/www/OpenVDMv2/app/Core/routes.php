@@ -160,6 +160,7 @@ Router::any('api/cruiseDataTransfers/setRunningCruiseDataTransfer/(:num)', 'Cont
 Router::any('api/cruiseDataTransfers/setIdleCruiseDataTransfer/(:num)', 'Controllers\Api\CruiseDataTransfers@setIdleCruiseDataTransfer');
 
 Router::any('api/dashboardData/getDashboardDataTypes/(:any)', 'Controllers\Api\DashboardData@getDashboardDataTypes');
+Router::any('api/dashboardData/getDataObjectsByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getDataObjectsByType');
 Router::any('api/dashboardData/getLatestDataObjectByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getLatestDataObjectByType');
 Router::any('api/dashboardData/getLatestVisualizerDataByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getLatestVisualizerDataByType');
 Router::any('api/dashboardData/getLatestStatsByType/(:any)/(:any)', 'Controllers\Api\DashboardData@getLatestStatsByType');

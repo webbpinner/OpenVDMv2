@@ -36,7 +36,7 @@ use Helpers\Form;
                                 <div class="form-group">
                                     <label>Cruise ID</label>
 <?php
-    if(is_array($data['cruises']) && sizeof($data['cruises']) > 0) {
+    if(sizeof($data['cruises']) > 0) {
 ?>
                                     <select name="cruiseID" class="form-control">
 <?php
