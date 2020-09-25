@@ -69,7 +69,7 @@ class DashboardData extends Model {
     public function getDashboardDataTypes() {
 
         $dataTypes = array();
-        if (sizeof($this->_manifestObj) > 0) {
+        if (is_array($this->_manifestObj) && sizeof($this->_manifestObj) > 0) {
             foreach ($this->_manifestObj as $manifestItem){
                 foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
                     if (strcmp($manifestItemKey, 'type') === 0){
@@ -88,7 +88,7 @@ class DashboardData extends Model {
     public function getDashboardObjectsByTypes($dataType) {
 
         $dataObjects = array();
-        if(sizeof($this->_manifestObj) > 0) {
+        if(is_array($this->_manifestObj) && sizeof($this->_manifestObj) > 0) {
             foreach ($this->_manifestObj as $manifestItem) {
                 foreach ($manifestItem as $manifestItemKey => $manifestItemValue){
                     if (strcmp($manifestItemKey, 'type') === 0){
@@ -101,7 +101,7 @@ class DashboardData extends Model {
             }
         }
 
-        if(sizeof($dataObjects) > 0) {
+        if(is_array($dataObjects) && sizeof($dataObjects) > 0) {
             $sortArray = array();
 
             foreach($dataObjects as $dataObject){
@@ -231,7 +231,7 @@ class DashboardData extends Model {
         
         $dataObjects = $this->getDashboardObjectsByTypes($dataType);
         
-        if(sizeof($dataObjects) === 0){
+        if(is_array($dataObjects) && sizeof($dataObjects) === 0){
             $return[0]->error = 'No objects found of type ' . $dataType;
             return $return;
         }

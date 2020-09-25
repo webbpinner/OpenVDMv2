@@ -44,7 +44,7 @@ class DataDashboard extends Controller {
 
         View::renderTemplate('header', $data);
         View::renderTemplate('dataDashboardHeader', $data);
-        if( sizeof($data['dataTypes'])>0){
+        if( is_array($data['dataTypes']) && sizeof($data['dataTypes']) > 0){
             View::render('DataDashboard/main', $data);
         } else {
             View::render('DataDashboard/noData', $data);
@@ -66,21 +66,21 @@ class DataDashboard extends Controller {
         $data['dataWarehouseApacheDir'] = $this->_warehouseModel->getShipboardDataWarehouseApacheDir();
 
         $data['css'] = array();
-        if ($tab['cssArray'] && sizeof($tab['cssArray'])>0) {
+        if ($tab['cssArray'] && is_array($tab['cssArray']) && sizeof($tab['cssArray'])>0) {
             foreach ($tab['cssArray'] as $cssFile) {
                 array_push($data['css'], $cssFile);
             }
         }
         
         $data['javascript'] = array();
-        if ($tab['jsArray'] && sizeof($tab['jsArray'])>0) {
+        if ($tab['jsArray'] && is_array($tab['jsArray']) && sizeof($tab['jsArray'])>0) {
             foreach ($tab['jsArray'] as $jsFile) {
                 array_push($data['javascript'], $jsFile);
             }
         }
         
         $data['placeholders'] = array();
-        if ($tab['placeholderArray'] && sizeof($tab['placeholderArray'])>0) {
+        if ($tab['placeholderArray'] && is_array($tab['placeholderArray']) && sizeof($tab['placeholderArray'])>0) {
             foreach ($tab['placeholderArray'] as $placeholder) {
                 $placeholder['dataFiles'] = array();
                 foreach ($placeholder['dataArray'] as $dataObj) {
@@ -94,7 +94,7 @@ class DataDashboard extends Controller {
         $noDataFiles = true;
         for($i = 0; $i < sizeof($data['placeholders']); $i++) {
             for($j = 0; $j < sizeof($data['placeholders'][$i]['dataFiles']); $j++) {
-                if(sizeof($data['placeholders'][$i]['dataFiles'][$j]) > 0) {
+                if(is_array($data['placeholders'][$i]['dataFiles'][$j]) && sizeof($data['placeholders'][$i]['dataFiles'][$j]) > 0) {
                     $noDataFiles = false;
                     break;
                 }
@@ -145,7 +145,7 @@ class DataDashboard extends Controller {
         View::renderTemplate('header', $data);
         View::renderTemplate('dataDashboardHeader', $data);
 
-        if( sizeof($data['dataTypes'])>0){
+        if( is_array($data['dataTypes']) && sizeof($data['dataTypes']) > 0) {
             View::render('DataDashboard/dataQuality', $data);
         } else {
             View::render('DataDashboard/noData', $data);

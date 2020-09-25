@@ -72,7 +72,7 @@ $loweringID  = ($_GET['loweringID'] ? $_GET['loweringID'] : $data['loweringID'])
                                                 <div class="row">
                                                     <div class="col-lg-12"><strong><?php echo $dataFiles[0]['type']; ?></strong><?php echo (strcmp($data['placeholders'][$i][plotType], 'map') === 0 && sizeof($dataFiles) > 0? '<div class="pull-right"><div class="btn btn-xs btn-default selectAll" >Select All</div> <div class="btn btn-xs btn-default clearAll" >Clear All</div></div>': ''); ?></div>
 <?php
-            if(sizeof($dataFiles) > 0){
+            if(is_array($dataFiles) && sizeof($dataFiles) > 0){
                 if(strcmp($data['placeholders'][$i]['dataArray'][$j]['visType'], 'geoJSON')===0) {
 ?>
                                                     <div class='col-lg-12'>

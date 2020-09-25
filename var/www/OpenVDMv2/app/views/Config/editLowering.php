@@ -36,11 +36,11 @@ use Helpers\Form;
                                 <div class="form-group">
                                     <label><?php echo LOWERING_NAME ?> ID</label>
 <?php
-    if(sizeof($data['lowerings']) > 0) {
+    if(is_array($data['lowerings']) && sizeof($data['lowerings']) > 0) {
 ?>
                                     <select name="loweringID" class="form-control">
 <?php
-        for($i=0;$i<sizeof($data['lowerings']); $i++){
+        for($i=0; $i<sizeof($data['lowerings']); $i++){
 ?>
                                         <option value="<?php echo $data['lowerings'][$i]; ?>"<?php echo ' ' . ($data['loweringID'] == $data['lowerings'][$i] ? 'selected':'');?>><?php echo $data['lowerings'][$i]; ?></option>
 <?php

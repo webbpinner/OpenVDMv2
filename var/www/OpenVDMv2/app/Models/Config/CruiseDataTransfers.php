@@ -49,10 +49,10 @@ class CruiseDataTransfers extends Model {
         foreach ($cruiseDataTransfers as $key => $value) {
             $excludedCollectionSystems = explode(',', $value->excludedCollectionSystems);
             $keyToRemove = array_keys($excludedCollectionSystems,$collectionSystemTransferID);
-            if (sizeof($keyToRemove) > 0) {
+            if (is_array($keyToRemove) && sizeof($keyToRemove) > 0) {
                 unset($excludedCollectionSystems[$keyToRemove[0]]);
                 $data = [];
-                if (sizeof($excludedCollectionSystems) > 0) {
+                if (is_array($excludedCollectionSystems) && sizeof($excludedCollectionSystems) > 0) {
                     $data = array('excludedCollectionSystems' => join(',',$excludedCollectionSystems));
                 } else {
                     $data = array('excludedCollectionSystems' => "0");
@@ -68,10 +68,10 @@ class CruiseDataTransfers extends Model {
         foreach ($cruiseDataTransfers as $key => $value) {
             $excludedExtraDirectories = explode(',', $value->excludedExtraDirectories);
             $keyToRemove = array_keys($excludedExtraDirectories,$extraDirectoryID);
-            if (sizeof($keyToRemove) > 0) {
+            if (is_array($keyToRemove) && sizeof($keyToRemove) > 0) {
                 unset($excludedExtraDirectories[$keyToRemove[0]]);
                 $data = [];
-                if (sizeof($excludedExtraDirectories) > 0) {
+                if (is_array($excludedExtraDirectories) && sizeof($excludedExtraDirectories) > 0) {
                     $data = array('excludedExtraDirectories' => join(',',$excludedExtraDirectories));
                 } else {
                     $data = array('excludedExtraDirectories' => "0");

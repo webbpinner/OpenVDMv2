@@ -29,12 +29,12 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
 ?>
 <?php
         foreach($data['filenameErrors'] as $row) {
-            if( sizeof($row->errorFiles) > 0) {
+            if(is_array($row->errorFiles) && sizeof($row->errorFiles) > 0) {
 ?>
                     <h5><?php echo $row->collectionSystemName; ?></h5>
                     <ul>
 <?php
-               if( sizeof($row->errorFiles) < 20) {
+               if( is_array($row->errorFiles) && sizeof($row->errorFiles) < 20) {
                    foreach($row->errorFiles as $file) {
 ?>
                         <li><small><?php echo $file; ?></small></li>
