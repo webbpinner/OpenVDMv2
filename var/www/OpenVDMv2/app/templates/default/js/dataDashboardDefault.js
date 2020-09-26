@@ -6,25 +6,10 @@ $(function () {
     Highcharts.setOptions({
         colors: ['#337ab7', '#5cb85c', '#d9534f', '#f0ad4e', '#606060']
     });
+
+    var greenIcon = null;
+    var redIcon = null;    
     
-    var greenIcon = new L.Icon({
-        iconUrl: '/OpenVDMv2/bower_components/leaflet-color-markers/img/marker-icon-green.png',
-        shadowUrl: '/OpenVDMv2/bower_components/leaflet/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-       shadowSize: [41, 41]
-    });
-
-    var redIcon = new L.Icon({
-        iconUrl: '/OpenVDMv2/bower_components/leaflet-color-markers/img/marker-icon-red.png',
-        shadowUrl: '/OpenVDMv2/bower_components/leaflet/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-       shadowSize: [41, 41]
-    });
-
     var chartHeight = 200;
 
     var mapObjects = [],
@@ -48,6 +33,25 @@ $(function () {
         
         var mapObject = [];
         
+
+        greenIcon = new L.Icon({
+            iconUrl: '/OpenVDMv2/bower_components/leaflet-color-markers/img/marker-icon-green.png',
+            shadowUrl: '/OpenVDMv2/bower_components/leaflet/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        redIcon = new L.Icon({
+            iconUrl: '/OpenVDMv2/bower_components/leaflet-color-markers/img/marker-icon-red.png',
+            shadowUrl: '/OpenVDMv2/bower_components/leaflet/dist/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
         //Build mapObject object
         mapObject['placeholderID'] = placeholderID;
         mapObject['objectListID'] = objectListID;
