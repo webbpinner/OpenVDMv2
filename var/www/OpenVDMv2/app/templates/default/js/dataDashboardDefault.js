@@ -112,6 +112,16 @@ $(function () {
         
         L.control.layers(baseLayers, overlays).addTo(mapObject['map']);
 
+        L.easyPrint({
+            title: 'Export current map view',
+            tileLayer: baseLayers,
+            position: 'topright',
+            hideControlContainer: true,
+            exportOnly: true,
+            filename: 'openvdm_map_export'
+            // sizeModes: ['A4Portrait', 'A4Landscape']
+        }).addTo(mapObject['map']);
+
 	// start of TimeDimension manual instantiation
 	//var timeDimension = new L.TimeDimension({
 	//        period: "PT1M",

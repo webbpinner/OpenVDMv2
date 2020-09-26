@@ -1,9 +1,12 @@
 {
   "name": "openvdm",
-  "version": "2.1.0",
-  "homepage": "http://OceanDataRat.org",
+  "version": "2.3.1",
+  "homepage": "https://github.com/webbpinner/OpenVDMv2",
   "authors": [
-    { "name": "Webb Pinner", "email": "oceandatarat@gmail.com"}
+    {
+      "name": "Webb Pinner",
+      "email": "oceandatarat@gmail.com"
+    }
   ],
   "description": "Web-based components of OpenVDM. Built on NOVAFramework by David Carr and the SB Admin 2 Bootstrap theme by David Miller",
   "keywords": [
@@ -41,6 +44,8 @@
     "js-cookie": "~2.1.0",
     "eonasdan-bootstrap-datetimepicker": "~4.17.37",
     "leaflet-timedimension": "~1.0.6",
-    "moment": "~2.17.1"
+    "moment": "~2.17.1",
+    "leaflet-easyprint": "git://github.com/rowanwins/leaflet-easyPrint.git#gh-pages",
+    "leaflet-color-markers": "^1.0.0"
   }
 }
