@@ -384,11 +384,11 @@ def transfer_smbDestDir(worker, job):
     debugPrint("Mounting SMB Share")
     if worker.cruiseDataTransfer['smbUser'] == 'guest':
 
-        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-N']
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-m', 'SMB2','-g', '-N']
     
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stderr_iterator = iter(proc.stderr.readline, b"")
-        vers = ""
+        vers = "vers=2.1"
         for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
@@ -403,11 +403,11 @@ def transfer_smbDestDir(worker, job):
 
     else:
 
-        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-m', 'SMB2','-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
     
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stderr_iterator = iter(proc.stderr.readline, b"")
-        vers = ""
+        vers = "vers=2.1"
         for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"

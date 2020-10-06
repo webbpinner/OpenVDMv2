@@ -105,9 +105,9 @@ def test_smbSourceDir(worker):
     command = []
     # Verify the server exists
     if worker.collectionSystemTransfer['smbUser'] == 'guest':
-        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-N']
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-m', 'SMB2', '-g', '-N']
     else:
-        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-m', 'SMB2', '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
 
     s = ' '
     debugPrint('Connect Command:', s.join(command))
@@ -116,7 +116,7 @@ def test_smbSourceDir(worker):
     stdout_iterator = iter(proc.stdout.readline, b"")
     stderr_iterator = iter(proc.stderr.readline, b"")
     foundServer = False
-    vers = ""
+    vers = "vers=2.1"
     for line in stdout_iterator:
         # debugPrint('stdout:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):

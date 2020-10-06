@@ -118,9 +118,9 @@ def test_smbDestDir(worker):
     command = []
     # Verify the server exists
     if worker.cruiseDataTransfer['smbUser'] == 'guest':
-        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-N']
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-m', 'SMB2', '-g', '-N']
     else:
-        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
+        command = ['smbclient', '-L', worker.cruiseDataTransfer['smbServer'], '-W', worker.cruiseDataTransfer['smbDomain'], '-m', 'SMB2', '-g', '-U', worker.cruiseDataTransfer['smbUser'] + '%' + worker.cruiseDataTransfer['smbPass']]
 
     s = ' '
     debugPrint('Connect Command:', s.join(command))
@@ -129,7 +129,7 @@ def test_smbDestDir(worker):
     stdout_iterator = iter(proc.stdout.readline, b"")
     stderr_iterator = iter(proc.stderr.readline, b"")
     foundServer = False
-    vers = ""
+    vers = "vers=2.1"
     for line in stdout_iterator:
         #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):

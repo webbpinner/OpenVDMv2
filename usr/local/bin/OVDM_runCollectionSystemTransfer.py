@@ -597,11 +597,11 @@ def transfer_smbSourceDir(worker, job):
     debugPrint("Mounting SMB Share")
     if worker.collectionSystemTransfer['smbUser'] == 'guest':
 
-        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-N']
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-m', 'SMB2', '-g', '-N']
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stderr_iterator = iter(proc.stderr.readline, b"")
-        vers = ""
+        vers = "vers=2.1"
         for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
@@ -615,11 +615,11 @@ def transfer_smbSourceDir(worker, job):
         proc.communicate()
         
     else:
-        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
+        command = ['smbclient', '-L', worker.collectionSystemTransfer['smbServer'], '-W', worker.collectionSystemTransfer['smbDomain'], '-m', 'SMB2', '-g', '-U', worker.collectionSystemTransfer['smbUser'] + '%' + worker.collectionSystemTransfer['smbPass']]
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stderr_iterator = iter(proc.stderr.readline, b"")
-        vers = ""
+        vers = "vers=2.1"
         for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
