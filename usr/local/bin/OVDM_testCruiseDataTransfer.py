@@ -129,7 +129,7 @@ def test_smbDestDir(worker):
     stdout_iterator = iter(proc.stdout.readline, b"")
     stderr_iterator = iter(proc.stderr.readline, b"")
     foundServer = False
-    vers = "vers=2.1"
+    vers = ",vers=2.1"
     for line in stdout_iterator:
         #debugPrint('line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):

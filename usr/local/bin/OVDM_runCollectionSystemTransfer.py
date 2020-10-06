@@ -601,7 +601,7 @@ def transfer_smbSourceDir(worker, job):
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stderr_iterator = iter(proc.stderr.readline, b"")
-        vers = "vers=2.1"
+        vers = ",vers=2.1"
         for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
@@ -619,7 +619,7 @@ def transfer_smbSourceDir(worker, job):
 
         proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         stderr_iterator = iter(proc.stderr.readline, b"")
-        vers = "vers=2.1"
+        vers = ",vers=2.1"
         for line in stderr_iterator:
             if line.startswith('OS=[Windows 5.1]'):
                 vers=",vers=1.0"
