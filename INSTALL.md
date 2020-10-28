@@ -4,16 +4,16 @@
 # Open Vessel Data Management v2.3
 
 ##Installation Guide
-At the time of this writing OpenVDMv2 was built and tested against the Xubuntu 16.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Xubuntu 16.04 LTS is used.
+At the time of this writing OpenVDMv2 was built and tested against the Ubuntu 18.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Ubuntu 18.04 LTS is used.
 
 ### Operating System
-Goto <http://xubuntu.org/getxubuntu/>
+Goto <http://ubuntu.org/getubuntu/>
 
-Download Xubuntu for your hardware.  At the time of this writing we are using 16.04.1 (64-bit)
+Download Ubuntu for your hardware.  At the time of this writing we are using 18.04 LTS (64-bit)
 
-Perform the default Xubuntu install.  For these instructions the default account that is created is "Survey" and the computer name is "Warehouse".
+Perform the default Ubuntu install.  For these instructions the default account that is created is "Survey" and the computer name is "Warehouse".
 
-A few minutes after the install completes and the computer restarts, Xubuntu will ask to install any updates that have arrived since the install image was created.  Perform these now and do not continue with these instructions until the update has completed.
+A few minutes after the install completes and the computer restarts, Ubuntu will ask to install any updates that have arrived since the install image was created.  Perform these now and do not continue with these instructions until the update has completed.
 
 Before OpenVDMv2 can be installed serveral other services and software packaged must be installed and configured.
 
@@ -104,7 +104,8 @@ Making sure the right type and number of worker processes are available to Gearm
 #### Installing Gearman
 To install Gearman open and terminal window and type the following commands:
 ```
-sudo apt-get install gearman-job-server libgearman-dev python-gearman
+sudo apt-get install gearman-job-server libgearman-dev python-pip
+sudo pip install gearman
 ```
 
 Restart the Gearman Job Broker
@@ -127,58 +128,9 @@ sudo mv composer.phar /usr/local/bin/composer
 
 #### Install bower
 ```
-sudo apt-get install npm nodejs-legacy
+sudo apt-get install npm nodejs
 sudo npm install -g bower
 ```
-
-#### Install Gearman-UI
-Download the code from GitHub
-```
-cd ~
-sudo apt-get install git
-git clone git://github.com/gaspaio/gearmanui.git ~/gearman-ui
-```
-
-Configure the site using the default configuration file
-```
-cd ~/gearman-ui
-composer install --no-dev
-bower install
-cp config.yml.dist config.yml
-```
-
-Move the site to where Apache2 can access it.
-```
-cd ~
-sudo mv gearman-ui /var/www/
-sudo chown -R root:root /var/www/gearman-ui
-```
-
-Edit the default Apache2 VHost file.
-```
-sudo nano /etc/apache2/sites-available/000-default.conf
-```
-
-Copy text below into the Apache2 configuration file just above `</VirtualHost>`.
-```
-Alias /gearman-ui /var/www/gearman-ui/web
-<Directory "/var/www/gearman-ui/web">
-  <IfModule mod_rewrite.c>
-    Options -MultiViews
-    RewriteEngine On
-    RewriteBase /gearman-ui/
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^ index.php [QSA,L]
-  </IfModule>
-</Directory>
-```
-
-Reload Apache2
-```
-sudo service apache2 reload
-```
-
-Verify the installation was successful by going to: <http://127.0.0.1/gearman-ui>
 
 #### Installing Supervisor
 To install Supervisor open and terminal window and type the following command:
@@ -215,7 +167,7 @@ In order to add GIS capability to OpenVDMv2 without eccessive requests to the in
 
 Install the dependencies
 ```
-sudo apt-get install python-pip python-imaging python-yaml libgeos-dev python-lxml libgdal-dev python-shapely
+sudo apt-get install python-pip python-pil python-yaml libgeos-dev python-lxml libgdal-dev python-shapely
 ```
 
 Install MapProxy
@@ -262,10 +214,6 @@ layers:
     title: ESRI World Ocean Reference
     sources: [esri_worldOceanReference_cache]
 
-  - name: GMRTBase
-    title: GMRT Basemap
-    sources: [gmrt_wms_cache]
-
 caches:
   esri_worldOceanBase_cache:
     grids: [esri_online]
@@ -274,10 +222,6 @@ caches:
   esri_worldOceanReference_cache:
     grids: [esri_online]
     sources: [esri_worldOceanReference]
-
-  gmrt_wms_cache:
-    grids: [gmrt]
-    sources: [gmrt_wms]
 
 sources:
   esri_worldOceanBase:
@@ -291,17 +235,6 @@ sources:
     url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/%(z)s/%(y)s/%(x)s.png
     grid: esri_online
 
-  gmrt_wms:
-    type: wms
-    grid: gmrt
-    supported_srs: ['EPSG:4326', 'EPSG:3395', 'EPSG:3031', 'EPSG:3857','EPSG:900913']
-    wms_opts:
-      version: 1.0.0
-    req:
-      url: http://gmrt.marine-geo.org/cgi-bin/mapserv?map=/public/mgg/web/gmrt.marine-geo.org/htdocs/services/map/wms_merc.map&
-      layers: topo
-      transparent: false
-
 grids:
   webmercator:
     base: GLOBAL_WEBMERCATOR
@@ -311,11 +244,6 @@ grids:
      srs: EPSG:900913
      origin: 'nw'
      num_levels: 11
-
-  gmrt:
-    tile_size: [256,256]
-    srs: EPSG:900913
-    origin: 'nw'
 
 globals:
 ```
@@ -405,7 +333,7 @@ git clone git://github.com/webbpinner/OpenVDMv2.git ~/OpenVDMv2
 #### Create OpenVDMv2 Database
 To create a new database first connect to MySQL by typing:
 ```
-mysql -h localhost -u root -p
+sudo mysql -h localhost -u root
 ```
 
 Once connected to MySQL, create the database by typing:
