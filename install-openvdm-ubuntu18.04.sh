@@ -91,7 +91,7 @@ function install_packages {
     apt-get update
 
     apt install -y ssh sshpass rsync samba smbclient gearman-job-server \
-        libgearman-dev python-pip curl npm nodejs supervisor mysql-server \
+        libgearman-dev python-pip curl nodejs node-gyp npm supervisor mysql-server \
         cifs-utils apache2 libapache2-mod-wsgi libapache2-mod-php7.3 php7.3 \
         php7.3-cli php7.3-mysql php7.3-dev php7.3-zip php7.3-curl php-yaml \
         python-pip python-pil python-yaml libgeos-dev python-lxml libgdal-dev \
@@ -107,7 +107,7 @@ function install_packages {
 
     cd ${startingDir}
 
-    sudo npm install -g bower
+    npm install -g bower
 }
 
 
@@ -226,8 +226,8 @@ function configure_apache {
       RewriteRule ^/$ /OpenVDMv2/ [R]
     </IfModule>
 
-    Alias /CruiseData/ ${DATA_ROOT}/FTPRoot/CruiseData/
-    <Directory "${DATA_ROOT}/FTPRoot/CruiseData">
+    Alias /CruiseData/ $DATA_ROOT/FTPRoot/CruiseData/
+    <Directory "$DATA_ROOT/FTPRoot/CruiseData">
       AllowOverride None
       Options +Indexes -FollowSymLinks +MultiViews
       Order allow,deny
@@ -235,8 +235,8 @@ function configure_apache {
       Require all granted
     </Directory>
   
-    Alias /PublicData/ ${DATA_ROOT}/FTPRoot/PublicData/
-    <Directory "${DATA_ROOT}/FTPRoot/PublicData">
+    Alias /PublicData/ $DATA_ROOT/FTPRoot/PublicData/
+    <Directory "$DATA_ROOT/FTPRoot/PublicData">
       AllowOverride None
       Options +Indexes -FollowSymLinks +MultiViews
       Order allow,deny
@@ -244,8 +244,8 @@ function configure_apache {
       Require all granted
     </Directory>
 
-    Alias /VisitorInformation/ ${DATA_ROOT}/FTPRoot/VisitorInformation/
-    <Directory "${DATA_ROOT}/FTPRoot/VisitorInformation">
+    Alias /VisitorInformation/ $DATA_ROOT/FTPRoot/VisitorInformation/
+    <Directory "$DATA_ROOT/FTPRoot/VisitorInformation">
       AllowOverride None
       Options +Indexes -FollowSymLinks +MultiViews
       Order allow,deny
@@ -437,7 +437,7 @@ EOF
 
 function configure_directories {
 
-    if [ ! -d $DATA_ROOT ]; then
+    if [ ! -d $DATA_ROOT/FTPROOT ]; then
       echo Making data directories starting at: "$DATA_ROOT"
       sudo mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData
 
@@ -448,8 +448,10 @@ function configure_directories {
 
       sudo chown -R ${OPENVDM_USER}:${OPENVDM_USER} $DATA_ROOT/FTPRoot/*
 
-      sudo mkdir /var/log/OpenVDM
+    fi
 
+    if [ ! -d  /var/log/OpenVDM ]; then
+      sudo mkdir /var/log/OpenVDM
     fi
 
 }
