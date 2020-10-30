@@ -211,7 +211,7 @@ function install_openvdm {
 
     if [ ! -e OpenVDMv2 ]; then
       echo Downloading OpenVDMv2 repository.
-      git clone -b $OPENRVDAS_BRANCH $OPENRVDAS_REPO
+      git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
       sudo chown ${OPENVDM_USER}:${OPENVDM_USER} OpenVDMv2
 
     else
@@ -220,13 +220,13 @@ function install_openvdm {
       if [ -e .git ] ; then   # If we've already got an installation
         echo Updating existing OpenVDMv2 repository.
         git pull
-        git checkout $OPENRVDAS_BRANCH
+        git checkout $OPENVDM_BRANCH
         git pull
 
       else
         cd ..                              # If we don't already have an installation
         sudo rm -rf OpenVDMv2           # in case there's a non-git dir there
-        git clone -b $OPENRVDAS_BRANCH $OPENRVDAS_REPO
+        git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
       fi
     fi
 
