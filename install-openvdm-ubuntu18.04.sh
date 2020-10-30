@@ -99,11 +99,12 @@ function install_packages {
 
     pip install gearman MapProxy
 
-    startingDir = $PWD
+    startingDir=${PWD}
 
     cd ~
     curl -sS https://getcomposer.org/installer | php
     sudo mv composer.phar /usr/local/bin/composer
+
     cd ${startingDir}
 
     sudo npm install -g bower
@@ -269,7 +270,7 @@ EOF
 # Install and configure database
 function configure_mapproxy {
 
-    startingDir = $PWD
+    startingDir=${PWD}
 
     cd ~
     mapproxy-util create -t base-config mapproxy
@@ -346,7 +347,7 @@ EOF
     sudo chown -R root:root /var/www/mapproxy
 
     cd /var/www/mapproxy
-    sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml config.py
+    sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml --force config.py
 
     cd ${startingDir}
 
@@ -464,7 +465,7 @@ function install_openvdm {
     # OPENVDM_REPO - path to OpenVDM repo
     # OPENVDM_BRANCH - branch of rep to install
 
-    startingDir = $PWD
+    startingDir=${PWD}
     cd /home/${OPENVDM_USER}
 
     if [ ! -e OpenVDMv2 ]; then
@@ -586,6 +587,9 @@ echo Current database password for root \(hit return if this is the
 read -p "initial installation)? " CURRENT_ROOT_DATABASE_PASSWORD
 read -p "New database password for root? ($CURRENT_ROOT_DATABASE_PASSWORD) " NEW_ROOT_DATABASE_PASSWORD
 NEW_ROOT_DATABASE_PASSWORD=${NEW_ROOT_DATABASE_PASSWORD:-$CURRENT_ROOT_DATABASE_PASSWORD}
+
+read -p "Root data directory for OpenVDM? ($DEFAULT_DATA_ROOT) " DATA_ROOT
+
 
 #########################################################################
 #########################################################################
