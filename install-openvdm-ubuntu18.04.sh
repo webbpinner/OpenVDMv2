@@ -206,8 +206,9 @@ function install_openvdm {
       sudo chown -R ${OPENVDM_USER}:${OPENVDM_USER} $DATA_ROOT/FTPRoot/*
     fi
 
-    pwd = $PWD
+    startingDir = $PWD
     cd /home/${OPENVDM_USER}
+    echo "BRANCH:" ${OPENVDM_BRANCH}
 
     if [ ! -e OpenVDMv2 ]; then
       echo Downloading OpenVDMv2 repository.
@@ -229,6 +230,8 @@ function install_openvdm {
         git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
       fi
     fi
+
+    cd ${startingDir}
 
     # # Copy widget settings into place and customize for this machine
     # cp display/js/widgets/settings.js.dist \
