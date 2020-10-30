@@ -91,11 +91,11 @@ function install_packages {
     apt-get update
 
     apt install -y ssh sshpass rsync samba smbclient gearman-job-server \
-        libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm supervisor mysql-server \
-        cifs-utils apache2 libapache2-mod-wsgi libapache2-mod-php7.3 php7.3 \
-        php7.3-cli php7.3-mysql php7.3-dev php7.3-zip php7.3-curl php-yaml \
-        python-pip python-pil python-yaml libgeos-dev python-lxml libgdal-dev \
-        python-shapely python-requests python-yaml mysql-server
+        libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm supervisor \
+        mysql-server mysql-client cifs-utils apache2 libapache2-mod-wsgi \
+        libapache2-mod-php7.3 php7.3 php7.3-cli php7.3-mysql php7.3-zip \
+        php7.3-curl php-yaml python-pip python-pil python-yaml libgeos-dev \
+        python-lxml python-shapely python-requests
 
     pip install gearman MapProxy
 
