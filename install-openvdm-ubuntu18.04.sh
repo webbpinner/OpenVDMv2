@@ -199,8 +199,8 @@ function configure_apache {
     # modules, e.g.
     #LogLevel info ssl:warn
 
-    ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
+    ErrorLog \${APACHE_LOG_DIR}/error.log
+    CustomLog \${APACHE_LOG_DIR}/access.log combined
 
     # For most configuration files from conf-available/, which are
     # enabled or disabled at a global level, it is possible to
@@ -273,7 +273,7 @@ function configure_mapproxy {
     startingDir=${PWD}
 
     cd ~
-    mapproxy-util create -t base-config mapproxy
+    mapproxy-util create -t base-config --force mapproxy
 
     cat > ~/mapproxy/mapproxy.yaml <<EOF
 # -------------------------------
@@ -342,7 +342,7 @@ globals:
 EOF
 
     sudo cp -r ~/mapproxy /var/www/
-    sudo mkdir /var/www/mapproxy/cache_data
+    sudo mkdir -p /var/www/mapproxy/cache_data
     sudo chmod 777 /var/www/mapproxy/cache_data
     sudo chown -R root:root /var/www/mapproxy
 
