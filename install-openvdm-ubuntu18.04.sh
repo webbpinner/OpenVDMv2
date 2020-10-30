@@ -7,7 +7,7 @@ function set_default_variables {
     # Defaults that will be overwritten by the preferences file, if it
     # exists.
     DEFAULT_HOSTNAME=$HOSTNAME
-    # DEFAULT_INSTALL_ROOT=/opt
+    DEFAULT_DATA_ROOT=/mnt/vault
 
     DEFAULT_HTTP_PROXY=$http_proxy
 
@@ -33,7 +33,7 @@ function save_default_variables {
 # Defaults written by/to be read by install_openvdm_ubuntu18.04.sh
 
 DEFAULT_HOSTNAME=$HOSTNAME
-# DEFAULT_INSTALL_ROOT=$INSTALL_ROOT
+DEFAULT_DATA_ROOT=$DATA_ROOT
 
 DEFAULT_HTTP_PROXY=$HTTP_PROXY
 
@@ -84,9 +84,9 @@ function create_user {
 function install_packages {
     apt-get update
 
-    sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
-    sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/apache2
-    sudo LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/pkg-gearman
+    sudo LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+    sudo LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2
+    sudo LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/pkg-gearman
 
     apt-get update
 
@@ -162,8 +162,6 @@ EOF
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 drop user if exists '$OPENVDM_USER'@'localhost';
 create user '$OPENVDM_USER'@'localhost' identified by '$OPENVDM_DATABASE_PASSWORD';
-create database if not exists data character set utf8;
-GRANT ALL PRIVILEGES ON data.* TO '$OPENVDM_USER'@'localhost';
 create database if not exists OpenVDMv2 character set utf8;
 GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
 flush privileges;
@@ -185,6 +183,64 @@ EOF
     echo Done setting up MySQL
 }
 
+
+###########################################################################
+###########################################################################
+# Install OpenRVDAS
+function install_openvdm {
+    # Expect the following shell variables to be appropriately set:
+    # DATA_ROOT - path where data will be stored is
+    # OPENVDM_USER - valid userid
+    # OPENVDM_REPO - path to OpenVDM repo
+    # OPENVDM_BRANCH - branch of rep to install
+
+    if [ ! -d $DATA_ROOT ]; then
+      echo Making data directories starting at: "$DATA_ROOT"
+      sudo mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData
+
+      sudo mkdir -p ${DATA_ROOT}/FTPRoot/PublicData
+      sudo chmod -R 777 ${DATA_ROOT}/FTPRoot/PublicData
+
+      sudo mkdir -p ${DATA_ROOT}/FTPRoot/VisitorInformation
+
+      sudo chown -R ${OPENVDM_USER}:${OPENVDM_USER} $DATA_ROOT/FTPRoot/*
+    fi
+
+    pwd = $PWD
+    cd /home/${OPENVDM_USER}
+
+    if [ ! -e OpenVDMv2 ]; then
+      echo Downloading OpenVDMv2 repository.
+      git clone -b $OPENRVDAS_BRANCH $OPENRVDAS_REPO
+      sudo chown ${OPENVDM_USER}:${OPENVDM_USER} OpenVDMv2
+
+    else
+      cd OpenVDMv2
+
+      if [ -e .git ] ; then   # If we've already got an installation
+        echo Updating existing OpenVDMv2 repository.
+        git pull
+        git checkout $OPENRVDAS_BRANCH
+        git pull
+
+      else
+        cd ..                              # If we don't already have an installation
+        sudo rm -rf OpenVDMv2           # in case there's a non-git dir there
+        git clone -b $OPENRVDAS_BRANCH $OPENRVDAS_REPO
+      fi
+    fi
+
+    # # Copy widget settings into place and customize for this machine
+    # cp display/js/widgets/settings.js.dist \
+    #    display/js/widgets/settings.js
+    # sed -i -e "s/localhost/${HOSTNAME}/g" display/js/widgets/settings.js
+
+    # # Copy the database settings.py.dist into place so that other
+    # # routines can make the modifications they need to it.
+    # cp database/settings.py.dist database/settings.py
+    # sed -i -e "s/DEFAULT_DATABASE_USER = 'rvdas'/DEFAULT_DATABASE_USER = '${RVDAS_USER}'/g" database/settings.py
+    # sed -i -e "s/DEFAULT_DATABASE_PASSWORD = 'rvdas'/DEFAULT_DATABASE_PASSWORD = '${RVDAS_DATABASE_PASSWORD}'/g" database/settings.py
+}
 
 
 ###########################################################################
@@ -243,7 +299,7 @@ OPENVDM_USER=${OPENVDM_USER:-$DEFAULT_OPENVDM_USER}
 create_user $OPENVDM_USER
 
 echo
-read -p "Django/database password to use for user $OPENVDM_USER? ($OPENVDM_USER) " OPENVDM_DATABASE_PASSWORD
+read -p "Database password to use for user $OPENVDM_USER? ($OPENVDM_USER) " OPENVDM_DATABASE_PASSWORD
 OPENVDM_DATABASE_PASSWORD=${OPENVDM_DATABASE_PASSWORD:-$OPENVDM_USER}
 
 echo Will install/configure MySQL
@@ -279,3 +335,14 @@ echo Installing/configuring database
 # CURRENT_ROOT_DATABASE_PASSWORD - current root password for MySQL
 
 install_mysql
+
+#########################################################################
+#########################################################################
+# Set up OpenVDM
+echo "#####################################################################"
+echo Fetching and setting up OpenVDM code...
+# Expect the following shell variables to be appropriately set:
+# OPENVDM_USER - valid userid
+# OPENVDM_REPO - path to OpenVDM repo
+# OPENVDM_BRANCH - branch of rep to install
+install_openvdm
