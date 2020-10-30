@@ -99,12 +99,264 @@ function install_packages {
 
     pip install gearman MapProxy
 
+    startingDir = $PWD
+
+    cd ~
+    curl -sS https://getcomposer.org/installer | php
+    sudo mv composer.phar /usr/local/bin/composer
+    cd ${startingDir}
+
+    sudo npm install -g bower
 }
+
 
 ###########################################################################
 ###########################################################################
 # Install and configure database
-function install_mysql {
+function configure_supervisor {
+    cat >> /etc/supervisor/supervisor.conf <<EOF
+
+[inet_http_server]
+port = 9001
+EOF
+    systemctl restart supervisor
+
+}
+
+
+
+###########################################################################
+###########################################################################
+# Install and configure database
+function configure_samba {
+
+    sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
+
+    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig > ~/smb.conf
+    cat >> ~/smb.conf <<EOF
+
+[CruiseData]
+  comment=Cruise Data, read-only access to guest
+  path=${DATA_ROOT}/FTPRoot/CruiseData
+  browsable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  write list = ${OPENVDM_USER}
+  create mask = 0644
+  directory mask = 0755
+  veto files = /._*/.DS_Store/.Trashes*/
+  delete veto files = yes
+
+[VisitorInformation]
+  comment=Visitor Information, read-only access to guest
+  path=${DATA_ROOT}/FTPRoot/VisitorInformation
+  browsable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  write list = ${OPENVDM_USER}
+  create mask = 0644
+  directory mask = 0755
+  veto files = /._*/.DS_Store/.Trashes*/
+  delete veto files = yes
+
+[PublicData]
+  comment=Public Data, read/write access to all
+  path=${DATA_ROOT}/FTPRoot/PublicData
+  browseable = yes
+  public = yes
+  guest ok = yes
+  writable = yes
+  create mask = 0000
+  directory mask = 0000
+  veto files = /._*/.DS_Store/.Trashes*/
+  delete veto files = yes
+  force create mode = 666
+  force directory mode = 777
+EOF
+
+    sudo mv ~/smb.conf /etc/samba/
+
+    systemctl restart smbd
+
+}
+
+
+function configure_apache {
+
+    cat >> ~/openvdm.conf <<EOF
+<VirtualHost *:80>
+    ServerName $HOSTNAME
+
+    ServerAdmin webmaster@localhost
+    DocumentRoot /var/www/html
+
+    # Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+    # error, crit, alert, emerg.
+    # It is also possible to configure the loglevel for particular
+    # modules, e.g.
+    #LogLevel info ssl:warn
+
+    ErrorLog ${APACHE_LOG_DIR}/error.log
+    CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+    # For most configuration files from conf-available/, which are
+    # enabled or disabled at a global level, it is possible to
+    # include a line for only one particular virtual host. For example the
+    # following line enables the CGI configuration for this host only
+    # after it has been globally disabled with "a2disconf".
+    #Include conf-available/serve-cgi-bin.conf
+
+    WSGIScriptAlias /mapproxy /var/www/mapproxy/config.py
+
+    <Directory /var/www/mapproxy/>
+      Order deny,allow
+      Allow from all
+    </Directory>
+
+    Alias /OpenVDMv2 /var/www/OpenVDMv2
+    <Directory "/var/www/OpenVDMv2">
+      AllowOverride all
+    </Directory>
+
+    <IfModule mod_rewrite.c>
+      RewriteEngine on
+      RewriteRule ^/$ /OpenVDMv2/ [R]
+    </IfModule>
+
+    Alias /CruiseData/ ${DATA_ROOT}/FTPRoot/CruiseData/
+    <Directory "${DATA_ROOT}/FTPRoot/CruiseData">
+      AllowOverride None
+      Options +Indexes -FollowSymLinks +MultiViews
+      Order allow,deny
+      Allow from all
+      Require all granted
+    </Directory>
+  
+    Alias /PublicData/ ${DATA_ROOT}/FTPRoot/PublicData/
+    <Directory "${DATA_ROOT}/FTPRoot/PublicData">
+      AllowOverride None
+      Options +Indexes -FollowSymLinks +MultiViews
+      Order allow,deny
+      Allow from all
+      Require all granted
+    </Directory>
+
+    Alias /VisitorInformation/ ${DATA_ROOT}/FTPRoot/VisitorInformation/
+    <Directory "${DATA_ROOT}/FTPRoot/VisitorInformation">
+      AllowOverride None
+      Options +Indexes -FollowSymLinks +MultiViews
+      Order allow,deny
+      Allow from all
+      Require all granted
+    </Directory>
+
+</VirtualHost>
+EOF
+
+    sudo mv ~/openvdm.conf /etc/apache2/sites-available/
+    a2dissite 000-default
+    a2ensite openvdm
+
+    sudo systemctl restart apache
+
+}
+
+
+###########################################################################
+###########################################################################
+# Install and configure database
+function configure_mapproxy {
+
+    startingDir = $PWD
+
+    cd ~
+    mapproxy-util create -t base-config mapproxy
+
+    cat > ~/mapproxy/mapproxy.yaml <<EOF
+# -------------------------------
+# MapProxy configuration.
+# -------------------------------
+
+# Start the following services:
+services:
+  demo:
+  tms:
+    use_grid_names: false
+    # origin for /tiles service
+    origin: 'nw'
+  kml:
+    #use_grid_names: true
+  wmts:
+  wms:
+    srs: ['EPSG:900913']
+    image_formats: ['image/png']
+    md:
+      title: MapProxy WMS Proxy
+      abstract: This is a minimal MapProxy installation.
+
+#Make the following layers available
+layers:
+  - name: WorldOceanBase
+    title: ESRI World Ocean Base
+    sources: [esri_worldOceanBase_cache]
+
+  - name: WorldOceanReference
+    title: ESRI World Ocean Reference
+    sources: [esri_worldOceanReference_cache]
+
+caches:
+  esri_worldOceanBase_cache:
+    grids: [esri_online]
+    sources: [esri_worldOceanBase]
+
+  esri_worldOceanReference_cache:
+    grids: [esri_online]
+    sources: [esri_worldOceanReference]
+
+sources:
+  esri_worldOceanBase:
+    type: tile
+    url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Base/MapServer/tile/%(z)s/%(y)s/%(x)s.png
+    grid: esri_online
+
+  esri_worldOceanReference:
+    type: tile
+    transparent: true
+    url: http://server.arcgisonline.com/arcgis/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/%(z)s/%(y)s/%(x)s.png
+    grid: esri_online
+
+grids:
+  webmercator:
+    base: GLOBAL_WEBMERCATOR
+
+  esri_online:
+     tile_size: [256, 256]
+     srs: EPSG:900913
+     origin: 'nw'
+     num_levels: 11
+
+globals:
+EOF
+
+    sudo cp -r ~/mapproxy /var/www/
+    sudo mkdir /var/www/mapproxy/cache_data
+    sudo chmod 777 /var/www/mapproxy/cache_data
+    sudo chown -R root:root /var/www/mapproxy
+
+    cd /var/www/mapproxy
+    sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml config.py
+
+    cd ${startingDir}
+
+}
+
+
+###########################################################################
+###########################################################################
+# Install and configure database
+function configure_mysql {
     # Expect the following shell variables to be appropriately set:
     # RVDAS_USER - valid userid
     # RVDAS_DATABASE_PASSWORD - current rvdas user MySQL database password
@@ -162,8 +414,6 @@ EOF
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 drop user if exists '$OPENVDM_USER'@'localhost';
 create user '$OPENVDM_USER'@'localhost' identified by '$OPENVDM_DATABASE_PASSWORD';
-create database if not exists OpenVDMv2 character set utf8;
-GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
 flush privileges;
 \q
 EOF
@@ -184,15 +434,7 @@ EOF
 }
 
 
-###########################################################################
-###########################################################################
-# Install OpenRVDAS
-function install_openvdm {
-    # Expect the following shell variables to be appropriately set:
-    # DATA_ROOT - path where data will be stored is
-    # OPENVDM_USER - valid userid
-    # OPENVDM_REPO - path to OpenVDM repo
-    # OPENVDM_BRANCH - branch of rep to install
+function configure_directories {
 
     if [ ! -d $DATA_ROOT ]; then
       echo Making data directories starting at: "$DATA_ROOT"
@@ -204,11 +446,26 @@ function install_openvdm {
       sudo mkdir -p ${DATA_ROOT}/FTPRoot/VisitorInformation
 
       sudo chown -R ${OPENVDM_USER}:${OPENVDM_USER} $DATA_ROOT/FTPRoot/*
+
+      sudo mkdir /var/log/OpenVDM
+
     fi
+
+}
+
+
+###########################################################################
+###########################################################################
+# Install OpenRVDAS
+function install_openvdm {
+    # Expect the following shell variables to be appropriately set:
+    # DATA_ROOT - path where data will be stored is
+    # OPENVDM_USER - valid userid
+    # OPENVDM_REPO - path to OpenVDM repo
+    # OPENVDM_BRANCH - branch of rep to install
 
     startingDir = $PWD
     cd /home/${OPENVDM_USER}
-    echo "BRANCH:" ${OPENVDM_BRANCH}
 
     if [ ! -e OpenVDMv2 ]; then
       echo Downloading OpenVDMv2 repository.
@@ -223,6 +480,7 @@ function install_openvdm {
         git pull
         git checkout $OPENVDM_BRANCH
         git pull
+        cd ..
 
       else
         cd ..                              # If we don't already have an installation
@@ -232,6 +490,18 @@ function install_openvdm {
     fi
 
     cd ${startingDir}
+
+    echo Setup OpenVDMv2 database
+    mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
+create database if not exists OpenVDMv2 character set utf8;
+GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
+USE OpenVDMv2;
+source /home/${OPENVDM_USER}OpenVDMv2/OpenVDMv2_db.sql;
+flush privileges;
+\q
+EOF
+
+
 
     # # Copy widget settings into place and customize for this machine
     # cp display/js/widgets/settings.js.dist \
@@ -337,7 +607,30 @@ echo Installing/configuring database
 # NEW_ROOT_DATABASE_PASSWORD - new root password to use for MySQL
 # CURRENT_ROOT_DATABASE_PASSWORD - current root password for MySQL
 
-install_mysql
+
+echo "#####################################################################"
+echo Installing/configuring directories
+configure_directories
+
+echo "#####################################################################"
+echo Installing/configuring MySQL
+configure_mysql
+
+echo "#####################################################################"
+echo Installing/configuring Samba
+configure_samba
+
+echo "#####################################################################"
+echo Installing/configuring MapProxy
+configure_mapproxy
+
+echo "#####################################################################"
+echo Installing/configuring Supervisor
+configure_supervisor
+
+echo "#####################################################################"
+echo Installing/configuring Apache2
+configure_apache
 
 #########################################################################
 #########################################################################
