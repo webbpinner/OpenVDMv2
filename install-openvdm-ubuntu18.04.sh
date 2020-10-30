@@ -12,7 +12,7 @@ function set_default_variables {
     DEFAULT_HTTP_PROXY=$http_proxy
 
     DEFAULT_OPENVDM_REPO=https://github.com/webbpinner/OpenVDMv2
-    DEFAULT_OPENVDM_BRANCH=master
+    DEFAULT_OPENVDM_BRANCH=v2.3
 
     DEFAULT_OPENVDM_USER=survey
 
