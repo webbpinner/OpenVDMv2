@@ -446,6 +446,25 @@ EOF
 
 function configure_directories {
 
+    if [ ! -d $DATA_ROOT ]; then
+      while true; do
+        read -p "Root data directory ${DATA_ROOT} does not exists... create it? (yes) " yn
+        case $yn in
+          [Yy]* )
+            mkdir -p ${DATA_ROOT}
+            break;;
+          "" )
+            OPENRVDAS_AUTOSTART=true
+            echo Will enable openrvdas server run on boot.
+            break;;
+          [Nn]* )
+            echo "Quitting"
+            exit;;
+          * ) echo "Please answer yes or no.";;
+        esac
+      done
+    fi
+
     if [ ! -d $DATA_ROOT/FTPROOT ]; then
       echo Making data directories starting at: "$DATA_ROOT"
       mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData/Test_Cruise
@@ -608,7 +627,7 @@ OPENVDM_USER=${OPENVDM_USER:-$DEFAULT_OPENVDM_USER}
 create_user $OPENVDM_USER
 
 echo
-read -p "Database password to use for user $OPENVDM_USER? ($OPENVDM_USER) " OPENVDM_DATABASE_PASSWORD
+read -p "OpenVDMv2 Database password to use for user $OPENVDM_USER? ($OPENVDM_USER) " OPENVDM_DATABASE_PASSWORD
 OPENVDM_DATABASE_PASSWORD=${OPENVDM_DATABASE_PASSWORD:-$OPENVDM_USER}
 
 echo Will install/configure MySQL
