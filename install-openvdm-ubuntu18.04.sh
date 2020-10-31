@@ -9,8 +9,6 @@ function set_default_variables {
     DEFAULT_HOSTNAME=$HOSTNAME
     DEFAULT_DATA_ROOT=/vault
 
-    DEFAULT_HTTP_PROXY=$http_proxy
-
     DEFAULT_OPENVDM_REPO=https://github.com/webbpinner/OpenVDMv2
     DEFAULT_OPENVDM_BRANCH=v2.3
 
@@ -34,8 +32,6 @@ function save_default_variables {
 
 DEFAULT_HOSTNAME=$HOSTNAME
 DEFAULT_DATA_ROOT=$DATA_ROOT
-
-DEFAULT_HTTP_PROXY=$HTTP_PROXY
 
 DEFAULT_OPENVDM_REPO=$OPENVDM_REPO
 DEFAULT_OPENVDM_BRANCH=$OPENVDM_BRANCH
@@ -635,13 +631,6 @@ OPENVDM_REPO=${OPENVDM_REPO:-$DEFAULT_OPENVDM_REPO}
 
 read -p "Repository branch to install? ($DEFAULT_OPENVDM_BRANCH) " OPENVDM_BRANCH
 OPENVDM_BRANCH=${OPENVDM_BRANCH:-$DEFAULT_OPENVDM_BRANCH}
-
-read -p "HTTP/HTTPS proxy to use ($DEFAULT_HTTP_PROXY)? " HTTP_PROXY
-HTTP_PROXY=${HTTP_PROXY:-$DEFAULT_HTTP_PROXY}
-
-[ -z $HTTP_PROXY ] || echo Setting up proxy $HTTP_PROXY
-[ -z $HTTP_PROXY ] || export http_proxy=$HTTP_PROXY
-[ -z $HTTP_PROXY ] || export https_proxy=$HTTP_PROXY
 
 echo Will install from github.com
 echo "Repository: '$OPENVDM_REPO'"
