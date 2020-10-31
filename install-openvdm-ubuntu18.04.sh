@@ -84,9 +84,9 @@ function create_user {
 function install_packages {
     apt-get update
 
-    sudo LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
-    sudo LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2
-    sudo LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/pkg-gearman
+    LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+    LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2
+    LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/pkg-gearman
 
     apt-get update
 
@@ -103,7 +103,7 @@ function install_packages {
 
     cd ~
     curl -sS https://getcomposer.org/installer | php
-    sudo mv composer.phar /usr/local/bin/composer
+    mv composer.phar /usr/local/bin/composer
 
     cd ${startingDir}
 
@@ -115,12 +115,12 @@ function install_packages {
 ###########################################################################
 # Install and configure database
 function configure_supervisor {
-    cat >> /etc/supervisor/supervisor.conf <<EOF
+    cat >> /etc/supervisor/supervisord.conf <<EOF
 
 [inet_http_server]
 port = 9001
 EOF
-    systemctl restart supervisor
+    systemctl restart supervisor.service 
 
 }
 
@@ -131,7 +131,7 @@ EOF
 # Install and configure database
 function configure_samba {
 
-    sudo mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
+    mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
 
     sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig > ~/smb.conf
     cat >> ~/smb.conf <<EOF
@@ -177,9 +177,9 @@ function configure_samba {
   force directory mode = 777
 EOF
 
-    sudo mv ~/smb.conf /etc/samba/
+    mv ~/smb.conf /etc/samba/
 
-    systemctl restart smbd
+    systemctl restart smbd.service
 
 }
 
@@ -256,11 +256,11 @@ function configure_apache {
 </VirtualHost>
 EOF
 
-    sudo mv ~/openvdm.conf /etc/apache2/sites-available/
+    mv ~/openvdm.conf /etc/apache2/sites-available/
     a2dissite 000-default
     a2ensite openvdm
 
-    sudo systemctl restart apache2
+    systemctl restart apache2.service
 
 }
 
@@ -341,13 +341,13 @@ grids:
 globals:
 EOF
 
-    sudo cp -r ~/mapproxy /var/www/
-    sudo mkdir -p /var/www/mapproxy/cache_data
-    sudo chmod 777 /var/www/mapproxy/cache_data
-    sudo chown -R root:root /var/www/mapproxy
+    cp -r ~/mapproxy /var/www/
+    mkdir -p /var/www/mapproxy/cache_data
+    chmod 777 /var/www/mapproxy/cache_data
+    chown -R root:root /var/www/mapproxy
 
     cd /var/www/mapproxy
-    sudo mapproxy-util create -t wsgi-app -f mapproxy.yaml --force config.py
+    mapproxy-util create -t wsgi-app -f mapproxy.yaml --force config.py
 
     cd ${startingDir}
 
@@ -439,19 +439,19 @@ function configure_directories {
 
     if [ ! -d $DATA_ROOT/FTPROOT ]; then
       echo Making data directories starting at: "$DATA_ROOT"
-      sudo mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData
+      mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData/Test_Cruise
 
-      sudo mkdir -p ${DATA_ROOT}/FTPRoot/PublicData
-      sudo chmod -R 777 ${DATA_ROOT}/FTPRoot/PublicData
+      mkdir -p ${DATA_ROOT}/FTPRoot/PublicData
+      chmod -R 777 ${DATA_ROOT}/FTPRoot/PublicData
 
-      sudo mkdir -p ${DATA_ROOT}/FTPRoot/VisitorInformation
+      mkdir -p ${DATA_ROOT}/FTPRoot/VisitorInformation
 
-      sudo chown -R ${OPENVDM_USER}:${OPENVDM_USER} $DATA_ROOT/FTPRoot/*
+      chown -R ${OPENVDM_USER}:${OPENVDM_USER} $DATA_ROOT/FTPRoot/*
 
     fi
 
     if [ ! -d  /var/log/OpenVDM ]; then
-      sudo mkdir /var/log/OpenVDM
+      mkdir /var/log/OpenVDM
     fi
 
 }
@@ -473,7 +473,7 @@ function install_openvdm {
     if [ ! -e OpenVDMv2 ]; then
       echo Downloading OpenVDMv2 repository.
       git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
-      sudo chown ${OPENVDM_USER}:${OPENVDM_USER} OpenVDMv2
+      chown ${OPENVDM_USER}:${OPENVDM_USER} OpenVDMv2
 
     else
       cd OpenVDMv2
@@ -487,27 +487,27 @@ function install_openvdm {
 
       else
         cd ..                              # If we don't already have an installation
-        sudo rm -rf OpenVDMv2           # in case there's a non-git dir there
+        rm -rf OpenVDMv2           # in case there's a non-git dir there
         git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
       fi
     fi
 
-    cd ${startingDir}
-
     echo Setup OpenVDMv2 database
 
-    sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" OpenVDMv2_db.sql | sed -e "s/survey/${OPENVDM_USER}/" > ./ OpenVDMv2_db_custom.sql
+    cd ~/OpenVDMv2
+
+    sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | sed -e "s/survey/${OPENVDM_USER}/" > ./OpenVDMv2_db_custom.sql
 
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 create database if not exists OpenVDMv2 character set utf8;
 GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
 USE OpenVDMv2;
-source /home/${OPENVDM_USER}/OpenVDMv2/OpenVDMv2_db_custom.sql;
+source ./OpenVDMv2_db_custom.sql;
 flush privileges;
 \q
 EOF
 
-    rsync -avi ../var/www/OpenVDMv2 /var/www/
+    rsync -avi ./var/www/OpenVDMv2 /var/www/
     cp /var/www/OpenVDMv2/.htaccess.dist /var/www/OpenVDMv2/.htaccess
     
     sed -s "s/define('DB_USER', 'openvdmDBUser');/define('DB_USER', ${OPENVDM_USER});/" /var/www/OpenVDMv2/app/Core/Config.php.dist | \
@@ -519,13 +519,13 @@ EOF
     chown -R root:root /var/www/OpenVDMv2
 
     mkdir -p /usr/local/etc/openvdm
-    rsync -avi ../usr/local/etc/openvdm/* /usr/local/etc/openvdm/
+    rsync -avi ./usr/local/etc/openvdm/* /usr/local/etc/openvdm/
     cp /usr/local/etc/openvdm/datadashboard.yaml.dist /usr/local/etc/openvdm/datadashboard.yaml
     cp /usr/local/etc/openvdm/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
 
-    rsync -aiv ../usr/local/bin/* /usr/local/bin/
+    rsync -aiv ./usr/local/bin/* /usr/local/bin/
 
-    rsync -aiv ../etc/supervisor/conf.d/* /etc/supervisor/conf.d/
+    rsync -aiv ./etc/supervisor/conf.d/* /etc/supervisor/conf.d/
     mv /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf
     mv /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf
 
@@ -539,6 +539,11 @@ EOF
     # cp database/settings.py.dist database/settings.py
     # sed -i -e "s/DEFAULT_DATABASE_USER = 'rvdas'/DEFAULT_DATABASE_USER = '${RVDAS_USER}'/g" database/settings.py
     # sed -i -e "s/DEFAULT_DATABASE_PASSWORD = 'rvdas'/DEFAULT_DATABASE_PASSWORD = '${RVDAS_DATABASE_PASSWORD}'/g" database/settings.py
+
+    cd ${startingDir}
+
+    systemctl restart supervisor.service
+
 }
 
 
