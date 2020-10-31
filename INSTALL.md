@@ -28,7 +28,8 @@ curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.3/install-openvdm
 
 Run the install script
 ```
->~/install-openvdm-ubuntu18.04.sh
+chmod +x ~/install-openvdm-ubuntu18.04.sh
+~/install-openvdm-ubuntu18.04.sh
 ```
 
 You will need to answer some questions about your configuration.
