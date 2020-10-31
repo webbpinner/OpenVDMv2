@@ -506,7 +506,7 @@ function install_openvdm {
     startingDir=${PWD}
     cd ~/
 
-    if [ ! -e OpenVDMv2 ]; then
+    if [ ! -e OpenVDMv2 ]; then  # New install
       echo Downloading OpenVDMv2 repository.
       git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
       chown ${OPENVDM_USER}:${OPENVDM_USER} OpenVDMv2
@@ -522,22 +522,23 @@ function install_openvdm {
         cd ..
 
       else
-        cd ..                              # If we don't already have an installation
-        rm -rf OpenVDMv2           # in case there's a non-git dir there
+        echo Downloading OpenVDMv2 repository.  # Bad install, re-doing
+        cd ..
+        rm -rf OpenVDMv2
         git clone -b $OPENVDM_BRANCH $OPENVDM_REPO
       fi
     fi
 
-    echo Setup OpenVDMv2 database
-
     cd ~/OpenVDMv2
 
-    sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | \
-    sed -e "s/survey/${OPENVDM_USER}/" | \
-    sed -e "s/127\.0\.0\.1/${HOSTNAME}/" \
-    > ./OpenVDMv2_db_custom.sql
+    if [ ! -e ./OpenVDMv2_db_custom.sql ]; then
+      echo Setup OpenVDMv2 database
+      sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | \
+      sed -e "s/survey/${OPENVDM_USER}/" | \
+      sed -e "s/127\.0\.0\.1/${HOSTNAME}/" \
+      > ./OpenVDMv2_db_custom.sql
 
-    mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
+      mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 create database if not exists OpenVDMv2 character set utf8;
 GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
 USE OpenVDMv2;
@@ -545,12 +546,17 @@ source ./OpenVDMv2_db_custom.sql;
 flush privileges;
 \q
 EOF
+    else
+      echo OpenVDMv2 database found, skipping database setup
+    fi
 
+    echo Building web-app
     cd ./var/www/OpenVDMv2
     composer -q install
     cd ../../../
 
-    rsync -avi ./var/www/OpenVDMv2 /var/www/
+    echo Installing web-app
+    rsync -a ./var/www/OpenVDMv2 /var/www/
     cp /var/www/OpenVDMv2/.htaccess.dist /var/www/OpenVDMv2/.htaccess
     
     sed -s "s/define('DB_USER', 'openvdmDBUser');/define('DB_USER', ${OPENVDM_USER});/" /var/www/OpenVDMv2/app/Core/Config.php.dist | \
@@ -561,19 +567,23 @@ EOF
     chmod 777 /var/www/OpenVDMv2/errorlog.html
     chown -R root:root /var/www/OpenVDMv2
 
+    echo Installing configuration files
     mkdir -p /usr/local/etc/openvdm
-    rsync -avi ./usr/local/etc/openvdm/* /usr/local/etc/openvdm/
+    rsync -a ./usr/local/etc/openvdm/* /usr/local/etc/openvdm/
     cp /usr/local/etc/openvdm/datadashboard.yaml.dist /usr/local/etc/openvdm/datadashboard.yaml
     cp /usr/local/etc/openvdm/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
 
-    rsync -aiv ./usr/local/bin/* /usr/local/bin/
+    echo Installing executables
+    rsync -a ./usr/local/bin/* /usr/local/bin/
 
-    rsync -aiv ./etc/supervisor/conf.d/* /etc/supervisor/conf.d/
+    echo Configuring Supervisor processes
+    rsync -a ./etc/supervisor/conf.d/* /etc/supervisor/conf.d/
     mv /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf
     mv /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf
 
     cd ${startingDir}
 
+    echo Restarting Supervisor
     systemctl restart supervisor.service
 
 }
@@ -662,53 +672,40 @@ save_default_variables
 #########################################################################
 # Install packages
 echo "#####################################################################"
-echo Installing required packages from repository...
+echo Installing required software packages and libraries
 install_packages
 
 echo "#####################################################################"
-echo Installing/configuring database
-# Expect the following shell variables to be appropriately set:
-# OPENVDM_USER - valid userid
-# OPENVDM_DATABASE_PASSWORD - current OPENVDM user MySQL database password
-# NEW_ROOT_DATABASE_PASSWORD - new root password to use for MySQL
-# CURRENT_ROOT_DATABASE_PASSWORD - current root password for MySQL
-
-
-echo "#####################################################################"
-echo Installing/configuring directories
+echo Creating required directories
 configure_directories
 
 echo "#####################################################################"
-echo Installing/configuring gearman-job-server
+echo Configuring gearman-job-server
 configure_gearman
 
 echo "#####################################################################"
-echo Installing/configuring MySQL
+echo Configuring MySQL
 configure_mysql
 
 echo "#####################################################################"
-echo Installing/configuring Samba
+echo Installing/Configuring OpenVDM
+install_openvdm
+
+echo "#####################################################################"
+echo Configuring Samba
 configure_samba
 
 echo "#####################################################################"
-echo Installing/configuring MapProxy
-configure_mapproxy
-
-echo "#####################################################################"
-echo Installing/configuring Supervisor
+echo Configuring Supervisor
 configure_supervisor
 
 echo "#####################################################################"
-echo Installing/configuring Apache2
+echo Installing/Configuring MapProxy
+configure_mapproxy
+
+echo "#####################################################################"
+echo Configuring Apache2
 configure_apache
 
 #########################################################################
 #########################################################################
-# Set up OpenVDM
-echo "#####################################################################"
-echo Fetching and setting up OpenVDM code...
-# Expect the following shell variables to be appropriately set:
-# OPENVDM_USER - valid userid
-# OPENVDM_REPO - path to OpenVDM repo
-# OPENVDM_BRANCH - branch of rep to install
-install_openvdm
