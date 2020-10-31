@@ -258,7 +258,11 @@ def build_sshFilelist(worker, sourceDir):
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
 
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60
-    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
+    debugPrint("Staleness:", staleness)
+
+    threshold_time = time.time() - staleness
+    debugPrint("Threshold:", threshold_time)
+
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
     cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
@@ -283,7 +287,7 @@ def build_sshFilelist(worker, sourceDir):
     out, err = proc.communicate()
     rsyncFileList = out
         
-    #debugPrint("rsyncFileListOut:", + rsyncFileList)
+    # debugPrint("rsyncFileListOut:", rsyncFileList)
         
     for line in rsyncFileList.splitlines():
         #debugPrint("line:", line)
@@ -305,7 +309,7 @@ def build_sshFilelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
-                                #print "exclude"
+                                print "exclude"
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
@@ -314,15 +318,15 @@ def build_sshFilelist(worker, sourceDir):
                             file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
                             #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
                             if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
-                                #debugPrint("include")
+                                debugPrint("include")
                                 returnFiles['include'].append(filename)
-                            #else:
-                                #debugPrint(filename, "skipped for time reasons")
+                            else:
+                                debugPrint(filename, "skipped for time reasons")
 
                             include = True
 
                 if not include:
-                    #debugPrint("exclude")
+                    debugPrint("exclude")
                     returnFiles['exclude'].append(filename)        
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
@@ -776,7 +780,7 @@ def transfer_rsyncSourceDir(worker, job):
         bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
 
     
-    command = ['rsync', '-ti', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
+    command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -863,7 +867,7 @@ def transfer_sshSourceDir(worker, job):
     command = ''
     
     if worker.collectionSystemTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+        command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
     else:
         command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
