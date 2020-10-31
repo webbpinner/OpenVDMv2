@@ -7,7 +7,7 @@ function set_default_variables {
     # Defaults that will be overwritten by the preferences file, if it
     # exists.
     DEFAULT_HOSTNAME=$HOSTNAME
-    DEFAULT_DATA_ROOT=/mnt/vault
+    DEFAULT_DATA_ROOT=/vault
 
     DEFAULT_HTTP_PROXY=$http_proxy
 
@@ -95,7 +95,7 @@ function install_packages {
         mysql-server mysql-client cifs-utils apache2 libapache2-mod-wsgi \
         libapache2-mod-php7.3 php7.3 php7.3-cli php7.3-mysql php7.3-zip \
         php7.3-curl php-yaml python-pip python-pil python-yaml libgeos-dev \
-        python-lxml python-shapely python-requests
+        python-lxml python-shapely python-requests proj-bin
 
     pip install gearman MapProxy
 
@@ -260,7 +260,7 @@ EOF
     a2dissite 000-default
     a2ensite openvdm
 
-    sudo systemctl restart apache
+    sudo systemctl restart apache2
 
 }
 
@@ -468,7 +468,7 @@ function install_openvdm {
     # OPENVDM_BRANCH - branch of rep to install
 
     startingDir=${PWD}
-    cd /home/${OPENVDM_USER}
+    cd ~/
 
     if [ ! -e OpenVDMv2 ]; then
       echo Downloading OpenVDMv2 repository.
@@ -495,16 +495,39 @@ function install_openvdm {
     cd ${startingDir}
 
     echo Setup OpenVDMv2 database
+
+    sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" OpenVDMv2_db.sql | sed -e "s/survey/${OPENVDM_USER}/" > ./ OpenVDMv2_db_custom.sql
+
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 create database if not exists OpenVDMv2 character set utf8;
 GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
 USE OpenVDMv2;
-source /home/${OPENVDM_USER}OpenVDMv2/OpenVDMv2_db.sql;
+source /home/${OPENVDM_USER}/OpenVDMv2/OpenVDMv2_db_custom.sql;
 flush privileges;
 \q
 EOF
 
+    rsync -avi ../var/www/OpenVDMv2 /var/www/
+    cp /var/www/OpenVDMv2/.htaccess.dist /var/www/OpenVDMv2/.htaccess
+    
+    sed -s "s/define('DB_USER', 'openvdmDBUser');/define('DB_USER', ${OPENVDM_USER});/" /var/www/OpenVDMv2/app/Core/Config.php.dist | \
+    sed -e "s/define('DB_PASS', 'oxhzbeY8WzgBL3');/define('DB_PASS', ${OPENVDM_DATABASE_PASSWORD});/" \
+    > /var/www/OpenVDMv2/app/Core/Config.php
+    
+    touch /var/www/OpenVDMv2/errorlog.html
+    chmod 777 /var/www/OpenVDMv2/errorlog.html
+    chown -R root:root /var/www/OpenVDMv2
 
+    mkdir -p /usr/local/etc/openvdm
+    rsync -avi ../usr/local/etc/openvdm/* /usr/local/etc/openvdm/
+    cp /usr/local/etc/openvdm/datadashboard.yaml.dist /usr/local/etc/openvdm/datadashboard.yaml
+    cp /usr/local/etc/openvdm/openvdm.yaml.dist /usr/local/etc/openvdm/openvdm.yaml
+
+    rsync -aiv ../usr/local/bin/* /usr/local/bin/
+
+    rsync -aiv ../etc/supervisor/conf.d/* /etc/supervisor/conf.d/
+    mv /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf
+    mv /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf
 
     # # Copy widget settings into place and customize for this machine
     # cp display/js/widgets/settings.js.dist \
@@ -591,7 +614,7 @@ read -p "New database password for root? ($CURRENT_ROOT_DATABASE_PASSWORD) " NEW
 NEW_ROOT_DATABASE_PASSWORD=${NEW_ROOT_DATABASE_PASSWORD:-$CURRENT_ROOT_DATABASE_PASSWORD}
 
 read -p "Root data directory for OpenVDM? ($DEFAULT_DATA_ROOT) " DATA_ROOT
-
+DATA_ROOT=${DATA_ROOT:-$DEFAULT_DATA_ROOT}
 
 #########################################################################
 #########################################################################
