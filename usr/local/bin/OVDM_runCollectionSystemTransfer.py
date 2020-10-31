@@ -263,13 +263,6 @@ def build_sshFilelist(worker, sourceDir):
     threshold_time = time.time() - staleness
     debugPrint("Threshold:", threshold_time)
 
-    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
-    # cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
-    # cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
-
-    # debugPrint("Start:",cruiseStart_time)
-    # debugPrint("End:",cruiseEnd_time)
-
     dataStart_time = calendar.timegm(time.strptime(worker.dataStartDate, "%Y/%m/%d %H:%M"))
     debugPrint("Start:", dataStart_time)
 
@@ -277,29 +270,30 @@ def build_sshFilelist(worker, sourceDir):
     debugPrint("End:", dataEnd_time)
 
     filters = build_filters(worker)
-    
+
     rsyncFileList = ''
 
     if worker.collectionSystemTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']    
+        command = ['rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     else:
         command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
-    
+
     s = ' '
     debugPrint("Command:",s.join(command))
-        
+
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     rsyncFileList = out
-        
-    # debugPrint("rsyncFileListOut:", rsyncFileList)
-        
+
+    #debugPrint("rsyncFileListOut:", rsyncFileList)
+
+
     for line in rsyncFileList.splitlines():
         #debugPrint("line:", line)
         fileOrDir, size, mdate, mtime, name = line.split(None, 4)
         if fileOrDir.startswith('-'):
             filename = name
-            #debugPrint("name")
+            #debugPrint("file:", filename)
             exclude = False
             ignore = False
             include = False
@@ -310,36 +304,34 @@ def build_sshFilelist(worker, sourceDir):
                     ignore = True
                     break
             if not ignore:
-                for filt in filters['includeFilter'].split(','): 
+                for filt in filters['includeFilter'].split(','):
                     if fnmatch.fnmatch(filename, filt):
-                        for filt in filters['excludeFilter'].split(','): 
+                        for filt in filters['excludeFilter'].split(','):
                             if fnmatch.fnmatch(filename, filt):
                                 debugPrint(filename, "excluded by exclude filter")
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
                         if not exclude:
-                            file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
+                            file_mod_time = (datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S") - datetime.datetime(1970,1,1,0,0,0)).total_seconds()
+                            #debugPrint("file_mod_time:",file_mod_time)
                             try:
                                 filename.decode('ascii')
                             except UnicodeEncodeError:
                                 debugPrint(filename, "is not an ascii-encoded unicode string")
                                 returnFiles['exclude'].append(filename)
                             else:
-                                # file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                                #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
-                                # if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
                                 if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
-                                    debugPrint("include")
+                                    debugPrint(filename, "included")
                                     returnFiles['include'].append(filename)
                                 else:
-                                    debugPrint(filename, "skipped for time reasons")
+                                    debugPrint(filename, "ignored for time reasons")
 
                             include = True
 
                 if not include:
-                    debugPrint("exclude")
-                    returnFiles['exclude'].append(filename)        
+                    debugPrint(filename, "excluded because file does not match any include or ignore filters")
+                    returnFiles['exclude'].append(filename)
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
