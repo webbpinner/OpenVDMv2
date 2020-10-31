@@ -537,9 +537,16 @@ function install_openvdm {
 
     cd ~/OpenVDMv2
 
-
     DB_EXISTS=`mysqlshow --user=root --password=${NEW_ROOT_DATABASE_PASSWORD} OpenVDMv2| grep -v Wildcard`
-    if [ ! DB_EXISTS == 0 ]; then
+    if [ $? == 0 ]; then
+      echo OpenVDMv2 database found, skipping database setup
+      mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
+GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
+flush privileges;
+\q
+EOF
+
+    else
       echo Setup OpenVDMv2 database
       sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | \
       sed -e "s/survey/${OPENVDM_USER}/" | \
@@ -554,8 +561,6 @@ source ./OpenVDMv2_db_custom.sql;
 flush privileges;
 \q
 EOF
-    else
-      echo OpenVDMv2 database found, skipping database setup
     fi
 
     echo Building web-app
