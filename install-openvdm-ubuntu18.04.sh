@@ -135,6 +135,7 @@ EOF
 ###########################################################################
 # Install and configure database
 function configure_gearman {
+    echo Restarting Gearman Job Server
     service gearman-job-server restart
 }
 
@@ -196,6 +197,7 @@ EOF
   force directory mode = 777
 EOF
 
+    echo Restarting SMB Server
     systemctl restart smbd.service
 }
 
@@ -272,12 +274,19 @@ function configure_apache {
 </VirtualHost>
 EOF
 
-    mv ~/openvdm.conf /etc/apache2/sites-available/
-    a2dissite 000-default
-    a2ensite openvdm
-
+    echo Enabling ReWrite Module
     a2enmod rewrite
 
+    echo Disabling default vhost
+    a2dissite 000-default
+
+    echo Building new vhost file
+    mv ~/openvdm.conf /etc/apache2/sites-available/
+
+    echo Enabling new vhost
+    a2ensite openvdm
+
+    echo Restarting Apache Web Server
     systemctl restart apache2.service
 
 }
@@ -382,15 +391,13 @@ function configure_mysql {
     # NEW_ROOT_DATABASE_PASSWORD - new root password to use for MySQL
     # CURRENT_ROOT_DATABASE_PASSWORD - current root password for MySQL
 
-    echo "#####################################################################"
-    echo Enabling MySQL...
+    echo Enabling MySQL Database Server
 
     # apt install -y mysql-server mysql-common mysql-client libmysqlclient-dev
     systemctl restart mysql    # to manually start db server
     systemctl enable mysql     # to make it start on boot
 
-    echo "#####################################################################"
-    echo Setting up database tables and permissions
+    echo Setting up database root user and permissions
     # Verify current root password for mysql
     while true; do
         # Check whether they're right about the current password; need
@@ -428,8 +435,7 @@ EOF
     # Start mysql to start up as a service
     update-rc.d mysql defaults
 
-    echo "#####################################################################"
-    echo Setting up database users
+    echo Setting up OpenVDM database user
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 drop user if exists '$OPENVDM_USER'@'localhost';
 create user '$OPENVDM_USER'@'localhost' identified by '$OPENVDM_DATABASE_PASSWORD';

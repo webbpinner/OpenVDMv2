@@ -233,7 +233,6 @@ LOCK TABLES `OVDM_Links` WRITE;
 INSERT INTO `OVDM_Links` (`linkID`, `name`, `url`, `enable`, `private`)
 VALUES
 	(1,'Supervisord','http://{hostIP}:9001',1,1),
-	(2,'Gearman','http://{hostIP}/gearman-ui/',1,1),
 	(3,'Cruise Data','http://{hostIP}/CruiseData/{cruiseID}/',1,0),
 	(4,'Public Data','http://{hostIP}/PublicData/',1,0),
 	(5,'Visitor Information','http://{hostIP}/VisitorInformation/',1,0),
