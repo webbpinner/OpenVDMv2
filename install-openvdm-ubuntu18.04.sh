@@ -115,11 +115,17 @@ function install_packages {
 ###########################################################################
 # Install and configure database
 function configure_supervisor {
+
+    mv /etc/supervisor/supervisord.conf /etc/supervisor/supervisord.conf.orig
+
+    grep -v "[inet_http_server]" /etc/supervisor/supervisord.conf.orig | grep -v "port = 9001" > /etc/supervisor/supervisord.conf
+
     cat >> /etc/supervisor/supervisord.conf <<EOF
 
 [inet_http_server]
 port = 9001
 EOF
+
     systemctl restart supervisor.service 
 
 }
@@ -140,8 +146,14 @@ function configure_samba {
 
     mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
 
-    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig > ~/smb.conf
-    cat >> ~/smb.conf <<EOF
+    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig | grep -v "include = /etc/smb/includes.conf" > /etc/samba/smb.conf
+    cat >> /etc/samba/smb.conf <<EOF
+
+include = /etc/smb/openvdm.conf
+EOF
+
+    cat >> /etc/samba/openvdm.conf <<EOF
+# SMB Shares for OpenVDM
 
 [CruiseData]
   comment=Cruise Data, read-only access to guest
@@ -184,10 +196,7 @@ function configure_samba {
   force directory mode = 777
 EOF
 
-    mv ~/smb.conf /etc/samba/
-
     systemctl restart smbd.service
-
 }
 
 
@@ -454,8 +463,7 @@ function configure_directories {
             mkdir -p ${DATA_ROOT}
             break;;
           "" )
-            OPENRVDAS_AUTOSTART=true
-            echo Will enable openrvdas server run on boot.
+            mkdir -p ${DATA_ROOT}
             break;;
           [Nn]* )
             echo "Quitting"
