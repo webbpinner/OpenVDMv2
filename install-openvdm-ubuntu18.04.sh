@@ -537,7 +537,9 @@ function install_openvdm {
 
     cd ~/OpenVDMv2
 
-    if [ ! -e ./OpenVDMv2_db_custom.sql ]; then
+
+    DB_EXISTS=`mysqlshow --user=root --password=${NEW_ROOT_DATABASE_PASSWORD} OpenVDMv2| grep -v Wildcard`
+    if [ ! DB_EXISTS == 0 ]; then
       echo Setup OpenVDMv2 database
       sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | \
       sed -e "s/survey/${OPENVDM_USER}/" | \
@@ -619,13 +621,10 @@ echo "#####################################################################"
 read -p "Name to assign to host ($DEFAULT_HOSTNAME)? " HOSTNAME
 HOSTNAME=${HOSTNAME:-$DEFAULT_HOSTNAME}
 echo "Hostname will be '$HOSTNAME'"
+
 # Set hostname
 set_hostname $HOSTNAME
 
-# read -p "Install root? ($DEFAULT_INSTALL_ROOT) " INSTALL_ROOT
-# INSTALL_ROOT=${INSTALL_ROOT:-$DEFAULT_INSTALL_ROOT}
-# echo "Install root will be '$INSTALL_ROOT'"
-# echo
 read -p "Repository to install from? ($DEFAULT_OPENVDM_REPO) " OPENVDM_REPO
 OPENVDM_REPO=${OPENVDM_REPO:-$DEFAULT_OPENVDM_REPO}
 
@@ -694,16 +693,16 @@ echo Configuring MySQL
 configure_mysql
 
 echo "#####################################################################"
+echo Configuring Supervisor
+configure_supervisor
+
+echo "#####################################################################"
 echo Installing/Configuring OpenVDM
 install_openvdm
 
 echo "#####################################################################"
 echo Configuring Samba
 configure_samba
-
-echo "#####################################################################"
-echo Configuring Supervisor
-configure_supervisor
 
 echo "#####################################################################"
 echo Installing/Configuring MapProxy
