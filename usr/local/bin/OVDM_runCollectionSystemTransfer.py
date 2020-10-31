@@ -264,12 +264,17 @@ def build_sshFilelist(worker, sourceDir):
     debugPrint("Threshold:", threshold_time)
 
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
-    cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
-    cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
+    # cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
+    # cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
 
-    debugPrint("Threshold:",threshold_time)
-    debugPrint("Start:",cruiseStart_time)
-    debugPrint("End:",cruiseEnd_time)
+    # debugPrint("Start:",cruiseStart_time)
+    # debugPrint("End:",cruiseEnd_time)
+
+    dataStart_time = calendar.timegm(time.strptime(worker.dataStartDate, "%Y/%m/%d %H:%M"))
+    debugPrint("Start:", dataStart_time)
+
+    dataEnd_time = calendar.timegm(time.strptime(worker.dataEndDate, "%Y/%m/%d %H:%M"))
+    debugPrint("End:", dataEnd_time)
 
     filters = build_filters(worker)
     
@@ -309,19 +314,26 @@ def build_sshFilelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
-                                debugPrint("exclude")
+                                debugPrint(filename, "excluded by exclude filter")
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
                         if not exclude:
                             file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
-                            file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                            #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
-                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
-                                debugPrint("include")
-                                returnFiles['include'].append(filename)
+                            try:
+                                filename.decode('ascii')
+                            except UnicodeEncodeError:
+                                debugPrint(filename, "is not an ascii-encoded unicode string")
+                                returnFiles['exclude'].append(filename)
                             else:
-                                debugPrint(filename, "skipped for time reasons")
+                                # file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
+                                #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
+                                # if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
+                                if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
+                                    debugPrint("include")
+                                    returnFiles['include'].append(filename)
+                                else:
+                                    debugPrint(filename, "skipped for time reasons")
 
                             include = True
 
