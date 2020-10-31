@@ -94,7 +94,7 @@ function install_packages {
         libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm supervisor \
         mysql-server mysql-client cifs-utils apache2 libapache2-mod-wsgi \
         libapache2-mod-php7.3 php7.3 php7.3-cli php7.3-mysql php7.3-zip \
-        php7.3-curl php-yaml python-pip python-pil python-yaml libgeos-dev \
+        php7.3-curl php7.3-gearman php-yaml python-pip python-pil python-yaml libgeos-dev \
         python-lxml python-shapely python-requests proj-bin
 
     pip install gearman MapProxy
@@ -124,6 +124,13 @@ EOF
 
 }
 
+
+###########################################################################
+###########################################################################
+# Install and configure database
+function configure_gearman {
+    service gearman-job-server restart
+}
 
 
 ###########################################################################
@@ -259,6 +266,8 @@ EOF
     mv ~/openvdm.conf /etc/apache2/sites-available/
     a2dissite 000-default
     a2ensite openvdm
+
+    a2enmod rewrite
 
     systemctl restart apache2.service
 
@@ -496,7 +505,10 @@ function install_openvdm {
 
     cd ~/OpenVDMv2
 
-    sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | sed -e "s/survey/${OPENVDM_USER}/" > ./OpenVDMv2_db_custom.sql
+    sed -e "s|/vault/FTPRoot|${DATA_ROOT}/FTPRoot|" ./OpenVDMv2_db.sql | \
+    sed -e "s/survey/${OPENVDM_USER}/" | \
+    sed -e "s/127\.0\.0\.1/${HOSTNAME}/" \
+    > ./OpenVDMv2_db_custom.sql
 
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 create database if not exists OpenVDMv2 character set utf8;
@@ -506,6 +518,10 @@ source ./OpenVDMv2_db_custom.sql;
 flush privileges;
 \q
 EOF
+
+    cd ./var/www/OpenVDMv2
+    composer -q install
+    cd ../../../
 
     rsync -avi ./var/www/OpenVDMv2 /var/www/
     cp /var/www/OpenVDMv2/.htaccess.dist /var/www/OpenVDMv2/.htaccess
@@ -528,17 +544,6 @@ EOF
     rsync -aiv ./etc/supervisor/conf.d/* /etc/supervisor/conf.d/
     mv /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_runCollectionSystemTransfer.conf
     mv /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf.dist /etc/supervisor/conf.d/OVDM_postCollectionSystemTransfer.conf
-
-    # # Copy widget settings into place and customize for this machine
-    # cp display/js/widgets/settings.js.dist \
-    #    display/js/widgets/settings.js
-    # sed -i -e "s/localhost/${HOSTNAME}/g" display/js/widgets/settings.js
-
-    # # Copy the database settings.py.dist into place so that other
-    # # routines can make the modifications they need to it.
-    # cp database/settings.py.dist database/settings.py
-    # sed -i -e "s/DEFAULT_DATABASE_USER = 'rvdas'/DEFAULT_DATABASE_USER = '${RVDAS_USER}'/g" database/settings.py
-    # sed -i -e "s/DEFAULT_DATABASE_PASSWORD = 'rvdas'/DEFAULT_DATABASE_PASSWORD = '${RVDAS_DATABASE_PASSWORD}'/g" database/settings.py
 
     cd ${startingDir}
 
@@ -645,6 +650,10 @@ echo Installing/configuring database
 echo "#####################################################################"
 echo Installing/configuring directories
 configure_directories
+
+echo "#####################################################################"
+echo Installing/configuring gearman-job-server
+configure_gearman
 
 echo "#####################################################################"
 echo Installing/configuring MySQL

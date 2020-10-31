@@ -160,7 +160,7 @@ LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 
 INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `status`, `enable`, `required`, `pid`, `bandwidthLimit`, `includeOVDMFiles`, `excludedCollectionSystems`, `excludedExtraDirectories`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','127.0.0.1','survey',0,'password',2,1,1,0,128,0,'0','0');
+	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','ssdw.example.com','survey',0,'password',2,1,1,0,128,0,'0','0');
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
