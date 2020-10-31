@@ -869,7 +869,7 @@ def transfer_sshSourceDir(worker, job):
     if worker.collectionSystemTransfer['sshUseKey'] == '1':
         command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
     else:
-        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:',s.join(command))
