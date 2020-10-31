@@ -94,7 +94,7 @@ def build_filelist(worker, sourceDir):
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                #print filt
+                #debugPrint(filt)
                 if fnmatch.fnmatch(os.path.join(root, filename), filt):
                     debugPrint(filename, "ignored")
                     ignore = True
@@ -199,7 +199,7 @@ def build_rsyncFilelist(worker, sourceDir):
     # Cleanup
     shutil.rmtree(tmpdir)
 
-    #print "rsyncFileListOut: " + rsyncFileList
+    #debugPrint("rsyncFileListOut: ", rsyncFileList)
 
     for line in rsyncFileList.splitlines():
         #debugPrint('line:', line.rstrip('\n'))
@@ -209,9 +209,9 @@ def build_rsyncFilelist(worker, sourceDir):
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                #print filt
+                #debugPrint("filt")
                 if fnmatch.fnmatch(filename, filt):
-                    #print "ignore"
+                    #debugPrint("ignore")
                     ignore = True
                     break
             if not ignore:
@@ -219,7 +219,7 @@ def build_rsyncFilelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
-                                #print "exclude"
+                                #debugPrint("exclude")
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
@@ -242,7 +242,7 @@ def build_rsyncFilelist(worker, sourceDir):
                                 include = True
 
                 if not include:
-                    #print "exclude"
+                    #debugPrint("exclude")
                     returnFiles['exclude'].append(filename)
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
@@ -294,14 +294,14 @@ def build_sshFilelist(worker, sourceDir):
         fileOrDir, size, mdate, mtime, name = line.split(None, 4)
         if fileOrDir.startswith('-'):
             filename = name
-            #print name
+            #debugPrint("name")
             exclude = False
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                #print filt
+                #debugPrint("filt")
                 if fnmatch.fnmatch(filename, filt):
-                    #print "ignore"
+                    #debugPrint("ignore")
                     ignore = True
                     break
             if not ignore:
@@ -309,7 +309,7 @@ def build_sshFilelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
-                                print "exclude"
+                                debugPrint("exclude")
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
@@ -341,7 +341,7 @@ def build_filters(worker):
     
     rawFilters = {'includeFilter': worker.collectionSystemTransfer['includeFilter'],'excludeFilter': worker.collectionSystemTransfer['excludeFilter'],'ignoreFilter': worker.collectionSystemTransfer['ignoreFilter']}
     returnFilters = rawFilters
-    #print json.dumps(rawFilters, indent=2)
+    #debugPrint(json.dumps(rawFilters, indent=2))
     
     returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
     returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{loweringID}', worker.loweringID)
@@ -352,7 +352,7 @@ def build_filters(worker):
     returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
     returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{loweringID}', worker.loweringID)
     
-    #print json.dumps(returnFilters, indent=2)
+    #debugPrint(json.dumps(returnFilters, indent=2))
     return returnFilters
 
 
@@ -376,11 +376,11 @@ def build_sourceDir(worker):
 
 def build_destDirectories(destDir, files):
     files = [filename.replace(filename, destDir + '/' + filename, 1) for filename in files]
-    #print 'DECODED Files:', json.dumps(files, indent=2)
+    #debugPrint('DECODED Files:', json.dumps(files, indent=2))
 
     for dirname in set(os.path.dirname(p) for p in files):
         if not os.path.isdir(dirname):
-            #print "Creating Directory: " + dirname
+            #debugPrint("Creating Directory: " + dirname)
             os.makedirs(dirname)
 
             
@@ -458,10 +458,10 @@ def writeLogFile(worker, logfileName, fileList):
     logfilePath = os.path.join(logfileDir, logfileName)
     
     try:
-        #print "Open MD5 Summary MD5 file"
+        #debugPrint("Open MD5 Summary MD5 file")
         Logfile = open(logfilePath, 'w')
 
-        #print "Saving MD5 Summary MD5 file"
+        #debugPrint("Saving MD5 Summary MD5 file")
         Logfile.write(json.dumps(fileList))
 
     except IOError:
@@ -1186,7 +1186,7 @@ def task_runCollectionSystemTransfer(worker, job):
         debugPrint("Building Logfiles")
 
         logfileName = worker.collectionSystemTransfer['name'] + '_' + worker.transferStartDate + '.log'
-        #print logfileName
+        #debugPrint(logfileName)
 
         logContents = {'files':{'new':[], 'updated':[]}}
         logContents['files']['new'] = job_results['files']['new']
@@ -1207,7 +1207,7 @@ def task_runCollectionSystemTransfer(worker, job):
     job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
     
     logfileName = worker.collectionSystemTransfer['name'] + '_Exclude.log'
-    #print filenameErrorLogfileName
+    #debugPrint(filenameErrorLogfileName)
     logContents = {'files':{'exclude':[]}}
     logContents['files']['exclude'] = job_results['files']['exclude']
 
