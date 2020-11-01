@@ -94,7 +94,7 @@ def build_filelist(worker, sourceDir):
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                #print filt
+                #debugPrint(filt)
                 if fnmatch.fnmatch(os.path.join(root, filename), filt):
                     debugPrint(filename, "ignored")
                     ignore = True
@@ -199,7 +199,7 @@ def build_rsyncFilelist(worker, sourceDir):
     # Cleanup
     shutil.rmtree(tmpdir)
 
-    #print "rsyncFileListOut: " + rsyncFileList
+    #debugPrint("rsyncFileListOut: ", rsyncFileList)
 
     for line in rsyncFileList.splitlines():
         #debugPrint('line:', line.rstrip('\n'))
@@ -209,9 +209,9 @@ def build_rsyncFilelist(worker, sourceDir):
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                #print filt
+                #debugPrint("filt")
                 if fnmatch.fnmatch(filename, filt):
-                    #print "ignore"
+                    #debugPrint("ignore")
                     ignore = True
                     break
             if not ignore:
@@ -219,7 +219,7 @@ def build_rsyncFilelist(worker, sourceDir):
                     if fnmatch.fnmatch(filename, filt):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
-                                #print "exclude"
+                                #debugPrint("exclude")
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
@@ -242,7 +242,7 @@ def build_rsyncFilelist(worker, sourceDir):
                                 include = True
 
                 if not include:
-                    #print "exclude"
+                    #debugPrint("exclude")
                     returnFiles['exclude'].append(filename)
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
@@ -258,72 +258,80 @@ def build_sshFilelist(worker, sourceDir):
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
 
     staleness = int(worker.collectionSystemTransfer['staleness']) * 60
-    threshold_time = time.time() - (int(worker.collectionSystemTransfer['staleness']) * 60) # 5 minutes
-    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
-    cruiseStart_time = calendar.timegm(time.strptime(worker.cruiseStartDate, "%Y/%m/%d %H:%M"))
-    cruiseEnd_time = calendar.timegm(time.strptime(worker.cruiseEndDate, "%Y/%m/%d %H:%M"))
+    debugPrint("Staleness:", staleness)
 
-    debugPrint("Threshold:",threshold_time)
-    debugPrint("Start:",cruiseStart_time)
-    debugPrint("End:",cruiseEnd_time)
+    threshold_time = time.time() - staleness
+    debugPrint("Threshold:", threshold_time)
+
+    dataStart_time = calendar.timegm(time.strptime(worker.dataStartDate, "%Y/%m/%d %H:%M"))
+    debugPrint("Start:", dataStart_time)
+
+    dataEnd_time = calendar.timegm(time.strptime(worker.dataEndDate, "%Y/%m/%d %H:%M"))
+    debugPrint("End:", dataEnd_time)
 
     filters = build_filters(worker)
-    
+
     rsyncFileList = ''
 
     if worker.collectionSystemTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']    
+        command = ['rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     else:
         command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
-    
+
     s = ' '
     debugPrint("Command:",s.join(command))
-        
+
     proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     out, err = proc.communicate()
     rsyncFileList = out
-        
-    #debugPrint("rsyncFileListOut:", + rsyncFileList)
-        
+
+    #debugPrint("rsyncFileListOut:", rsyncFileList)
+
+
     for line in rsyncFileList.splitlines():
         #debugPrint("line:", line)
         fileOrDir, size, mdate, mtime, name = line.split(None, 4)
         if fileOrDir.startswith('-'):
             filename = name
-            #print name
+            #debugPrint("file:", filename)
             exclude = False
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                #print filt
+                #debugPrint("filt")
                 if fnmatch.fnmatch(filename, filt):
-                    #print "ignore"
+                    #debugPrint("ignore")
                     ignore = True
                     break
             if not ignore:
-                for filt in filters['includeFilter'].split(','): 
+                for filt in filters['includeFilter'].split(','):
                     if fnmatch.fnmatch(filename, filt):
-                        for filt in filters['excludeFilter'].split(','): 
+                        for filt in filters['excludeFilter'].split(','):
                             if fnmatch.fnmatch(filename, filt):
-                                #print "exclude"
+                                debugPrint(filename, "excluded by exclude filter")
                                 returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
                         if not exclude:
-                            file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
-                            file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                            #debugPrint("file_mod_time_SECS:", str(file_mod_time_SECS))
-                            if file_mod_time_SECS > cruiseStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < cruiseEnd_time:
-                                #debugPrint("include")
-                                returnFiles['include'].append(filename)
-                            #else:
-                                #debugPrint(filename, "skipped for time reasons")
+                            file_mod_time = (datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S") - datetime.datetime(1970,1,1,0,0,0)).total_seconds()
+                            #debugPrint("file_mod_time:",file_mod_time)
+                            try:
+                                filename.decode('ascii')
+                            except UnicodeEncodeError:
+                                debugPrint(filename, "is not an ascii-encoded unicode string")
+                                returnFiles['exclude'].append(filename)
+                            else:
+                                if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
+                                    debugPrint(filename, "included")
+                                    returnFiles['include'].append(filename)
+                                else:
+                                    debugPrint(filename, "ignored for time reasons")
 
                             include = True
 
                 if not include:
-                    #debugPrint("exclude")
-                    returnFiles['exclude'].append(filename)        
+                    debugPrint(filename, "excluded because file does not match any include or ignore filters")
+                    returnFiles['exclude'].append(filename)
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
@@ -337,7 +345,7 @@ def build_filters(worker):
     
     rawFilters = {'includeFilter': worker.collectionSystemTransfer['includeFilter'],'excludeFilter': worker.collectionSystemTransfer['excludeFilter'],'ignoreFilter': worker.collectionSystemTransfer['ignoreFilter']}
     returnFilters = rawFilters
-    #print json.dumps(rawFilters, indent=2)
+    #debugPrint(json.dumps(rawFilters, indent=2))
     
     returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{cruiseID}', worker.cruiseID)
     returnFilters['includeFilter'] = returnFilters['includeFilter'].replace('{loweringID}', worker.loweringID)
@@ -348,7 +356,7 @@ def build_filters(worker):
     returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{cruiseID}', worker.cruiseID)
     returnFilters['ignoreFilter'] =  returnFilters['ignoreFilter'].replace('{loweringID}', worker.loweringID)
     
-    #print json.dumps(returnFilters, indent=2)
+    #debugPrint(json.dumps(returnFilters, indent=2))
     return returnFilters
 
 
@@ -372,11 +380,11 @@ def build_sourceDir(worker):
 
 def build_destDirectories(destDir, files):
     files = [filename.replace(filename, destDir + '/' + filename, 1) for filename in files]
-    #print 'DECODED Files:', json.dumps(files, indent=2)
+    #debugPrint('DECODED Files:', json.dumps(files, indent=2))
 
     for dirname in set(os.path.dirname(p) for p in files):
         if not os.path.isdir(dirname):
-            #print "Creating Directory: " + dirname
+            #debugPrint("Creating Directory: " + dirname)
             os.makedirs(dirname)
 
             
@@ -454,10 +462,10 @@ def writeLogFile(worker, logfileName, fileList):
     logfilePath = os.path.join(logfileDir, logfileName)
     
     try:
-        #print "Open MD5 Summary MD5 file"
+        #debugPrint("Open MD5 Summary MD5 file")
         Logfile = open(logfilePath, 'w')
 
-        #print "Saving MD5 Summary MD5 file"
+        #debugPrint("Saving MD5 Summary MD5 file")
         Logfile.write(json.dumps(fileList))
 
     except IOError:
@@ -776,7 +784,7 @@ def transfer_rsyncSourceDir(worker, job):
         bandwidthLimit = '--bwlimit=' + worker.collectionSystemTransfer['bandwidthLimit']
 
     
-    command = ['rsync', '-ti', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
+    command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, 'rsync://' + worker.collectionSystemTransfer['rsyncUser'] + '@' + worker.collectionSystemTransfer['rsyncServer'] + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -863,9 +871,9 @@ def transfer_sshSourceDir(worker, job):
     command = ''
     
     if worker.collectionSystemTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+        command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
     else:
-        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-ti', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
+        command = ['sshpass', '-p', worker.collectionSystemTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--files-from=' + sshFileListPath, '-e', 'ssh', worker.collectionSystemTransfer['sshUser'] + '@' + worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir, destDir]
 
     s = ' '
     debugPrint('Transfer Command:',s.join(command))
@@ -1182,7 +1190,7 @@ def task_runCollectionSystemTransfer(worker, job):
         debugPrint("Building Logfiles")
 
         logfileName = worker.collectionSystemTransfer['name'] + '_' + worker.transferStartDate + '.log'
-        #print logfileName
+        #debugPrint(logfileName)
 
         logContents = {'files':{'new':[], 'updated':[]}}
         logContents['files']['new'] = job_results['files']['new']
@@ -1203,7 +1211,7 @@ def task_runCollectionSystemTransfer(worker, job):
     job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
     
     logfileName = worker.collectionSystemTransfer['name'] + '_Exclude.log'
-    #print filenameErrorLogfileName
+    #debugPrint(filenameErrorLogfileName)
     logContents = {'files':{'exclude':[]}}
     logContents['files']['exclude'] = job_results['files']['exclude']
 

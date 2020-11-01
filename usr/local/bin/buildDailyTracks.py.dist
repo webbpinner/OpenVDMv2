@@ -1,8 +1,8 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  buildCruiseTracks.py
+#         FILE:  buildDailyTracks.py
 #
-#        USAGE:  buildCruiseTracks.py [-h] [-c cruiseID] collectionSystem
+#        USAGE:  buildDailyTracks.py [-h] [-c cruiseID] collectionSystem
 #
 #  REQUIRED ARGUMENTS:
 #                collectionSystem  name of OpenVDM-defined collection system to process
@@ -10,14 +10,15 @@
 #  OPTIONAL ARGUMENTS:
 #                -h, --help        show this help message and exit
 #                -c cruiseID       the cruiseID to process
+#                -o [output_dir]   the directory to store the resulting files
 #
 #  DESCRIPTION:  Example script demostrating OpenVDM's hook architecture.  The purpose
-#                of this script is to combine the various GeoJSON-formatted dashboard-
-#                data files created from GGA raw files into a single GeoJSON and KML-
-#                formatted cruise track.
+#                of this script is to convert the various GeoJSON-formatted dashboard-
+#                data files into KML-formatted versions.
 #
 #                The resulting files are put in a folder called "Tracklines" within
-#                the OpenVDM defined extra directory "Products"
+#                the OpenVDM defined extra directory "Products" by default or can be
+#                stored in an alternative location if desired
 #
 #                This script is designed to be called from the postDataDashboard hook,
 #                specifically for the SCS Collection System Transfer but has been
@@ -29,11 +30,11 @@
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
 #      VERSION:  1.0
-#      CREATED:  2016-03-06
-#     REVISION:  2017-08-05
+#      CREATED:  2020-11-01
+#     REVISION:  
 #
 # LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2017
+#               Copyright (C) OceanDataRat.org 2020
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -72,7 +73,19 @@ AllGPSSources = [
         "GPSSources": [
             {
                 "device":"POSMV",
-                "regex":"NAV/POSMV-GGA_*.json"
+                "regex":"NAV/COM30-POSMV-GGA-RAW_*.json"
+            },
+            {
+                "device":"BridgeData",
+                "regex":"NAV/COM22-BridgeData-GGA-RAW_*.json"
+            },
+            {
+                "device":"CNAV",
+                "regex":"NAV/COM18-CNAV-GGA-RAW_*.json"
+            },
+            {
+                "device":"Seapath",
+                "regex":"NAV/COM12-Seapath-GGA-RAW_*.json"
             }
         ]
     }
@@ -200,18 +213,15 @@ def convToKML(geoJSONObj):
 def writeToFile(contents, filename, user):
     try:
         debugPrint('Saving', filename)
-        fileObj = open(filename, 'w')
-        fileObj.write(contents)
+        with open(filename, 'w') as fileObj:
+            fileObj.write(contents)
+
+        os.chmod(filename, 0644)
+        os.chown(filename, pwd.getpwnam(user).pw_uid, grp.getgrnam(user).gr_gid)
 
     # If the file cannot be processed return false.
     except:
         return False
-
-    # Close the raw datafile and set ownership permissions.
-    finally:
-        fileObj.close()
-        os.chmod(filename, 0644)
-        os.chown(filename, pwd.getpwnam(user).pw_uid, grp.getgrnam(user).gr_gid)
 
     return True
 
@@ -242,6 +252,7 @@ def main(argv):
     # Define the command-line structure
     parser = argparse.ArgumentParser(description='build cruise tracklines post-dashboard processing')
     parser.add_argument('-c', dest='cruiseID', metavar='cruiseID', help='the cruiseID to process')
+    parser.add_argument('-o', dest='outputDir', metavar='OutputDir', help='the desired output directory')
     parser.add_argument('collectionSystem', help='the collection system to search for geoJSON files')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
 
@@ -250,7 +261,6 @@ def main(argv):
         global DEBUG
         DEBUG = True
         debugPrint("Running in debug mode")
-
 
     # build an OpenVDM object
     openVDM = openvdm.OpenVDM()
@@ -282,17 +292,23 @@ def main(argv):
         errPrint("ERROR: Cruise Data Directory:", cruiseDir, "not found!")
         return -1
 
-    #get the name of the Products directory
-    tracklineDirectory = openVDM.getExtraDirectoryByName(tracklineDirectoryName)
-    if not tracklineDirectory:
-        errPrint("ERROR: \"" + tracklineDirectoryName + "\" directory information not found!")
-        return -1
+    outputDir = None
+    if args.outputDir:
+        outputDir = args.outputDir
+
     else:
-        tracklineDir = os.path.join(cruiseDir, tracklineDirectory['destDir'])
-        # Verify the Products directory exists
-        if not os.path.isdir(tracklineDir):
-            errPrint("ERROR: Trackline Directory: \"" + tracklineDir + "\" not found!")
+        #get the name of the Products directory
+        tracklineDirectory = openVDM.getExtraDirectoryByName(tracklineDirectoryName)
+        if not tracklineDirectory:
+            errPrint("ERROR: \"" + tracklineDirectoryName + "\" directory information not found!")
             return -1
+        else:
+            outputDir = os.path.join(cruiseDir, tracklineDirectory['destDir'])
+
+    # Verify the Products directory exists
+    if not os.path.isdir(outputDir):
+        errPrint("ERROR: Output Directory: \"" + outputDir + "\" not found!")
+        return -1
 
     #get the name of the Dashboard Data directory
     dashboardDataDirectory = openVDM.getRequiredExtraDirectoryByName('Dashboard Data')
@@ -320,26 +336,29 @@ def main(argv):
                 # Build the list of files coorsponding to the current device based on the regex provided
                 files = glob.glob(collectionSystemDashboardDataDir.rstrip('/') + '/' + GPSSource['regex'])
                 files.sort()
+                
+                for file in files:
+                    
+                    geoJsonObj = None
 
-                debugPrint("Files:", ', '.join(files))
-                
-                # Combind the geoJSON objects
-                combineGeoJsonObj = combineGeoJsonFiles(files, cruiseID, GPSSource['device'])
-                
-                # If there was a problem, exit
-                if not combineGeoJsonObj:
-                    return -1
-                
-                # If the combine was successful and there is data
-                if combineGeoJsonObj is not None:
+                    try:
+                        with open(file,'r') as f:
+                            geoJsonObj = json.load(f)
 
-                    # Save the combined geoJSON object to file 
-                    debugPrint("Saving file:", tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.json')
-                    writeToFile(json.dumps(combineGeoJsonObj), tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.json', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
-                
-                    # Convert the combined geoJSON object to kml and save to file 
-                    debugPrint("Saving file:", tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.kml')
-                    writeToFile(convToKML(combineGeoJsonObj), tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.kml', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
+                    # If the file cannot be processed return false.
+                    except:
+                        errPrint("ERROR: Could not proccess file: ", file)
+                        continue
+                    
+                    # If the combine was successful and there is data
+                    if geoJsonObj is not None:
+
+                        geoJsonObj = geoJsonObj['visualizerData'][0]
+                        # Save the geoJSON object to file
+                        # writeToFile(json.dumps(geoJsonObj), os.path.join(outputDir, cruiseID + '_' + os.path.basename(file).split('.')[0] + '_Trackline.json'), 'nobody')
+                    
+                        # Convert the geoJSON object to kml and save to file 
+                        writeToFile(convToKML(geoJsonObj), os.path.join(outputDir, cruiseID + '_' + os.path.basename(file).split('.')[0] + '_Trackline.kml'), 'nobody')
             
             # No need to proceed to another collectionSystem
             break

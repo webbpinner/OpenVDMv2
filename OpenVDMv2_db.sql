@@ -97,16 +97,16 @@ VALUES
 	(2,'shipboardDataWarehouseUsername','survey'),
 	(3,'shipboardDataWarehousePublicDataDir','/vault/FTPRoot/PublicData'),
 	(4,'shipboardDataWarehouseStatus','2'),
-	(5,'cruiseID','CS1701'),
-	(6,'cruiseStartDate','2017/10/05 00:00'),
+	(5,'cruiseID','Test_Cruise'),
+	(6,'cruiseStartDate','2020/01/01 00:00'),
 	(7,'cruiseEndDate',''),
 	(8,'cruiseSize','0'),
-	(9,'cruiseSizeUpdated','2017/10/05 00:00:00'),
+	(9,'cruiseSizeUpdated','2020/01/01 00:00:00'),
 	(10,'loweringID',''),
 	(11,'loweringStartDate',''),
 	(12,'loweringEndDate',''),
 	(13,'loweringSize','0'),
-	(14,'loweringSizeUpdated','2017/10/05 00:00:00'),
+	(14,'loweringSizeUpdated','2020/01/01 00:00:00'),
 	(15,'systemStatus','Off'),
 	(16,'shipToShoreBWLimitStatus','Off'),
 	(17,'md5FilesizeLimit','10'),
@@ -160,7 +160,7 @@ LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 
 INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `status`, `enable`, `required`, `pid`, `bandwidthLimit`, `includeOVDMFiles`, `excludedCollectionSystems`, `excludedExtraDirectories`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','127.0.0.1','survey',0,'password',2,1,1,0,128,0,'0','0');
+	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','ssdw.example.com','survey',0,'password',2,1,1,0,128,0,'0','0');
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -233,7 +233,6 @@ LOCK TABLES `OVDM_Links` WRITE;
 INSERT INTO `OVDM_Links` (`linkID`, `name`, `url`, `enable`, `private`)
 VALUES
 	(1,'Supervisord','http://{hostIP}:9001',1,1),
-	(2,'Gearman','http://{hostIP}/gearman-ui/',1,1),
 	(3,'Cruise Data','http://{hostIP}/CruiseData/{cruiseID}/',1,0),
 	(4,'Public Data','http://{hostIP}/PublicData/',1,0),
 	(5,'Visitor Information','http://{hostIP}/VisitorInformation/',1,0),
