@@ -52,6 +52,7 @@ import os
 import shutil
 import csv
 from datetime import datetime
+from geopy import Point
 from geopy.distance import great_circle
 from itertools import (takewhile,repeat)
 
@@ -225,11 +226,13 @@ def parseFile(filePath):
 
     df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
 
-    distance = df_proc[['latitude', 'longitude']]
-
-    distance = distance.join(distance.shift(), rsuffix = "_prev")
-
-    df_proc['distance'] = distance.apply(lambda row: (great_circle((row['latitude_prev'], row['longitude_prev']), (row['latitude'], row['longitude']))).nm, axis=1)
+    df_proc['point'] = df_proc.apply(lambda row: Point(latitude=row['latitude'], longitude=row['longitude']), axis=1)
+    df_proc['point_next'] = df_proc['point'].shift(1)
+    df_proc.loc[df_proc['point_next'].isna(), 'point_next'] = None
+    
+    df_proc['distance'] = df_proc.apply(lambda row: great_circle(row['point'], row['point_next']).nm if row['point_next'] is not None else float('nan'), axis=1)
+    df_proc = df_proc.drop('point_next', axis=1)
+    df_proc = df_proc.drop('point', axis=1)
 
     df_proc['velocity'] = df_proc['distance'] / (df_proc.deltaT.dt.total_seconds() / 3600)
 
