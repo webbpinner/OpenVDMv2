@@ -72,19 +72,7 @@ AllGPSSources = [
         "GPSSources": [
             {
                 "device":"POSMV",
-                "regex":"NAV/COM30-POSMV-GGA-RAW_*.json"
-            },
-            {
-                "device":"BridgeData",
-                "regex":"NAV/COM22-BridgeData-GGA-RAW_*.json"
-            },
-            {
-                "device":"CNAV",
-                "regex":"NAV/COM18-CNAV-GGA-RAW_*.json"
-            },
-            {
-                "device":"Seapath",
-                "regex":"NAV/COM12-Seapath-GGA-RAW_*.json"
+                "regex":"NAV/POSMV-GGA_*.json"
             }
         ]
     }
@@ -332,6 +320,8 @@ def main(argv):
                 # Build the list of files coorsponding to the current device based on the regex provided
                 files = glob.glob(collectionSystemDashboardDataDir.rstrip('/') + '/' + GPSSource['regex'])
                 files.sort()
+
+                debugPrint("Files:", ', '.join(files))
                 
                 # Combind the geoJSON objects
                 combineGeoJsonObj = combineGeoJsonFiles(files, cruiseID, GPSSource['device'])
@@ -344,9 +334,11 @@ def main(argv):
                 if combineGeoJsonObj is not None:
 
                     # Save the combined geoJSON object to file 
+                    debugPrint("Saving file:", tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.json')
                     writeToFile(json.dumps(combineGeoJsonObj), tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.json', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
                 
                     # Convert the combined geoJSON object to kml and save to file 
+                    debugPrint("Saving file:", tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.kml')
                     writeToFile(convToKML(combineGeoJsonObj), tracklineDir.rstrip('/') + '/' + cruiseID + '_' + GPSSource['device'] + '_Trackline.kml', shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'])
             
             # No need to proceed to another collectionSystem
