@@ -84,16 +84,19 @@ function install_packages {
     LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2
     LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/pkg-gearman
 
+    add-apt-repository -y ppa:ubuntugis/ppa
+
     apt-get update
 
     apt install -y ssh sshpass rsync samba smbclient gearman-job-server \
-        libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm supervisor \
-        mysql-server mysql-client cifs-utils apache2 libapache2-mod-wsgi \
-        libapache2-mod-php7.3 php7.3 php7.3-cli php7.3-mysql php7.3-zip \
-        php7.3-curl php7.3-gearman php-yaml python-pip python-pil python-yaml libgeos-dev \
-        python-lxml python-shapely python-requests proj-bin
+        libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm \
+        supervisor mysql-server mysql-client cifs-utils apache2 \
+        libapache2-mod-wsgi libapache2-mod-php7.3 php7.3 php7.3-cli \
+        php7.3-mysql php7.3-zip gdal-bin php7.3-curl php7.3-gearman \
+        php-yaml python-pip python-pil python-yaml libgeos-dev \
+        python-gdal python-lxml python-shapely python-requests proj-bin 
 
-    pip install gearman MapProxy
+    pip install gearman MapProxy pandas geopy
 
     startingDir=${PWD}
 
