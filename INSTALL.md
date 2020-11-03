@@ -6,10 +6,6 @@ At the time of this writing OpenVDMv2 was built and tested against the Ubuntu 18
 ### Operating System
 Goto <https://releases.ubuntu.com/18.04/>
 
-Download Ubuntu for your hardware.  At the time of this writing we are using 18.04 (64-bit)
-
-Perform the default Ubuntu install.
-
 ### If you are installing OpenVDM remotely
 
 If this is going to be a remote install then SSH Server must be installed.
