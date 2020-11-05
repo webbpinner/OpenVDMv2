@@ -1169,7 +1169,6 @@ def task_runCollectionSystemTransfer(worker, job):
     if len(job_results['files']['exclude']) > 0:
         debugPrint(len(job_results['files']['exclude']), 'misnamed file(s) encounted')
 
-
     worker.send_job_status(job, 9, 10)
     
     if job_results['files']['new'] or job_results['files']['updated']:
