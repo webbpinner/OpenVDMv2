@@ -105,7 +105,7 @@ def build_filelist(worker, sourceDir):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
                                 debugPrint(filename, "excluded by exclude filter")
-                                returnFiles['exclude'].append(os.path.join(root, filename))
+                                returnFiles['exclude'].append(filename)
                                 exclude = True
                                 break
                         if not exclude:
@@ -116,7 +116,7 @@ def build_filelist(worker, sourceDir):
                                 filename.decode('ascii')
                             except UnicodeEncodeError:
                                 debugPrint(filename, "is not an ascii-encoded unicode string")
-                                returnFiles['exclude'].append(os.path.join(root, filename))
+                                returnFiles['exclude'].append(filename)
                             else:
                                 if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
                                     debugPrint(filename, "included")
@@ -129,7 +129,7 @@ def build_filelist(worker, sourceDir):
 
                 if not include and not exclude:
                     debugPrint(filename, "excluded because file does not match any include or ignore filters")
-                    returnFiles['exclude'].append(os.path.join(root, filename))
+                    returnFiles['exclude'].append(filename)
 
     if not worker.collectionSystemTransfer['staleness'] == '0':
         debugPrint("Checking for changing filesizes")
@@ -228,7 +228,7 @@ def build_rsyncFilelist(worker, sourceDir):
                                 filename.decode('ascii')
                             except UnicodeEncodeError:
                                 debugPrint(filename, "is not an ascii-encoded unicode string")
-                                returnFiles['exclude'].append(os.path.join(root, filename))
+                                returnFiles['exclude'].append(filename)
                             else:
                                 file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
                                 file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
@@ -1169,7 +1169,6 @@ def task_runCollectionSystemTransfer(worker, job):
     if len(job_results['files']['exclude']) > 0:
         debugPrint(len(job_results['files']['exclude']), 'misnamed file(s) encounted')
 
-
     worker.send_job_status(job, 9, 10)
     
     if job_results['files']['new'] or job_results['files']['updated']:
@@ -1208,7 +1207,7 @@ def task_runCollectionSystemTransfer(worker, job):
             
     #if job_results['files']['exclude']:
     # Format exclude files for transfer log
-    job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
+    # job_results['files']['exclude'] = [worker.collectionSystemTransfer['destDir'].rstrip('/') + '/' + filename for filename in job_results['files']['exclude']]
     
     logfileName = worker.collectionSystemTransfer['name'] + '_Exclude.log'
     #debugPrint(filenameErrorLogfileName)
