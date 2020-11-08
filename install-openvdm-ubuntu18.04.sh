@@ -583,7 +583,7 @@ EOF
     mkdir -p /usr/local/etc/openvdm
     rsync -a ./usr/local/etc/openvdm/* /usr/local/etc/openvdm/
     cp /usr/local/etc/openvdm/datadashboard.yaml.dist /usr/local/etc/openvdm/datadashboard.yaml
-    cat /usr/local/etc/openvdm/openvdm.yaml.dist | sed -e "s/127.0.0.1/${HOSTNAME}/" /usr/local/etc/openvdm/openvdm.yaml
+    cat /usr/local/etc/openvdm/openvdm.yaml.dist | sed -e "s/127.0.0.1/${HOSTNAME}/" > /usr/local/etc/openvdm/openvdm.yaml
 
     echo Installing executables
     rsync -a ./usr/local/bin/* /usr/local/bin/
