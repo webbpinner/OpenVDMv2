@@ -105,7 +105,7 @@ def build_filelist(worker, sourceDir):
                         for filt in filters['excludeFilter'].split(','): 
                             if fnmatch.fnmatch(filename, filt):
                                 debugPrint(filename, "excluded by exclude filter")
-                                returnFiles['exclude'].append(filename)
+                                returnFiles['exclude'].append(os.path.join(root, filename))
                                 exclude = True
                                 break
                         if not exclude:
@@ -116,7 +116,7 @@ def build_filelist(worker, sourceDir):
                                 filename.decode('ascii')
                             except UnicodeEncodeError:
                                 debugPrint(filename, "is not an ascii-encoded unicode string")
-                                returnFiles['exclude'].append(filename)
+                                returnFiles['exclude'].append(os.path.join(root, filename))
                             else:
                                 if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
                                     debugPrint(filename, "included")
@@ -129,7 +129,7 @@ def build_filelist(worker, sourceDir):
 
                 if not include and not exclude:
                     debugPrint(filename, "excluded because file does not match any include or ignore filters")
-                    returnFiles['exclude'].append(filename)
+                    returnFiles['exclude'].append(os.path.join(root, filename))
 
     if not worker.collectionSystemTransfer['staleness'] == '0':
         debugPrint("Checking for changing filesizes")

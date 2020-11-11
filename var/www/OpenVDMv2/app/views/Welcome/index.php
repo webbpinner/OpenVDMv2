@@ -25,7 +25,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                 <div class="panel-heading">Incorrect Filenames Detected</div>
                 <div class="panel-body" id="filenameErrors">
 <?php 
-    if($data['filenameErrors']) {
+    if( is_array($data['filenameErrors']) && sizeof($data['filenameErrors']) > 0) {
 ?>
 <?php
         foreach($data['filenameErrors'] as $row) {
