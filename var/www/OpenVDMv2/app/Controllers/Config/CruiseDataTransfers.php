@@ -45,7 +45,7 @@ class CruiseDataTransfers extends Controller {
         return $trueFalse;
     }
 
-    private function _buildIncludePublicDataOptions() {
+    private function _buildIncludePublicDataFilesOptions() {
         
         $trueFalse = array(array('id'=>'includePublicDataFilesOptions0', 'name'=>'includePublicDataFiles', 'value'=>'0', 'label'=>'No'), array('id'=>'includePublicDataFilesOptions1', 'name'=>'includePublicDataFiles', 'value'=>'1', 'label'=>'Yes'));
         return $trueFalse;

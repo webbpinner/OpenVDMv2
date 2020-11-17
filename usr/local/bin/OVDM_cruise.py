@@ -788,8 +788,16 @@ def task_exportOVDMConfig(worker, job):
             job_results['parts'].append({"partName": "Read existing configuration file", "result": "Pass"})
 
 
+    for transfer in ovdmConfig['cruiseDataTransfersConfig']:
+        del transfer['sshPass']
+        del transfer['rsyncPass']
+        del transfer['smbPass']
 
-    #debugPrint('Path:', os.path.join(cruiseDir,cruiseConfigFN))
+    for transfer in ovdmConfig['collectionSystemTransfersConfig']:
+        del transfer['sshPass']
+        del transfer['rsyncPass']
+        del transfer['smbPass']
+
     output_results = output_JSONDataToFile(worker, ovdmConfigFilePath, ovdmConfig)
 
     if output_results['verdict']:

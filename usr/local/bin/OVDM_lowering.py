@@ -506,7 +506,6 @@ def task_exportLoweringConfig(worker, job):
     #build OpenVDM Config file
     loweringConfig = worker.OVDM.getLoweringConfig()
 
-
     loweringConfigFilePath = os.path.join(loweringDir,loweringConfigFN)
 
     if os.path.isfile(loweringConfigFilePath):
@@ -524,7 +523,16 @@ def task_exportLoweringConfig(worker, job):
         else:
             job_results['parts'].append({"partName": "Read existing configuration file", "result": "Pass"})
 
-    #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
+    for transfer in loweringConfig['cruiseDataTransfersConfig']:
+        del transfer['sshPass']
+        del transfer['rsyncPass']
+        del transfer['smbPass']
+
+    for transfer in loweringConfig['collectionSystemTransfersConfig']:
+        del transfer['sshPass']
+        del transfer['rsyncPass']
+        del transfer['smbPass']
+
     output_results = output_JSONDataToFile(worker, loweringConfigFilePath, loweringConfig)
 
     if output_results['verdict']:
