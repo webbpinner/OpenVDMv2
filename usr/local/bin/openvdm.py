@@ -34,6 +34,7 @@ import requests
 import yaml
 import json
 import datetime
+import logging
 
 configFile = '/usr/local/etc/openvdm/openvdm.yaml'
 
@@ -43,6 +44,11 @@ class OpenVDM():
 
         self.config = {}
         self.config = self.parseOVDMConfig()
+        self.logger = logging.getLogger(__file__)
+
+
+    def getLogger():
+        return self.logger
 
 
     def parseOVDMConfig(self):

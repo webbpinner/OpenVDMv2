@@ -25,6 +25,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                 <div class="panel-heading">Incorrect Filenames Detected</div>
                 <div class="panel-body" id="filenameErrors">
 <?php 
+    $noErrors = True;
     if( is_array($data['filenameErrors']) && sizeof($data['filenameErrors']) > 0) {
 ?>
 <?php
@@ -53,11 +54,14 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
 ?>
                     </ul>
 <?php
+                $noErrors = False;
             }
         }
-    } else {
+    }
+
+    if($noErrors) {
 ?>
-                    <h5>No Filename Errors Found</h5>               
+                    <h5>No Filename Errors Detected</h5>               
 <?php
     }
 ?>

@@ -146,6 +146,7 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
   `pid` int(11) unsigned DEFAULT '0',
   `bandwidthLimit` int(10) unsigned NOT NULL DEFAULT '0',
   `includeOVDMFiles` int(1) unsigned NOT NULL DEFAULT '0',
+  `includePublicDataFiles` int(1) unsigned NOT NULL DEFAULT '0',
   `excludedCollectionSystems` tinytext,
   `excludedExtraDirectories` tinytext,
   PRIMARY KEY (`cruiseDataTransferID`),
@@ -158,9 +159,9 @@ CREATE TABLE `OVDM_CruiseDataTransfers` (
 LOCK TABLES `OVDM_CruiseDataTransfers` WRITE;
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` DISABLE KEYS */;
 
-INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `status`, `enable`, `required`, `pid`, `bandwidthLimit`, `includeOVDMFiles`, `excludedCollectionSystems`, `excludedExtraDirectories`)
+INSERT INTO `OVDM_CruiseDataTransfers` (`cruiseDataTransferID`, `name`, `longName`, `transferType`, `destDir`, `localDirIsMountPoint`, `rsyncServer`, `rsyncUser`, `rsyncPass`, `smbServer`, `smbUser`, `smbPass`, `smbDomain`, `sshServer`, `sshUser`, `sshUseKey`, `sshPass`, `status`, `enable`, `required`, `pid`, `bandwidthLimit`, `includeOVDMFiles`, `includePublicDataFiles`, `excludedCollectionSystems`, `excludedExtraDirectories`)
 VALUES
-	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','ssdw.example.com','survey',0,'password',2,1,1,0,128,0,'0','0');
+	(1,'SSDW','Shoreside Data Warehouse',4,'/vault/Shoreside',0,'','','','','','','','ssdw.example.com','survey',0,'password',2,1,1,0,128,0,0,'0','0');
 
 /*!40000 ALTER TABLE `OVDM_CruiseDataTransfers` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -188,7 +189,7 @@ INSERT INTO `OVDM_ExtraDirectories` (`extraDirectoryID`, `name`, `longName`, `de
 VALUES
 	(1,'Transfer Logs','Transfer Logs','OpenVDM/TransferLogs',1,1),
 	(2,'Dashboard Data','Dashboard Data','OpenVDM/DashboardData',1,1),
-	(3,'Science','Misc. cruise docs, pictures and data. ','Science',1,1);
+	(3,'PublicData Files','Misc. cruise docs, pictures and data. ','Science',1,1);
 
 /*!40000 ALTER TABLE `OVDM_ExtraDirectories` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -318,7 +319,7 @@ VALUES
 	(4,'rebuildDataDashboard','Rebuild Data Dashboard',0,2,1,0),
 	(5,'rebuildCruiseDirectory','Rebuild Cruise Directory',0,2,1,0),
 	(6,'exportOVDMConfig','Re-export the OpenVDM Configuration',0,2,1,0),
-	(7,'rsyncPublicDataToCruiseData','Sync PublicData to the Science Folder within current Cruise Directory',0,2,1,0),
+	(7,'rsyncPublicDataToCruiseData','Sync PublicData within Cruise Directory',0,2,1,0),
 	(8,'setupNewLowering','Setup New {lowering_name}',1,2,1,0),
 	(9,'finalizeCurrentLowering','Finalize Current {lowering_name}',1,2,1,0),
 	(10,'rebuildLoweringDirectory','Rebuild {lowering_name} Directory',1,2,1,0),
