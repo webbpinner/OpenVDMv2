@@ -337,8 +337,22 @@ use Helpers\Hooks;
                     <a href="<?php echo DIR; echo $data['systemStatus'] === 'On'? "config/disableSystem" : "config/enableSystem";?>">
 <?php
     }
+
+    #2020/11/10 00:00
+    $nowDateStr = gmdate('Y/m/d H:i');
+    $cruiseDates = $_warehouseModel->getCruiseDates();
+
+    $systemStatusClass = 'panel-red';
+
+    if($data['systemStatus'] === 'On') {
+        if($cruiseDates['cruiseStartDate'] > $nowDateStr || ($cruiseDates['cruiseEndDate'] != "" && $cruiseDates['cruiseEndDate'] < $nowDateStr)) {
+            $systemStatusClass = 'panel-yellow';
+        } else {
+            $systemStatusClass = 'panel-green';
+        }
+    }
 ?>
-                <div id="systemStatusPanel" class="panel <?php echo $data['systemStatus'] === 'On'? "panel-green" : "panel-red"; ?>">
+                <div id="systemStatusPanel" class="panel <?php echo $systemStatusClass; ?>">
                     <div class="panel-heading">
                         <div id="systemStatus" class="huge"><?php echo $data['systemStatus']; ?></div>
                         <div class="text-right">System Status</div>

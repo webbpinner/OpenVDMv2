@@ -34,13 +34,22 @@ class Warehouse extends Controller {
 
         if($this->_warehouseModel->getSystemStatus()) {
             $response['systemStatus'] = "On";
+            $nowDateStr = gmdate('Y/m/d H:i');
+            $cruiseDates = $this->_warehouseModel->getCruiseDates();
+
+            if($cruiseDates['cruiseStartDate'] > $nowDateStr) {
+                $response['warning'] = "Cruise has not started";
+            } elseif ($cruiseDates['cruiseEndDate'] != "" && $cruiseDates['cruiseEndDate'] < $nowDateStr) {
+                $response['warning'] = "Cruise has Ended";
+            }
+
         } else {
-            $response['systemStatus'] = "Off";            
+            $response['systemStatus'] = "Off";
         }
 
         echo json_encode($response);
     }
-    
+
     public function getShipToShoreTransfersStatus(){
 
         if($this->_warehouseModel->getShipToShoreTransfersStatus()) {
@@ -95,6 +104,14 @@ class Warehouse extends Controller {
         echo json_encode($response);
     }
     
+    // getCruiseDates - return the current cruise start/end dates.
+    public function getCruiseDates() {
+
+        $response['cruiseStartDate'] = $this->_warehouseModel->getCruiseStartDate();
+        $response['cruiseEndDate'] = $this->_warehouseModel->getCruiseEndDate();
+        echo json_encode($response);
+    }
+    :
     // getCruiseStartDate - return the current cruise start date.
 	public function getCruiseStartDate() {
 
