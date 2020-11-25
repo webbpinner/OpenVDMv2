@@ -19,7 +19,7 @@ Log into the Server as root
 Download the install script
 ```
 cd ~
-curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.4/install-openvdm-ubuntu18.04.sh > ~/install-openvdm-ubuntu18.04.sh
+curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.x/install-openvdm-ubuntu18.04.sh > ~/install-openvdm-ubuntu18.04.sh
 ```
 
 Run the install script
