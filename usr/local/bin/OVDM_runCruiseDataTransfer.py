@@ -9,12 +9,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.3
+#      VERSION:  2.4
 #      CREATED:  2015-01-01
-#     REVISION:  2018-03-19
+#     REVISION:  2020-11-19
 #
-# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2017
+# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2020
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -204,6 +204,9 @@ def build_filters(worker):
         transferLogs = worker.OVDM.getRequiredExtraDirectoryByName("Transfer Logs")
         excludedFilterArray.append("*/{cruiseID}/" + transferLogs['destDir'] + "/*")
 
+    if worker.cruiseDataTransfer['includePublicDataFiles'] == '0':
+        pubicDataDir = worker.OVDM.getRequiredExtraDirectoryByName("PublicData Files")
+        excludedFilterArray.append("*/{cruiseID}/" + pubicDataDir['destDir'] + "/*")
 
     excludedCollectionSystems = worker.cruiseDataTransfer['excludedCollectionSystems'].split(',')
     for excludedCollectionSystem in excludedCollectionSystems:
@@ -247,6 +250,10 @@ def build_excludeList(worker):
 
         transferLogs = worker.OVDM.getRequiredExtraDirectoryByName("Transfer Logs")
         excludedFilterArray.append("/" + transferLogs['destDir'])
+
+    if worker.cruiseDataTransfer['includePublicDataFiles'] == '0':
+        publicDataDir = worker.OVDM.getRequiredExtraDirectoryByName("PublicData Files")
+        excludedFilterArray.append("/" + publicDataDir['destDir'])
 
     excludedCollectionSystems = worker.cruiseDataTransfer['excludedCollectionSystems'].split(',')
 
@@ -330,9 +337,7 @@ def transfer_localDestDir(worker, job):
     if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
         bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
     
-    command = ['rsync', '-tri', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir + '/', destDir]
-    # command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + rsyncFileListPath, baseDir, destDir]
-    # command = ['rsync', '-tri',               '--files-from=' + rsyncFileListPath, baseDir, destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir + '/', destDir]
 
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -474,9 +479,7 @@ def transfer_smbDestDir(worker, job):
     if worker.cruiseDataTransfer['bandwidthLimit'] != '0':
         bandwidthLimit = '--bwlimit=' + worker.cruiseDataTransfer['bandwidthLimit']
 
-    command = ['rsync', '-tri', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir + '/', destDir]
-    #command = ['rsync', '-tri', bandwidthLimit, '--files-from=' + rsyncFileListPath, sourceDir, destDir]
-    #command = ['rsync', '-tri',                '--files-from=' + rsyncFileListPath, sourceDir, destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir + '/', destDir]
     
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -587,9 +590,7 @@ def transfer_rsyncDestDir(worker, job):
     popen = subprocess.Popen(command, stdout=subprocess.PIPE)
 
 
-    command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, cruiseDir + '/', 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/' + worker.cruiseID + '/']
-    #command = ['rsync', '-tri', bandwidthLimit, '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
-    #command = ['rsync', '-tri',                '--no-motd', '--files-from=' + rsyncFileListPath, '--password-file=' + rsyncPasswordFilePath, sourceDir, 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+    command = ['rsync', '-trim', bandwidthLimit, '--no-motd', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, cruiseDir + '/', 'rsync://' + worker.cruiseDataTransfer['rsyncUser'] + '@' + worker.cruiseDataTransfer['rsyncServer'] + destDir + '/' + worker.cruiseID + '/']
     
     s = ' '
     debugPrint('Transfer Command:', s.join(command))
@@ -684,11 +685,10 @@ def transfer_sshDestDir(worker, job):
     proc.communicate()
 
     if worker.cruiseDataTransfer['sshUseKey'] == '1':
-        command = ['rsync', '-tri', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + os.path.join(destDir, worker.cruiseID)]
-        #command = ['rsync', '-tri',                '--files-from=' + sshExcludeListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]        
+        command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + os.path.join(destDir, worker.cruiseID)]
+
     else:
-        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + os.path.join(destDir, worker.cruiseID)]
-        #command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-tri',                '--files-from=' + sshFileListPath, '-e', 'ssh', baseDir, worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+        command = ['sshpass', '-p', worker.cruiseDataTransfer['sshPass'], 'rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir + '/', worker.cruiseDataTransfer['sshUser'] + '@' + worker.cruiseDataTransfer['sshServer'] + ':' + os.path.join(destDir, worker.cruiseID)]
     
     s = ' '
     debugPrint('Transfer Command:',s.join(command))

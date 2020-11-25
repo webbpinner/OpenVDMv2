@@ -1,0 +1,135 @@
+# ----------------------------------------------------------------------------------- #
+#
+#         FILE:  buildRemoteDirectory.py
+#
+#        USAGE:  buildRemoteDirectory.py [-h] [-s] collectionSystem templateDirectory
+#
+#  REQUIRED ARGUMENTS:
+#                collectionSystem  name of OpenVDM-defined collection system to process
+#
+#  OPTIONAL ARGUMENTS:
+#                -h, --help        show this help message and exit
+#                -s                create the source directory
+#                collectionSystem  the collection system where the directory will be
+#                                  created.
+#                templateDirectory the directory structure to create on the remote
+#                                  server
+#
+#  DESCRIPTION:  This script utilizes OpenVDM's hook architecture to create a directory
+#                structure on a remote workstations based on a directory structure
+#                template.  The directory structure is created automatically at the
+#                when a new cruise is created within OpenVDM
+#
+#                This script is designed to be called from the postSetupNewCruise hook.
+#
+#         BUGS:
+#        NOTES:
+#       AUTHOR:  Webb Pinner
+#      COMPANY:  Capable Solutions
+#      VERSION:  1.0
+#      CREATED:  2020-11-19
+#     REVISION:  
+#
+# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2020
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# ----------------------------------------------------------------------------------- #
+
+from __future__ import print_function
+import os
+import sys
+import pwd
+import grp
+import shutil
+import tempfile
+import argparse
+import json
+import subprocess
+import glob
+import openvdm
+
+DEBUG = False
+
+
+def debugPrint(*args, **kwargs):
+    global DEBUG
+    if DEBUG:
+        errPrint(*args, **kwargs)
+
+
+def errPrint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+# -------------------------------------------------------------------------------------
+# The main function of the script
+# -------------------------------------------------------------------------------------
+def main(argv):
+       
+    # Define the command-line structure
+    parser = argparse.ArgumentParser(description='build remote directory structure based on template')
+    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser.add_argument('-s', action='store_true', help=' create the source directory')
+    parser.add_argument('collectionSystem', help='the collection system where the directory will be created')
+    parser.add_argument('templateDirectory', help='the directory structure to create on the remote server')
+
+    args = parser.parse_args()
+    if args.debug:
+        global DEBUG
+        DEBUG = True
+        debugPrint("Running in debug mode")
+
+    # build an OpenVDM object
+    openVDM = openvdm.OpenVDM()
+        
+    # Retrieve the information for the collection system defined in the command-line argument
+    collectionSystem = openVDM.getCollectionSystemTransferByName(args.collectionSystem)
+    if not collectionSystem:
+        errPrint("ERROR: Collection System: '" + args.collectionSystem + "' not found!")
+        return -1
+
+    if collectionSystem['transferType'] != "3":
+        errPrint("ERROR: Collection System: '" + args.collectionSystem + "' is not a Samba Server Transfer!")
+        return -1
+
+    # debugPrint(json.dumps(collectionSystem, indent=2))
+    cruiseID = openVDM.getCruiseID()
+    sourceDir = collectionSystem['sourceDir'].replace("{cruiseID}", cruiseID)
+
+    # debugPrint("sourceDir:", sourceDir)
+    # debugPrint("cruiseID:", cruiseID)
+
+    if args.s:
+        sourceDirParts = os.path.split(sourceDir)
+        for idx, subDir in enumerate(sourceDirParts, start=1):
+            debugPrint("create directory:", os.path.join(*sourceDirParts[:idx]))
+            debugPrint("smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m SMB2 -c 'mkdir \"" + os.path.join(*sourceDirParts[:idx]) + "\"'")
+
+    for root, dirs, files in os.walk(args.templateDirectory):
+        root = root.replace(args.templateDirectory, '').lstrip('/')
+        for name in dirs:
+            name = name.replace("{cruiseID}", cruiseID)
+            debugPrint("create directory:", os.path.join(sourceDir, root, name))
+            debugPrint("smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m SMB2 -c 'mkdir \"" + os.path.join(sourceDir, root, name) + "\"'")
+        for name in files:
+            newName = name.replace("{cruiseID}", cruiseID)
+            debugPrint("create file:     ", os.path.join(sourceDir, root, newName))
+            debugPrint("smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m SMB2 -c 'put \"" + os.path.join(sourceDir, root, name) + "\";rename \"" + os.path.join(sourceDir, root, name) + "\", \"" + os.path.join(sourceDir, root, newName) + "\"'")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+

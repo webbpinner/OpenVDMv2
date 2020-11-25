@@ -9,12 +9,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.3
+#      VERSION:  2.4
 #      CREATED:  2015-01-01
-#     REVISION:  2017-10-05
+#     REVISION:  2020-11-19
 #
-# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2017
+# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2020
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -506,7 +506,6 @@ def task_exportLoweringConfig(worker, job):
     #build OpenVDM Config file
     loweringConfig = worker.OVDM.getLoweringConfig()
 
-
     loweringConfigFilePath = os.path.join(loweringDir,loweringConfigFN)
 
     if os.path.isfile(loweringConfigFilePath):
@@ -524,7 +523,16 @@ def task_exportLoweringConfig(worker, job):
         else:
             job_results['parts'].append({"partName": "Read existing configuration file", "result": "Pass"})
 
-    #debugPrint('Path:', os.path.join(loweringDir,loweringConfigFN))
+    for transfer in loweringConfig['cruiseDataTransfersConfig']:
+        del transfer['sshPass']
+        del transfer['rsyncPass']
+        del transfer['smbPass']
+
+    for transfer in loweringConfig['collectionSystemTransfersConfig']:
+        del transfer['sshPass']
+        del transfer['rsyncPass']
+        del transfer['smbPass']
+
     output_results = output_JSONDataToFile(worker, loweringConfigFilePath, loweringConfig)
 
     if output_results['verdict']:

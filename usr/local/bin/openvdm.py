@@ -8,12 +8,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.3
+#      VERSION:  2.4
 #      CREATED:  2016-02-02
-#     REVISION:  2017-10-05
+#     REVISION:  2020-11-19
 #
-# LICENSE INFO: Open Vessel Data Management v2.3 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2017
+# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2020
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import requests
 import yaml
 import json
 import datetime
+import logging
 
 configFile = '/usr/local/etc/openvdm/openvdm.yaml'
 
@@ -43,6 +44,11 @@ class OpenVDM():
 
         self.config = {}
         self.config = self.parseOVDMConfig()
+        self.logger = logging.getLogger(__file__)
+
+
+    def getLogger():
+        return self.logger
 
 
     def parseOVDMConfig(self):
