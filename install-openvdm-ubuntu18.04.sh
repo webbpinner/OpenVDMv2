@@ -10,7 +10,7 @@ function set_default_variables {
     DEFAULT_DATA_ROOT=/vault
 
     DEFAULT_OPENVDM_REPO=https://github.com/webbpinner/OpenVDMv2
-    DEFAULT_OPENVDM_BRANCH=v2.4
+    DEFAULT_OPENVDM_BRANCH=v2.x
 
     DEFAULT_OPENVDM_USER=survey
 
