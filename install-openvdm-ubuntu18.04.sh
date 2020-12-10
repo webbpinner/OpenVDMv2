@@ -180,7 +180,6 @@ EOF
         fi
 
       cat >> /etc/supervisor/supervisord.conf <<EOF
-
 ### Added by OpenVDM install script ###
 EOF
     fi
