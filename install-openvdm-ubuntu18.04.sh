@@ -1,5 +1,30 @@
 PREFERENCES_FILE='.install_openvdm_preferences'
 
+
+#########################################################################
+#########################################################################
+# Return a normalized yes/no for a value
+yes_no() {
+    QUESTION=$1
+    DEFAULT_ANSWER=$2
+
+    while true; do
+        read -p "$QUESTION ($DEFAULT_ANSWER) " yn
+        case $yn in
+            [Yy]* )
+                YES_NO_RESULT=yes
+                break;;
+            [Nn]* )
+                YES_NO_RESULT=no
+                break;;
+            "" )
+                YES_NO_RESULT=$DEFAULT_ANSWER
+                break;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
+
 ###########################################################################
 ###########################################################################
 # Read any pre-saved default variables from file
@@ -69,7 +94,7 @@ function set_hostname {
 ###########################################################################
 # Create user
 function create_user {
-  
+
     OPENVDM_USER=$1
 
     echo Checking if user $OPENVDM_USER exists yet
