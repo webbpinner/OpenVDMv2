@@ -14,6 +14,10 @@ function set_default_variables {
 
     DEFAULT_OPENVDM_USER=survey
 
+    DEFAULT_SUPERVISORD_WEBINTERFACE=no
+    DEFAULT_SUPERVISORD_WEBINTERFACE_AUTH=no
+    DEFAULT_SUPERVISORD_WEBINTERFACE_PORT=9001
+
     # Read in the preferences file, if it exists, to overwrite the defaults.
     if [ -e $PREFERENCES_FILE ]; then
         echo Reading pre-saved defaults from "$PREFERENCES_FILE"
@@ -37,6 +41,11 @@ DEFAULT_OPENVDM_REPO=$OPENVDM_REPO
 DEFAULT_OPENVDM_BRANCH=$OPENVDM_BRANCH
 
 DEFAULT_OPENVDM_USER=$OPENVDM_USER
+
+DEFAULT_SUPERVISORD_WEBINTERFACE=$SUPERVISORD_WEBINTERFACE
+DEFAULT_SUPERVISORD_WEBINTERFACE_AUTH=$SUPERVISORD_WEBINTERFACE_AUTH
+DEFAULT_SUPERVISORD_WEBINTERFACE_PORT=$SUPERVISORD_WEBINTERFACE_PORT
+
 EOF
 }
 
@@ -60,6 +69,7 @@ function set_hostname {
 ###########################################################################
 # Create user
 function create_user {
+  
     OPENVDM_USER=$1
 
     echo Checking if user $OPENVDM_USER exists yet
@@ -68,8 +78,6 @@ function create_user {
     else
         echo Creating $OPENVDM_USER
         adduser --gecos "" $OPENVDM_USER
-        #passwd $OPENVDM_USER
-        usermod -a -G tty $OPENVDM_USER
         usermod -a -G sudo $OPENVDM_USER
     fi
 }
@@ -78,6 +86,7 @@ function create_user {
 ###########################################################################
 # Install and configure required packages
 function install_packages {
+
     apt-get update
 
     LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
@@ -117,13 +126,39 @@ function configure_supervisor {
 
     mv /etc/supervisor/supervisord.conf /etc/supervisor/supervisord.conf.orig
 
-    grep -v "\[inet_http_server\]" /etc/supervisor/supervisord.conf.orig | grep -v "port = 9001" > /etc/supervisor/supervisord.conf
+    sed -e '/### Added by OpenVDM install script ###/,/### Added by OpenVDM install script ###/d' /etc/supervisor/supervisord.conf.orig |
+    sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba' > /etc/supervisor/supervisord.conf
 
-    cat >> /etc/supervisor/supervisord.conf <<EOF
+#     cat >> /etc/supervisor/supervisord.conf <<EOF
 
+# ### Added by OpenVDM install script ###
+# [inet_http_server]
+# username = ${OPENVDM_USER}
+# port = 9001
+# ### Added by OpenVDM install script ###
+# EOF
+
+
+    if [ $SUPERVISORD_WEBINTERFACE == 'yes' ]; then
+        cat >> /etc/supervisor/supervisord.conf <<EOF
+
+### Added by OpenVDM install script ###
 [inet_http_server]
-port = 9001
+port=9001
 EOF
+        if [ $SUPERVISORD_WEBINTERFACE_AUTH == 'yes' ]; then
+            SUPERVISORD_WEBINTERFACE_HASH=`echo -n ${SUPERVISORD_WEBINTERFACE_PASS} | sha1sum | awk '{printf("{SHA}%s",$1)}'`
+            cat >> /etc/supervisor/supervisord.conf <<EOF
+username=${SUPERVISORD_WEBINTERFACE_USER}
+password=${SUPERVISORD_WEBINTERFACE_HASH} ; echo -n "<password>" | sha1sum | awk '{printf("{SHA}%s",\$1)}'
+EOF
+        fi
+
+      cat >> /etc/supervisor/supervisord.conf <<EOF
+
+### Added by OpenVDM install script ###
+EOF
+    fi
 
     systemctl restart supervisor.service 
 
@@ -144,12 +179,20 @@ function configure_gearman {
 # Install and configure database
 function configure_samba {
 
+    echo Set smbpasswd for ${OPENVDM_USER}, recommended to use same password as system user
+    smbpasswd -a ${OPENVDM_USER}
+
     mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
 
-    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig | grep -v "include = /etc/samba/openvdm.conf" > /etc/samba/smb.conf
+    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig |
+    sed -e '/### Added by OpenVDM install script ###/,/### Added by OpenVDM install script ###/d' |
+    sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba'  > /etc/samba/smb.conf
+    
     cat >> /etc/samba/smb.conf <<EOF
 
+/### Added by OpenVDM install script ###
 include = /etc/samba/openvdm.conf
+/### Added by OpenVDM install script ###
 EOF
 
     cat >> /etc/samba/openvdm.conf <<EOF
@@ -665,6 +708,35 @@ NEW_ROOT_DATABASE_PASSWORD=${NEW_ROOT_DATABASE_PASSWORD:-$CURRENT_ROOT_DATABASE_
 read -p "Root data directory for OpenVDM? ($DEFAULT_DATA_ROOT) " DATA_ROOT
 DATA_ROOT=${DATA_ROOT:-$DEFAULT_DATA_ROOT}
 
+
+#########################################################################
+# Enable Supervisor web-interface?
+echo "#####################################################################"
+echo The supervisord service provides an optional web-interface that enables
+echo operators to start/stop/restart the OpenRVDAS main processes from a web-
+echo browser.
+echo
+yes_no "Enable Supervisor Web-interface? " $DEFAULT_SUPERVISORD_WEBINTERFACE
+SUPERVISORD_WEBINTERFACE=$YES_NO_RESULT
+
+if [ $SUPERVISORD_WEBINTERFACE == 'yes' ]; then
+
+    echo Would you like to enable a password on the supervisord web-interface?
+    echo
+    yes_no "Enable Supervisor Web-interface user/pass? " $DEFAULT_SUPERVISORD_WEBINTERFACE_AUTH
+    SUPERVISORD_WEBINTERFACE_AUTH=$YES_NO_RESULT
+
+    if [ $SUPERVISORD_WEBINTERFACE_AUTH == 'yes' ]; then
+
+        read -p "Username? ($RVDAS_USER) " SUPERVISORD_WEBINTERFACE_USER
+        SUPERVISORD_WEBINTERFACE_USER=${SUPERVISORD_WEBINTERFACE_USER:-$RVDAS_USER}
+
+        read -p "Password? ($RVDAS_USER) " SUPERVISORD_WEBINTERFACE_PASS
+        SUPERVISORD_WEBINTERFACE_PASS=${SUPERVISORD_WEBINTERFACE_PASS:-$RVDAS_USER}
+
+    fi
+fi
+
 #########################################################################
 #########################################################################
 # Save defaults in a preferences file for the next time we run.
@@ -699,7 +771,7 @@ install_openvdm
 
 echo "#####################################################################"
 echo Configuring Samba
-configure_samba
+configure_samba $OPENVDM_USER
 
 echo "#####################################################################"
 echo Installing/Configuring MapProxy
