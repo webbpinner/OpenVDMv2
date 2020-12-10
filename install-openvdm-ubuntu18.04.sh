@@ -453,8 +453,8 @@ EOF
 # Install and configure database
 function configure_mysql {
     # Expect the following shell variables to be appropriately set:
-    # RVDAS_USER - valid userid
-    # RVDAS_DATABASE_PASSWORD - current rvdas user MySQL database password
+    # OPENVDM_USER - valid userid
+    # OPENVDM_DATABASE_PASSWORD - current OpenVDM user MySQL database password
     # NEW_ROOT_DATABASE_PASSWORD - new root password to use for MySQL
     # CURRENT_ROOT_DATABASE_PASSWORD - current root password for MySQL
 
@@ -509,19 +509,6 @@ create user '$OPENVDM_USER'@'localhost' identified by '$OPENVDM_DATABASE_PASSWOR
 flush privileges;
 \q
 EOF
-#     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
-# drop user if exists 'test'@'localhost';
-# create user 'test'@'localhost' identified by 'test';
-# drop user if exists 'rvdas'@'localhost';
-# create user '$RVDAS_USER'@'localhost' identified by '$RVDAS_DATABASE_PASSWORD';
-# create database if not exists data character set utf8;
-# GRANT ALL PRIVILEGES ON data.* TO '$RVDAS_USER'@'localhost';
-# create database if not exists test character set utf8;
-# GRANT ALL PRIVILEGES ON test.* TO '$RVDAS_USER'@'localhost';
-# GRANT ALL PRIVILEGES ON test.* TO 'test'@'localhost' identified by 'test';
-# flush privileges;
-# \q
-# EOF
     echo Done setting up MySQL
 }
 
@@ -568,7 +555,7 @@ function configure_directories {
 
 ###########################################################################
 ###########################################################################
-# Install OpenRVDAS
+# Install OpenVDM
 function install_openvdm {
     # Expect the following shell variables to be appropriately set:
     # DATA_ROOT - path where data will be stored is
@@ -738,7 +725,7 @@ DATA_ROOT=${DATA_ROOT:-$DEFAULT_DATA_ROOT}
 # Enable Supervisor web-interface?
 echo "#####################################################################"
 echo The supervisord service provides an optional web-interface that enables
-echo operators to start/stop/restart the OpenRVDAS main processes from a web-
+echo operators to start/stop/restart the OpenVDM main processes from a web-
 echo browser.
 echo
 yes_no "Enable Supervisor Web-interface? " $DEFAULT_SUPERVISORD_WEBINTERFACE
@@ -753,11 +740,11 @@ if [ $SUPERVISORD_WEBINTERFACE == 'yes' ]; then
 
     if [ $SUPERVISORD_WEBINTERFACE_AUTH == 'yes' ]; then
 
-        read -p "Username? ($RVDAS_USER) " SUPERVISORD_WEBINTERFACE_USER
-        SUPERVISORD_WEBINTERFACE_USER=${SUPERVISORD_WEBINTERFACE_USER:-$RVDAS_USER}
+        read -p "Username? ($OPENVDM_USER) " SUPERVISORD_WEBINTERFACE_USER
+        SUPERVISORD_WEBINTERFACE_USER=${SUPERVISORD_WEBINTERFACE_USER:-$OPENVDM_USER}
 
-        read -p "Password? ($RVDAS_USER) " SUPERVISORD_WEBINTERFACE_PASS
-        SUPERVISORD_WEBINTERFACE_PASS=${SUPERVISORD_WEBINTERFACE_PASS:-$RVDAS_USER}
+        read -p "Password? ($OPENVDM_USER) " SUPERVISORD_WEBINTERFACE_PASS
+        SUPERVISORD_WEBINTERFACE_PASS=${SUPERVISORD_WEBINTERFACE_PASS:-$OPENVDM_USER}
 
     fi
 fi
