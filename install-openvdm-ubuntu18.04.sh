@@ -1,5 +1,30 @@
 PREFERENCES_FILE='.install_openvdm_preferences'
 
+
+#########################################################################
+#########################################################################
+# Return a normalized yes/no for a value
+yes_no() {
+    QUESTION=$1
+    DEFAULT_ANSWER=$2
+
+    while true; do
+        read -p "$QUESTION ($DEFAULT_ANSWER) " yn
+        case $yn in
+            [Yy]* )
+                YES_NO_RESULT=yes
+                break;;
+            [Nn]* )
+                YES_NO_RESULT=no
+                break;;
+            "" )
+                YES_NO_RESULT=$DEFAULT_ANSWER
+                break;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
+
 ###########################################################################
 ###########################################################################
 # Read any pre-saved default variables from file
@@ -13,6 +38,10 @@ function set_default_variables {
     DEFAULT_OPENVDM_BRANCH=v2.x
 
     DEFAULT_OPENVDM_USER=survey
+
+    DEFAULT_SUPERVISORD_WEBINTERFACE=no
+    DEFAULT_SUPERVISORD_WEBINTERFACE_AUTH=no
+    DEFAULT_SUPERVISORD_WEBINTERFACE_PORT=9001
 
     # Read in the preferences file, if it exists, to overwrite the defaults.
     if [ -e $PREFERENCES_FILE ]; then
@@ -37,6 +66,11 @@ DEFAULT_OPENVDM_REPO=$OPENVDM_REPO
 DEFAULT_OPENVDM_BRANCH=$OPENVDM_BRANCH
 
 DEFAULT_OPENVDM_USER=$OPENVDM_USER
+
+DEFAULT_SUPERVISORD_WEBINTERFACE=$SUPERVISORD_WEBINTERFACE
+DEFAULT_SUPERVISORD_WEBINTERFACE_AUTH=$SUPERVISORD_WEBINTERFACE_AUTH
+DEFAULT_SUPERVISORD_WEBINTERFACE_PORT=$SUPERVISORD_WEBINTERFACE_PORT
+
 EOF
 }
 
@@ -60,6 +94,7 @@ function set_hostname {
 ###########################################################################
 # Create user
 function create_user {
+
     OPENVDM_USER=$1
 
     echo Checking if user $OPENVDM_USER exists yet
@@ -68,8 +103,6 @@ function create_user {
     else
         echo Creating $OPENVDM_USER
         adduser --gecos "" $OPENVDM_USER
-        #passwd $OPENVDM_USER
-        usermod -a -G tty $OPENVDM_USER
         usermod -a -G sudo $OPENVDM_USER
     fi
 }
@@ -78,6 +111,7 @@ function create_user {
 ###########################################################################
 # Install and configure required packages
 function install_packages {
+
     apt-get update
 
     LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
@@ -117,13 +151,38 @@ function configure_supervisor {
 
     mv /etc/supervisor/supervisord.conf /etc/supervisor/supervisord.conf.orig
 
-    grep -v "\[inet_http_server\]" /etc/supervisor/supervisord.conf.orig | grep -v "port = 9001" > /etc/supervisor/supervisord.conf
+    sed -e '/### Added by OpenVDM install script ###/,/### Added by OpenVDM install script ###/d' /etc/supervisor/supervisord.conf.orig |
+    sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba' > /etc/supervisor/supervisord.conf
 
-    cat >> /etc/supervisor/supervisord.conf <<EOF
+#     cat >> /etc/supervisor/supervisord.conf <<EOF
 
+# ### Added by OpenVDM install script ###
+# [inet_http_server]
+# username = ${OPENVDM_USER}
+# port = 9001
+# ### Added by OpenVDM install script ###
+# EOF
+
+
+    if [ $SUPERVISORD_WEBINTERFACE == 'yes' ]; then
+        cat >> /etc/supervisor/supervisord.conf <<EOF
+
+### Added by OpenVDM install script ###
 [inet_http_server]
-port = 9001
+port=9001
 EOF
+        if [ $SUPERVISORD_WEBINTERFACE_AUTH == 'yes' ]; then
+            SUPERVISORD_WEBINTERFACE_HASH=`echo -n ${SUPERVISORD_WEBINTERFACE_PASS} | sha1sum | awk '{printf("{SHA}%s",$1)}'`
+            cat >> /etc/supervisor/supervisord.conf <<EOF
+username=${SUPERVISORD_WEBINTERFACE_USER}
+password=${SUPERVISORD_WEBINTERFACE_HASH} ; echo -n "<password>" | sha1sum | awk '{printf("{SHA}%s",\$1)}'
+EOF
+        fi
+
+      cat >> /etc/supervisor/supervisord.conf <<EOF
+### Added by OpenVDM install script ###
+EOF
+    fi
 
     systemctl restart supervisor.service 
 
@@ -144,12 +203,20 @@ function configure_gearman {
 # Install and configure database
 function configure_samba {
 
+    echo Set smbpasswd for ${OPENVDM_USER}, recommended to use same password as system user
+    smbpasswd -a ${OPENVDM_USER}
+
     mv /etc/samba/smb.conf /etc/samba/smb.conf.orig
 
-    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig | grep -v "include = /etc/samba/openvdm.conf" > /etc/samba/smb.conf
+    sed -e 's/obey pam restrictions = yes/obey pam restrictions = no/' /etc/samba/smb.conf.orig |
+    sed -e '/### Added by OpenVDM install script ###/,/### Added by OpenVDM install script ###/d' |
+    sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba'  > /etc/samba/smb.conf
+    
     cat >> /etc/samba/smb.conf <<EOF
 
+/### Added by OpenVDM install script ###
 include = /etc/samba/openvdm.conf
+/### Added by OpenVDM install script ###
 EOF
 
     cat >> /etc/samba/openvdm.conf <<EOF
@@ -385,8 +452,8 @@ EOF
 # Install and configure database
 function configure_mysql {
     # Expect the following shell variables to be appropriately set:
-    # RVDAS_USER - valid userid
-    # RVDAS_DATABASE_PASSWORD - current rvdas user MySQL database password
+    # OPENVDM_USER - valid userid
+    # OPENVDM_DATABASE_PASSWORD - current OpenVDM user MySQL database password
     # NEW_ROOT_DATABASE_PASSWORD - new root password to use for MySQL
     # CURRENT_ROOT_DATABASE_PASSWORD - current root password for MySQL
 
@@ -441,19 +508,6 @@ create user '$OPENVDM_USER'@'localhost' identified by '$OPENVDM_DATABASE_PASSWOR
 flush privileges;
 \q
 EOF
-#     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
-# drop user if exists 'test'@'localhost';
-# create user 'test'@'localhost' identified by 'test';
-# drop user if exists 'rvdas'@'localhost';
-# create user '$RVDAS_USER'@'localhost' identified by '$RVDAS_DATABASE_PASSWORD';
-# create database if not exists data character set utf8;
-# GRANT ALL PRIVILEGES ON data.* TO '$RVDAS_USER'@'localhost';
-# create database if not exists test character set utf8;
-# GRANT ALL PRIVILEGES ON test.* TO '$RVDAS_USER'@'localhost';
-# GRANT ALL PRIVILEGES ON test.* TO 'test'@'localhost' identified by 'test';
-# flush privileges;
-# \q
-# EOF
     echo Done setting up MySQL
 }
 
@@ -500,7 +554,7 @@ function configure_directories {
 
 ###########################################################################
 ###########################################################################
-# Install OpenRVDAS
+# Install OpenVDM
 function install_openvdm {
     # Expect the following shell variables to be appropriately set:
     # DATA_ROOT - path where data will be stored is
@@ -665,6 +719,35 @@ NEW_ROOT_DATABASE_PASSWORD=${NEW_ROOT_DATABASE_PASSWORD:-$CURRENT_ROOT_DATABASE_
 read -p "Root data directory for OpenVDM? ($DEFAULT_DATA_ROOT) " DATA_ROOT
 DATA_ROOT=${DATA_ROOT:-$DEFAULT_DATA_ROOT}
 
+
+#########################################################################
+# Enable Supervisor web-interface?
+echo "#####################################################################"
+echo The supervisord service provides an optional web-interface that enables
+echo operators to start/stop/restart the OpenVDM main processes from a web-
+echo browser.
+echo
+yes_no "Enable Supervisor Web-interface? " $DEFAULT_SUPERVISORD_WEBINTERFACE
+SUPERVISORD_WEBINTERFACE=$YES_NO_RESULT
+
+if [ $SUPERVISORD_WEBINTERFACE == 'yes' ]; then
+
+    echo Would you like to enable a password on the supervisord web-interface?
+    echo
+    yes_no "Enable Supervisor Web-interface user/pass? " $DEFAULT_SUPERVISORD_WEBINTERFACE_AUTH
+    SUPERVISORD_WEBINTERFACE_AUTH=$YES_NO_RESULT
+
+    if [ $SUPERVISORD_WEBINTERFACE_AUTH == 'yes' ]; then
+
+        read -p "Username? ($OPENVDM_USER) " SUPERVISORD_WEBINTERFACE_USER
+        SUPERVISORD_WEBINTERFACE_USER=${SUPERVISORD_WEBINTERFACE_USER:-$OPENVDM_USER}
+
+        read -p "Password? ($OPENVDM_USER) " SUPERVISORD_WEBINTERFACE_PASS
+        SUPERVISORD_WEBINTERFACE_PASS=${SUPERVISORD_WEBINTERFACE_PASS:-$OPENVDM_USER}
+
+    fi
+fi
+
 #########################################################################
 #########################################################################
 # Save defaults in a preferences file for the next time we run.
@@ -699,7 +782,7 @@ install_openvdm
 
 echo "#####################################################################"
 echo Configuring Samba
-configure_samba
+configure_samba $OPENVDM_USER
 
 echo "#####################################################################"
 echo Installing/Configuring MapProxy

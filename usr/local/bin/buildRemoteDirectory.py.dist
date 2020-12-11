@@ -74,6 +74,21 @@ def errPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def makeSystemCall(command):
+
+    debugPrint("Command:", ' '.join(command))
+    proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    out, err = proc.communicate()            
+
+    if len(out) > 0:
+        debugPrint("stdout:")
+        debugPrint(out)
+        
+    if len(err) > 0:
+        errPrint("stderr:")
+        errPrint(err)
+
+
 # -------------------------------------------------------------------------------------
 # The main function of the script
 # -------------------------------------------------------------------------------------
@@ -101,8 +116,8 @@ def main(argv):
         errPrint("ERROR: Collection System: '" + args.collectionSystem + "' not found!")
         return -1
 
-    if collectionSystem['transferType'] != "3":
-        errPrint("ERROR: Collection System: '" + args.collectionSystem + "' is not a Samba Server Transfer!")
+    if collectionSystem['transferType'] != "1" or collectionSystem['transferType'] != "3":
+        errPrint("ERROR: Collection System: '" + args.collectionSystem + "' is not a Local Directory or Samba Server Transfer!")
         return -1
 
     # debugPrint(json.dumps(collectionSystem, indent=2))
@@ -116,18 +131,22 @@ def main(argv):
         sourceDirParts = os.path.split(sourceDir)
         for idx, subDir in enumerate(sourceDirParts, start=1):
             debugPrint("create directory:", os.path.join(*sourceDirParts[:idx]))
-            debugPrint("smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m SMB2 -c 'mkdir \"" + os.path.join(*sourceDirParts[:idx]) + "\"'")
+            command = ["smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m", "SMB2", "-c 'mkdir \"" + os.path.join(*sourceDirParts[:idx]) + "\"'"]
+            makeSystemCall(command)
 
     for root, dirs, files in os.walk(args.templateDirectory):
         root = root.replace(args.templateDirectory, '').lstrip('/')
         for name in dirs:
             name = name.replace("{cruiseID}", cruiseID)
             debugPrint("create directory:", os.path.join(sourceDir, root, name))
-            debugPrint("smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m SMB2 -c 'mkdir \"" + os.path.join(sourceDir, root, name) + "\"'")
+            command = ["smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m", "SMB2", "-c 'mkdir \"" + os.path.join(sourceDir, root, name) + "\"'"]
+            makeSystemCall(command)
+
         for name in files:
             newName = name.replace("{cruiseID}", cruiseID)
             debugPrint("create file:     ", os.path.join(sourceDir, root, newName))
-            debugPrint("smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m SMB2 -c 'put \"" + os.path.join(sourceDir, root, name) + "\";rename \"" + os.path.join(sourceDir, root, name) + "\", \"" + os.path.join(sourceDir, root, newName) + "\"'")
+            command = ["smbclient", collectionSystem['smbServer'], collectionSystem['smbPass'], "-W", collectionSystem['smbDomain'], "-U", collectionSystem['smbUser'], "-m", "SMB2", "-c 'put \"" + os.path.join(sourceDir, root, name) + "\";rename \"" + os.path.join(sourceDir, root, name) + "\", \"" + os.path.join(sourceDir, root, newName) + "\"'"]
+            makeSystemCall(command)
 
 
 if __name__ == "__main__":
