@@ -122,7 +122,7 @@ function install_packages {
 
     apt-get update
 
-    apt install -y ssh sshpass rsync samba smbclient gearman-job-server \
+    apt install -y ssh sshpass rsync samba smbclient git gearman-job-server \
         libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm \
         supervisor mysql-server mysql-client cifs-utils apache2 \
         libapache2-mod-wsgi libapache2-mod-php7.3 php7.3 php7.3-cli \
@@ -625,8 +625,8 @@ EOF
     rsync -a ./var/www/OpenVDMv2 /var/www/
     cp /var/www/OpenVDMv2/.htaccess.dist /var/www/OpenVDMv2/.htaccess
     
-    sed -s "s/define('DB_USER', 'openvdmDBUser');/define('DB_USER', ${OPENVDM_USER});/" /var/www/OpenVDMv2/app/Core/Config.php.dist | \
-    sed -e "s/define('DB_PASS', 'oxhzbeY8WzgBL3');/define('DB_PASS', ${OPENVDM_DATABASE_PASSWORD});/" \
+    sed -s "s/define('DB_USER', 'openvdmDBUser');/define('DB_USER', '${OPENVDM_USER}');/" /var/www/OpenVDMv2/app/Core/Config.php.dist | \
+    sed -e "s/define('DB_PASS', 'oxhzbeY8WzgBL3');/define('DB_PASS', '${OPENVDM_DATABASE_PASSWORD}');/" \
     > /var/www/OpenVDMv2/app/Core/Config.php
     
     touch /var/www/OpenVDMv2/errorlog.html
