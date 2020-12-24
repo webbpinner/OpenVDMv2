@@ -60,7 +60,7 @@ class OpenVDM():
         try:
             with open(configFile, 'r') as f:
                 try:
-                    return yaml.load(f.read())
+                    return yaml.load(f.read(), Loader=yaml.FullLoader)
                 except Exception as e:
                     logging.error("Unable to parse configuration file: {}".format(configFile))
                     raise e

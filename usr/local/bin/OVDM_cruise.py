@@ -38,7 +38,7 @@ import sys
 import tempfile
 import subprocess
 import errno
-import gearman
+import python3_gearman
 import json
 import time
 import signal
@@ -49,6 +49,7 @@ import openvdm
 import logging
 from random import randint
 
+from logger.utils.stderr_logging import StdErrLoggingHandler, STDERR_FORMATTER
 
 cruiseConfigFN = 'ovdmConfig.json'
 
@@ -108,7 +109,7 @@ def setOwnerGroupPermissions(worker, path):
     if os.path.isfile(path):
         try:
             os.chown(path, uid, gid)
-            os.chmod(path, 0644)
+            os.chmod(path, 0o644)
         except OSError:
             logging.error("Unable to set ownership/permissions for {}".format(path))
             reasons.append("Unable to set ownership/permissions for {}".format(path))
@@ -116,7 +117,7 @@ def setOwnerGroupPermissions(worker, path):
     else: #directory
         try:
             os.chown(path, uid, gid)
-            os.chmod(path, 0755)
+            os.chmod(path, 0o755)
         except OSError:
             logging.error("Unable to set ownership/permissions for {}".format(path))
             reasons.append("Unable to set ownership/permissions for {}".format(path))
@@ -127,7 +128,7 @@ def setOwnerGroupPermissions(worker, path):
                 logging.debug("Setting ownership/permissions for {}".format(file))
                 try:
                     os.chown(fname, uid, gid)
-                    os.chmod(fname, 0644)
+                    os.chmod(fname, 0o644)
                 except OSError:
                     logging.error("Unable to set ownership/permissions for {}".format(file))
                     reasons.append("Unable to set ownership/permissions for {}".format(file))
@@ -137,7 +138,7 @@ def setOwnerGroupPermissions(worker, path):
                 logging.debug("Setting ownership/permissions for {}".format(directory))
                 try:
                     os.chown(dname, uid, gid)
-                    os.chmod(dname, 0755)
+                    os.chmod(dname, 0o755)
                 except OSError:
                     logging.error("Unable to set ownership/permissions for {}".format(directory))
                     reasons.append("Unable to set ownership/permissions for {}".format(directory))
