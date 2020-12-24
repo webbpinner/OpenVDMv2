@@ -7,7 +7,7 @@ import sys
 
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
-from timestamp import LOGGING_TIME_FORMAT  # noqa: E402
+from server.utils.timestamp import LOGGING_TIME_FORMAT  # noqa: E402
 
 DEFAULT_LOGGING_FORMAT = ' '.join([
     '%(asctime)-15s.%(msecs)03dZ',
