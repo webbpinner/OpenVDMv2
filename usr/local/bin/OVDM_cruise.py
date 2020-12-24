@@ -49,7 +49,7 @@ import openvdm
 import logging
 from random import randint
 
-from logger.utils.stderr_logging import StdErrLoggingHandler, STDERR_FORMATTER
+from stderr_logging import StdErrLoggingHandler, STDERR_FORMATTER
 
 cruiseConfigFN = 'ovdmConfig.json'
 
