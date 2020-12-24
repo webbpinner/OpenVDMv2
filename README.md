@@ -14,7 +14,7 @@ OpenVDMv2 includes full RESTful API, allowing vessel operators to build their ow
 
 #### New in v2.5 ####
 
-Moved all python code from Python2.7 to Python3.7
+Moved all python code from Python2.7 to Python3.8
 
 #### New in v2.4 ####
 

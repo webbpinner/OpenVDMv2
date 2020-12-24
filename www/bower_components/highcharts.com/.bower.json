@@ -1,0 +1,49 @@
+{
+  "name": "highcharts",
+  "version": "4.2.7",
+  "description": "JavaScript charting framework",
+  "main": "lib/highcharts.js",
+  "authors": [
+    "Highsoft AS <support@highcharts.com> (http://www.highcharts.com/about)"
+  ],
+  "keywords": [
+    "charts",
+    "graphs",
+    "visualization",
+    "data",
+    "browserify",
+    "webpack"
+  ],
+  "ignore": [
+    "build",
+    "copy-release.js",
+    "errors",
+    "exporting-server",
+    "generate-changelog.js",
+    "grunt-tasks",
+    "gruntfile.js",
+    "js",
+    "vendor",
+    "samples",
+    "studies",
+    "test",
+    "tools",
+    "utils",
+    ".gitignore",
+    "ant",
+    "build.md",
+    "build.properties",
+    "build.xml"
+  ],
+  "license": "SEE LICENSE IN <license.txt>",
+  "homepage": "https://github.com/highslide-software/highcharts.com",
+  "_release": "4.2.7",
+  "_resolution": {
+    "type": "version",
+    "tag": "v4.2.7",
+    "commit": "f4d80da3325aeafcf392eb32136d56a226c117cc"
+  },
+  "_source": "https://github.com/highslide-software/highcharts.com.git",
+  "_target": "~4.2.3",
+  "_originalSource": "highcharts.com"
+}

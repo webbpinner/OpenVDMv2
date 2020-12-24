@@ -1,0 +1,27 @@
+{
+  "name": "leaflet-fullscreen",
+  "version": "1.0.1",
+  "homepage": "http://leaflet.github.io/Leaflet.fullscreen/",
+  "authors": [
+    {"name": "John Firebaugh"}
+  ],
+  "description": "A fullscreen control for Leaflet",
+  "main": [
+    "Leaflet.fullscreen.min.js",
+    "Leaflet.fullscreen.js",
+    "leaflet.fullscreen.css",
+    "fullscreen.png",
+    "fullscreen@2x.png"
+  ],
+  "keywords": [
+    "leaflet",
+    "maps",
+    "fullscreen",
+    "client"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Leaflet/Leaflet.fullscreen.git"
+  },
+  "license": "ISC"
+}

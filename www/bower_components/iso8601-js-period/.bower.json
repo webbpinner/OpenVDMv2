@@ -1,0 +1,24 @@
+{
+  "name": "iso8601-js-period",
+  "main": "iso8601.min.js",
+  "license": "Apache 2.0 license",
+  "ignore": [
+    "**/.*"
+  ],
+  "keywords": [
+    "iso8601",
+    "period",
+    "date",
+    "time"
+  ],
+  "homepage": "https://github.com/pgrzelka/iso8601-js-period",
+  "_release": "ab876f784f",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "ab876f784f10c0f3cd403d7b4d163cfd204e496a"
+  },
+  "_source": "https://github.com/pgrzelka/iso8601-js-period.git",
+  "_target": "*",
+  "_originalSource": "iso8601-js-period"
+}
