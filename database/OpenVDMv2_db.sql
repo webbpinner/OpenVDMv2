@@ -187,9 +187,9 @@ LOCK TABLES `OVDM_ExtraDirectories` WRITE;
 
 INSERT INTO `OVDM_ExtraDirectories` (`extraDirectoryID`, `name`, `longName`, `destDir`, `enable`, `required`)
 VALUES
-	(1,'Transfer Logs','Transfer Logs','OpenVDM/TransferLogs',1,1),
-	(2,'Dashboard Data','Dashboard Data','OpenVDM/DashboardData',1,1),
-	(3,'PublicData Files','Misc. cruise docs, pictures and data. ','Science',1,1);
+	(1,'Transfer_Logs','Transfer Logs','OpenVDM/TransferLogs',1,1),
+	(2,'Dashboard_Data','Dashboard Data','OpenVDM/DashboardData',1,1),
+	(3,'From_PublicData','Files copied from PublicData share','From_PublicData',1,1);
 
 /*!40000 ALTER TABLE `OVDM_ExtraDirectories` ENABLE KEYS */;
 UNLOCK TABLES;

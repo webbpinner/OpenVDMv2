@@ -496,6 +496,19 @@ class OpenVDM_API():
             raise e
 
         
+    def getTaskByName(self, taskName):
+
+        url = self.config['siteRoot'] + 'api/tasks/getTasks'
+        
+        try:
+            r = requests.get(url)
+            tasks = json.loads(r.text)
+            return list(filter(lambda task: task['name'] == taskName, tasks))
+        except Exception as e:
+            logging.error("Unable to retrieve task: {} from OpenVDM API".format(taskID))
+            raise e
+
+
     def getCollectionSystemTransfers(self):
 
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getCollectionSystemTransfers'
