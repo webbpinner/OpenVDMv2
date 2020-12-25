@@ -52,8 +52,9 @@ class OpenVDM_API():
     def __init__(self, config_file = DEFAULT_CONFIG_FILE):
 
         self.config = {}
-        self.config = read_config.parse(config_file)
-    #     self.logger = logging.getLogger(__file__)
+        self.config = read_config.read_config(config_file)
+        # print("Config: {}".format(json.dumps(self.config, indent=2)))
+  #     self.logger = logging.getLogger(__file__)
 
 
     # def parseOVDMConfig(self):
