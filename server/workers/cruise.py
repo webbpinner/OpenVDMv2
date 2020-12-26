@@ -41,11 +41,8 @@ import python3_gearman
 import json
 import time
 import signal
-import pwd
-import grp
 import shutil
 import logging
-from random import randint
 
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
@@ -55,8 +52,6 @@ from server.utils.check_filenames import bad_filename
 from server.utils.output_JSONDataToFile import output_JSONDataToFile
 from server.utils.stderr_logging import StdErrLoggingHandler, STDERR_FORMATTER
 from server.lib.openvdm import OpenVDM_API, DEFAULT_CRUISE_CONFIG_FN
-
-# new_worker = None
 
 def build_filelist(sourceDir):
 
@@ -143,15 +138,15 @@ def transfer_PublicDataDir(gearman_worker, gearman_job):
     
     if len(files['exclude']) > 0:
         logging.warning("Found {} problem filename(s):".format(len(files['exclude'])))
-        logging.warning("\t" + '\n\t'.files['exclude'])
-        return {'verdict': False, 'reason': 'Symbolic links or Non-ASCii filenames in {}: {}'.format(publicDataDir,', '.join(files['exclude'])), 'files': files }
+        logging.warning("\t" + '\n\t'.join(files['exclude']))
+        return {'verdict': False, 'reason': "Symbolic links or Non-ASCii filenames in {}: {}".format(publicDataDir,', '.join(files['exclude'])), 'files': files }
 
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
     #logging.debug("tmpdir: {}".format(tmpdir))
 
     # Build rsync file transfer list
-    rsyncFileListPath = tmpdir + '/rsyncFileList.txt'
+    rsyncFileListPath = os.path.join(tmpdir, "rsyncFileList.txt")
     #logging.debug("rsyncFileListPath: {}".format(rsyncFileListPath))
 
     try:
@@ -164,7 +159,7 @@ def transfer_PublicDataDir(gearman_worker, gearman_job):
         # Cleanup
         shutil.rmtree(tmpdir)
 
-        return {'verdict': False, 'reason': 'Error Saving temporary rsync filelist file', 'files': files }
+        return {'verdict': False, 'reason': "Error Saving temporary rsync filelist file", 'files': files }
     
     # Build transfer command
     command = ['rsync', '-tri', '--files-from=' + rsyncFileListPath, publicDataDir + '/', fromPublicDataDir]
@@ -268,7 +263,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         jobData['cruiseID'] = self.cruiseID
         jobData['cruiseStartDate'] = self.cruiseStartDate
         
-        if current_job.task == 'setupNewCruise':
+        if current_job.task == "setupNewCruise":
 
             gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
@@ -276,7 +271,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
                 logging.debug("Adding post task: {}".format(task));
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
                 
-        elif current_job.task == 'finalizeCurrentCruise':
+        elif current_job.task == "finalizeCurrentCruise":
 
             gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
@@ -294,7 +289,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         else:
             self.OVDM.setIdle_task(self.task['taskID'])
         
-        logging.debug('Job Results: {}'.format(json.dumps(resultsObj, indent=2)))
+        logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
         logging.info("Job: {} ({}) completed at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
@@ -302,12 +297,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         
     def stopTask(self):
         self.stop = True
-        logging.debug("Stopping current task...")
+        logging.warning("Stopping current task...")
 
     
     def quitWorker(self):
         self.stop = True
-        logging.debug("Quitting worker...")
+        logging.warning("Quitting worker...")
         self.shutdown()
 
 
@@ -316,7 +311,7 @@ def task_setupNewCruise(gearman_worker, gearman_job):
     job_results = {'parts':[]}
 
     payloadObj = json.loads(gearman_job.data)
-    logging.debug('Payload: {}'.format(json.dumps(payloadObj, indent=2)))
+    logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
     
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
@@ -354,7 +349,7 @@ def task_setupNewCruise(gearman_worker, gearman_job):
     gearman_worker.send_job_status(gearman_job, 5, 10)
     
     #build OpenVDM Config file
-    logging.info('Exporting Cruise Configuration')
+    logging.info("Exporting Cruise Configuration")
     output_results = export_OVDMConfig(gearman_worker, ovdmConfigFilePath)
     
     if output_results['verdict']:
@@ -366,7 +361,7 @@ def task_setupNewCruise(gearman_worker, gearman_job):
     output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(cruiseDir,DEFAULT_CRUISE_CONFIG_FN))
 
     if not output_results['verdict']:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail", "reason": output_results['reason']})
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
     
     gearman_worker.send_job_status(gearman_job, 7, 10)
@@ -418,13 +413,13 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
 
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     cruiseDir = os.path.join(gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], gearman_worker.cruiseID)  
-    logging.debug('Cruise Dir: {}'.format(cruiseDir))
+    logging.debug("Cruise Dir: {}".format(cruiseDir))
 
     publicDataDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    logging.debug('PublicData Dir: {}'.format(publicDataDir))
+    logging.debug("PublicData Dir: {}".format(publicDataDir))
 
     fromPublicDataDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('From_PublicData')['destDir'])
-    logging.debug('From_PublicData Dir: {}'.format(fromPublicDataDir))
+    logging.debug("From_PublicData Dir: {}".format(fromPublicDataDir))
 
     ovdmConfigFilePath = os.path.join(cruiseDir, DEFAULT_CRUISE_CONFIG_FN)
     
@@ -435,7 +430,7 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(gearman_job, 2, 10)
-    logging.info('Queuing Collection System Transfers')
+    logging.info("Queuing Collection System Transfers")
 
     gm_client = python3_gearman.GearmanClient([gearman_worker.OVDM.getGearmanServer()])
     
@@ -452,7 +447,7 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
     for collectionSystemTransfer in collectionSystemTransfers:
 
         if collectionSystemTransfer['cruiseOrLowering'] == '0':
-            logging.debug('Queuing runCollectionSystemTransfer job for {}'.format(collectionSystemTransfer['name']))        
+            logging.debug("Queuing runCollectionSystemTransfer job for {}".format(collectionSystemTransfer['name']))        
             gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
         
             collectionSystemTransferJobs.append( {"task": "runCollectionSystemTransfer", "data": json.dumps(gmData)} )
@@ -461,27 +456,27 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
     gearman_worker.send_job_status(gearman_job, 3, 10)
 
     if len(collectionSystemTransferJobs) > 0:
-        logging.info('Submitting runCollectionSystemTransfer jobs')
+        logging.info("Submitting runCollectionSystemTransfer jobs")
         submitted_job_request = gm_client.submit_multiple_jobs(collectionSystemTransferJobs, background=False, wait_until_complete=False)
     
         gearman_worker.send_job_status(gearman_job, 4, 10)
     
         time.sleep(1)
         completed_requests = gm_client.wait_until_jobs_completed(submitted_job_request)
-        logging.info('Completed runCollectionSystemTransfers jobs')
+        logging.info("Completed runCollectionSystemTransfers jobs")
 
     gearman_worker.send_job_status(gearman_job, 5, 10)
     
-    logging.info('Transferring files from PublicData to the cruise data directory')
+    logging.info("Transferring files from PublicData to the cruise data directory")
     
-    logging.debug('Verify From_PublicData directory exists within the cruise data directory')
+    logging.debug("Verify From_PublicData directory exists within the cruise data directory")
     if os.path.exists(fromPublicDataDir):
         job_results['parts'].append({"partName": "Verify From_PublicData directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify From_PublicData directory exists", "result": "Fail", "reason": "From_PublicData directory: " + fromPublicDataDir + " could not be found"})
         return json.dumps(job_results)
 
-    logging.debug('Verify PublicData Directory exists')
+    logging.debug("Verify PublicData Directory exists")
     if os.path.exists(publicDataDir):
         job_results['parts'].append({"partName": "Verify PublicData directory exists", "result": "Pass"})
     else:
@@ -502,7 +497,7 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
 
     logging.debug("PublicData Files Transferred: {}".format(json.dumps(files, indent=2)))
 
-    logging.info('Clearing files from PublicData')
+    logging.info("Clearing files from PublicData")
     output_results = clear_directory(publicDataDir)
     logging.debug("Clearing Complete")
 
@@ -519,15 +514,15 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
         output_results = set_ownerGroupPermissions(warehouseUser, fromPublicDataDir)
 
         if output_results['verdict']:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
+            job_results['parts'].append({"partName": "Set file/directory ownership/permissions", "result": "Pass"})
         else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail", "reason": output_results['reason']})
+            job_results['parts'].append({"partName": "Set file/directory ownership/permissions", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
         
     gearman_worker.send_job_status(gearman_job, 95, 100)
     
     #build OpenVDM Config file
-    logging.info('Exporting OpenVDM Configuration')
+    logging.info("Exporting OpenVDM Configuration")
     output_results = export_OVDMConfig(gearman_worker, ovdmConfigFilePath, finalize=True)
     
     if output_results['verdict']:
@@ -539,9 +534,9 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
     output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(cruiseDir,DEFAULT_CRUISE_CONFIG_FN))
 
     if output_results['verdict']:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Pass"})
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership/permissions", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail", "reason": output_results['reason']})
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     logging.info("Initiating MD5 Summary Task")
@@ -570,13 +565,13 @@ def task_rsyncPublicDataToCruiseData(gearman_worker, gearman_job):
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 
     cruiseDir = os.path.join(gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], gearman_worker.cruiseID)  
-    logging.debug('Cruise Dir: {}'.format(cruiseDir))
+    logging.debug("Cruise Dir: {}".format(cruiseDir))
 
     publicDataDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir']
-    logging.debug('PublicData Dir: {}'.format(publicDataDir))
+    logging.debug("PublicData Dir: {}".format(publicDataDir))
 
     fromPublicDataDir = gearman_worker.OVDM.getRequiredExtraDirectoryByName('From_PublicData')['destDir']
-    logging.debug('FromPublicData Dir: {}'.format(publicDataDir))
+    logging.debug("FromPublicData Dir: {}".format(publicDataDir))
     
     gearman_worker.send_job_status(gearman_job, 1, 10)
 
@@ -615,9 +610,9 @@ def task_rsyncPublicDataToCruiseData(gearman_worker, gearman_job):
         output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(cruiseDir, fromPublicDataDir))
         
         if output_results['verdict']:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
+            job_results['parts'].append({"partName": "Set file/directory ownership/permissions", "result": "Pass"})
         else:
-            job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Fail", "reason": output_results['reason']})
+            job_results['parts'].append({"partName": "Set file/directory ownership/permissions", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
         
         gearman_worker.send_job_status(gearman_job, 9, 100)
@@ -665,7 +660,7 @@ def task_exportOVDMConfig(gearman_worker, gearman_job):
     gearman_worker.send_job_status(gearman_job, 3, 10)
 
     #build OpenVDM Config file
-    logging.info('Exporting OpenVDM Configuration')
+    logging.info("Exporting OpenVDM Configuration")
     output_results = export_OVDMConfig(gearman_worker, ovdmConfigFilePath)
     
     if output_results['verdict']:
@@ -677,9 +672,9 @@ def task_exportOVDMConfig(gearman_worker, gearman_job):
     output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(cruiseDir,DEFAULT_CRUISE_CONFIG_FN))
 
     if output_results['verdict']:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Pass"})
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership/permissions", "result": "Pass"})
     else:
-        job_results['parts'].append({"partName": "Set OpenVDM config file ownership", "result": "Fail", "reason": output_results['reason']})
+        job_results['parts'].append({"partName": "Set OpenVDM config file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(gearman_job, 6, 10)
@@ -719,13 +714,13 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    logging.info('Creating Worker...')
+    logging.info("Creating Worker...")
 
     # global new_worker
     new_worker = OVDMGearmanWorker()
     new_worker.set_client_id(__file__)
 
-    logging.info('Defining Signal Handlers...')
+    logging.info("Defining Signal Handlers...")
     def sigquit_handler(_signo, _stack_frame):
         logging.warning("QUIT Signal Received")
         new_worker.stopTask()
@@ -737,19 +732,19 @@ if __name__ == "__main__":
     signal.signal(signal.SIGQUIT, sigquit_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    logging.info('Registering worker tasks...')
+    logging.info("Registering worker tasks...")
 
-    logging.info('\tTask: {}'.format('setupNewCruise'))
+    logging.info("\tTask: setupNewCruise")
     new_worker.register_task("setupNewCruise", task_setupNewCruise)
     
-    logging.info('\tTask: {}'.format('finalizeCurrentCruise'))
+    logging.info("\tTask: finalizeCurrentCruise")
     new_worker.register_task("finalizeCurrentCruise", task_finalizeCurrentCruise)
     
-    logging.info('\tTask: {}'.format('exportOVDMConfig'))
+    logging.info("\tTask: exportOVDMConfig")
     new_worker.register_task("exportOVDMConfig", task_exportOVDMConfig)
     
-    logging.info('\tTask: {}'.format('rsyncPublicDataToCruiseData'))
+    logging.info("\tTask: rsyncPublicDataToCruiseData")
     new_worker.register_task("rsyncPublicDataToCruiseData", task_rsyncPublicDataToCruiseData)
 
-    logging.info('Waiting for jobs...')
+    logging.info("Waiting for jobs...")
     new_worker.work()
