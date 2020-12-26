@@ -322,18 +322,17 @@ def task_setupNewCruise(gearman_worker, gearman_job):
     
     gm_client = python3_gearman.GearmanClient([gearman_worker.OVDM.getGearmanServer()])
 
-    if gearman_worker.OVDM.showOnlyCurrentCruiseDir():
-        logging.info("Lockdown the CruiseData directory")
-        completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", gearman_job.data)
-    
-        resultObj = json.loads(completed_job_request.result)
+    logging.info("Set ownership/permissions for the CruiseData directory")
+    completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", gearman_job.data)
 
-        if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-            job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
-        else:
-            logging.error("Failed to lockdown the CruiseData directory")
-            job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
-            return json.dumps(job_results)
+    resultObj = json.loads(completed_job_request.result)
+
+    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+        job_results['parts'].append({"partName": "Set ownership/permissions for CruiseData directory", "result": "Pass"})
+    else:
+        logging.error("Failed to lockdown the CruiseData directory")
+        job_results['parts'].append({"partName": "Set ownership/permissions for CruiseData directory", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
+        return json.dumps(job_results)
 
     logging.info("Creating cruise data directory")
     completed_job_request = gm_client.submit_job("createCruiseDirectory", gearman_job.data)
@@ -715,13 +714,13 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    logging.info("Creating Worker...")
+    logging.debug("Creating Worker...")
 
     # global new_worker
     new_worker = OVDMGearmanWorker()
     new_worker.set_client_id(__file__)
 
-    logging.info("Defining Signal Handlers...")
+    logging.debug("Defining Signal Handlers...")
     def sigquit_handler(_signo, _stack_frame):
         logging.warning("QUIT Signal Received")
         new_worker.stopTask()

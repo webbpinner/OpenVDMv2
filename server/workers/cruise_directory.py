@@ -423,7 +423,7 @@ if __name__ == "__main__":
     new_worker = OVDMGearmanWorker()
     new_worker.set_client_id(__file__)
 
-    logging.info("Defining Signal Handlers...")
+    logging.debug("Defining Signal Handlers...")
     def sigquit_handler(_signo, _stack_frame):
         logging.warning("QUIT Signal Received")
         new_worker.stopTask()
