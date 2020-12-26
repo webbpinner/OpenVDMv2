@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Utilities for determining invalid filenames.
 """
+import logging
 
 def bad_filename(filename):
 	try:

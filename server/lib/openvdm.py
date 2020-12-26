@@ -489,8 +489,8 @@ class OpenVDM_API():
         
         try:
             r = requests.get(url)
-            returnVal = json.loads(r.text)
-            return returnVal[0] if len(returnVal) > 0 else []
+            task = json.loads(r.text)
+            return task[0] if len(task) > 0 else None
         except Exception as e:
             logging.error("Unable to retrieve task: {} from OpenVDM API".format(taskID))
             raise e
@@ -503,7 +503,8 @@ class OpenVDM_API():
         try:
             r = requests.get(url)
             tasks = json.loads(r.text)
-            return list(filter(lambda task: task['name'] == taskName, tasks))
+            task = list(filter(lambda task: task['name'] == taskName, tasks))
+            return task[0] if len(task) > 0 else None
         except Exception as e:
             logging.error("Unable to retrieve task: {} from OpenVDM API".format(taskID))
             raise e

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Utilities for setting file permissions/ownership.
 """
+import os
+import grp
+import pwd
+import logging
 
 def set_ownerGroupPermissions(user, path):
 

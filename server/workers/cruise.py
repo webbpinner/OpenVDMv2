@@ -37,7 +37,6 @@ import os
 import sys
 import tempfile
 import subprocess
-import errno
 import python3_gearman
 import json
 import time
@@ -322,7 +321,8 @@ def task_setupNewCruise(gearman_worker, gearman_job):
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], gearman_worker.cruiseID)
-        
+    ovdmConfigFilePath = os.path.join(cruiseDir, DEFAULT_CRUISE_CONFIG_FN)
+
     gearman_worker.send_job_status(gearman_job, 1, 10)
     
     gm_client = python3_gearman.GearmanClient([gearman_worker.OVDM.getGearmanServer()])
@@ -401,7 +401,6 @@ def task_setupNewCruise(gearman_worker, gearman_job):
 
     logging.info("Updating Cruise Size")
     cruiseSize = subprocess.check_output(['du','-sb', cruiseDir]).split()[0].decode('utf-8')
-    # print cruiseSize
 
     gearman_worker.OVDM.set_cruiseSize(cruiseSize)
     gearman_worker.OVDM.set_loweringSize("0")
@@ -427,6 +426,8 @@ def task_finalizeCurrentCruise(gearman_worker, gearman_job):
     fromPublicDataDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('From_PublicData')['destDir'])
     logging.debug('From_PublicData Dir: {}'.format(fromPublicDataDir))
 
+    ovdmConfigFilePath = os.path.join(cruiseDir, DEFAULT_CRUISE_CONFIG_FN)
+    
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify cruise directory exists", "result": "Pass"})
     else:
@@ -665,7 +666,7 @@ def task_exportOVDMConfig(gearman_worker, gearman_job):
 
     #build OpenVDM Config file
     logging.info('Exporting OpenVDM Configuration')
-    output_results = export_OVDMConfig(gearman_worker, ovdmConfigFilePath, finalize=True)
+    output_results = export_OVDMConfig(gearman_worker, ovdmConfigFilePath)
     
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Export OpenVDM config data to file", "result": "Pass"})

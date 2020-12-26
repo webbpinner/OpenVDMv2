@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Utilities for reading/processing JSON data.
 """
+import logging
 
 try:
     from yaml import load, YAMLError, FullLoader
