@@ -149,7 +149,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
     def get_custom_task(self, current_job):
         task = list(filter(lambda task: task['name'] == current_job.task, customTasks))
-            return task[0] if len(task) > 0 else None
+        return task[0] if len(task) > 0 else None
 
 
     def on_job_execute(self, current_job):
@@ -158,7 +158,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         payloadObj = json.loads(current_job.data)
 
-        self.task = get_custom_task(self, current_job) if get_custom_task(self, current_job) != None else self.OVDM.getTaskByName(current_job.task)
+        self.task = self.get_custom_task(current_job) if self.get_custom_task(current_job) != None else self.OVDM.getTaskByName(current_job.task)
         logging.debug("task: {}".format(self.task))
 
         if int(self.task['taskID']) > 0:
@@ -230,11 +230,11 @@ def task_createCruiseDirectory(gearman_worker, job):
     payloadObj = json.loads(job.data)
     logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
 
-    worker.send_job_status(job, 1, 10)
+    gearman_worker.send_job_status(job, 1, 10)
 
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
 
     if os.path.exists(baseDir):
         job_results['parts'].append({"partName": "Verify Base Directory exists", "result": "Pass"})
@@ -251,12 +251,11 @@ def task_createCruiseDirectory(gearman_worker, job):
         job_results['parts'].append({"partName": "Verify Cruise Directory does not exists", "result": "Fail", "reason": "Cruise directory " + cruiseDir + " already exists"})
         return json.dumps(job_results)
 
-    worker.send_job_status(job, 2, 10)
+    gearman_worker.send_job_status(job, 2, 10)
 
-    directoryList = build_directorylist(worker)
+    directoryList = build_directorylist(gearman_worker)
 
-    logging.debug("Directory List:")
-    logging.debug(json.dumps(directoryList, indent=2))
+    logging.debug("Directory List: {}".format(json.dumps(directoryList, indent=2)))
 
     if len(directoryList) > 0:
         job_results['parts'].append({"partName": "Build Directory List", "result": "Pass"})
@@ -265,7 +264,7 @@ def task_createCruiseDirectory(gearman_worker, job):
         job_results['parts'].append({"partName": "Build Directory List", "result": "Fail", "reason": "Unable to build list of directories to create"})
         return json.dumps(job_results)
 
-    worker.send_job_status(job, 5, 10)
+    gearman_worker.send_job_status(job, 5, 10)
 
     output_results = create_directories(directoryList)
 
@@ -275,15 +274,15 @@ def task_createCruiseDirectory(gearman_worker, job):
         logging.error("Failed to create any/all of the cruise data directory structure")
         job_results['parts'].append({"partName": "Create Directories", "result": "Fail", "reason": output_results['reason']})
 
-    worker.send_job_status(job, 7, 10)
+    gearman_worker.send_job_status(job, 7, 10)
 
-    if worker.OVDM.showOnlyCurrentCruiseDir():
+    if gearman_worker.OVDM.showOnlyCurrentCruiseDir():
         logging.info("Clear read permissions for all cruise directories")
         lockdown_directory(baseDir, cruiseDir)
 
         job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
 
-    worker.send_job_status(job, 8, 10)
+    gearman_worker.send_job_status(job, 8, 10)
 
     output_results = set_ownerGroupPermissions(warehouseUser, cruiseDir)
 
@@ -293,7 +292,7 @@ def task_createCruiseDirectory(gearman_worker, job):
         job_results['parts'].append({"partName": "Set cruise directory ownership/permissions", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
-    worker.send_job_status(job, 10, 10)
+    gearman_worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)
 
@@ -305,18 +304,18 @@ def task_setCruiseDataDirectoryPermissions(gearman_worker, job):
     payloadObj = json.loads(job.data)
     logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
 
-    worker.send_job_status(job, 5, 10)
+    gearman_worker.send_job_status(job, 5, 10)
 
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir,gearman_worker.cruiseID)
     
-    if worker.OVDM.showOnlyCurrentCruiseDir():
+    if gearman_worker.OVDM.showOnlyCurrentCruiseDir():
         logging.info("Clear read permissions")
         lockdown_directory(baseDir, cruiseDir)
         job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
 
-    worker.send_job_status(job, 8, 10)
+    gearman_worker.send_job_status(job, 8, 10)
 
     if os.path.isdir(cruiseDir):
         logging.info("Clear read permissions")
@@ -324,7 +323,7 @@ def task_setCruiseDataDirectoryPermissions(gearman_worker, job):
         job_results['parts'].append({"partName": "Set Directory Permissions for current cruise", "result": "Pass"})
         
     job_results['parts'].append({"partName": "Set CruiseData Directory Permissions", "result": "Pass"})
-    worker.send_job_status(job, 10, 10)
+    gearman_worker.send_job_status(job, 10, 10)
 
     return json.dumps(job_results)
 
@@ -340,9 +339,9 @@ def task_rebuildCruiseDirectory(gearman_worker, job):
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir,gearman_worker.cruiseID)
 
-    worker.send_job_status(job, 1, 10)
+    gearman_worker.send_job_status(job, 1, 10)
 
-    if worker.OVDM.showOnlyCurrentCruiseDir():
+    if gearman_worker.OVDM.showOnlyCurrentCruiseDir():
         logging.info("Clear read permissions")
         lockdown_directory(baseDir, cruiseDir)
         job_results['parts'].append({"partName": "Clear CruiseData Directory Read Permissions", "result": "Pass"})
@@ -354,10 +353,10 @@ def task_rebuildCruiseDirectory(gearman_worker, job):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail", "reason": "Unable to locate the cruise directory: " + cruiseDir})
         return json.dumps(job_results)
 
-    worker.send_job_status(job, 2, 10)
+    gearman_worker.send_job_status(job, 2, 10)
 
     logging.info("Build directory list")
-    directoryList = build_directorylist(worker)
+    directoryList = build_directorylist(gearman_worker)
     logging.debug("Directory List:")
     logging.debug(json.dumps(directoryList, indent=2))
     
@@ -368,7 +367,7 @@ def task_rebuildCruiseDirectory(gearman_worker, job):
         job_results['parts'].append({"partName": "Build Directory List", "result": "Fail", "reason": "Unable to build list of directories to create"})
         return json.dumps(job_results)
     
-    worker.send_job_status(job, 5, 10)
+    gearman_worker.send_job_status(job, 5, 10)
     
     logging.info("Create directories")
 
@@ -380,7 +379,7 @@ def task_rebuildCruiseDirectory(gearman_worker, job):
         errPrint("Failed to create any/all of the cruise data directory structure")
         job_results['parts'].append({"partName": "Create Directories", "result": "Fail", "reason": output_results['reason']})
 
-    worker.send_job_status(job, 7, 10)
+    gearman_worker.send_job_status(job, 7, 10)
     
     logging.info("Set directory ownership/permissions")
 
@@ -392,7 +391,7 @@ def task_rebuildCruiseDirectory(gearman_worker, job):
         logging.error("Failed to set directory ownership")
         job_results['parts'].append({"partName": "Set Directory ownership/permissions", "result": "Fail", "reason": output_results['reason']})
 
-    worker.send_job_status(job, 10, 10)
+    gearman_worker.send_job_status(job, 10, 10)
     
     return json.dumps(job_results)
 
@@ -401,8 +400,6 @@ def task_rebuildCruiseDirectory(gearman_worker, job):
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    main(sys.argv[1:])
-
     parser = argparse.ArgumentParser(description='Handle Cruise data directory related tasks')
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
@@ -426,7 +423,7 @@ if __name__ == "__main__":
     new_worker = OVDMGearmanWorker()
     new_worker.set_client_id(__file__)
 
-        logging.info("Defining Signal Handlers...")
+    logging.info("Defining Signal Handlers...")
     def sigquit_handler(_signo, _stack_frame):
         logging.warning("QUIT Signal Received")
         new_worker.stopTask()

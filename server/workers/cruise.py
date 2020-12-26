@@ -322,17 +322,18 @@ def task_setupNewCruise(gearman_worker, gearman_job):
     
     gm_client = python3_gearman.GearmanClient([gearman_worker.OVDM.getGearmanServer()])
 
-    logging.info("Lockdown the CruiseData directory")
-    completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", gearman_job.data)
+    if gearman_worker.OVDM.showOnlyCurrentCruiseDir():
+        logging.info("Lockdown the CruiseData directory")
+        completed_job_request = gm_client.submit_job("setCruiseDataDirectoryPermissions", gearman_job.data)
     
-    resultObj = json.loads(completed_job_request.result)
+        resultObj = json.loads(completed_job_request.result)
 
-    if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
-        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
-    else:
-        logging.error("Failed to lockdown the CruiseData directory")
-        job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
-        return json.dumps(job_results)
+        if resultObj['parts'][-1]['result'] == "Pass": # Final Verdict
+            job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Pass"})
+        else:
+            logging.error("Failed to lockdown the CruiseData directory")
+            job_results['parts'].append({"partName": "Lockdown the CruiseData directory", "result": "Fail", "reason": resultObj['parts'][-1]['reason']})
+            return json.dumps(job_results)
 
     logging.info("Creating cruise data directory")
     completed_job_request = gm_client.submit_job("createCruiseDirectory", gearman_job.data)
