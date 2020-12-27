@@ -46,6 +46,8 @@ DEFAULT_CONFIG_FILE = '/usr/local/etc/openvdm/openvdm.yaml'
 
 DEFAULT_CRUISE_CONFIG_FN = 'ovdmConfig.json'
 
+DEFAULT_DATA_DASHBOARD_MANIFEST_FN = 'manifest.json'
+
 
 class OpenVDM_API():
 
