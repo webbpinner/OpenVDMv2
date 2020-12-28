@@ -48,6 +48,7 @@ DEFAULT_CRUISE_CONFIG_FN = 'ovdmConfig.json'
 
 DEFAULT_DATA_DASHBOARD_MANIFEST_FN = 'manifest.json'
 
+DEFAULT_LOWERING_CONFIG_FN = 'loweringConfig.json'
 
 class OpenVDM_API():
 
@@ -525,13 +526,17 @@ class OpenVDM_API():
             raise e
 
     
-    def getActiveCollectionSystemTransfers(self):
+    def getActiveCollectionSystemTransfers(self, cruise=True, lowering=True):
 
         url = self.config['siteRoot'] + 'api/collectionSystemTransfers/getActiveCollectionSystemTransfers'
         
         try:
             r = requests.get(url)
             returnVal = json.loads(r.text)
+            if not cruise:
+                returnVal = list(filter(lambda transfer: transfer['cruiseOrLowering'] != "0", returnVal))
+            if not lowering:
+                returnVal = list(filter(lambda transfer: transfer['cruiseOrLowering'] != "1", returnVal))
             return returnVal
         except Exception as e:
             logging.error("Unable to retrieve active collection system transfers from OpenVDM API")
