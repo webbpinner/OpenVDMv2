@@ -49,7 +49,7 @@ from server.utils.check_filenames import bad_filename
 from server.utils.output_JSONDataToFile import output_JSONDataToFile
 from server.lib.openvdm import OpenVDM_API, DEFAULT_DATA_DASHBOARD_MANIFEST_FN
 
-customTaskLookup = [
+customTasks = [
     {
         "taskID": "0",
         "name": "updateDataDashboard",
@@ -141,7 +141,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     
         if current_job.task == 'updateDataDashboard':
 
-            gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
+            gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
 
             payloadObj = json.loads(current_job.data)
             jobData['collectionSystemTransferID'] = payloadObj['collectionSystemTransferID']
@@ -152,7 +152,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         elif current_job.task == 'rebuildDataDashboard':
 
-            gm_client = gearman.GearmanClient([self.OVDM.getGearmanServer()])
+            gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
 
             for task in self.OVDM.getTasksForHook(current_job.task):
                 logging.debug("Adding post task: {}".format(task));
@@ -206,20 +206,20 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
     loweringDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID)
     
-    dataDashboardDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard Data')['destDir'])
+    dataDashboardDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'])
     dataDashboardManifestFilePath = os.path.join(dataDashboardDir, DEFAULT_DATA_DASHBOARD_MANIFEST_FN)
     collectionSystemTransfer = gearman_worker.collectionSystemTransfer
 
     gearman_worker.send_job_status(gearman_job, 5, 100)
 
-    logging.debug('Collection System Transfer: {}'.format(collectionSystemTransfer['name']))
+    logging.info('Collection System Transfer: {}'.format(collectionSystemTransfer['name']))
 
     newManifestEntries = []
     removeManifestEntries = []
 
     #check for processing file
     processingScriptFilename = os.path.join(gearman_worker.OVDM.getDashboardDataProcessingScriptDir(), collectionSystemTransfer['name'].replace(' ','') + gearman_worker.OVDM.getDashboardDataProcessingScriptSuffix())
-    logging.info("Processing Script Filename: {}".format(processingScriptFilename))
+    logging.debug("Processing Script Filename: {}".format(processingScriptFilename))
 
     if os.path.isfile(processingScriptFilename):
         job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Pass"})
@@ -250,7 +250,7 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
         if gearman_worker.stop:
             break
 
-        logging.debug("Processing file: {}".format(filename))
+        logging.info("Processing file: {}".format(filename))
         jsonFileName = os.path.splitext(filename)[0] + '.json'
         rawFilePath = os.path.join(cruiseDir, filename)
         jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
@@ -269,25 +269,23 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
         s = ' '
         logging.debug("DataType Retrieval Command: {}".format(s.join(command)))
 
-        proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        out, err = proc.communicate()
+        datatype_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-        if out:
-            dd_type = out.rstrip('\n')
-            logging.debug("Found to be type: {}".format(dd_type))
+        if datatype_proc.stdout:
+            dd_type = datatype_proc.stdout.rstrip('\n')
+            logging.debug("DataType found to be: {}".format(dd_type))
 
             command = ['python', processingScriptFilename, rawFilePath]
 
             s = ' '
             logging.debug("Data Processing Command: {}".format(s.join(command)))
 
-            proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            out, err = proc.communicate()
+            data_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-            if out:
+            if data_proc.stdout:
                 try:
                     logging.debug("Verifying output")
-                    outObj = json.loads(out)
+                    outObj = json.loads(data_proc.stdout)
                 except:
                     logging.error("Error parsing JSON output from file: {}".format(filename))
                     job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": "Error parsing JSON output from file: " + filename})
@@ -319,14 +317,14 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
                 removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
 
                 #job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
-                if err:
-                    logging.error("Err: {}".format(err))
+                if data_proc.stderr:
+                    logging.error("Err: {}".format(data_proc.stderr))
         else:
             logging.warning("File is of unknown datatype: {}".format(rawFilePath))
             removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data":rawFilePath.replace(baseDir + '/','')})
 
-            if err:
-                logging.error("Err: {}".format(err))
+            if datatype_proc.stderr:
+                logging.error("Err: {}".format(datatype_proc.stderr))
 
         gearman_worker.send_job_status(gearman_job, int(10 + 70*float(fileIndex)/float(fileCount)), 100)
         fileIndex += 1
@@ -424,7 +422,7 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
-    dataDashboardDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard Data')['destDir'])
+    dataDashboardDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'])
     dataDashboardManifestFilePath = os.path.join(dataDashboardDir, DEFAULT_DATA_DASHBOARD_MANIFEST_FN)
 
     if os.path.exists(dataDashboardDir):
@@ -444,13 +442,13 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
     collectionSystemTransferIndex = 0
     for collectionSystemTransfer in collectionSystemTransfers:
 
-        logging.debug('Processing data from: {}'.format(collectionSystemTransfer['name']))
+        logging.info('Processing data from: {}'.format(collectionSystemTransfer['name']))
 
         processingScriptFilename = os.path.join(gearman_worker.OVDM.getDashboardDataProcessingScriptDir(), collectionSystemTransfer['name'].replace(' ','-') + gearman_worker.OVDM.getDashboardDataProcessingScriptSuffix())
         logging.debug("Processing Script Filename: {}".format(processingScriptFilename))
 
         if not os.path.isfile(processingScriptFilename):
-            logging.warning("Processing script for collection system not found, moving on.")
+            logging.warning("Processing script for collection system {} not found, moving on.".format(collectionSystemTransfer['name']))
             gearman_worker.send_job_status(gearman_job, int(10 + (80*float(collectionSystemTransferIndex)/float(collectionSystemTransferCount))), 100)
             collectionSystemTransferIndex += 1
             continue
@@ -502,11 +500,10 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
             s = ' '
             logging.debug("Get Datatype Command: {}".format(s.join(command)))
 
-            proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            out, err = proc.communicate()
+            datatype_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-            if out:
-                dd_type = out.rstrip('\n')
+            if datatype_proc.stdout:
+                dd_type = datatype_proc.stdout.rstrip('\n')
                 logging.debug("Found to be type: {}".format(dd_type))
 
                 command = ['python', processingScriptFilename, rawFilePath]
@@ -514,14 +511,14 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
                 s = ' '
                 logging.debug("Processing Command: {}".format(s.join(command)))
 
-                proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-                out, err = proc.communicate()
+                data_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
 
-                if out:
+                if data_proc.stdout:
                     try:
                         logging.debug("Parsing output")
-                        outObj = json.loads(out)
-                    except:
+                        outObj = json.loads(data_proc.stdout)
+                    except Exception as e:
+                        logging.error(str(e))
                         errorTitle = 'Error parsing output'
                         errorBody = 'Invalid JSON output recieved from processing. Command: ' + s.join(command)
                         logging.error("{}: {}".format(errorTitle, errorBody))
@@ -557,14 +554,14 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
                     gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
                     job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": errorTitle + ': ' + errorBody})
                     
-                    if err:
-                        logging.error('err: {}'format(err))
+                    if data_proc.stderr:
+                        logging.error('err: {}'.format(data_proc.stderr))
 
             else:
                 logging.warning("File is of unknown datatype, moving on")
 
-                if err:
-                    logging.error('err: {}'format(err))
+                if datatype_proc.stderr:
+                    logging.error('err: {}'.format(datatype_proc.stderr))
 
             gearman_worker.send_job_status(gearman_job, int(10 + 70*float(fileIndex)/float(fileCount)), 100)
             fileIndex += 1

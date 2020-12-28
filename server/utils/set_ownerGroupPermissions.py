@@ -1,56 +1,58 @@
 #!/usr/bin/env python3
 """Utilities for setting file permissions/ownership.
 """
-import os
-import grp
-import pwd
+from os import chown, chmod, walk
+from os.path import isfile, join, basename
+from grp import getgrnam
+from pwd import getpwnam
 import logging
 
 def set_ownerGroupPermissions(user, path):
 
     reasons = []
 
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(user).gr_gid
+    basenamePath = basename(path)
+    uid = getpwnam(user).pw_uid
+    gid = getgrnam(user).gr_gid
     # Set the file permission and ownership for the current directory
 
-    logging.debug("Setting ownership/permissions for {}".format(path))
-    if os.path.isfile(path):
+    logging.debug("Setting ownership/permissions for {}".format(basenamePath))
+    if isfile(path):
         try:
-            os.chown(path, uid, gid)
-            os.chmod(path, 0o644)
+            chown(path, uid, gid)
+            chmod(path, 0o644)
         except OSError:
-            logging.error("Unable to set ownership/permissions for {}".format(path))
-            reasons.append("Unable to set ownership/permissions for {}".format(path))
+            logging.error("Unable to set ownership/permissions for {}".format(basenamePath))
+            reasons.append("Unable to set ownership/permissions for {}".format(basenamePath))
 
     else: #directory
         try:
-            os.chown(path, uid, gid)
-            os.chmod(path, 0o755)
+            chown(path, uid, gid)
+            chmod(path, 0o755)
         except OSError:
-            logging.error("Unable to set ownership/permissions for {}".format(path))
-            reasons.append("Unable to set ownership/permissions for {}".format(path))
+            logging.error("Unable to set ownership/permissions for {}".format(basenamePath))
+            reasons.append("Unable to set ownership/permissions for {}".format(basenamePath))
 
-        for root, dirs, files in os.walk(path):
+        for root, dirs, files in walk(path):
             for file in files:
-                fname = os.path.join(root, file)
-                logging.debug("Setting ownership/permissions for {}".format(file))
+                fname = join(root, file)
+                logging.debug("Setting ownership/permissions for {}".format(join(basenamePath,file)))
                 try:
-                    os.chown(fname, uid, gid)
-                    os.chmod(fname, 0o644)
+                    chown(fname, uid, gid)
+                    chmod(fname, 0o644)
                 except OSError:
-                    logging.error("Unable to set ownership/permissions for {}".format(file))
-                    reasons.append("Unable to set ownership/permissions for {}".format(file))
+                    logging.error("Unable to set ownership/permissions for {}".format(join(basenamePath,file)))
+                    reasons.append("Unable to set ownership/permissions for {}".format(join(basenamePath,file)))
 
             for directory in dirs:
-                dname = os.path.join(root, directory)
-                logging.debug("Setting ownership/permissions for {}".format(directory))
+                dname = join(root, directory)
+                logging.debug("Setting ownership/permissions for {}".format(join(basenamePath,directory)))
                 try:
-                    os.chown(dname, uid, gid)
-                    os.chmod(dname, 0o755)
+                    chown(dname, uid, gid)
+                    chmod(dname, 0o755)
                 except OSError:
-                    logging.error("Unable to set ownership/permissions for {}".format(directory))
-                    reasons.append("Unable to set ownership/permissions for {}".format(directory))
+                    logging.error("Unable to set ownership/permissions for {}".format(join(basenamePath,directory)))
+                    reasons.append("Unable to set ownership/permissions for {}".format(join(basenamePath,directory)))
 
     if len(reasons) > 0:
         return {'verdict': False, 'reason': '\n'.join(reasons)}
