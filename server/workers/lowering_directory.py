@@ -120,7 +120,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
     def __init__(self, host_list=None):
         self.stop = False
-        self.OVDM = openvdm.OpenVDM()
+        self.OVDM = OpenVDM_API()
         self.task = None
         self.cruiseID = ''
         self.loweringID = ''
@@ -372,6 +372,7 @@ def task_rebuildLoweringDirectory(gearman_worker, gearman_job):
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Handle Lowering data directory related tasks')
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
                         help='Increase output verbosity')
