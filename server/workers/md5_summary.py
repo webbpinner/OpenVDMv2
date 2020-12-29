@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_md5Summary.py
+#         FILE:  md5_summary.py
 #
 #  DESCRIPTION:  Gearman worker tha handles the creation and update of an MD5 checksum
 #                summary.
@@ -9,12 +9,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2015-01-01
-#     REVISION:  2020-11-19
+#     REVISION:  2020-12-29
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -30,22 +30,25 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # ----------------------------------------------------------------------------------- #
-from __future__ import print_function
+
 import argparse
 import os
 import sys
-import gearman
-import shutil
+import python3_gearman
 import json
 import hashlib
 import signal
-import fnmatch
-import pwd
-import grp
 import time
-import openvdm
+import logging
 
-customTaskLookup = [
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
+
+from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
+from server.lib.openvdm import OpenVDM_API, DEFAULT_MD5_SUMMARY_FN, DEFAULT_MD5_SUMMARY_MD5_FN
+
+
+customTasks = [
     {
         "taskID": "0",
         "name": "updateMD5Summary",
@@ -53,263 +56,139 @@ customTaskLookup = [
     }
 ]
 
-DEBUG = False
-new_worker = None
-
-md5SummaryFN = 'MD5_Summary.txt'
-md5SummaryMD5FN = 'MD5_Summary.md5'
+BUF_SIZE = 65536  # read files in 64kb chunks
 
 
-def debugPrint(*args, **kwargs):
-    global DEBUG
-    if DEBUG:
-        errPrint(*args, **kwargs)
+def build_filelist(sourceDir):
 
-
-def errPrint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-
-def build_filelist(worker):
-
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+    logging.debug("sourceDir: {}".format(sourceDir))
 
     returnFiles = []
-    for root, dirnames, filenames in os.walk(cruiseDir):
+    for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
-            if not filename == md5SummaryFN and not filename == md5SummaryMD5FN:
+            if filename != DEFAULT_MD5_SUMMARY_FN and filename != DEFAULT_MD5_SUMMARY_MD5_FN:
                 returnFiles.append(os.path.join(root, filename))
 
-    returnFiles = [filename.replace(baseDir + '/', '', 1) for filename in returnFiles]
+    returnFiles = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles]
     return returnFiles
 
 
-def build_hashes(worker, job, fileList):
+def hash_file(filepath):
+    md5 = hashlib.md5()
+    with open(filepath, 'rb') as f:
+        while True:
+            data = f.read(BUF_SIZE)
+            if not data:
+                break
+            md5.update(data)
+    return md5.hexdigest()
 
-    #print sourceDir
-    #print json.dumps(fileList, indent=2)
 
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
+def build_hashes(gearman_worker, gearman_job, fileList):
 
-    filesizeLimit = worker.OVDM.getMD5FilesizeLimit()
-    filesizeLimitStatus = worker.OVDM.getMD5FilesizeLimitStatus() 
+    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    filesizeLimit = gearman_worker.OVDM.getMD5FilesizeLimit()
+    filesizeLimitStatus = gearman_worker.OVDM.getMD5FilesizeLimitStatus() 
 
     hashes = []
 
-    fileCount = len(fileList)
-    index = 0
-    for filename in fileList:
-        #print filename
-        if filesizeLimitStatus == 'On' and not filesizeLimit == '0':
-            if os.stat(os.path.join(baseDir, filename)).st_size < int(filesizeLimit) * 1000000:
-                #debugPrint("Building Hash for:", os.path.join(baseDir, filename))
-                with open(os.path.join(baseDir, filename)) as file_to_check:
+    for idx, filename in enumerate(fileList):
 
-                    # read contents of the file
-                    data = file_to_check.read()    
-
-                    # pipe contents of the file through
-                    hashes.append({'hash': hashlib.md5(data).hexdigest(), 'filename': filename})
-
-                # here's how you get the md5 of the file name... not too useful but was a funny bug caught by Bob Arko.
-                #hashes.append({'hash': hashlib.md5(os.path.join(baseDir, filename)).hexdigest(), 'filename': filename})
-            else:
-                #debugPrint("Skipping Hash for:", os.path.join(baseDir, filename))
-                hashes.append({'hash': '********************************', 'filename': filename})
-        else:
-            #debugPrint("Building Hash for:", os.path.join(baseDir, filename))
-            with open(os.path.join(baseDir, filename)) as file_to_check:
-
-                # read contents of the file
-                data = file_to_check.read()    
-
-                # pipe contents of the file through
-                hashes.append({'hash': hashlib.md5(data).hexdigest(), 'filename': filename})
-
-            # here's how you get the md5 of the file name... not too useful but was a funny bug caught by Bob Arko.
-            #hashes.append({'hash': hashlib.md5(os.path.join(baseDir, filename)).hexdigest(), 'filename': filename})
-
-        worker.send_job_status(job, int(20 + 60*float(index)/float(fileCount)), 100)
-
-        if worker.stop:
+        if gearman_worker.stop:
             debugPrint("Stopping")
             break
 
-        index += 1
-    #debugPrint("Finished building hashes")
+        filepath = os.path.join(baseDir, filename)
+
+        if filesizeLimitStatus == 'On' and not filesizeLimit == '0':
+            if os.stat(filepath).st_size < int(filesizeLimit) * 1000000:
+                hashes.append({'hash': hash_file(filepath), 'filename': filename})
+
+            else:
+                hashes.append({'hash': '********************************', 'filename': filename})
+        else:
+
+                hashes.append({'hash': hash_file(filepath), 'filename': filename})
+
+        gearman_worker.send_job_status(gearman_job, int(20 + 60*float(idx)/float(len(fileList))), 100)
 
     return hashes
 
-
-def setOwnerGroupPermissions(worker, path):
-
-    warehouseUser = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
-
-    debugPrint(path)
-
-    reason = []
-
-    uid = pwd.getpwnam(warehouseUser).pw_uid
-    gid = grp.getgrnam(warehouseUser).gr_gid
-    # Set the file permission and ownership for the current directory
-
-    if os.path.isfile(path):
-        try:
-            debugPrint("Setting ownership/permissions for", path)
-            os.chown(path, uid, gid)
-            os.chmod(path, 0644)
-        except OSError:
-            errPrint("Unable to set ownership/permissions for", path)
-            reason.append("Unable to set ownership/permissions for " + path)
-
-    else: #directory
-        try:
-            debugPrint("Setting ownership/permissions for", path)
-            os.chown(path, uid, gid)
-            os.chmod(path, 0755)
-        except OSError:
-            errPrint("Unable to set ownership/permissions for", path)
-            reason.append("Unable to set ownership/permissions for " + path)
-
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                fname = os.path.join(root, file)
-                try:
-                    debugPrint("Setting ownership/permissions for", file)
-                    os.chown(fname, uid, gid)
-                    os.chmod(fname, 0644)
-                except OSError:
-                    errPrint("Unable to set ownership/permissions for", file)
-                    reason.append("Unable to set ownership/permissions for " + file)
-
-            for momo in dirs:
-                dname = os.path.join(root, momo)
-                try:
-                    debugPrint("Setting ownership/permissions for", momo)
-                    os.chown(dname, uid, gid)
-                    os.chmod(dname, 0755)
-                except OSError:
-                    errPrint("Unable to set ownership/permissions for", momo)
-                    reason.append("Unable to set ownership/permissions for " + momo)
-
-    if len(reason) > 0:
-        return {'verdict': False, 'reason': reason.join('\n')}
-
-    return {'verdict': True}
 
 def build_MD5Summary_MD5(worker):
 
     baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, worker.cruiseID)
 
-    md5SummaryFilepath = os.path.join(cruiseDir, md5SummaryFN)
-    md5SummaryMD5Filepath = os.path.join(cruiseDir, md5SummaryMD5FN)
-    with open(md5SummaryFilepath) as file_to_check:
-
-        # read contents of the file
-        data = file_to_check.read()    
-
-        # pipe contents of the file through
-        md5SummaryMD5Hash = hashlib.md5(data).hexdigest()
-
-        # here's how you get the md5 of the file name... not too useful but was a funny bug caught by Bob Arko.
-        #md5SummaryMD5Hash = hashlib.md5(md5SummaryFilepath).hexdigest()
+    md5SummaryFilepath = os.path.join(cruiseDir, DEFAULT_MD5_SUMMARY_FN)
+    md5SummaryMD5Filepath = os.path.join(cruiseDir, DEFAULT_MD5_SUMMARY_MD5_FN)
     
     try:
-        #debugPrint("Opening MD5 Summary MD5 file")
-        MD5SummaryMD5File = open(md5SummaryMD5Filepath, 'w')
-
-        #debugPrint("Saving MD5 Summary MD5 file")
-        MD5SummaryMD5File.write(md5SummaryMD5Hash)
+        with open(md5SummaryMD5Filepath, 'w') as MD5SummaryMD5File:
+            MD5SummaryMD5File.write(hash_file(md5SummaryFilepath))
 
     except IOError:
-        errPrint("Error Saving MD5 Summary MD5 file:", md5SummaryMD5Filepath)
+        logging.error("Error Saving MD5 Summary MD5 file: {}".format(md5SummaryMD5Filepath))
         return {"verdict": False, "reason": "Error Saving MD5 Summary MD5 file: " + md5SummaryMD5Filepath}
-
-    finally:
-        MD5SummaryMD5File.close()
-        output_results = setOwnerGroupPermissions(worker, md5SummaryMD5Filepath)
-        if not output_results['verdict']:
-            return {"verdict": False, "reason": output_results['reason']}
 
     return {"verdict": True}
 
 
-class OVDMGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
         self.stop = False
-        self.quit = False
-        self.OVDM = openvdm.OpenVDM()
+        self.OVDM = OpenVDM_API()
+        self.task = None
         self.cruiseID = ''
         self.shipboardDataWarehouseConfig = {}
-        self.task = None
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
 
-    def get_task(self, current_job):
-        tasks = self.OVDM.getTasks()
-        for task in tasks:
-            if task['name'] == current_job.task:
-                self.task = task
-                return True
-        
-        for task in customTaskLookup:
-            if task['name'] == current_job.task:
-                self.task = task
-                return True
-
-        self.task = None
-        return False
+    def get_custom_task(self, current_job):
+        task = list(filter(lambda task: task['name'] == current_job.task, customTasks))
+        return task[0] if len(task) > 0 else None
 
     
     def on_job_execute(self, current_job):
-        self.get_task(current_job)
-        payloadObj = json.loads(current_job.data)
-        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
 
-        self.cruiseID = self.OVDM.getCruiseID()
-        if len(payloadObj) > 0:
-            try:
-                payloadObj['cruiseID']
-            except KeyError:
-                self.cruiseID = self.OVDM.getCruiseID()
-            else:
-                self.cruiseID = payloadObj['cruiseID']
+        logging.debug("current_job: {}".format(current_job))
+
+        payloadObj = json.loads(current_job.data)
+
+        self.task = self.get_custom_task(current_job) if self.get_custom_task(current_job) != None else self.OVDM.getTaskByName(current_job.task)
+        logging.debug("task: {}".format(self.task))
 
         if int(self.task['taskID']) > 0:
-
             self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
         else:
-            self.OVDM.trackGearmanJob(self.task['longName'], os.getpid(), current_job.handle)
+            self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
 
-        errPrint("Job:", current_job.handle + ",", self.task['longName'], "started at:  ", time.strftime("%D %T", time.gmtime()))
+        logging.info("Job: {} ({}) started at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
         
+        self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()        
+                
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
 
     def on_job_exception(self, current_job, exc_info):
-        errPrint("Job:", current_job.handle + ",", self.task['longName'], "failed at:   ", time.strftime("%D %T", time.gmtime()))
-        
-        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown, contact Webb :-)"}]))
+        logging.error("Job: {} ({}) failed at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
+
+        self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown"}]))
         if int(self.task['taskID']) > 0:
             self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
         else:
             self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
-        
+
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        errPrint(exc_type, fname, exc_tb.tb_lineno)
+        logging.error(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
-        debugPrint('Job Results:', json.dumps(resultsObj['parts'], indent=2))
-
-        debugPrint('Task:', json.dumps(self.task, indent=2))
 
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
@@ -323,70 +202,60 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         else:
             if int(self.task['taskID']) > 0:
                 self.OVDM.setIdle_task(self.task['taskID'])
-        
-        debugPrint('Job Results:', json.dumps(resultsObj['parts'], indent=2))
-            
-        errPrint("Job:", current_job.handle + ",", self.task['longName'], "completed at:", time.strftime("%D %T", time.gmtime()))
+
+        logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
+        logging.info("Job: {} ({}) completed at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
-
-    def after_poll(self, any_activity):
-        self.stop = False
-        self.taskID = '0'
-        if self.quit:
-            errPrint("Quitting")
-            self.shutdown()
-        else:
-            self.quit - False
-        return True
 
 
     def stopTask(self):
         self.stop = True
-        debugPrint("Stopping current task...")
+        logging.warning("Stopping current task...")
 
 
     def quitWorker(self):
         self.stop = True
-        self.quit = True
-        debugPrint("Quitting worker...")
+        logging.warning("Quitting worker...")
+        self.shutdown()
 
 
-def task_updateMD5Summary(worker, job):
+def task_updateMD5Summary(gearman_worker, gearman_job):
 
     job_results = {'parts':[]}
 
-    payloadObj = json.loads(job.data)
-    debugPrint('Payload:', json.dumps(payloadObj, indent=2))
+    payloadObj = json.loads(gearman_job.data)
+    logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
 
-    worker.send_job_status(job, 1, 10)
+    warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir,gearman_worker.cruiseID)
+    md5SummaryFilepath = os.path.join(cruiseDir, DEFAULT_MD5_SUMMARY_FN)
+    md5SummaryMD5Filepath = os.path.join(cruiseDir, DEFAULT_MD5_SUMMARY_MD5_FN)
 
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
-    md5SummaryFilepath = os.path.join(cruiseDir, md5SummaryFN)
+    gearman_worker.send_job_status(gearman_job, 1, 10)
     
-    debugPrint("Building filelist")
+    logging.debug("Building filelist")
     fileList = []
     
-    if payloadObj['files']['new'] or payloadObj['files']['updated']:
-        fileList = payloadObj['files']['new']
-        fileList += payloadObj['files']['updated']
-        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
+    job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
 
+    if payloadObj['files']['new'] or payloadObj['files']['updated']:
+        fileList.extend(payloadObj['files']['new'])
+        fileList.extend(payloadObj['files']['updated'])
     else:
-        job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
         return json.dumps(job_results)
 
-    fileList = [worker.cruiseID + '/' + filename for filename in fileList]    
-    debugPrint('File list:', json.dumps(fileList, indent=2))
+    fileList = [os.path.join(worker.cruiseID, filename) for filename in fileList]    
+    logging.debug('Filelist: {}'.format(json.dumps(fileList, indent=2)))
 
-    worker.send_job_status(job, 2, 10)
+    gearman_worker.send_job_status(gearman_job, 2, 10)
 
-    debugPrint("Building hashes")
-    newHashes = build_hashes(worker, job, fileList)    
-    debugPrint('Hashes:', json.dumps(newHashes, indent=2))
+    logging.debug("Building hashes")
+    newHashes = build_hashes(gearman_worker, gearman_job, fileList)    
+    logging.debug('Hashes: {}'.format(json.dumps(newHashes, indent=2)))
 
-    worker.send_job_status(job, 8, 10)
+    gearman_worker.send_job_status(gearman_job, 8, 10)
         
     if worker.stop:
         return json.dumps(job_results)
@@ -395,20 +264,18 @@ def task_updateMD5Summary(worker, job):
     
     existingHashes = []
 
-    debugPrint("Processing existing MD5 summary file")
+    logging.debug("Processing existing MD5 summary file")
     
     try:
-        MD5SummaryFile = open(md5SummaryFilepath, 'r')
+        with open(md5SummaryFilepath, 'r') as MD5SummaryFile:
 
-        for line in MD5SummaryFile:
-            (md5Hash, filename) = line.split(' ', 1)
-            existingHashes.append({'hash': md5Hash, 'filename': filename.rstrip('\n')})
-
-        MD5SummaryFile.close()
+            for line in MD5SummaryFile:
+                (md5Hash, filename) = line.split(' ', 1)
+                existingHashes.append({'hash': md5Hash, 'filename': filename.rstrip('\n')})
 
     except IOError:
-        errPrint("Error Reading pre-existing MD5 Summary file:", md5SummaryFilepath)
-        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Fail", "reason": "Error Reading MD5 Summary file: " + md5SummaryFilepath})
+        logging.error("Error Reading pre-existing MD5 Summary file: {}".format(md5SummaryFilepath))
+        job_results['parts'].append({"partName": "Reading pre-existing MD5 Summary file", "result": "Fail", "reason": "Error Reading pre-existing MD5 Summary file: " + md5SummaryFilepath})
         return json.dumps(job_results)
 
     #debugPrint('Existing Hashes:', json.dumps(existingHashes, indent=2))
@@ -431,38 +298,40 @@ def task_updateMD5Summary(worker, job):
             row_added += 1
         
     if row_added > 0:
-        debugPrint(row_added, "row(s) added")
+        logging.debug("{} row(s) added".format(row_added))
     if row_updated > 0:
-        debugPrint(row_updated, "row(s) updated")
+        logging.debug("{} row(s) updated".format(row_updated))
 
-    worker.send_job_status(job, 85, 100)
+    gearman_worker.send_job_status(gearman_job, 85, 100)
 
     #debugPrint("Sorting hashes")
     sortedHashes = sorted(existingHashes, key=lambda hashes: hashes['filename'])
 
-    debugPrint("Building MD5 Summary file")
+    logging.debug("Building MD5 Summary file")
     try:
-        #print "Open MD5 Summary file"
-        MD5SummaryFile = open(md5SummaryFilepath, 'w')
+        with open(md5SummaryFilepath, 'w') as MD5SummaryFile:
 
-        #print "Saving MD5 Summary file"
-        for filehash in sortedHashes:
-            MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
+            for filehash in sortedHashes:
+                MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
+
+        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
 
     except IOError:
-        errPrint("Error updating MD5 Summary file:", md5SummaryFilepath)
+        logging.error("Error updating MD5 Summary file: {}".format(md5SummaryFilepath))
         job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail", "reason": "Error updating MD5 Summary file: " + md5SummaryFilepath})
-        MD5SummaryFile.close()
         return json.dumps(job_results)    
 
-    finally:
-        MD5SummaryFile.close()
-        setOwnerGroupPermissions(worker, md5SummaryFilepath)
-        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
+    set_ownerGroupPermissions(warehouseUser, md5SummaryFilepath)
     
-    worker.send_job_status(job, 9, 10)
+    if output_results['verdict']:
+        job_results['parts'].append({"partName": "Set MD5 Summary file ownership/permissions", "result": "Pass"})
+    else:
+        logging.error("Failed to set directory ownership")
+        job_results['parts'].append({"partName": "Set MD5 Summary file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
 
-    debugPrint("Building MD5 Summary MD5 file")
+    gearman_worker.send_job_status(gearman_job, 9, 10)
+
+    logging.debug("Building MD5 Summary MD5 file")
 
     output_results = build_MD5Summary_MD5(worker)
 
@@ -471,131 +340,156 @@ def task_updateMD5Summary(worker, job):
     else:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail", "reason": output_results['reason']})
 
-    worker.send_job_status(job, 10, 10)
+    output_results = set_ownerGroupPermissions(warehouseUser, md5SummaryMD5Filepath)
+
+    if output_results['verdict']:
+        job_results['parts'].append({"partName": "Set MD5 Summary MD5 file ownership/permissions", "result": "Pass"})
+    else:
+        logging.error("Failed to set directory ownership")
+        job_results['parts'].append({"partName": "Set MD5 Summary MD5 file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
+
+   gearman_worker.send_job_status(gearman_job, 10, 10)
     return json.dumps(job_results)
-    
-def task_rebuildMD5Summary(worker, job):
+
+
+def task_rebuildMD5Summary(gearman_worker, gearman_job):
 
     job_results = {'parts':[]}
 
-    payloadObj = json.loads(job.data)
-    #print 'DECODED payloadObj:', json.dumps(payloadObj, indent=2)
+    logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
 
-    worker.send_job_status(job, 1, 10)
+    warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir,gearman_worker.cruiseID)
+    md5SummaryFilepath = os.path.join(cruiseDir, DEFAULT_MD5_SUMMARY_FN)
+    md5SummaryMD5Filepath = os.path.join(cruiseDir, DEFAULT_MD5_SUMMARY_MD5_FN)
+
+    gearman_worker.send_job_status(gearman_job, 1, 10)
     
-    baseDir = worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, worker.cruiseID)
-    md5SummaryFilepath = os.path.join(cruiseDir, md5SummaryFN)
-
     if os.path.exists(cruiseDir):
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Pass"})
     else:
-        errPrint("Cruise directory not found")
+        logging.error("Cruise directory not found")
         job_results['parts'].append({"partName": "Verify Cruise Directory exists", "result": "Fail", "reason": "Unable to locate the cruise directory: " + cruiseDir})
         return json.dumps(job_results)
     
-    fileList = build_filelist(worker)
-    debugPrint('Filelist:', json.dumps(fileList, indent=2))
+    logging.info("Building filelist")
+    fileList = build_filelist(cruiseDir)
+    logging.debug('Filelist: {}'.format(json.dumps(fileList, indent=2)))
     
     job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
     
-    worker.send_job_status(job, 2, 10)
+    gearman_worker.send_job_status(gearman_job, 2, 10)
 
-    debugPrint("Building hashes")
-    newHashes = build_hashes(worker, job, fileList)
-    #debugPrint("Hashes:", json.dumps(newHashes, indent=2))
-    
-    worker.send_job_status(job, 8, 10)
-    
-    if worker.stop:
+    logging.info("Building hashes")
+    newHashes = build_hashes(gearman_worker, gearman_job, fileList)
+    logging.debug("Hashes: {}".format(json.dumps(newHashes, indent=2)))
+        
+    if gearman_worker.stop:
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Fail", "reason": "Job was stopped by user"})
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Pass"})
 
-    worker.send_job_status(job, 85, 100)
+    gearman_worker.send_job_status(gearman_job, 85, 100)
 
-    debugPrint("Sorting Hashes")   
+    logging.debug("Sorting Hashes")   
     sortedHashes = sorted(newHashes, key=lambda hashes: hashes['filename'])
     
-    worker.send_job_status(job, 9, 10)
+    gearman_worker.send_job_status(gearman_job, 9, 10)
 
-    debugPrint("Building MD5 Summary file")
+    logging.info("Building MD5 Summary file")
     try:
         #debugPrint("Saving new MD5 Summary file")
-        MD5SummaryFile = open(md5SummaryFilepath, 'w')
+        with open(md5SummaryFilepath, 'w') as MD5SummaryFile:
 
-        for filehash in sortedHashes:
-            MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
+            for filehash in sortedHashes:
+                MD5SummaryFile.write(filehash['hash'] + ' ' + filehash['filename'] + '\n')
+
+        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
 
     except IOError:
-        errPrint("Error saving MD5 Summary file:", md5SummaryFilepath)
+        logging.error("Error saving MD5 Summary file: {}".format(md5SummaryFilepath))
         job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail", "reason": "Error saving MD5 Summary file: " + md5SummaryFilepath})
-        MD5SummaryFile.close()
         return json.dumps(job_results)    
 
-    finally:
-        MD5SummaryFile.close()
-        setOwnerGroupPermissions(worker, md5SummaryFilepath)
-        job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Pass"})
-    
-    worker.send_job_status(job, 95, 100)
+    output_results = set_ownerGroupPermissions(warehouseUser, md5SummaryFilepath)
 
-    debugPrint("Building MD5 Summary MD5 file")
+    if output_results['verdict']:
+        job_results['parts'].append({"partName": "Set MD5 Summary file ownership/permissions", "result": "Pass"})
+    else:
+        logging.error("Failed to set directory ownership")
+        job_results['parts'].append({"partName": "Set MD5 Summary file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
 
-    output_results = build_MD5Summary_MD5(worker)
+    gearman_worker.send_job_status(gearman_job, 95, 100)
+
+    logging.info("Building MD5 Summary MD5 file")
+
+    output_results = build_MD5Summary_MD5(gearman_worker)
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Fail", "reason": output_results['reason']})
+        return json.dumps(job_results)    
 
-    worker.send_job_status(job, 10, 10)
+    output_results = set_ownerGroupPermissions(warehouseUser, md5SummaryMD5Filepath)
+
+    if output_results['verdict']:
+        job_results['parts'].append({"partName": "Set MD5 Summary MD5 file ownership/permissions", "result": "Pass"})
+    else:
+        logging.error("Failed to set directory ownership")
+        job_results['parts'].append({"partName": "Set MD5 Summary MD5 file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
+        return json.dumps(job_results)    
+
+    gearman_worker.send_job_status(gearman_job, 10, 10)
     return json.dumps(job_results)
 
-
-# -------------------------------------------------------------------------------------
-# Main function of the script should it be run as a stand-alone utility.
-# -------------------------------------------------------------------------------------
-def main(argv):
-
-    parser = argparse.ArgumentParser(description='Handle MD5 Summary related tasks')
-    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
-
-    args = parser.parse_args()
-    if args.debug:
-        global DEBUG
-        DEBUG = True
-        debugPrint("Running in debug mode")
-
-    debugPrint('Creating Worker...')
-    global new_worker
-    new_worker = OVDMGearmanWorker()
-
-    debugPrint('Defining Signal Handlers...')
-    def sigquit_handler(_signo, _stack_frame):
-        errPrint("QUIT Signal Received")
-        new_worker.stopTask()
-
-    def sigint_handler(_signo, _stack_frame):
-        errPrint("INT Signal Received")
-        new_worker.quitWorker()
-
-    signal.signal(signal.SIGQUIT, sigquit_handler)
-    signal.signal(signal.SIGINT, sigint_handler)
-
-    new_worker.set_client_id('md5Summary.py')
-
-    debugPrint('Registering worker tasks...')
-    debugPrint('   Task:', 'updateMD5Summary')
-    new_worker.register_task("updateMD5Summary", task_updateMD5Summary)
-    debugPrint('   Task:', 'rebuildMD5Summary')
-    new_worker.register_task("rebuildMD5Summary", task_rebuildMD5Summary)
-
-    debugPrint('Waiting for jobs...')
-    new_worker.work()
 
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(description='Handle MD5 Summary related tasks')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    logging.debug("Creating Worker...")
+
+    new_worker = OVDMGearmanWorker()
+    new_worker.set_client_id(__file__)
+
+    logging.debug("Defining Signal Handlers...")
+    def sigquit_handler(_signo, _stack_frame):
+        logging.warning("QUIT Signal Received")
+        new_worker.stopTask()
+
+    def sigint_handler(_signo, _stack_frame):
+        logging.warning("INT Signal Received")
+        new_worker.quitWorker()
+
+    signal.signal(signal.SIGQUIT, sigquit_handler)
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    logging.info("Registering worker tasks...")
+
+    logging.info("\tTask: updateMD5Summary")
+    new_worker.register_task("updateMD5Summary", task_updateMD5Summary)
+    logging.info("\tTask: rebuildMD5Summary")
+    new_worker.register_task("rebuildMD5Summary", task_rebuildMD5Summary)
+
+    logging.info("Waiting for jobs...")
+    new_worker.work()
