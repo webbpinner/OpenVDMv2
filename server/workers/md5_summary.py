@@ -86,7 +86,7 @@ def hash_file(filepath):
 
 def build_hashes(gearman_worker, gearman_job, fileList):
 
-    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'], gearman_worker.cruiseID)
     filesizeLimit = gearman_worker.OVDM.getMD5FilesizeLimit()
     filesizeLimitStatus = gearman_worker.OVDM.getMD5FilesizeLimitStatus() 
 
@@ -98,9 +98,9 @@ def build_hashes(gearman_worker, gearman_job, fileList):
             debugPrint("Stopping")
             break
 
-        filepath = os.path.join(baseDir, filename)
+        filepath = os.path.join(cruiseDir, filename)
 
-        if filesizeLimitStatus == 'On' and not filesizeLimit == '0':
+        if filesizeLimitStatus == 'On' and filesizeLimit != '0':
             if os.stat(filepath).st_size < int(filesizeLimit) * 1000000:
                 hashes.append({'hash': hash_file(filepath), 'filename': filename})
 
@@ -162,7 +162,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         if int(self.task['taskID']) > 0:
             self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
         else:
-            self.OVDM.trackGearmanJob(taskLookup[current_job.task], os.getpid(), current_job.handle)
+            self.OVDM.trackGearmanJob(self.task['longName'], os.getpid(), current_job.handle)
 
         logging.info("Job: {} ({}) started at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
         
@@ -246,7 +246,7 @@ def task_updateMD5Summary(gearman_worker, gearman_job):
     else:
         return json.dumps(job_results)
 
-    fileList = [os.path.join(worker.cruiseID, filename) for filename in fileList]    
+    #fileList = [os.path.join(gearman_worker.cruiseID, filename) for filename in fileList]    
     logging.debug('Filelist: {}'.format(json.dumps(fileList, indent=2)))
 
     gearman_worker.send_job_status(gearman_job, 2, 10)
@@ -257,7 +257,7 @@ def task_updateMD5Summary(gearman_worker, gearman_job):
 
     gearman_worker.send_job_status(gearman_job, 8, 10)
         
-    if worker.stop:
+    if gearman_worker.stop:
         return json.dumps(job_results)
     else:
         job_results['parts'].append({"partName": "Calculate Hashes", "result": "Pass"})
@@ -321,7 +321,7 @@ def task_updateMD5Summary(gearman_worker, gearman_job):
         job_results['parts'].append({"partName": "Writing MD5 Summary file", "result": "Fail", "reason": "Error updating MD5 Summary file: " + md5SummaryFilepath})
         return json.dumps(job_results)    
 
-    set_ownerGroupPermissions(warehouseUser, md5SummaryFilepath)
+    output_results = set_ownerGroupPermissions(warehouseUser, md5SummaryFilepath)
     
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Set MD5 Summary file ownership/permissions", "result": "Pass"})
@@ -333,7 +333,7 @@ def task_updateMD5Summary(gearman_worker, gearman_job):
 
     logging.debug("Building MD5 Summary MD5 file")
 
-    output_results = build_MD5Summary_MD5(worker)
+    output_results = build_MD5Summary_MD5(gearman_worker)
 
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Writing MD5 Summary MD5 file", "result": "Pass"})
@@ -348,7 +348,7 @@ def task_updateMD5Summary(gearman_worker, gearman_job):
         logging.error("Failed to set directory ownership")
         job_results['parts'].append({"partName": "Set MD5 Summary MD5 file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
 
-   gearman_worker.send_job_status(gearman_job, 10, 10)
+    gearman_worker.send_job_status(gearman_job, 10, 10)
     return json.dumps(job_results)
 
 
@@ -356,6 +356,7 @@ def task_rebuildMD5Summary(gearman_worker, gearman_job):
 
     job_results = {'parts':[]}
 
+    payloadObj = json.loads(gearman_job.data)
     logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
 
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']

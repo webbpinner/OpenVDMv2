@@ -50,6 +50,11 @@ DEFAULT_DATA_DASHBOARD_MANIFEST_FN = 'manifest.json'
 
 DEFAULT_LOWERING_CONFIG_FN = 'loweringConfig.json'
 
+DEFAULT_MD5_SUMMARY_FN = 'MD5_Summary.txt'
+
+DEFAULT_MD5_SUMMARY_MD5_FN = 'MD5_Summary.md5'
+
+
 class OpenVDM_API():
 
     def __init__(self, config_file = DEFAULT_CONFIG_FILE):
