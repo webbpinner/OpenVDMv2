@@ -68,9 +68,57 @@ hooks:
         - postDataDashboard
     rebuildDataDashboard:
         - updateMD5Summary
-#        - postDataDashboard
-#    setupNewCruise:
-#        - postSetupNewCruise
-#    setupNewLowering:
-#        - postSetupNewLowering
-#    finalizeCurrentCruise:
+        - postDataDashboard
+    setupNewCruise:
+        - postSetupNewCruise
+    setupNewLowering:
+        - postSetupNewLowering
+    finalizeCurrentCruise:
+        - postFinalizeCurrentCruise
+    finalizeCurrentLowering:
+        - postFinalizeCurrentLowering
+
+# The postHookCommands section contains any additional commands that should be performed
+# after the successful completion of the primary OpenVDM Gearman task.  Any subsequent
+# tasks called with be called as background Gearman tasks so to not interfer with
+# OpenVDM's primary operation.
+postHookCommands:
+    postCollectionSystemTransfer
+        #- collectionSystemTransferName: OpenRVDAS
+        #  commandList:
+        #  - name: "R2R NavManager"
+        #    command:
+        #    - python
+        #    - /usr/local/bin/r2rNavManager.py
+        #    - SCS
+    postDataDashboard
+        #- collectionSystemTransferName: OpenRVDAS
+        #  commandList:
+        #  - name: "Build cruise tracks"
+        #    command:
+        #    - python
+        #    - /usr/local/bin/buildCruiseTracks.py
+    postSetupNewCruise
+        #commandList:
+        #- name: "Setup Remote Cruise Directories"
+        #  command:
+        #  - python
+        #  - /usr/local/bin/setupRemoteCruiseDirectories.py
+    postSetupNewLowering
+        #commandList:
+        #- name: "Setup Remote Lowering Directories"
+        #  command:
+        #  - python
+        #  - /usr/local/bin/setupRemoteLoweringDirectories.py
+    postFinalizeCurrentCruise
+        #commandList:
+        #- name: "Export Sealog Vessel Data"
+        #  command:
+        #  - /home/survey/sealog-server-vessel/venv/bin/python
+        #  - /home/survey/sealog-server-vessel/misc/sealog_vessel_data_export.py
+    postFinalizeCurrentLowering    
+        #commandList:
+        #- name: "Export Sealog Vessel Data"
+        #  command:
+        #  - /home/survey/sealog-server-vehicle/venv/bin/python
+        #  - /home/survey/sealog-server-vehicle/misc/sealog_vehicle_data_export.py

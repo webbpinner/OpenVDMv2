@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  postCollectionSystemTransfer.yaml
+#         FILE:  post_collection_system_transfer.yaml
 #
 #  DESCRIPTION:  Configuration file to the postCollectionSystemTransfer hook
 #
@@ -8,9 +8,9 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2016-03-07
-#     REVISION:  2020-11-19
+#     REVISION:  2020-12-30
 #
 # LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
 #               Copyright (C) OceanDataRat.org 2020
@@ -63,7 +63,8 @@
 # Currenly implemented wildcards:
 # - '{cruiseID}' --> the cruiseID used for the collectionSystemTransfer that just occurred 
 # - '{collectionSystemTransferID}' --> the ID of the collectionSystemTransfer that just occurred 
-# - '{collectionSystemTransferName}' --> the name of the collectionSystemTransfer that just occurred 
+# - '{collectionSystemTransferName}' --> the name of the collectionSystemTransfer that just occurred
+# - '{loweringID}' --> the loweringID used for the collectionSystemTransfer that just occurred 
 # - '{newFiles}' --> JSON-formatted array of all new files that were just transferred
 # - '{updatedFiles}' --> JSON-formatted array of all updated files that were just transferred
 #

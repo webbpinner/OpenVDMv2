@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  postDataDashboard.yaml
+#         FILE:  post_data_dashboard.yaml
 #
 #  DESCRIPTION:  Configuration file to the postDataDashboard hook
 #
@@ -8,12 +8,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2017-08-05
-#     REVISION:  2020-11-19
+#     REVISION:  2020-12-30
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@
 # - '{cruiseID}' --> the cruiseID used for the dataDashboard that just occurred 
 # - '{collectionSystemTransferID}' --> the collectionSystemTransferID used for the dataDashboard that just occurred 
 # - '{collectionSystemTransferName}' --> the collectionSystemTransferName used for the dataDashboard that just occurred 
+# - '{loweringID}' --> the loweringID used for the collectionSystemTransfer that just occurred 
 # - '{newFiles}' --> JSON-formatted array of all new files that were just transferred in the cooresponding collectionSystemTransfer
 # - '{updatedFile}' --> JSON-formatted array of all updated files that were just transferred in the cooresponding collectionSystemTransfer
 

@@ -45,68 +45,42 @@ sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM_API
 from server.utils.read_config import read_config
+from server.utils.hooks import get_post_hook_commands, run_commands
+from server.utils.hooks import POST_COLLECTION_SYSTEM_TRANSFER_HOOK_NAME, POST_DATA_DASHBOARD_HOOK_NAME, POST_SETUP_NEW_CRUISE_HOOK_NAME, POST_SETUP_NEW_LOWERING_HOOK_NAME, POST_FINALIZE_CURRENT_CRUISE_HOOK_NAME, POST_FINALIZE_CURRENT_LOWERING_HOOK_NAME
 
 customTasks = [
     {
         "taskID": "0",
-        "name": "postCollectionSystemTransfer",
+        "name": POST_COLLECTION_SYSTEM_TRANSFER_HOOK_NAME,
         "longName": "Post Collection System Transfer",
+    },
+    {
+        "taskID": "0",
+        "name": POST_DATA_DASHBOARD_HOOK_NAME,
+        "longName": "Post Data Dashboard Processing",
+    },
+    {
+        "taskID": "0",
+        "name": POST_SETUP_NEW_CRUISE_HOOK_NAME,
+        "longName": "Post Setup New Cruise",
+    },
+    {
+        "taskID": "0",
+        "name": POST_SETUP_NEW_LOWERING_HOOK_NAME,
+        "longName": "Post Setup New Lowering",
+    },
+    {
+        "taskID": "0",
+        "name": POST_FINALIZE_CURRENT_CRUISE_HOOK_NAME,
+        "longName": "Post Finalize Current Cruise",
+    },
+    {
+        "taskID": "0",
+        "name": POST_FINALIZE_CURRENT_LOWERING_HOOK_NAME,
+        "longName": "Post Finalize Current Lowering",
     }
 ]
-
-commandFile = '/usr/local/etc/openvdm/postCollectionSystemTransfer.yaml'
-
-
-def getCommands(gearman_worker):
-
-    try:
-        commandsFromFile = read_config(commandFile)
-
-    except Exception as err:
-        logging.error(str(err))
-        return {"verdict": False, "reason": "Could not process command file: " + commandFile}
     
-    returnCommandList = list(filter(lambda collectionSystem: collectionSystem['collectionSystemTransferName'] == gearman_worker.collectionSystemTransfer['name'], commandsFromFile))
-    returnCommandList = returnCommandList[0]['commandList'] if len(returnCommandList) > 0 and 'commandList' in returnCommandList[0] else []
-
-    for command in returnCommandList:
-        logging.debug("Raw Command: {}".format(json.dumps(command)))
-        command['command'] = [arg.replace('{cruiseID}', gearman_worker.cruiseID) for arg in command['command']]
-        command['command'] = [arg.replace('{loweringID}', gearman_worker.loweringID) for arg in command['command']]
-        command['command'] = [arg.replace('{collectionSystemTransferID}', gearman_worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
-        command['command'] = [arg.replace('{collectionSystemTransferName}', gearman_worker.collectionSystemTransfer['name']) for arg in command['command']]
-        command['command'] = [arg.replace('{newFiles}', json.dumps(gearman_worker.files['new'])) for arg in command['command']]
-        command['command'] = [arg.replace('{updatedFiles}', json.dumps(gearman_worker.files['updated']) ) for arg in command['command']]
-                
-        logging.debug("Processed Command: {}".format(json.dumps(returnCommandList)))
-
-    return {"verdict": True, "commandList": returnCommandList}
-    
-
-def runCommands(gearman_worker, commands):    
-
-    reasons = []
-
-    for command in commands: 
-        try:
-            logging.info("Executing: {}".format(' '.join(command['command'])))
-            proc = subprocess.run(command['command'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            
-            if len(proc.stdout) > 0:
-                logging.debug("stdout: {}".format(proc.stdout))
-                
-            if len(proc.stderr) > 0:
-                logging.debug("stderr: {}".format(proc.stderr))
-
-        except:
-            logging.error("Error executing the {} command: ()".format(command['name'], ' '.join(command['command'])))
-            gearman_worker.OVDM.sendMsg("Error executing postCollectionSystemTransfer script", command['name'])
-            reasons.append("Error executing postCollectionSystemTransfer script: " + command['name'])
-
-    if len(reasons) > 0:
-        return {"verdict": False, "reason": reasons.join("\n")}
-
-    return {"verdict": True}
 
 class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     
@@ -134,13 +108,13 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         payloadObj = json.loads(current_job.data)
 
-        self.task = self.get_custom_task(current_job) if self.get_custom_task(current_job) != None else self.OVDM.getTaskByName(current_job.task)
-        logging.debug("task: {}".format(self.task))
+        try:
+            self.task = list(filter(lambda task: task['name'] == payloadObj['hook'], customTasks))[0]
+            logging.debug("task: {}".format(self.task))
+        except:
+            raise e
 
-        if int(self.task['taskID']) > 0:
-            self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
-        else:
-            self.OVDM.trackGearmanJob(self.task['longName'], os.getpid(), current_job.handle)
+        self.OVDM.trackGearmanJob(self.task['longName'], os.getpid(), current_job.handle)
 
         logging.info("Job: {} ({}) started at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
         
@@ -201,7 +175,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         self.shutdown()
 
         
-def task_postCollectionSystemTransfer(gearman_worker, gearman_job):
+def task_postHook(gearman_worker, gearman_job):
 
     job_results = {'parts':[]}
 
@@ -210,15 +184,8 @@ def task_postCollectionSystemTransfer(gearman_worker, gearman_job):
     
     gearman_worker.send_job_status(gearman_job, 1, 10)
     
-    #check to see if file exists, if False, end task.
-    if not os.path.isfile(commandFile):
-        logging.warning("Command file not found: {}".format(commandFile))
-        return json.dumps(job_results)
-
-    gearman_worker.send_job_status(gearman_job, 2, 10)
-
     logging.info("Retrieving Commands")
-    output_results = getCommands(gearman_worker)
+    output_results = get_post_hook_commands(gearman_worker, self.task['name'])
     
     if not output_results['verdict']:
         job_results['parts'].append({"partName": "Get Commands", "result": "Fail", "reason": output_results['reason']})
@@ -229,9 +196,13 @@ def task_postCollectionSystemTransfer(gearman_worker, gearman_job):
     gearman_worker.send_job_status(gearman_job, 3, 10)
 
     logging.info("Running Commands")
-    output_results = runCommands(gearman_worker, output_results['commandList'])
+    output_results = run_commands(gearman_worker, output_results['commandList'])
 
     if not output_results['verdict']:
+
+        for reason in output_results['reason'].split("\n"):
+            gearman_worker.OVDM.sendMsg("Error executing postHook process", reason)
+
         job_results['parts'].append({"partName": "Running commands", "result": "Fail", "reason": output_results['reason']})
     else:
         job_results['parts'].append({"partName": "Running commands", "result": "Pass"})
@@ -245,7 +216,7 @@ def task_postCollectionSystemTransfer(gearman_worker, gearman_job):
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Handle Post Collection System Transfer related tasks')
+    parser = argparse.ArgumentParser(description='Handle post-hook processes')
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
                         help='Increase output verbosity')
@@ -282,8 +253,8 @@ if __name__ == "__main__":
 
     logging.info("Registering worker tasks...")
 
-    logging.info("\tTask: postCollectionSystemTransfer")
-    new_worker.register_task("postCollectionSystemTransfer", task_postCollectionSystemTransfer)
+    logging.info("\tTask: postHook")
+    new_worker.register_task("postHook", task_postHook)
 
     logging.info("Waiting for jobs...")
     new_worker.work()
