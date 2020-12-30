@@ -38,16 +38,15 @@ import json
 import signal
 import time
 import subprocess
-import yaml
 import logging
 
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM_API
+from server.utils.read_config import read_config
 
-
-customTaskLookup = [
+customTasks = [
     {
         "taskID": "0",
         "name": "postCollectionSystemTransfer",
@@ -60,33 +59,26 @@ commandFile = '/usr/local/etc/openvdm/postCollectionSystemTransfer.yaml'
 
 def getCommands(gearman_worker):
 
-    logging.debug("Files: {}".format(gearman_worker.files))
-
     try:
-        with open(commandFile, 'r') as f:
-            commandsFromFile = yaml.load(f.read())
-
-        logging.debug(json.dumps(commandsFromFile))
+        commandsFromFile = read_config(commandFile)
 
     except Exception as err:
-        logging.error("ERROR: Could not process command file: {}".format(commandFile))
         logging.error(str(err))
         return {"verdict": False, "reason": "Could not process command file: " + commandFile}
     
     returnCommandList = list(filter(lambda collectionSystem: collectionSystem['collectionSystemTransferName'] == gearman_worker.collectionSystemTransfer['name'], commandsFromFile))
+    returnCommandList = returnCommandList[0]['commandList'] if len(returnCommandList) > 0 and 'commandList' in returnCommandList[0] else []
 
-    for collectionSystemCommand in returnCommandList:
-        logging.debug('Collection System Command: {}'.format(json.dumps(collectionSystemCommand, indent=2)))
-        for command in returnCommandList:
-            logging.debug("Raw Command: {}".format(json.dumps(command)))
-            command['command'] = [arg.replace('{cruiseID}', gearman_worker.cruiseID) for arg in command['command']]
-            command['command'] = [arg.replace('{loweringID}', gearman_worker.loweringID) for arg in command['command']]
-            command['command'] = [arg.replace('{collectionSystemTransferID}', gearman_worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
-            command['command'] = [arg.replace('{collectionSystemTransferName}', gearman_worker.collectionSystemTransfer['name']) for arg in command['command']]
-            command['command'] = [arg.replace('{newFiles}', json.dumps(gearman_worker.files['new'])) for arg in command['command']]
-            command['command'] = [arg.replace('{updatedFiles}', json.dumps(gearman_worker.files['updated']) ) for arg in command['command']]
+    for command in returnCommandList:
+        logging.debug("Raw Command: {}".format(json.dumps(command)))
+        command['command'] = [arg.replace('{cruiseID}', gearman_worker.cruiseID) for arg in command['command']]
+        command['command'] = [arg.replace('{loweringID}', gearman_worker.loweringID) for arg in command['command']]
+        command['command'] = [arg.replace('{collectionSystemTransferID}', gearman_worker.collectionSystemTransfer['collectionSystemTransferID']) for arg in command['command']]
+        command['command'] = [arg.replace('{collectionSystemTransferName}', gearman_worker.collectionSystemTransfer['name']) for arg in command['command']]
+        command['command'] = [arg.replace('{newFiles}', json.dumps(gearman_worker.files['new'])) for arg in command['command']]
+        command['command'] = [arg.replace('{updatedFiles}', json.dumps(gearman_worker.files['updated']) ) for arg in command['command']]
                 
-            logging.debug("Processed Command: {}".format(json.dumps(returnCommandList, indent=2)))
+        logging.debug("Processed Command: {}".format(json.dumps(returnCommandList)))
 
     return {"verdict": True, "commandList": returnCommandList}
     
@@ -95,11 +87,10 @@ def runCommands(gearman_worker, commands):
 
     reasons = []
 
-    for command in commands:
-    
+    for command in commands: 
         try:
-            logging.debug("Executing: {}".format(s.join(command['command'])))
-            proc = subprocess.run(command['command'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logging.info("Executing: {}".format(' '.join(command['command'])))
+            proc = subprocess.run(command['command'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             
             if len(proc.stdout) > 0:
                 logging.debug("stdout: {}".format(proc.stdout))
@@ -117,7 +108,7 @@ def runCommands(gearman_worker, commands):
 
     return {"verdict": True}
 
-class OVDMGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
         self.stop = False
@@ -226,7 +217,8 @@ def task_postCollectionSystemTransfer(gearman_worker, gearman_job):
 
     gearman_worker.send_job_status(gearman_job, 2, 10)
 
-    output_results = getCommands(worker)
+    logging.info("Retrieving Commands")
+    output_results = getCommands(gearman_worker)
     
     if not output_results['verdict']:
         job_results['parts'].append({"partName": "Get Commands", "result": "Fail", "reason": output_results['reason']})
@@ -234,17 +226,15 @@ def task_postCollectionSystemTransfer(gearman_worker, gearman_job):
 
     job_results['parts'].append({"partName": "Get Commands", "result": "Pass"})
         
-    logging.debug("Commands: {}".format(json.dumps(output_results['commandList'], indent=2)))
-    
     gearman_worker.send_job_status(gearman_job, 3, 10)
 
     logging.info("Running Commands")
     output_results = runCommands(gearman_worker, output_results['commandList'])
 
-    if output_results['verdict']:
-        job_results['parts'].append({"partName": "Running commands", "result": "Pass"})
-    else:
+    if not output_results['verdict']:
         job_results['parts'].append({"partName": "Running commands", "result": "Fail", "reason": output_results['reason']})
+    else:
+        job_results['parts'].append({"partName": "Running commands", "result": "Pass"})
 
     gearman_worker.send_job_status(gearman_job, 10, 10)
 
