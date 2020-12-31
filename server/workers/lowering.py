@@ -155,7 +155,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
             for task in self.OVDM.getTasksForHook('setupNewLowering'):
-                logging.debug("Adding post task: {}".format(task));
+                logging.info("Adding post task: {}".format(task));
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
                 
         elif current_job.task == 'finalizeCurrentLowering':
@@ -163,7 +163,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
             for task in self.OVDM.getTasksForHook('finalizeCurrentLowering'):
-                logging.debug("Adding post task: {}".format(task));
+                logging.info("Adding post task: {}".format(task));
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
         if len(resultsObj['parts']) > 0:

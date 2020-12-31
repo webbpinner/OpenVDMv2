@@ -3,7 +3,9 @@
 """
 
 import sys
+import json
 import logging
+import subprocess
 
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
@@ -38,23 +40,24 @@ def get_post_hook_commands(gearman_worker, hook_name):
 
     try:
         openvdmConfig = read_config(DEFAULT_CONFIG_FILE)
+        #logging.debug("openvdmConfig: {}".format(openvdmConfig))
 
         if hook_name == POST_COLLECTION_SYSTEM_TRANSFER_HOOK_NAME:
-            commandsFromFile = openvdmConfig['postHookCommands']['postCollectionSystemTransfer']
+            commandsFromFile = openvdmConfig['postHookCommands']['postCollectionSystemTransfer'] if openvdmConfig['postHookCommands']['postCollectionSystemTransfer'] != None else [] 
             commandsFromFile = list(filter(lambda collectionSystem: collectionSystem['collectionSystemTransferName'] == gearman_worker.collectionSystemTransfer['name'], commandsFromFile))
-            commandsFromFile = returnCommandList[0]['commandList'] if len(returnCommandList) > 0 and 'commandList' in commandsFromFile[0] else []
+            commandsFromFile = commandsFromFile[0]['commandList'] if len(commandsFromFile) > 0 and 'commandList' in commandsFromFile[0] else []
         elif hook_name == POST_DATA_DASHBOARD_HOOK_NAME:
-            commandsFromFile = openvdmConfig['postHookCommands']['postDataDashboard']
+            commandsFromFile = openvdmConfig['postHookCommands']['postDataDashboard'] if openvdmConfig['postHookCommands']['postDataDashboard'] != None else []
             commandsFromFile = list(filter(lambda collectionSystem: collectionSystem['collectionSystemTransferName'] == gearman_worker.collectionSystemTransfer['name'], commandsFromFile))
-            commandsFromFile = returnCommandList[0]['commandList'] if len(returnCommandList) > 0 and 'commandList' in commandsFromFile[0] else []
+            commandsFromFile = commandsFromFile[0]['commandList'] if len(commandsFromFile) > 0 and 'commandList' in commandsFromFile[0] else []
         elif hook_name == POST_SETUP_NEW_CRUISE_HOOK_NAME:
-            commandsFromFile = openvdmConfig['postHookCommands']['postSetupNewCruise']['commandList']
+            commandsFromFile = openvdmConfig['postHookCommands']['postSetupNewCruise']['commandList'] if openvdmConfig['postHookCommands']['postSetupNewCruise'] != None else []
         elif hook_name == POST_SETUP_NEW_LOWERING_HOOK_NAME:
-            commandsFromFile = openvdmConfig['postHookCommands']['postSetupNewLowering']['commandList']
+            commandsFromFile = openvdmConfig['postHookCommands']['postSetupNewLowering']['commandList'] if openvdmConfig['postHookCommands']['postSetupNewLowering'] != None else []
         elif hook_name == POST_FINALIZE_CURRENT_CRUISE_HOOK_NAME:
-            commandsFromFile = openvdmConfig['postHookCommands']['postFinalizeCurrentCruise']['commandList']
+            commandsFromFile = openvdmConfig['postHookCommands']['postFinalizeCurrentCruise']['commandList'] if openvdmConfig['postHookCommands']['postFinalizeCurrentCruise'] != None else []
         elif hook_name == POST_FINALIZE_CURRENT_LOWERING_HOOK_NAME:
-            commandsFromFile = openvdmConfig['postHookCommands']['postFinalizeCurrentLowering']['commandList']
+            commandsFromFile = openvdmConfig['postHookCommands']['postFinalizeCurrentLowering']['commandList'] if openvdmConfig['postHookCommands']['postFinalizeCurrentLowering'] != None else []
         else:
             logging.warning("Invalid hook name: '{}' specified".format(hook_name))
 
@@ -82,11 +85,12 @@ def run_commands(commands):
             if len(proc.stderr) > 0:
                 logging.debug("stderr: {}".format(proc.stderr))
 
-        except:
-            logging.error("Error executing the {} command: ()".format(command['name'], ' '.join(command['command'])))
+        except Exception as e:
+            logging.error("Error executing the {} command: {}".format(command['name'], ' '.join(command['command'])))
+            logging.error(str(e))
             reasons.append("Error executing postCollectionSystemTransfer script: " + command['name'])
 
     if len(reasons) > 0:
-        return {"verdict": False, "reason": reasons.join("\n")}
+        return {"verdict": False, "reason": '\n'.join(reasons)}
 
     return {"verdict": True}

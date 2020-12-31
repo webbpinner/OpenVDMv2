@@ -83,7 +83,7 @@ hooks:
 # tasks called with be called as background Gearman tasks so to not interfer with
 # OpenVDM's primary operation.
 postHookCommands:
-    postCollectionSystemTransfer
+    postCollectionSystemTransfer:
         #- collectionSystemTransferName: OpenRVDAS
         #  commandList:
         #  - name: "R2R NavManager"
@@ -91,32 +91,32 @@ postHookCommands:
         #    - python
         #    - /usr/local/bin/r2rNavManager.py
         #    - SCS
-    postDataDashboard
+    postDataDashboard:
         #- collectionSystemTransferName: OpenRVDAS
         #  commandList:
         #  - name: "Build cruise tracks"
         #    command:
         #    - python
         #    - /usr/local/bin/buildCruiseTracks.py
-    postSetupNewCruise
+    postSetupNewCruise:
         #commandList:
         #- name: "Setup Remote Cruise Directories"
         #  command:
         #  - python
         #  - /usr/local/bin/setupRemoteCruiseDirectories.py
-    postSetupNewLowering
+    postSetupNewLowering:
         #commandList:
         #- name: "Setup Remote Lowering Directories"
         #  command:
         #  - python
         #  - /usr/local/bin/setupRemoteLoweringDirectories.py
-    postFinalizeCurrentCruise
+    postFinalizeCurrentCruise:
         #commandList:
         #- name: "Export Sealog Vessel Data"
         #  command:
         #  - /home/survey/sealog-server-vessel/venv/bin/python
         #  - /home/survey/sealog-server-vessel/misc/sealog_vessel_data_export.py
-    postFinalizeCurrentLowering    
+    postFinalizeCurrentLowering:
         #commandList:
         #- name: "Export Sealog Vessel Data"
         #  command:

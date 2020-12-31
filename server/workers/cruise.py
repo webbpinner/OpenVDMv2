@@ -202,7 +202,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         self.task = None
         self.cruiseID = ''
         self.cruiseStartDate = ''
-        self.collectionSystemTransfer = {}
+        #self.collectionSystemTransfer = {}
         self.shipboardDataWarehouseConfig = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
         
@@ -258,7 +258,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
             for task in self.OVDM.getTasksForHook('setupNewCruise'):
-                logging.debug("Adding post task: {}".format(task));
+                logging.info("Adding post task: {}".format(task));
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
                 
         elif current_job.task == "finalizeCurrentCruise":
@@ -266,7 +266,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
         
             for task in self.OVDM.getTasksForHook('finalizeCurrentCruise'):
-                logging.debug("Adding post task: {}".format(task));
+                logging.info("Adding post task: {}".format(task));
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
         
         if len(resultsObj['parts']) > 0:
