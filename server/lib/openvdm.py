@@ -31,7 +31,6 @@
 # ----------------------------------------------------------------------------------- #
 
 import requests
-# import yaml
 import json
 import datetime
 import logging
@@ -61,26 +60,6 @@ class OpenVDM_API():
 
         self.config = {}
         self.config = read_config.read_config(config_file)
-        # print("Config: {}".format(json.dumps(self.config, indent=2)))
-  #     self.logger = logging.getLogger(__file__)
-
-
-    # def parseOVDMConfig(self):
-    #     """
-    #     Read the yaml-formatted OpenVDM configuration file and return the
-    #     configuration as a python dict
-    #     """
-
-    #     try:
-    #         with open(configFile, 'r') as f:
-    #             try:
-    #                 return yaml.load(f.read(), Loader=yaml.FullLoader)
-    #             except Exception as e:
-    #                 logging.error("Unable to parse configuration file: {}".format(configFile))
-    #                 raise e
-    #     except Exception as e:
-    #         logging.error("Unable to open configuration file: {}".format(configFile))
-    #         raise e
 
 
     def clearGearmanJobsFromDB(self):

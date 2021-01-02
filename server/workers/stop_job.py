@@ -73,7 +73,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
         self.stop = False
-        self.OVDM = openvdm.OpenVDM_API()
+        self.OVDM = OpenVDM_API()
         self.jobPID = ''
         self.jobInfo = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])

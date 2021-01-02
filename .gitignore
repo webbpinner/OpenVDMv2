@@ -1,3 +1,5 @@
+venv
+__pycache__
 **/.DS_Store
 /var/www/OpenVDMv2/.htaccess
 /var/www/OpenVDMv2/errorlog.html
@@ -14,4 +16,4 @@
 /usr/local/bin/OVDM_dashboardDataScripts/*.py
 /usr/local/bin/OVDM_dashboardDataScripts/*.py
 composer.lock
-
+OpenVDMv2_db_custom.sql

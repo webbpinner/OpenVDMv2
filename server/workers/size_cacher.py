@@ -42,47 +42,18 @@ import datetime
 import argparse
 import subprocess
 import json
+import logging
 import python3_gearman
 
-from os.path import dirname, realpath
-append(dirname(dirname(dirname(realpath(__file__)))))
+from os.path import dirname, realpath, join, isdir
+sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM_API
 
-openVDM = openvdm.OpenVDM()
-
-
-def getCruiseDir():
-
-    global openVDM
-
-    warehouse = openVDM.getShipboardDataWarehouseConfig()
-    cruiseID = openVDM.getCruiseID()
-    cruiseDir = os.path.join(warehouse['shipboardDataWarehouseBaseDir'], cruiseID)
-
-    # print cruiseDir;
-    if os.path.isdir(cruiseDir):
-        return cruiseDir;
-
-    return False
-
-def getLoweringDir():
-
-    global openVDM
-
-    warehouse = openVDM.getShipboardDataWarehouseConfig()
-    cruiseID = openVDM.getCruiseID()
-    loweringID = openVDM.getLoweringID()
-    loweringDir = os.path.join(warehouse['shipboardDataWarehouseBaseDir'], cruiseID, warehouse['loweringDataBaseDir'], loweringID)
-
-    # print loweringDir;
-    if os.path.isdir(loweringDir):
-        return loweringDir;
-
-    return False
-    
-        
 if __name__ == "__main__":
+
+    openVDM = OpenVDM_API()
+
     parser = argparse.ArgumentParser(description='OpenVDM Directory Size Cacher')
     parser.add_argument('--interval', default=openVDM.getTransferInterval(), metavar='interval', type=int, help='Maximum update rate in seconds')
     parser.add_argument('-v', '--verbosity', dest='verbosity',
@@ -102,23 +73,23 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    openVDM = OpenVDM_API()
-
     while True:
 
         start_t = datetime.datetime.utcnow()
 
         warehouseConfig = openVDM.getShipboardDataWarehouseConfig()
 
-        warehouseBaseDir = warehouse['shipboardDataWarehouseBaseDir']
-        cruiseDir = os.path.join(warehouseBaseDir, openVDM.getCruiseID())
-        loweringDir = os.path.join(warehouseBaseDir, warehouse['loweringDataBaseDir'], openVDM.getLoweringID())
+        warehouseBaseDir = warehouseConfig['shipboardDataWarehouseBaseDir']
+        cruiseDir = join(warehouseBaseDir, openVDM.getCruiseID())
+        loweringDir = join(cruiseDir, warehouseConfig['loweringDataBaseDir'], openVDM.getLoweringID())
+        logging.debug("Cruise Directory: {}".format(cruiseDir))
+        logging.debug("Lowering Directory: {}".format(loweringDir))
 
-        if os.path.isdir(cruiseDir):
+        if isdir(cruiseDir):
             logging.info("Calculating Cruise Size...")
             # pre_cruise_size_t = start_t
             cruiseSize = subprocess.check_output(['du','-sb', cruiseDir]).split()[0].decode('utf-8')
-            logging.debug("Cruise Size: {}", cruiseSize)
+            logging.debug("Cruise Size: {}".format(cruiseSize))
             openVDM.set_cruiseSize(cruiseSize)
 
             # existingCruiseSize = openVDM.getCruiseSize()
@@ -139,11 +110,11 @@ if __name__ == "__main__":
         
         # loweringDir = getLoweringDir()
 
-        if os.path.isdir(loweringDir):
+        if isdir(loweringDir):
             logging.info("Calculating Lowering Size...")
             # pre_lowering_size_t = start_t
             loweringSize = subprocess.check_output(['du','-sb', loweringDir]).split()[0].decode('utf-8')
-            logging.debug("Lowering Size: {}", loweringSize)
+            logging.debug("Lowering Size: {}".format(loweringSize))
             openVDM.set_loweringSize(loweringSize)
             # print loweringSize
 
@@ -166,8 +137,9 @@ if __name__ == "__main__":
         end_t = datetime.datetime.utcnow()
 
         elapse_t = end_t - start_t
-        lowering.debug("Total Seconds: {}".format(elapse_t.total_seconds()))
+        logging.debug("Total Seconds: {}".format(elapse_t.total_seconds()))
         if (elapse_t.total_seconds()) >= parsed_args.interval:
             continue;
         else:
+            logging.info("Calculating size again in {} seconds".format(parsed_args.interval - elapse_t.total_seconds()))
             time.sleep(parsed_args.interval - elapse_t.total_seconds())

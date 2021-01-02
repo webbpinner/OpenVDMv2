@@ -39,6 +39,7 @@
 #
 # ----------------------------------------------------------------------------------- #
 
+import sys
 import time
 import argparse
 import json
@@ -46,8 +47,7 @@ import logging
 from python3_gearman import GearmanClient
 
 from os.path import dirname, realpath
-from sys.path import append
-append(dirname(dirname(dirname(realpath(__file__)))))
+sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM_API
     
@@ -75,11 +75,11 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    time.sleep(10)
-        
     logging.debug("Creating Geaman Client...")
     gm_client = GearmanClient([openVDM.getGearmanServer()])
     
+    time.sleep(10)
+        
     while True:
         
         current_sec = 0
@@ -133,4 +133,5 @@ if __name__ == "__main__":
             time.sleep(2)
         
         delay = parsed_args.interval * 60 - len(collectionSystemTransfers) * 2 - len(cruiseDataTransfers) * 2 - 2
+        logging.info("Waiting {} seconds until next round of tasks are queued".format(delay))
         time.sleep(delay)
