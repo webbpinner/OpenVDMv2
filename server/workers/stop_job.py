@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_stopJob.py
+#         FILE:  stop_job.py
 #
 #  DESCRIPTION:  Gearman worker that handles the manual termination of other OVDM data
 #                transfers and OVDM tasks.
@@ -9,12 +9,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2015-01-01
-#     REVISION:  2017-10-05
+#     REVISION:  2021-01-02
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -30,50 +30,38 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # ----------------------------------------------------------------------------------- #
-from __future__ import print_function
 import argparse
-import os
 import sys
-import gearman
-import shutil
+import python3_gearman
 import json
 import time
 import signal
-import openvdm
+import logging
 
-DEBUG = False
-new_worker = None
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
+from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
+from server.lib.openvdm import OpenVDM_API, DEFAULT_CRUISE_CONFIG_FN
 
-def debugPrint(*args, **kwargs):
-    global DEBUG
-    if DEBUG:
-        errPrint(*args, **kwargs)
+def getJobInfo(gearman_worker):
 
-
-def errPrint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-
-def getJobInfo(worker):
-
-
-    collectionSystemTransfers = worker.OVDM.getCollectionSystemTransfers()
+    collectionSystemTransfers = gearman_worker.OVDM.getCollectionSystemTransfers()
     for collectionSystemTransfer in collectionSystemTransfers:
-        if collectionSystemTransfer['pid'] == worker.jobPID:
+        if collectionSystemTransfer['pid'] == gearman_worker.jobPID:
             return {'type': 'collectionSystemTransfer', 'id': collectionSystemTransfer['collectionSystemTransferID'], 'name': collectionSystemTransfer['name'], 'pid': collectionSystemTransfer['pid']}
             
-    cruiseDataTransfers = worker.OVDM.getCruiseDataTransfers()
+    cruiseDataTransfers = gearman_worker.OVDM.getCruiseDataTransfers()
     for cruiseDataTransfer in cruiseDataTransfers:
         if cruiseDataTransfer['pid'] != "0":
             return {'type': 'cruiseDataTransfer', 'id': cruiseDataTransfer['cruiseDataTransferID'], 'name': cruiseDataTransfer['name'], 'pid': cruiseDataTransfer['pid']}
     
-    cruiseDataTransfers = worker.OVDM.getRequiredCruiseDataTransfers()
+    cruiseDataTransfers = gearman_worker.OVDM.getRequiredCruiseDataTransfers()
     for cruiseDataTransfer in cruiseDataTransfers:
         if cruiseDataTransfer['pid'] != "0":
             return {'type': 'cruiseDataTransfer', 'id': cruiseDataTransfer['cruiseDataTransferID'], 'name': cruiseDataTransfer['name'], 'pid': cruiseDataTransfer['pid']}
     
-    tasks = worker.OVDM.getTasks()
+    tasks = gearman_worker.OVDM.getTasks()
     for task in tasks:
         if task['pid'] != "0":
             return {'type': 'task', 'id': task['taskID'], 'name': task['name'], 'pid': task['pid']}
@@ -81,156 +69,146 @@ def getJobInfo(worker):
     return {'type':'unknown'}
 
 
-class OVDMGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     
     def __init__(self, host_list=None):
         self.stop = False
-        self.quit = False
-        self.OVDM = openvdm.OpenVDM()
+        self.OVDM = openvdm.OpenVDM_API()
         self.jobPID = ''
         self.jobInfo = {}
         super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
 
     def on_job_execute(self, current_job):
+
+        logging.debug("current_job: {}".format(current_job))
+
         payloadObj = json.loads(current_job.data)
+
         self.jobPID = payloadObj['pid']
         self.jobInfo = getJobInfo(self)
-        errPrint("Job:", current_job.handle + ",", "Killing PID:", self.jobPID, "started at   ", time.strftime("%D %T", time.gmtime()))
+
+        logging.info("Job: {}, Killing PID: {} failed at: {}".format(current_job.handle, self.jobPID, time.strftime("%D %T", time.gmtime())))
+        
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
     def on_job_exception(self, current_job, exc_info):
-        errPrint("Job:", current_job.handle + ",", "Killing PID:", self.jobPID, "failed at:   ", time.strftime("%D %T", time.gmtime()))
+        logging.info("Job: {} Killing PID {} failed at: {}".format(current_job.handle, self.jobPID, time.strftime("%D %T", time.gmtime())))
+        
         self.send_job_data(current_job, json.dumps([{"partName": "Worker Crashed", "result": "Fail", "reason": "Unknown"}]))
         
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        errPrint(exc_type, fname, exc_tb.tb_lineno)
+        logging.error(exc_type, fname, exc_tb.tb_lineno)
         return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
 
     def on_job_complete(self, current_job, job_results):
-        try:
-            resultsObj = json.loads(job_results)
-        
-            if len(resultsObj['parts']) > 0:
-                if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                    errPrint(json.dumps(resultsObj['parts'], indent=2))
-        except:
-            errPrint("Something went wrong")
-            job_results = ''
+        resultsObj = json.loads(job_results)
 
-        debugPrint('Job Results:', json.dumps(resultsObj, indent=2))
-
-        errPrint("Job:", current_job.handle + ",", "Killing PID:", self.jobPID, "completed at:", time.strftime("%D %T", time.gmtime()))
+        logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
+        logging.info("Job: {}, Killing PID {} completed at: {}".format(current_job.handle, self.jobPID, time.strftime("%D %T", time.gmtime())))
             
         return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
-
-    def after_poll(self, any_activity):
-        self.stop = False
-        if self.quit:
-            errPrint("Quitting")
-            self.shutdown()
-        else:
-            self.quit = False
-        return True
 
 
     def stopTask(self):
         self.stop = True
-        debugPrint("Stopping current task...")
+        logging.warning("Stopping current task...")
 
 
     def quitWorker(self):
         self.stop = True
-        self.quit = True
-        debugPrint("Quitting worker...")
+        logging.warning("Quitting worker...")
+        self.shutdown()
 
     
-def task_stopJob(worker, current_job):
+def task_stopJob(gearman_worker, gearman_job):
 
     job_results = {'parts':[]}
 
-    payloadObj = json.loads(current_job.data)
-    
-    debugPrint('jobInfo:', json.dumps(worker.jobInfo, indent=2))
+    payloadObj = json.loads(gearman_job.data)
+    logging.debug("Payload: {}".format(json.dumps(payloadObj, indent=2)))
     
     job_results['parts'].append({"partName": "Retrieve Job Info", "result": "Pass"})
     
-    if worker.jobInfo['type'] != "unknown":
+    if gearman_worker.jobInfo['type'] != "unknown":
         job_results['parts'].append({"partName": "Valid OpenVDM Job", "result": "Pass"})
 
-        debugPrint("Quitting job:", worker.jobInfo['pid'])
+        logging.debug("Quitting job:", gearman_worker.jobInfo['pid'])
         try:
-            os.kill(int(worker.jobInfo['pid']), signal.SIGQUIT)
+            os.kill(int(gearman_worker.jobInfo['pid']), signal.SIGQUIT)
 
         except OSError as error:
             if error.errno == 3:
-                debugPrint("Unable to kill process because the process doesn't exist")
+                logging.warning("Unable to kill process because the process doesn't exist")
                 pass
             else:
-                errPrint("Error killing PID:", worker.jobInfo['pid'])
-                errPrint(error)
-                job_results['parts'].append({"partName": "Stopped Job", "result": "Fail", "reason": "Error killing PID: " + worker.jobInfo['pid'] + " --> " + error})
+                logging.error("Error killing PID:", gearman_worker.jobInfo['pid'])
+                logging.error(str(error))
+                job_results['parts'].append({"partName": "Stopped Job", "result": "Fail", "reason": "Error killing PID: " + gearman_worker.jobInfo['pid'] + " --> " + error})
 
         finally:
-            if worker.jobInfo['type'] == 'collectionSystemTransfer':
-                worker.OVDM.setIdle_collectionSystemTransfer(worker.jobInfo['id'])
-                worker.OVDM.sendMsg("Manual Stop of transfer", worker.jobInfo['name'])
-            elif worker.jobInfo['type'] == 'cruiseDataTransfer':
-                worker.OVDM.setIdle_cruiseDataTransfer(worker.jobInfo['id'])
-                worker.OVDM.sendMsg("Manual Stop of transfer", worker.jobInfo['name'])
-            elif worker.jobInfo['type'] == 'task':
-                worker.OVDM.setIdle_task(worker.jobInfo['id'])
-                worker.OVDM.sendMsg("Manual Stop of task", worker.jobInfo['name'])
+            if gearman_worker.jobInfo['type'] == 'collectionSystemTransfer':
+                gearman_worker.OVDM.setIdle_collectionSystemTransfer(gearman_worker.jobInfo['id'])
+                gearman_worker.OVDM.sendMsg("Manual Stop of transfer", gearman_worker.jobInfo['name'])
+            elif gearman_worker.jobInfo['type'] == 'cruiseDataTransfer':
+                gearman_worker.OVDM.setIdle_cruiseDataTransfer(gearman_worker.jobInfo['id'])
+                gearman_worker.OVDM.sendMsg("Manual Stop of transfer", gearman_worker.jobInfo['name'])
+            elif gearman_worker.jobInfo['type'] == 'task':
+                gearman_worker.OVDM.setIdle_task(gearman_worker.jobInfo['id'])
+                gearman_worker.OVDM.sendMsg("Manual Stop of task", gearman_worker.jobInfo['name'])
                             
             job_results['parts'].append({"partName": "Stopped Job", "result": "Pass"})
     else:
-        errPrint("Unknown job type:", worker.jobInfo['type'])
-        job_results['parts'].append({"partName": "Valid OpenVDM Job", "result": "Fail", "reason": "Unknown job type: " + worker.jobInfo['type']})
+        logging.error("Unknown job type: {}".format(gearman_worker.jobInfo['type']))
+        job_results['parts'].append({"partName": "Valid OpenVDM Job", "result": "Fail", "reason": "Unknown job type: " + gearman_worker.jobInfo['type']})
 
     return json.dumps(job_results)
 
 
 # -------------------------------------------------------------------------------------
-# Main function of the script should it be run as a stand-alone utility.
+# Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
-def main(argv):
-
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Handle dynamic stopping of other tasks')
     parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
 
-    args = parser.parse_args()
-    if args.debug:
-        global DEBUG
-        DEBUG = True
-        debugPrint("Running in debug mode")
+    parsed_args = parser.parse_args()
 
-    debugPrint('Creating Worker...')
-    global new_worker
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    logging.debug("Creating Worker...")
+
     new_worker = OVDMGearmanWorker()
+    new_worker.set_client_id(__file__)
 
-    debugPrint('Defining Signal Handlers...')
+    logging.debug("Defining Signal Handlers...")
     def sigquit_handler(_signo, _stack_frame):
-        errPrint("QUIT Signal Received")
+        logging.warning("QUIT Signal Received")
         new_worker.stopTask()
 
     def sigint_handler(_signo, _stack_frame):
-        errPrint("INT Signal Received")
+        logging.warning("INT Signal Received")
         new_worker.quitWorker()
 
     signal.signal(signal.SIGQUIT, sigquit_handler)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    new_worker.set_client_id('stopJob.py')
+    logging.info("Registering worker tasks...")
 
-    debugPrint('Registering worker tasks...')
-    debugPrint('   Task:', 'stopJob')
+    logging.info("\tTask: stopJob")
     new_worker.register_task("stopJob", task_stopJob)
 
-    debugPrint('Waiting for jobs...')
+    logging.info("Waiting for jobs...")
     new_worker.work()
-
-# -------------------------------------------------------------------------------------
-# Required python code for running the script as a stand-alone utility
-# -------------------------------------------------------------------------------------
-if __name__ == "__main__":
-    main(sys.argv[1:])

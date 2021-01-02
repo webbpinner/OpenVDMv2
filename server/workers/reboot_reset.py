@@ -1,19 +1,19 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_rebootReset.py
+#         FILE:  reboot_reset.py
 #
-#  DESCRIPTION:  This program reset OVDM state information in the database.
+#  DESCRIPTION:  This program resets OVDM state information in the database.
 #
 #         BUGS:
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2015-06-22
-#     REVISION:  2020-11-19
+#     REVISION:  2020-12-30
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -31,28 +31,52 @@
 # ----------------------------------------------------------------------------------- #
 
 import sys
-import time
-import openvdm
+import argparse
+import logging
 
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
+
+from server.lib.openvdm import OpenVDM_API
 
 # -------------------------------------------------------------------------------------
-# Main function of the script should it be run as a stand-alone utility.
+# Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
-def main(argv):
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Handle resetting OpenVDM database after an unscheduled system reboot')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
     
-    openVDM = openvdm.OpenVDM()
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    openVDM = OpenVDM_API()
     
     time.sleep(5)
         
+    logging.info("Setting all tasks to idle.")
     tasks = openVDM.getTasks()
     for task in tasks:
         openVDM.setIdle_task(task['taskID'])
     
+    logging.info("Setting all Collection System Transfers to idle.")
     collectionSystemTransfers = openVDM.getCollectionSystemTransfers()
     for collectionSystemTransfer in collectionSystemTransfers:
         if not collectionSystemTransfer['status'] == '3':
             openVDM.setIdle_collectionSystemTransfer(collectionSystemTransfer['collectionSystemTransferID'])
             
+    logging.info("Setting all Cruise Data Transfers to idle.")
     cruiseDataTransfers = openVDM.getCruiseDataTransfers()
     for cruiseDataTransfer in cruiseDataTransfers:
         if not cruiseDataTransfer['status'] == '3':
@@ -63,11 +87,7 @@ def main(argv):
         if not requiredCruiseDataTransfer['status'] == '3':
             openVDM.setIdle_cruiseDataTransfer(requiredCruiseDataTransfer['cruiseDataTransferID'])
 
+    logging.info("Clearing all jobs from Gearman.")
     openVDM.clearGearmanJobsFromDB()
 
-
-# -------------------------------------------------------------------------------------
-# Required python code for running the script as a stand-alone utility
-# -------------------------------------------------------------------------------------
-if __name__ == "__main__":
-    main(sys.argv[1:])
+    logging.info("Done!")

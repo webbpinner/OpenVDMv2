@@ -1,9 +1,11 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_post_collection_system_transfer.py
+#         FILE:  post_hooks.py
 #
-#  DESCRIPTION:  Gearman worker that run user-defined scripts following the completion
-#                of the runCollectionSystemTransfer tasks.
+#  DESCRIPTION:  Gearman worker that runs user-defined scripts following the completion
+#                of the setupNewCruise, setupNewLowering, postCollectionSystemTransfer,
+#                postDataDashboard, finalizeCurrentCruise and finalizeCurrentLowering
+#                tasks.
 #
 #         BUGS:
 #        NOTES:

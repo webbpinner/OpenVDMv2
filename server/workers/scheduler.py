@@ -1,11 +1,11 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_scheduler.py
+#         FILE:  scheduler.py
 #
 #  DESCRIPTION:  This program handles the scheduling of the transfer-related Gearman
 #                tasks.
 #
-#        USAGE: OVDM_scheduler.py [--interval <interval>] <siteRoot>
+#        USAGE: scheduler.py [--interval <interval>] <siteRoot>
 #
 #    ARGUMENTS: --interval <interval> The interval in minutes between transfer job
 #                    submissions.  If this argument is not provided the default inteval
@@ -17,12 +17,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2015-01-01
-#     REVISION:  2020-11-19
+#     REVISION:  2020-12-31
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -39,34 +39,46 @@
 #
 # ----------------------------------------------------------------------------------- #
 
-import sys
 import time
-import datetime
 import argparse
-#import urlparse
 import json
-import gearman
-import openvdm
-    
-def main(argv):
-    
-    time.sleep(10)
-    
-    openVDM = openvdm.OpenVDM()
-    
-    parser = argparse.ArgumentParser(description='OpenVDM Data Transfer Scheduler')
-    #parser.add_argument('--siteRoot', default=openVDM.getSiteRoot(), metavar='siteRoot', help='the base URL for this OpenVDM installation')
-    parser.add_argument('--interval', default=openVDM.getTransferInterval(), metavar='interval', type=int, help='Delay in minutes')
+import logging
+from python3_gearman import GearmanClient
 
-    args = parser.parse_args()
-    #print args.siteRoot
-    #parsed_url = urlparse.urlparse(args.siteRoot)
-    #print parsed_url
-    #if not bool(parsed_url.scheme) or not bool(parsed_url.netloc):
-    #    print args.siteRoot + " is not a valid URL" 
-    #    sys.exit(1)
+from os.path import dirname, realpath
+from sys.path import append
+append(dirname(dirname(dirname(realpath(__file__)))))
+
+from server.lib.openvdm import OpenVDM_API
     
-    gm_client = gearman.GearmanClient([openVDM.getGearmanServer()])
+
+if __name__ == "__main__":
+
+    openVDM = OpenVDM_API()
+
+    parser = argparse.ArgumentParser(description='OpenVDM Data Transfer Scheduler')
+    parser.add_argument('-i', '--interval', default=openVDM.getTransferInterval(), metavar='interval', type=int, help='interval in minutes')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    time.sleep(10)
+        
+    logging.debug("Creating Geaman Client...")
+    gm_client = GearmanClient([openVDM.getGearmanServer()])
     
     while True:
         
@@ -81,45 +93,44 @@ def main(argv):
 
         collectionSystemTransfers = openVDM.getActiveCollectionSystemTransfers()
         for collectionSystemTransfer in collectionSystemTransfers:
-            print 'Submitting collection system transfer job for: ' + collectionSystemTransfer['longName']
+            logging.info("Submitting collection system transfer job for: {}".format(collectionSystemTransfer['longName']))
 
-            gmData = {}
-            gmData['collectionSystemTransfer'] = {}
-            gmData['collectionSystemTransfer']['collectionSystemTransferID'] = collectionSystemTransfer['collectionSystemTransferID']
-            #print json.dumps(gmData, indent=2)
+            gmData = {
+                'collectionSystemTransfer': {
+                    'collectionSystemTransferID': collectionSystemTransfer['collectionSystemTransferID']
+                }
+            }
 
             completed_job_request = gm_client.submit_job("runCollectionSystemTransfer", json.dumps(gmData), background=True)
-            #resultsObj = json.loads(completed_job_request.result)
+
             time.sleep(2)
 
             
         cruiseDataTransfers = openVDM.getCruiseDataTransfers()
         for cruiseDataTransfer in cruiseDataTransfers:
-            print 'Submitting cruise data transfer job for: ' + cruiseDataTransfer['longName']
+            logging.info("Submitting cruise data transfer job for: {}".format(cruiseDataTransfer['longName']))
 
-            gmData = {}
-            gmData['cruiseDataTransfer'] = {}
-            gmData['cruiseDataTransfer']['cruiseDataTransferID'] = cruiseDataTransfer['cruiseDataTransferID']
-            #print json.dumps(gmData, indent=2)
+            gmData = {
+                'cruiseDataTransfer': {
+                    'cruiseDataTransferID': cruiseDataTransfer['cruiseDataTransferID']
+                }
+            }
 
             completed_job_request = gm_client.submit_job("runCruiseDataTransfer", json.dumps(gmData), background=True)
-            #resultsObj = json.loads(completed_job_request.result)
+
             time.sleep(2)
             
         requiredCruiseDataTransfers = openVDM.getRequiredCruiseDataTransfers()
         for requiredCruiseDataTransfer in requiredCruiseDataTransfers:
             if requiredCruiseDataTransfer['name'] == 'SSDW':
-                print 'Submitting cruise data transfer job for: ' + requiredCruiseDataTransfer['longName']
+                logging.info("Submitting cruise data transfer job for: {}".format(requiredCruiseDataTransfer['longName']))
 
-                gmData = {}
+                gmData = {
+                }
+
                 completed_job_request = gm_client.submit_job("runShipToShoreTransfer", json.dumps(gmData), background=True)
-                #resultsObj = json.loads(completed_job_request.result)
 
             time.sleep(2)
         
-        delay = args.interval * 60 - len(collectionSystemTransfers) * 2 - len(cruiseDataTransfers) * 2 - 2
-        #print delay
+        delay = parsed_args.interval * 60 - len(collectionSystemTransfers) * 2 - len(cruiseDataTransfers) * 2 - 2
         time.sleep(delay)
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

@@ -1,11 +1,11 @@
 # ----------------------------------------------------------------------------------- #
 #
-#         FILE:  OVDM_sizeCacher.py
+#         FILE:  size_cacher.py
 #
 #  DESCRIPTION:  This program handles calculating the cruise and lowering
 #                    directory sizes.
 #
-#        USAGE: OVDM_sizeCacher.py [--interval <interval>]
+#        USAGE: size_cacher.py [--interval <interval>]
 #
 #    ARGUMENTS: --interval <interval> The minimum interval in second between directory
 #                    size calculations.
@@ -14,12 +14,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2017-09-30
-#     REVISION:  2020-11-19
+#     REVISION:  2021-01-02
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -42,9 +42,12 @@ import datetime
 import argparse
 import subprocess
 import json
-import gearman
-import openvdm
-import os
+import python3_gearman
+
+from os.path import dirname, realpath
+append(dirname(dirname(dirname(realpath(__file__)))))
+
+from server.lib.openvdm import OpenVDM_API
 
 openVDM = openvdm.OpenVDM()
 
@@ -77,77 +80,94 @@ def getLoweringDir():
         return loweringDir;
 
     return False
-
-def main(argv):
     
-    global openVDM
-
-#    time.sleep(10)    
-    
+        
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='OpenVDM Directory Size Cacher')
     parser.add_argument('--interval', default=openVDM.getTransferInterval(), metavar='interval', type=int, help='Maximum update rate in seconds')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
 
-    args = parser.parse_args()
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    openVDM = OpenVDM_API()
 
     while True:
 
         start_t = datetime.datetime.utcnow()
 
-        cruiseDir = getCruiseDir()
+        warehouseConfig = openVDM.getShipboardDataWarehouseConfig()
 
-        if cruiseDir:
-            pre_cruise_size_t = start_t
+        warehouseBaseDir = warehouse['shipboardDataWarehouseBaseDir']
+        cruiseDir = os.path.join(warehouseBaseDir, openVDM.getCruiseID())
+        loweringDir = os.path.join(warehouseBaseDir, warehouse['loweringDataBaseDir'], openVDM.getLoweringID())
+
+        if os.path.isdir(cruiseDir):
+            logging.info("Calculating Cruise Size...")
+            # pre_cruise_size_t = start_t
             cruiseSize = subprocess.check_output(['du','-sb', cruiseDir]).split()[0].decode('utf-8')
-            # print cruiseSize
+            logging.debug("Cruise Size: {}", cruiseSize)
+            openVDM.set_cruiseSize(cruiseSize)
 
-            existingCruiseSize = openVDM.getCruiseSize()
+            # existingCruiseSize = openVDM.getCruiseSize()
             # print existingCruiseSize['cruiseSizeUpdated']
 
-            existing_cruise_size_t = datetime.datetime.strptime(existingCruiseSize['cruiseSizeUpdated'], "%Y/%m/%d %H:%M:%S")
+            # existing_cruise_size_t = datetime.datetime.strptime(existingCruiseSize['cruiseSizeUpdated'], "%Y/%m/%d %H:%M:%S")
 
-            elapse_t = existing_cruise_size_t - pre_cruise_size_t
+            # elapse_t = existing_cruise_size_t - pre_cruise_size_t
             # print "Total Seconds:", elapse_t.total_seconds()
-            if elapse_t.total_seconds() < 0:
-                openVDM.set_cruiseSize(cruiseSize)
-            else:
-                print "size in db is more recent"
+            # if elapse_t.total_seconds() < 0:
+                # openVDM.set_cruiseSize(cruiseSize)
+            # else:
+                # print "size in db is more recent"
 
-        else:
-            print "Cruise directory not found"
-            openVDM.set_cruiseSize('')
+        # else:
+        #     print "Cruise directory not found"
+        #     openVDM.set_cruiseSize('')
         
-        loweringDir = getLoweringDir()
+        # loweringDir = getLoweringDir()
 
-        if loweringDir:
-            pre_lowering_size_t = start_t
+        if os.path.isdir(loweringDir):
+            logging.info("Calculating Lowering Size...")
+            # pre_lowering_size_t = start_t
             loweringSize = subprocess.check_output(['du','-sb', loweringDir]).split()[0].decode('utf-8')
+            logging.debug("Lowering Size: {}", loweringSize)
+            openVDM.set_loweringSize(loweringSize)
             # print loweringSize
 
-            existingLoweringSize = openVDM.getLoweringSize()
-            # print existingLoweringSize['loweringSizeUpdated']
+        #     existingLoweringSize = openVDM.getLoweringSize()
+        #     # print existingLoweringSize['loweringSizeUpdated']
 
-            existing_lowering_size_t = datetime.datetime.strptime(existingLoweringSize['loweringSizeUpdated'], "%Y/%m/%d %H:%M:%S")
+        #     existing_lowering_size_t = datetime.datetime.strptime(existingLoweringSize['loweringSizeUpdated'], "%Y/%m/%d %H:%M:%S")
 
-            elapse_t = existing_lowering_size_t - pre_lowering_size_t
-            # print "Total Seconds:", elapse_t.total_seconds()
-            if elapse_t.total_seconds() < 0:
-                openVDM.set_loweringSize(loweringSize)
-            else:
-                print "size in db is more recent"
+        #     elapse_t = existing_lowering_size_t - pre_lowering_size_t
+        #     # print "Total Seconds:", elapse_t.total_seconds()
+        #     if elapse_t.total_seconds() < 0:
+        #         openVDM.set_loweringSize(loweringSize)
+        #     else:
+        #         print "size in db is more recent"
 
-        else:
-            print "Lowering directory not found"
-            openVDM.set_loweringSize('')
+        # else:
+        #     print "Lowering directory not found"
+        #     openVDM.set_loweringSize('')
 
         end_t = datetime.datetime.utcnow()
 
         elapse_t = end_t - start_t
-        # print "Total Seconds:", elapse_t.total_seconds()
-        if (elapse_t.total_seconds()) >= args.interval:
+        lowering.debug("Total Seconds: {}".format(elapse_t.total_seconds()))
+        if (elapse_t.total_seconds()) >= parsed_args.interval:
             continue;
         else:
-            time.sleep(args.interval - elapse_t.total_seconds())
-    
-        
-if __name__ == "__main__":
-    main(sys.argv[1:])
+            time.sleep(parsed_args.interval - elapse_t.total_seconds())
