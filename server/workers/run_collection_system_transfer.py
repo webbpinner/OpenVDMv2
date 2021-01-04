@@ -32,7 +32,6 @@
 # ----------------------------------------------------------------------------------- #
 
 import argparse
-import io
 import os
 import sys
 import tempfile
@@ -75,7 +74,6 @@ def build_filelist(gearman_worker, sourceDir):
     dataStart_time = calendar.timegm(time.strptime(gearman_worker.dataStartDate, "%Y/%m/%d %H:%M"))
     logging.debug("Start: {}".format(dataStart_time))
 
-    logging.debug("gearman_worker.dataEndDate: {}".format(gearman_worker.dataEndDate))
     dataEnd_time = calendar.timegm(time.strptime(gearman_worker.dataEndDate, "%Y/%m/%d %H:%M"))
     logging.debug("End: {}".format(dataEnd_time))
 
@@ -94,7 +92,7 @@ def build_filelist(gearman_worker, sourceDir):
             for filt in filters['ignoreFilter'].split(','):
                 #logging.debug(filt)
                 if fnmatch.fnmatch(os.path.join(root, filename), filt):
-                    logging.debug("{} ignored".format(filename))
+                    logging.debug("{} ignored by ignore filter".format(filename))
                     ignore = True
                     break
             if not ignore:
@@ -107,24 +105,24 @@ def build_filelist(gearman_worker, sourceDir):
                                 exclude = True
                                 break
                         if not exclude:
-                            logging.debug('Filename: {}'.format(os.path.join(root, filename)))
                             file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
                             logging.debug("file_mod_time: {}".format(file_mod_time))
                             if not isascii(filename):
                                 logging.debug("{} is not an ascii-encoded unicode string".format(filename))
-                                returnFiles['exclude'].append(os.path.join(root, filename))
+                                returnFiles['exclude'].append(os.path.join(root, filename))\
+                                exclude = True
                             else:
                                 if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
-                                    logging.debug("{} included".format(filename))
+                                    logging.debug("{} is a valid file for transfer".format(os.path.join(root, filename)))
                                     returnFiles['include'].append(os.path.join(root, filename))
                                     returnFiles['filesize'].append(os.stat(os.path.join(root, filename)).st_size)
+                                    include = True
                                 else:
                                     logging.debug("{} ignored for time reasons".format(filename))
+                                    ignore = True
 
-                                include = True
-
-                if not include and not exclude:
-                    logging.debug("{} excluded because file does not match any include or ignore filters".format(filename))
+                if include or exclude or ignore:
+                    logging.debug("{} excluded because file does not match any of the filters".format(filename))
                     returnFiles['exclude'].append(os.path.join(root, filename))
 
     if not gearman_worker.collectionSystemTransfer['staleness'] == '0':
@@ -183,13 +181,11 @@ def build_rsyncFilelist(gearman_worker, sourceDir):
     logging.debug("Command: {}".format(' '.join(command)))
 
     proc = subprocess.run(command, capture_output=True, text=True)
-    rsyncFileList = proc.stdout
-    logging.debug("rsyncFileList: {}".format(rsyncFileList))
 
     # Cleanup
     shutil.rmtree(tmpdir)
 
-    for line in rsyncFileList.splitlines():
+    for line in proc.stdout.splitlines():
         logging.debug('line: {}'.format(line.rstrip('\n')))
         fileOrDir, size, mdate, mtime, filename = line.split(None, 4)
         if fileOrDir.startswith('-'):
@@ -324,25 +320,12 @@ def build_filters(gearman_worker):
 
 def build_destDir(gearman_worker):
     
-    return gearman_worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
+    return gearman_worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
 
 
 def build_sourceDir(gearman_worker):
     
-    return gearman_worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'])
-
-
-def build_destDirectories(destDir, filenames):
-    files = [os.path.join(destDir, filename) for filename in filenames]
-
-    for file in files:
-        parent_dirname = dirname(file)
-        try:
-            if not os.path.isdir(parent_dirname):
-                logging.debug("Creating destination directory: {}".format(parent_dirname))
-                os.makedirs(parent_dirname)
-        except:
-            logging.error("Could not create destination directory: {}".format(parent_dirname))
+    return gearman_worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
 
             
 def build_logfileDirPath(gearman_worker):
@@ -360,11 +343,11 @@ def transfer_localSourceDir(gearman_worker, gearman_job):
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
 
     if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
-      destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker).rstrip('/'))
+      destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker))
     else:
-      destDir = os.path.join(cruiseDir, build_destDir(gearman_worker).rstrip('/'))
+      destDir = os.path.join(cruiseDir, build_destDir(gearman_worker))
 
-    sourceDir = build_sourceDir(gearman_worker).rstrip('/')
+    sourceDir = build_sourceDir(gearman_worker)
     logging.debug("Source Dir: {}".format(sourceDir))
     logging.debug("Destination Dir: {}".format(destDir))
 
@@ -460,8 +443,8 @@ def transfer_smbSourceDir(gearman_worker, gearman_job):
     mntPoint = os.path.join(tmpdir, 'mntpoint')
     os.mkdir(mntPoint, 0o755)
 
-    destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker).rstrip('/')) if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1" else  os.path.join(cruiseDir, build_destDir(gearman_worker).rstrip('/'))
-    sourceDir = os.path.join(mntPoint, build_sourceDir(gearman_worker).rstrip('/')).rstrip('/')
+    destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker)) if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1" else  os.path.join(cruiseDir, build_destDir(gearman_worker))
+    sourceDir = os.path.join(mntPoint, build_sourceDir(gearman_worker))
     logging.debug("Source Dir: {}".format(sourceDir))
     logging.debug("Destinstation Dir: {}".format(destDir))
 
@@ -472,18 +455,9 @@ def transfer_smbSourceDir(gearman_worker, gearman_job):
     logging.debug("SMB version test command: {}".format(' '.join(ver_test_command)))
 
     vers="2.1"
-    proc = subprocess.Popen(ver_test_command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.run(ver_test_command, capture_output=True, text=True)
 
-    while True:
-
-        line = proc.stdout.readline()
-
-        if proc.poll() is not None:
-            break
-
-        if not line:
-            continue
-
+    for line in proc.stdout.splitlines():
         if line.startswith('OS=[Windows 5.1]'):
             vers="1.0"
             break
@@ -574,9 +548,9 @@ def transfer_rsyncSourceDir(gearman_worker, gearman_job):
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
 
     if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
-      destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker).rstrip('/'))
+      destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker))
     else:
-      destDir = os.path.join(cruiseDir, build_destDir(gearman_worker).rstrip('/'))
+      destDir = os.path.join(cruiseDir, build_destDir(gearman_worker))
 
     sourceDir = build_sourceDir(gearman_worker)
     
@@ -680,11 +654,11 @@ def transfer_sshSourceDir(gearman_worker, gearman_job):
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
     
     if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1":
-      destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker).rstrip('/'))
+      destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker))
     else:
-      destDir = os.path.join(cruiseDir, build_destDir(gearman_worker).rstrip('/'))
+      destDir = os.path.join(cruiseDir, build_destDir(gearman_worker))
 
-    sourceDir = build_sourceDir(gearman_worker).rstrip('/')
+    sourceDir = build_sourceDir(gearman_worker)
     
     logging.debug("Source Dir: {}".format(sourceDir))
     logging.debug("Destinstation Dir: {}".format(destDir))
@@ -766,10 +740,6 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         self.transferStartDate = ''
         self.cruiseID = ''
         self.loweringID = ''
-        self.cruiseStartDate = ''
-        self.cruiseEndDate = ''
-        self.loweringStartDate = ''
-        self.loweringEndDate = ''
         self.dataStartDate = ''
         self.dataEndDate = ''
         self.systemStatus = ''
@@ -803,32 +773,33 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
         self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
-        self.cruiseStartDate = payloadObj['cruiseStartDate'] if 'cruiseStartDate' in payloadObj else self.OVDM.getCruiseStartDate()
-        self.cruiseEndDate = payloadObj['cruiseEndDate'] if 'cruiseEndDate' in payloadObj else self.OVDM.getCruiseEndDate()
+        # self.cruiseStartDate = payloadObj['cruiseStartDate'] if 'cruiseStartDate' in payloadObj else self.OVDM.getCruiseStartDate()
+        # self.cruiseEndDate = payloadObj['cruiseEndDate'] if 'cruiseEndDate' in payloadObj else self.OVDM.getCruiseEndDate()
         self.loweringID = payloadObj['loweringID'] if 'loweringID' in payloadObj else self.OVDM.getLoweringID()
-        self.loweringStartDate = payloadObj['loweringStartDate'] if 'loweringStartDate' in payloadObj else self.OVDM.getLoweringStartDate()
-        self.loweringEndDate = payloadObj['loweringEndDate'] if 'loweringEndDate' in payloadObj else self.OVDM.getLoweringEndDate()
+        # self.loweringStartDate = payloadObj['loweringStartDate'] if 'loweringStartDate' in payloadObj else self.OVDM.getLoweringStartDate()
+        # self.loweringEndDate = payloadObj['loweringEndDate'] if 'loweringEndDate' in payloadObj else self.OVDM.getLoweringEndDate()
 
         logging.info("Job: {}, {} transfer started at: {}".format(current_job.handle, self.collectionSystemTransfer['name'], time.strftime("%D %T", time.gmtime())))
 
         self.transferStartDate = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
-
-        #set temporal bounds to extremes if temporal bounds should not be used
-        self.dataStartDate = "1970/01/01 00:00"
-        self.dataEndDate = "9999/12/31 23:59"
         
-        #set temporal bounds for transfer based on whether the transfer should use cruise or lowering start/end times
-        if self.collectionSystemTransfer['useStartDate'] == '1':
+        # set temporal bounds for transfer
+
+        # if temporal bands are not used then set to absolute min/max
+        if self.collectionSystemTransfer['useStartDate'] == '0':
+            self.dataStartDate = "1970/01/01 00:00"
+            self.dataEndDate = "9999/12/31 23:59"
+
+        # if temporal bands are used then set to specified bounds for the corresponding cruise/lowering
+        else:
             if self.collectionSystemTransfer['cruiseOrLowering'] == "0":
                 logging.debug("Using cruise Time bounds")
-                self.dataStartDate = self.cruiseStartDate
-                if self.cruiseEndDate != '':
-                    self.dataEndDate = self.cruiseEndDate
+                self.dataStartDate = self.cruiseStartDate if 'cruiseStartDate' in payloadObj and payloadObj['cruiseStartDate'] != '' else "1970/01/01 00:00"
+                self.dataEndDate = self.cruiseEndDate if 'cruiseEndDate' in payloadObj and payloadObj['cruiseEndDate'] != '' else "9999/12/31 23:59"
             else:
                 logging.debug("Using lowering Time bounds")
-                self.dataStartDate = self.loweringStartDate
-                if self.loweringEndDate != '':
-                    self.dataEndDate = self.loweringEndDate
+                self.dataStartDate = self.loweringStartDate if 'loweringStartDate' in payloadObj and payloadObj['loweringStartDate'] != '' else "1970/01/01 00:00"
+                self.dataEndDate = self.loweringEndDate if 'loweringEndDate' in payloadObj and payloadObj['loweringEndDate'] != '' else "9999/12/31 23:59"
 
         logging.debug("Start date/time filter: {}".format(self.dataStartDate))
         logging.debug("End date/time filter: {}".format(self.dataEndDate))
@@ -914,7 +885,7 @@ def task_runCollectionSystemTransfer(gearman_worker, current_job):
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
     collectionSystemDestDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker)) if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1" else os.path.join(cruiseDir, build_destDir(gearman_worker))
-    collectionSystemSourceDir = build_sourceDir(gearman_worker).rstrip('/')
+    collectionSystemSourceDir = build_sourceDir(gearman_worker)
     
     logging.debug("Setting transfer status to 'Running'")
     gearman_worker.OVDM.setRunning_collectionSystemTransfer(gearman_worker.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
@@ -924,9 +895,10 @@ def task_runCollectionSystemTransfer(gearman_worker, current_job):
 
     gm_client = python3_gearman.GearmanClient([gearman_worker.OVDM.getGearmanServer()])
 
-    gmData = {}
-    gmData['collectionSystemTransfer'] = gearman_worker.collectionSystemTransfer
-    gmData['cruiseID'] = gearman_worker.cruiseID
+    gmData = {
+        'collectionSystemTransfer': gearman_worker.collectionSystemTransfer,
+        'cruiseID': gearman_worker.cruiseID
+    }
     
     completed_job_request = gm_client.submit_job("testCollectionSystemTransfer", json.dumps(gmData))
     resultsObj = json.loads(completed_job_request.result)
@@ -944,6 +916,7 @@ def task_runCollectionSystemTransfer(gearman_worker, current_job):
     gearman_worker.send_job_status(current_job, 2, 10)
         
     logging.info("Transferring files")
+    output_results = None
     if gearman_worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
         output_results = transfer_localSourceDir(gearman_worker, current_job)
     elif  gearman_worker.collectionSystemTransfer['transferType'] == "2": # Rsync Server
@@ -974,8 +947,6 @@ def task_runCollectionSystemTransfer(gearman_worker, current_job):
     if job_results['files']['new'] or job_results['files']['updated']:
 
         logging.info("Setting file permissions")
-
-        permission_status = True
 
         output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(build_logfileDirPath(gearman_worker), collectionSystemDestDir))
 
