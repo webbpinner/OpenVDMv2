@@ -681,7 +681,6 @@ def transfer_sshSourceDir(gearman_worker, gearman_job):
 
     except IOError:
         logging.debug("Error Saving temporary ssh filelist file")
-        sshFileListFile.close()
             
         # Cleanup
         shutil.rmtree(tmpdir)
