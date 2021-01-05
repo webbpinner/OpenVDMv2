@@ -63,8 +63,6 @@ def build_filelist(gearman_worker, sourceDir):
 
     returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[], 'filesize':[]}
 
-    logging.debug("returnFiles: {}".format(json.dumps(returnFiles, indent=2)))
-
     staleness = int(gearman_worker.collectionSystemTransfer['staleness']) * 60 #5 Mintues
     logging.debug("Staleness: {}".format(staleness))
 
@@ -81,9 +79,10 @@ def build_filelist(gearman_worker, sourceDir):
 
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
+            filepath = os.path.join(root, filename)
 
-            if os.path.islink(os.path.join(root, filename)):
-                logging.debug("{} is a symlink, skipping".format(filename))
+            if os.path.islink(filepath):
+                logging.debug("{} is a symlink, skipping".format(filepath))
                 continue
 
             exclude = False
@@ -91,47 +90,58 @@ def build_filelist(gearman_worker, sourceDir):
             include = False
             for filt in filters['ignoreFilter'].split(','):
                 #logging.debug(filt)
-                if fnmatch.fnmatch(os.path.join(root, filename), filt):
-                    logging.debug("{} ignored by ignore filter".format(filename))
+                if fnmatch.fnmatch(filepath, filt):
+                    logging.debug("{} ignored by ignore filter".format(filepath))
                     ignore = True
                     break
-            if not ignore:
-                for filt in filters['includeFilter'].split(','): 
-                    if fnmatch.fnmatch(filename, filt):
-                        for filt in filters['excludeFilter'].split(','): 
-                            if fnmatch.fnmatch(filename, filt):
-                                logging.debug("{} excluded by exclude filter".format(filename))
-                                returnFiles['exclude'].append(os.path.join(root, filename))
-                                exclude = True
-                                break
-                        if not exclude:
-                            file_mod_time = os.stat(os.path.join(root, filename)).st_mtime
-                            logging.debug("file_mod_time: {}".format(file_mod_time))
-                            if not isascii(filename):
-                                logging.debug("{} is not an ascii-encoded unicode string".format(filename))
-                                returnFiles['exclude'].append(os.path.join(root, filename))\
-                                exclude = True
-                            else:
-                                if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
-                                    logging.debug("{} is a valid file for transfer".format(os.path.join(root, filename)))
-                                    returnFiles['include'].append(os.path.join(root, filename))
-                                    returnFiles['filesize'].append(os.stat(os.path.join(root, filename)).st_size)
-                                    include = True
-                                else:
-                                    logging.debug("{} ignored for time reasons".format(filename))
-                                    ignore = True
 
-                if include or exclude or ignore:
-                    logging.debug("{} excluded because file does not match any of the filters".format(filename))
-                    returnFiles['exclude'].append(os.path.join(root, filename))
+            if ignore:
+                continue
+
+            if not isascii(filename):
+                logging.debug("{} is not an ascii-encoded unicode string".format(filepath))
+                returnFiles['exclude'].append(filepath)
+                exclude = True
+                continue
+
+            for filt in filters['includeFilter'].split(','): 
+                if fnmatch.fnmatch(filepath, filt):
+                    for filt in filters['excludeFilter'].split(','): 
+                        if fnmatch.fnmatch(filepath, filt):
+                            logging.debug("{} excluded by exclude filter".format(filepath))
+                            returnFiles['exclude'].append(filepath)
+                            exclude = True
+                            break
+
+                    if exclude:
+                        break
+                            
+                    file_mod_time = os.stat(filepath).st_mtime
+                    logging.debug("file_mod_time: {}".format(file_mod_time))
+
+                    if file_mod_time < dataStart_time or file_mod_time > dataEnd_time:
+                        logging.debug("{} ignored for time reasons".format(filepath))
+                        ignore = True
+                        break
+                    else:
+                        logging.debug("{} is a valid file for transfer".format(filepath))
+                        include = True
+                        break
+
+            if include:
+                returnFiles['include'].append(filepath)
+                returnFiles['filesize'].append(os.stat(filepath).st_size)
+
+            elif not exclude:
+                logging.debug("{} excluded because file does not match any of the filters".format(filepath))
+                returnFiles['exclude'].append(filepath)
 
     if not gearman_worker.collectionSystemTransfer['staleness'] == '0':
         logging.debug("Checking for changing filesizes")
         time.sleep(5)
-        for idx, val in enumerate(returnFiles['include']):
-            logging.debug("idx: {}, val: {}, filesize: {}".format(idx, val, returnFiles['filesize'][idx]))
-            if not os.stat(val).st_size == returnFiles['filesize'][idx]:
-                logging.debug("{} removed because it's size is changing".format(val))
+        for idx, filepath in enumerate(returnFiles['include']):
+            if not os.stat(filepath).st_size == returnFiles['filesize'][idx]:
+                logging.debug("file {} has changed size, removing from include list".format(filepath))
                 del returnFiles['include'][idx]
                 del returnFiles['filesize'][idx]
 
@@ -140,12 +150,12 @@ def build_filelist(gearman_worker, sourceDir):
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
 
-    return returnFiles
+    return {'verdict': True, 'files': returnFiles}
 
 
 def build_rsyncFilelist(gearman_worker, sourceDir):
 
-    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[], 'filesize':[]}
 
     staleness = int(gearman_worker.collectionSystemTransfer['staleness']) * 60
     threshold_time = time.time() - staleness # 5 minutes
@@ -182,50 +192,83 @@ def build_rsyncFilelist(gearman_worker, sourceDir):
 
     proc = subprocess.run(command, capture_output=True, text=True)
 
-    # Cleanup
-    shutil.rmtree(tmpdir)
+    logging.debug("proc.stdout: {}".format(proc.stdout))
 
     for line in proc.stdout.splitlines():
         logging.debug('line: {}'.format(line.rstrip('\n')))
-        fileOrDir, size, mdate, mtime, filename = line.split(None, 4)
+        fileOrDir, size, mdate, mtime, filepath = line.split(None, 4)
         if fileOrDir.startswith('-'):
             exclude = False
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
                 #logging.debug("filt")
-                if fnmatch.fnmatch(filename, filt):
-                    logging.debug("{} ignore".format(filename))
+                if fnmatch.fnmatch(filepath, filt):
+                    logging.debug("{} ignored because file matched ignore filter".format(filepath))
                     ignore = True
                     break
-            if not ignore:
-                for filt in filters['includeFilter'].split(','): 
-                    if fnmatch.fnmatch(filename, filt):
-                        for filt in filters['excludeFilter'].split(','): 
-                            if fnmatch.fnmatch(filename, filt):
-                                #logging.debug("exclude")
-                                returnFiles['exclude'].append(filename)
-                                exclude = True
-                                break
-                        if not exclude:
-                            if not isascii(filename):
-                                logging.debug("{} is not an ascii-encoded unicode string".format(filename))
-                                returnFiles['exclude'].append(filename)
-                            else:
-                                file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
-                                file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
-                                logging.debug("file_mod_time_SECS: {}".format(file_mod_time_SECS))
-                                if file_mod_time_SECS > dataStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < dataEnd_time:
-                                    logging.debug("{} include".format(filename))
-                                    returnFiles['include'].append(filename)
-                                else:
-                                    logging.debug("{} ignored for time reasons".format(filename))
 
-                                include = True
+            if ignore:
+                continue
 
-                if not include:
-                    logging.debug("{} excluded because file does not match any include or ignore filters".format(filename))
-                    returnFiles['exclude'].append(filename)
+            if not isascii(filepath):
+                logging.debug("{} is not an ascii-encoded unicode string".format(filepath))
+                returnFiles['exclude'].append(filepath)
+                exclude = True
+                continue
+
+            for filt in filters['includeFilter'].split(','): 
+                if fnmatch.fnmatch(filepath, filt):
+                    for filt in filters['excludeFilter'].split(','): 
+                        if fnmatch.fnmatch(filepath, filt):
+                            logging.debug("{} excluded because file matches exclude filter".format(filepath))
+                            returnFiles['exclude'].append(filepath)
+                            exclude = True
+                            break
+
+                    if exclude:
+                        break
+
+                    file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
+                    file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
+                    logging.debug("file_mod_time_SECS: {}".format(file_mod_time_SECS))
+                    if file_mod_time_SECS > dataStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < dataEnd_time:
+                        logging.debug("{} is a valid file for transfer".format(filepath))
+                        include = True
+                    else:
+                        logging.debug("{} ignored for time reasons".format(filepath))
+                        
+            if include:
+                returnFiles['include'].append(filepath)
+                returnFiles['filesize'].append(size)
+            
+            elif not exclude:
+                logging.debug("{} excluded because file does not match any include or ignore filters".format(filepath))
+                returnFiles['exclude'].append(filepath)
+
+    if not gearman_worker.collectionSystemTransfer['staleness'] == '0':
+        logging.debug("Checking for changing filesizes")
+        time.sleep(5)
+        proc = subprocess.run(command, capture_output=True, text=True)
+
+        for line in proc.stdout.splitlines():
+            fileOrDir, size, mdate, mtime, filepath = line.split(None, 4)
+
+            try:
+                younger_file_idx = returnFiles['include'].index(filepath)
+                if returnFiles['filesize'][younger_file_idx] != size:
+                    logging.debug("file {} has changed size, removing from include list".format(filepath))
+                    del returnFiles['filesize'][younger_file_idx]
+                    del returnFiles['include'][younger_file_idx]
+            except ValueError:
+                pass
+            except Exception as err:
+                logging.error(str(err))
+
+    del returnFiles['filesize']
+
+    # Cleanup
+    shutil.rmtree(tmpdir)
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
@@ -237,76 +280,104 @@ def build_rsyncFilelist(gearman_worker, sourceDir):
 
 def build_sshFilelist(gearman_worker, sourceDir):
 
-    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
+    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[], 'filesize':[]}
 
     staleness = int(gearman_worker.collectionSystemTransfer['staleness']) * 60
-    logging.debug("Staleness: {}".format(staleness))
-
-    threshold_time = time.time() - staleness
-    logging.debug("Threshold: {}".format(threshold_time))
-
+    threshold_time = time.time() - staleness # 5 minutes
+    epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     dataStart_time = calendar.timegm(time.strptime(gearman_worker.dataStartDate, "%Y/%m/%d %H:%M"))
-    logging.debug("Start: {}".format(dataStart_time))
-
     dataEnd_time = calendar.timegm(time.strptime(gearman_worker.dataEndDate, "%Y/%m/%d %H:%M"))
-    logging.debug("End: {}".format(dataEnd_time))
+
+    logging.debug("Threshold: {}".format(threshold_time))
+    logging.debug("    Start: {}".format(dataStart_time))
+    logging.debug("      End: {}".format(dataEnd_time))
 
     filters = build_filters(gearman_worker)
 
-    command = ['rsync', '-r', '-e', 'ssh', gearman_worker.collectionSystemTransfer['sshUser'] + '@' + gearman_worker.collectionSystemTransfer['sshServer'] + sourceDir + '/'] if gearman_worker.collectionSystemTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', gearman_worker.collectionSystemTransfer['sshUser'] + '@' + gearman_worker.collectionSystemTransfer['sshServer'] + sourceDir + '/']
+    command = ['rsync', '-r', '-e', 'ssh', gearman_worker.collectionSystemTransfer['sshUser'] + '@' + gearman_worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/'] if gearman_worker.collectionSystemTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.collectionSystemTransfer['sshPass'], 'rsync', '-r', '-e', 'ssh', gearman_worker.collectionSystemTransfer['sshUser'] + '@' + gearman_worker.collectionSystemTransfer['sshServer'] + ':' + sourceDir + '/']
     logging.debug("Command: {}".format(' '.join(command)))
 
     proc = subprocess.run(command, capture_output=True, text=True)
-
+    
     for line in proc.stdout.splitlines():
-        logging.debug("Line: {}".format(line))
-        fileOrDir, size, mdate, mtime, name = line.split(None, 4)
+        logging.debug('line: {}'.format(line.rstrip('\n')))
+        fileOrDir, size, mdate, mtime, filepath = line.split(None, 4)
         if fileOrDir.startswith('-'):
-            filename = name
-            logging.debug("file: {}".format(filename))
             exclude = False
             ignore = False
             include = False
             for filt in filters['ignoreFilter'].split(','):
-                logging.debug("filt")
-                if fnmatch.fnmatch(filename, filt):
-                    logging.debug("{} ignore".format(filename))
+                #logging.debug("filt")
+                if fnmatch.fnmatch(filepath, filt):
+                    logging.debug("{} ignored because file matched ignore filter".format(filepath))
                     ignore = True
                     break
-            if not ignore:
-                for filt in filters['includeFilter'].split(','):
-                    if fnmatch.fnmatch(filename, filt):
-                        for filt in filters['excludeFilter'].split(','):
-                            if fnmatch.fnmatch(filename, filt):
-                                logging.debug("{} exclude".format(filename))
-                                returnFiles['exclude'].append(filename)
-                                exclude = True
-                                break
-                        if not exclude:
-                            file_mod_time = (datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S") - datetime.datetime(1970,1,1,0,0,0)).total_seconds()
-                            logging.debug("file_mod_time: {}".format(file_mod_time))
-                            if not isascii(filename):
-                                logging.debug("{} is not an ascii-encoded unicode string".format(filename))
-                                returnFiles['exclude'].append(filename)
-                            else:
-                                if file_mod_time > dataStart_time and file_mod_time < dataEnd_time:
-                                    logging.debug("{} include".format(filename))
-                                    returnFiles['include'].append(filename)
-                                else:
-                                    logging.debug("{} ignored for time reasons".format(filename))
 
-                            include = True
+            if ignore:
+                continue
 
-                if not include:
-                    logging.debug("{} excluded because file does not match any include or ignore filters".format(filename))
-                    returnFiles['exclude'].append(filename)
+            if not isascii(filepath):
+                logging.debug("{} is not an ascii-encoded unicode string".format(filepath))
+                returnFiles['exclude'].append(filepath)
+                exclude = True
+                continue
+
+            for filt in filters['includeFilter'].split(','):
+                if fnmatch.fnmatch(filepath, filt):
+                    for filt in filters['excludeFilter'].split(','):
+                        if fnmatch.fnmatch(filepath, filt):
+                            logging.debug("{} excluded because file matches exclude filter".format(filepath))
+                            returnFiles['exclude'].append(filepath)
+                            exclude = True
+                            break
+
+                    if exclude:
+                        break
+
+                    file_mod_time = datetime.datetime.strptime(mdate + ' ' + mtime, "%Y/%m/%d %H:%M:%S")
+                    file_mod_time_SECS = (file_mod_time - epoch).total_seconds()
+                    logging.debug("file_mod_time_SECS: {}".format(file_mod_time_SECS))
+                    if file_mod_time_SECS > dataStart_time and file_mod_time_SECS < threshold_time and file_mod_time_SECS < dataEnd_time:
+                        logging.debug("{} is a valid file for transfer".format(filepath))
+                        include = True
+                    else:
+                        logging.debug("{} ignored for time reasons".format(filepath))
+
+            if include:
+                returnFiles['include'].append(filepath)
+                returnFiles['filesize'].append(size)
+
+            elif not exclude:
+                logging.debug("{} excluded because file does not match any include or ignore filters".format(filepath))
+                returnFiles['exclude'].append(filepath)
+
+    if not gearman_worker.collectionSystemTransfer['staleness'] == '0':
+        logging.debug("Checking for changing filesizes")
+        time.sleep(5)
+        proc = subprocess.run(command, capture_output=True, text=True)
+
+        for line in proc.stdout.splitlines():
+            fileOrDir, size, mdate, mtime, filepath = line.split(None, 4)
+
+            try:
+                younger_file_idx = returnFiles['include'].index(filepath)
+                if returnFiles['filesize'][younger_file_idx] != size:
+                    logging.debug("file {} has changed size, removing from include list".format(filepath))
+                    del returnFiles['filesize'][younger_file_idx]
+                    del returnFiles['include'][younger_file_idx]
+            except ValueError:
+                pass
+            except Exception as err:
+                logging.error(str(err))
+
+    del returnFiles['filesize']
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
 
     logging.debug('returnFiles: {}'.format(json.dumps(returnFiles, indent=2)))
 
-    return returnFiles
+    return {'verdict': True, 'files': returnFiles}
 
 
 def build_filters(gearman_worker):
@@ -352,7 +423,11 @@ def transfer_localSourceDir(gearman_worker, gearman_job):
     logging.debug("Destination Dir: {}".format(destDir))
 
     logging.debug("Build file list")
-    files = build_filelist(gearman_worker, sourceDir)
+    output_results = build_filelist(gearman_worker, sourceDir)
+    if not output_results['verdict']:
+        return { 'verdict': False, 'reason': "Error building filelist", 'files':[] }
+    files = output_results['files']
+
     logging.debug("Files: {}".format(json.dumps(files['include'], indent=2)))
 
     fileIndex = 0
@@ -444,7 +519,7 @@ def transfer_smbSourceDir(gearman_worker, gearman_job):
     os.mkdir(mntPoint, 0o755)
 
     destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker)) if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == "1" else  os.path.join(cruiseDir, build_destDir(gearman_worker))
-    sourceDir = os.path.join(mntPoint, build_sourceDir(gearman_worker))
+    sourceDir = os.path.join(mntPoint, build_sourceDir(gearman_worker)).rstrip('/')
     logging.debug("Source Dir: {}".format(sourceDir))
     logging.debug("Destinstation Dir: {}".format(destDir))
 
@@ -468,8 +543,11 @@ def transfer_smbSourceDir(gearman_worker, gearman_job):
     proc = subprocess.run(mount_command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     
     logging.debug("Build file list")
-    files = build_filelist(gearman_worker, sourceDir)
-    
+    output_results = build_filelist(gearman_worker, sourceDir)
+    if not output_results['verdict']:
+        return { 'verdict': False, 'reason': "Error building filelist", 'files':[] }
+    files = output_results['files']
+
     logging.debug("File List: {}".format(json.dumps(files['include'], indent=2)))
     
     fileIndex = 0
@@ -664,9 +742,12 @@ def transfer_sshSourceDir(gearman_worker, gearman_job):
     logging.debug("Destinstation Dir: {}".format(destDir))
     
     logging.debug("Build file list")
-    files = build_sshFilelist(gearman_worker, sourceDir)
-    logging.debug('Files: {}'.format(files))
-        
+    output_results = build_sshFilelist(gearman_worker, sourceDir)
+    if not output_results['verdict']:
+        return {'verdict': False, 'reason': output_results['reason'], 'files':[]}
+
+    files = output_results['files']
+    
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
 
@@ -765,12 +846,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find retrieve data for collection system transfer from OpenVDM API"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         self.systemStatus = payloadObj['systemStatus'] if 'systemStatus' in payloadObj else self.OVDM.getSystemStatus()
+        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
 
-        if self.systemStatus == "Off":
+        if self.systemStatus == "Off" or self.collectionSystemTransfer['enable'] == '0':
             logging.info("Transfer job for {} skipped because that collection system transfer is currently disabled".format(self.collectionSystemTransfer['name']))
             return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
-        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
         self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
         # self.cruiseStartDate = payloadObj['cruiseStartDate'] if 'cruiseStartDate' in payloadObj else self.OVDM.getCruiseStartDate()
         # self.cruiseEndDate = payloadObj['cruiseEndDate'] if 'cruiseEndDate' in payloadObj else self.OVDM.getCruiseEndDate()

@@ -2,6 +2,7 @@
 """Utilities for determining invalid filenames.
 """
 import os
+import errno
 import logging
 
 def create_directories(directoryList):

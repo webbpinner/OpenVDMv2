@@ -51,7 +51,7 @@ sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 from server.utils.output_JSONDataToFile import output_JSONDataToFile
 from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
 from server.utils.create_directories import create_directories, create_parent_directories
-from server.lib.openvdm import OpenVDM_API, DEFAULT_CRUISE_CONFIG_FN
+from server.lib.openvdm import OpenVDM_API, DEFAULT_CRUISE_CONFIG_FN, DEFAULT_MD5_SUMMARY_FN, DEFAULT_MD5_SUMMARY_MD5_FN
 
 
 def isascii(s):
@@ -61,16 +61,16 @@ def isascii(s):
 
 def build_filelist(gearman_worker, sourceDir):
 
-    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[], 'filesize':[]}
-
-    logging.debug("returnFiles: {}".format(json.dumps(returnFiles, indent=2)))
+    returnFiles = {'include':[], 'exclude':[], 'new':[], 'updated':[]}
 
     filters = build_filters(gearman_worker)
 
     for root, dirnames, filenames in os.walk(sourceDir):
         for filename in filenames:
 
-            if os.path.islink(os.path.join(root, filename)):
+            filepath = os.path.join(root, filename)
+
+            if os.path.islink(filepath):
                 logging.debug("{} is a symlink, skipping".format(filename))
                 continue
 
@@ -79,35 +79,41 @@ def build_filelist(gearman_worker, sourceDir):
             include = False
             for filt in filters['ignoreFilter'].split(','):
                 #logging.debug(filt)
-                if fnmatch.fnmatch(os.path.join(root, filename), filt):
+                if fnmatch.fnmatch(filepath, filt):
                     logging.debug("{} ignored by ignore filter".format(filename))
                     ignore = True
                     break
             if not ignore:
                 for filt in filters['includeFilter'].split(','): 
-                    if fnmatch.fnmatch(filename, filt):
+                    if fnmatch.fnmatch(filepath, filt):
                         for filt in filters['excludeFilter'].split(','): 
-                            if fnmatch.fnmatch(filename, filt):
+                            if fnmatch.fnmatch(filepath, filt):
                                 logging.debug("{} excluded by exclude filter".format(filename))
                                 returnFiles['exclude'].append(os.path.join(root, filename))
                                 exclude = True
                                 break
-                        if not exclude:
-                            if not isascii(filename):
-                                logging.debug("{} is not an ascii-encoded unicode string".format(filename))
-                                returnFiles['exclude'].append(os.path.join(root, filename))
-                                exclude = True
-                            else:
-                                logging.debug("{} is a valid file for transfer".format(os.path.join(root, filename)))
-                                returnFiles['include'].append(os.path.join(root, filename))
-                                include = True
+                        if not exclude and not isascii(filename):
+                            logging.debug("{} is not an ascii-encoded unicode string".format(filename))
+                            returnFiles['exclude'].append(os.path.join(root, filename))
+                            exclude = True
+                            break
 
-                if include or exclude or ignore:
-                    logging.debug("{} excluded because file does not match any of the filters".format(filename))
-                    returnFiles['exclude'].append(os.path.join(root, filename))
+                        if exclude:
+                            break
+                
+                if not exclude:
+                    logging.debug("{} is a valid file for transfer".format(filepath))
+                    returnFiles['include'].append(filepath)
+                    include = True
+
+            # if include or exclude or ignore:
+            #     logging.debug("{} excluded because file does not match any of the filters".format(filename))
+            #     returnFiles['exclude'].append(os.path.join(root, filename))
 
     returnFiles['include'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['include']]
     returnFiles['exclude'] = [filename.split(sourceDir + '/',1).pop() for filename in returnFiles['exclude']]
+
+    logging.debug("file list: {}".format(json.dumps(returnFiles, indent=2)))
 
     return returnFiles
 
@@ -120,7 +126,7 @@ def build_filelist(gearman_worker, sourceDir):
 
 def build_filters(gearman_worker):
 
-    return = {
+    return {
         'includeFilter': '*',
         'excludeFilter': ','.join(build_excludeList(gearman_worker)),
         'ignoreFilter': ''
@@ -133,37 +139,54 @@ def build_excludeList(gearman_worker):
 
     if gearman_worker.cruiseDataTransfer['includeOVDMFiles'] == '0':
         dashboardDataDir = gearman_worker.OVDM.getRequiredExtraDirectoryByName("Dashboard_Data")
-        excludedFilterArray.append("*/{}/{}/*".format(gearman_worker.cruiseID, dashboardDataDir['destDir']))
+        excludedFilterArray.append("*{}*".format(dashboardDataDir['destDir']))
 
         transferLogs = gearman_worker.OVDM.getRequiredExtraDirectoryByName("Transfer_Logs")
-        excludedFilterArray.append("*/{}/{}/*".format(gearman_worker.cruiseID, transferLogs['destDir']))
+        excludedFilterArray.append("*{}*".format(transferLogs['destDir']))
+
+        excludedFilterArray.append("*{}*".format(transferLogs['destDir']))
+        excludedFilterArray.append("*{}".format(DEFAULT_CRUISE_CONFIG_FN))
+        excludedFilterArray.append("*{}".format(DEFAULT_MD5_SUMMARY_FN))
+        excludedFilterArray.append("*{}".format(DEFAULT_MD5_SUMMARY_MD5_FN))
 
     if gearman_worker.cruiseDataTransfer['includePublicDataFiles'] == '0':
         fromPublicDataDir = gearman_worker.OVDM.getRequiredExtraDirectoryByName("From_PublicData")
-        excludedFilterArray.append("*/{}/{}/*".format(gearman_worker.cruiseID, fromPublicDataDir['destDir']))
+        excludedFilterArray.append("*{}*".format(fromPublicDataDir['destDir']))
 
     excludedCollectionSystemIDs = gearman_worker.cruiseDataTransfer['excludedCollectionSystems'].split(',')
     for collectionSystemID in excludedCollectionSystemIDs:
-        cruiseDataTransfer = gearman_worker.OVDM.getCollectionSystemTransfer(collectionSystemID)
+        
+        if collectionSystemID == '0':
+            continue
+        
+        collectionSystemTransfer = gearman_worker.OVDM.getCollectionSystemTransfer(collectionSystemID)
+        
         try:
-            if cruiseDataTransfer['cruiseOrLowering'] == '0':
-                excludedFilterArray.append("*/{}/{}/*".format(gearman_worker.cruiseID, cruiseDataTransfer['destDir']))
+            if collectionSystemTransfer['cruiseOrLowering'] == '0':
+                excludedFilterArray.append("*{}*".format(collectionSystemTransfer['destDir']))
             else:
                 lowerings = gearman_worker.OVDM.getLowerings()
                 for lowering in lowerings:
                     # excludedFilterArray.append("*/{cruiseID}/*/" + lowering + "/" + cruiseDataTransfer['destDir'].replace('{loweringID}', lowering) + "/*")
-                    excludedFilterArray.append("*/{}/*/{}/{}/*".format(gearman_worker.cruiseID, lowering, cruiseDataTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', lowering)))
-        except:
+                    excludedFilterArray.append("*{}/{}*".format(lowering, collectionSystemTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', lowering)))
+        except Exception as err:
             logging.warning("Could not retrieve collection system transfer {}".format(collectionSystemID))
+            logging.warning(str(err))
             pass
 
     excludedExtraDirectoryIDs = gearman_worker.cruiseDataTransfer['excludedExtraDirectories'].split(',')
     for excludedExtraDirectoryID in excludedExtraDirectoryIDs:
+        
+        if excludedExtraDirectoryID == '0':
+            continue
+        
         extraDirectory = gearman_worker.OVDM.getExtraDirectory(excludedExtraDirectoryID)
+        
         try:
-            excludedFilterArray.append("*/{}/{}/*".format(gearman_worker.cruiseID, extraDirectory['destDir'].replace('{cruiseID}', gearman_worker.cruiseID)))
-        except:
+            excludedFilterArray.append("*{}*".format(extraDirectory['destDir'].replace('{cruiseID}', gearman_worker.cruiseID)))
+        except Exception as err:
             logging.warning("Could not retrieve extra directory {}".format(collectionSystemID))
+            logging.warning(str(err))
             pass
 
     logging.debug("Exclude filters: {}".format(json.dumps(excludedFilterArray, indent=2)))
@@ -178,14 +201,14 @@ def transfer_localDestDir(gearman_worker, gearman_job):
     warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
-    destDir = os.path.join(gearman_worker.cruiseDataTransfer['destDir'], gearman_worker.cruiseID)
+    destDir = gearman_worker.cruiseDataTransfer['destDir'].rstrip('/')
 
     logging.debug('Destination Dir: {}'.format(destDir))
 
-    output_results = create_directories([destDir])
+    # output_results = create_directories([destDir])
 
-    if not output_results['verdict']:
-        return output_results
+    # if not output_results['verdict']:
+    #     return output_results
 
     logging.debug("Building file list")
     files = build_filelist(gearman_worker, cruiseDir)
@@ -207,11 +230,14 @@ def transfer_localDestDir(gearman_worker, gearman_job):
 
     bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
     
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir + '/', destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir, destDir]
 
     logging.debug('Transfer Command: {}'.format(' '.join(command)))
     
-     proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    fileIndex = 0
+    fileCount = len(files['include'])
+    
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
     while True:
 
         line = proc.stdout.readline().rstrip('\n')
@@ -239,11 +265,11 @@ def transfer_localDestDir(gearman_worker, gearman_job):
             proc.terminate()
             break
 
-    files['new'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['new']]
-    files['updated'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['updated']]
+    # files['new'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['new']]
+    # files['updated'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['updated']]
 
     logging.info("Setting file permissions")
-    output_results = set_ownerGroupPermissions(warehouseUser, destDir)
+    output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(destDir, gearman_worker.cruiseID))
 
     # Cleanup
     shutil.rmtree(tmpdir)    
@@ -252,7 +278,7 @@ def transfer_localDestDir(gearman_worker, gearman_job):
         logging.error("Error setting ownership/permissions for transfer logfile: {}".format(logfileName))
         return output_results
 
-    return { verdict: True, files: files }
+    return { 'verdict': True, 'files': files }
 
 
 def transfer_smbDestDir(gearman_worker, gearman_job):
@@ -286,16 +312,16 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
             vers="1.0"
             break
 
-    mount_command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'ro' + ',guest' + ',domain=' + gearman_worker.cruiseDataTransfer['smbDomain'] + ',vers=' + vers] if gearman_worker.cruiseDataTransfer['smbUser'] == 'guest' else ['sudo', 'mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'ro' + ',username=' + gearman_worker.cruiseDataTransfer['smbUser'] + ',password=' + gearman_worker.cruiseDataTransfer['smbPass'] + ',domain=' + gearman_worker.cruiseDataTransfer['smbDomain'] + ',vers=' + vers]
+    mount_command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',guest' + ',domain=' + gearman_worker.cruiseDataTransfer['smbDomain'] + ',vers=' + vers] if gearman_worker.cruiseDataTransfer['smbUser'] == 'guest' else ['sudo', 'mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw' + ',username=' + gearman_worker.cruiseDataTransfer['smbUser'] + ',password=' + gearman_worker.cruiseDataTransfer['smbPass'] + ',domain=' + gearman_worker.cruiseDataTransfer['smbDomain'] + ',vers=' + vers]
     logging.debug("Mount command: {}".format(' '.join(mount_command)))
     
     mount_proc = subprocess.run(mount_command, capture_output=True, text=True)
 
-    destDir = os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir'], gearman_worker.cruiseID)
-    output_results = create_directories([destDir])
+    # destDir = os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir'], gearman_worker.cruiseID)
+    # output_results = create_directories([destDir])
 
-    if not output_results['verdict']:
-        return output_results
+    # if not output_results['verdict']:
+    #     return output_results
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -314,7 +340,7 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
 
     bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
     
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir + '/', destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir, os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir']).rstrip('/') if gearman_worker.cruiseDataTransfer['destDir'] != '/' else mntPoint]
 
     logging.debug('Transfer Command: {}'.format(' '.join(command)))
     
@@ -346,17 +372,17 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
             proc.terminate()
             break
 
-    files['new'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['new']]
-    files['updated'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['updated']]
+    #files['new'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['new']]
+    # files['updated'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['updated']]
 
-    #print "Cleanup"
+    # Cleanup
     time.sleep(2)
 
     logging.debug("Unmount SMB Share")
     subprocess.call(['umount', mntPoint])
     shutil.rmtree(tmpdir)
 
-    return { verdict: True, files: files }
+    return { 'verdict': True, 'files': files }
 
 
 def transfer_rsyncDestDir(gearman_worker, gearman_job):
@@ -502,7 +528,7 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
     # proc = subprocess.Popen(command, stdout=subprocess.PIPE)
     # proc.communicate()
 
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else command = ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
     logging.debug("Transfer Command: {}".format(' '.join(command)))
     
@@ -544,7 +570,7 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
     return {'verdict': True, 'files': files}
     
         
-class OVDMGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
     def __init__(self):
         self.stop = False
@@ -562,7 +588,7 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         payloadObj = json.loads(current_job.data)
 
         try:
-            self.cruiseDataTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
+            self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
 
             if not self.cruiseDataTransfer:
                 return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Cruise Data Tranfer Data", "result": "Fail", "reason": "Could not find configuration data for cruise data transfer"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
@@ -575,12 +601,12 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
 
 
         self.systemStatus = payloadObj['systemStatus'] if 'systemStatus' in payloadObj else self.OVDM.getSystemStatus()
+        self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
 
-        if self.systemStatus == "Off":
+        if self.systemStatus == "Off" or self.cruiseDataTransfer['enable'] == '0':
             logging.info("Transfer job for {} skipped because that cruise data transfer is currently disabled".format(self.cruiseDataTransfer['name']))
             return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
-        self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
         self.cruiseID = self.OVDM.getCruiseID()
         
         logging.info("Job: {}, {} transfer started at: {}".format(current_job.handle, self.cruiseDataTransfer['name'], time.strftime("%D %T", time.gmtime())))
@@ -642,17 +668,17 @@ def task_runCruiseDataTransfer(gearman_worker, current_job):
         'files':[]
     }
 
-    #debugPrint("Set transfer status to 'Running'")
-    worker.OVDM.setRunning_cruiseDataTransfer(worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), job.handle)
+    logging.debug("Setting transfer status to 'Running'")
+    gearman_worker.OVDM.setRunning_cruiseDataTransfer(gearman_worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
    
-    debugPrint("Testing configuration")
-    worker.send_job_status(job, 1, 10)
+    logging.info("Testing configuration")
+    gearman_worker.send_job_status(current_job, 1, 10)
 
-    gm_client = gearman.GearmanClient([worker.OVDM.getGearmanServer()])
+    gm_client = python3_gearman.GearmanClient([gearman_worker.OVDM.getGearmanServer()])
     
     gmData = {
-        'cruiseDataTransfer': worker.cruiseDataTransfer,
-        'cruiseID': worker.cruiseID
+        'cruiseDataTransfer': gearman_worker.cruiseDataTransfer,
+        'cruiseID': gearman_worker.cruiseID
     }
     
     completed_job_request = gm_client.submit_job("testCruiseDataTransfer", json.dumps(gmData))
@@ -668,7 +694,7 @@ def task_runCruiseDataTransfer(gearman_worker, current_job):
         job_results['parts'].append({"partName": "Connection Test", "result": "Fail", "reason": resultsObj['parts'][-1]['reason']})
         return json.dumps(job_results)
 
-    worker.send_job_status(current_job, 2, 10)
+    gearman_worker.send_job_status(current_job, 2, 10)
     
     logging.info("Transferring files")
     output_results = None
@@ -697,7 +723,7 @@ def task_runCruiseDataTransfer(gearman_worker, current_job):
     if len(job_results['files']['exclude']) > 0:
         logging.debug("{} file(s) intentionally skipped".format(len(job_results['files']['exclude'])))
 
-    worker.send_job_status(job, 9, 10)
+    gearman_worker.send_job_status(current_job, 9, 10)
 
     time.sleep(2)
 
