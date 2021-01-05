@@ -48,15 +48,9 @@ from random import randint
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from server.utils.output_JSONDataToFile import output_JSONDataToFile
+from server.utils.check_filenames import is_ascii
 from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
-from server.utils.create_directories import create_directories, create_parent_directories
 from server.lib.openvdm import OpenVDM_API, DEFAULT_CRUISE_CONFIG_FN, DEFAULT_MD5_SUMMARY_FN, DEFAULT_MD5_SUMMARY_MD5_FN
-
-
-def isascii(s):
-    """Check if the characters in string s are in ASCII, U+0-U+7F."""
-    return len(s) == len(s.encode())
 
 
 def build_filelist(gearman_worker, sourceDir):
@@ -92,7 +86,7 @@ def build_filelist(gearman_worker, sourceDir):
                                 returnFiles['exclude'].append(os.path.join(root, filename))
                                 exclude = True
                                 break
-                        if not exclude and not isascii(filename):
+                        if not exclude and not is_ascii(filename):
                             logging.debug("{} is not an ascii-encoded unicode string".format(filename))
                             returnFiles['exclude'].append(os.path.join(root, filename))
                             exclude = True
@@ -116,13 +110,6 @@ def build_filelist(gearman_worker, sourceDir):
     logging.debug("file list: {}".format(json.dumps(returnFiles, indent=2)))
 
     return returnFiles
-
-# def build_destDirectories(destDir, files):
-#     files = [filename.replace(os.path.join(destDir, filename)) for filename in files]
-#     dirs = list(set([os.path.dirname(filename) for filename in files]))
-
-#     logging.debug("Directories to create: {}".format(json.dumps(dirs)))
-#     return create_directories(dirs)
 
 def build_filters(gearman_worker):
 
@@ -205,11 +192,6 @@ def transfer_localDestDir(gearman_worker, gearman_job):
 
     logging.debug('Destination Dir: {}'.format(destDir))
 
-    # output_results = create_directories([destDir])
-
-    # if not output_results['verdict']:
-    #     return output_results
-
     logging.debug("Building file list")
     files = build_filelist(gearman_worker, cruiseDir)
     
@@ -283,7 +265,7 @@ def transfer_localDestDir(gearman_worker, gearman_job):
 
 def transfer_smbDestDir(gearman_worker, gearman_job):
     
-    logging.debug("Transfer from SMB Source")
+    logging.debug("Transfer to SMB Source")
 
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
@@ -316,12 +298,6 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
     logging.debug("Mount command: {}".format(' '.join(mount_command)))
     
     mount_proc = subprocess.run(mount_command, capture_output=True, text=True)
-
-    # destDir = os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir'], gearman_worker.cruiseID)
-    # output_results = create_directories([destDir])
-
-    # if not output_results['verdict']:
-    #     return output_results
     
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
@@ -387,7 +363,7 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
 
 def transfer_rsyncDestDir(gearman_worker, gearman_job):
 
-    logging.debug("Transfer from RSYNC Server")
+    logging.debug("Transfer to RSYNC Server")
 
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
@@ -491,7 +467,7 @@ def transfer_rsyncDestDir(gearman_worker, gearman_job):
 
 def transfer_sshDestDir(gearman_worker, gearman_job):
 
-    logging.debug("Transfer from SSH Server")
+    logging.debug("Transfer to SSH Server")
 
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
@@ -599,7 +575,6 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         except:
             return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Cruise Data Tranfer Data", "result": "Fail", "reason": "Could not find retrieve data for cruise data transfer from OpenVDM API"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
-
         self.systemStatus = payloadObj['systemStatus'] if 'systemStatus' in payloadObj else self.OVDM.getSystemStatus()
         self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
 
@@ -706,11 +681,15 @@ def task_runCruiseDataTransfer(gearman_worker, current_job):
         output_results = transfer_smbDestDir(gearman_worker, current_job)
     elif  gearman_worker.cruiseDataTransfer['transferType'] == "4": # SSH Server
         output_results = transfer_sshDestDir(gearman_worker, current_job)
-    
+    else:
+        logging.error("Unknown Transfer Type")
+        job_results['parts'].append({"partName": "Transfer Files", "result": "Fail", "reason": "Unknown transfer type"})
+        return json.dumps(job_results)
+
     if not output_results['verdict']:
         logging.error("Transfer of remote files failed: {}".format(output_results['reason']))
         job_results['parts'].append({"partName": "Transfer Files", "result": "Fail", "reason": output_results['reason']})
-        return job_results
+        return json.dumps(job_results)
 
     logging.debug("Transfer completed successfully")
     job_results['files'] = output_results['files']

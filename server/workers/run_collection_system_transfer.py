@@ -50,14 +50,11 @@ from random import randint
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
+from server.utils.check_filenames import is_ascii
 from server.utils.output_JSONDataToFile import output_JSONDataToFile
 from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
 from server.lib.openvdm import OpenVDM_API, DEFAULT_CRUISE_CONFIG_FN
 
-
-def isascii(s):
-    """Check if the characters in string s are in ASCII, U+0-U+7F."""
-    return len(s) == len(s.encode())
 
 def build_filelist(gearman_worker, sourceDir):
 
@@ -98,7 +95,7 @@ def build_filelist(gearman_worker, sourceDir):
             if ignore:
                 continue
 
-            if not isascii(filename):
+            if not is_ascii(filename):
                 logging.debug("{} is not an ascii-encoded unicode string".format(filepath))
                 returnFiles['exclude'].append(filepath)
                 exclude = True
@@ -211,7 +208,7 @@ def build_rsyncFilelist(gearman_worker, sourceDir):
             if ignore:
                 continue
 
-            if not isascii(filepath):
+            if not is_ascii(filepath):
                 logging.debug("{} is not an ascii-encoded unicode string".format(filepath))
                 returnFiles['exclude'].append(filepath)
                 exclude = True
@@ -316,7 +313,7 @@ def build_sshFilelist(gearman_worker, sourceDir):
             if ignore:
                 continue
 
-            if not isascii(filepath):
+            if not is_ascii(filepath):
                 logging.debug("{} is not an ascii-encoded unicode string".format(filepath))
                 returnFiles['exclude'].append(filepath)
                 exclude = True
@@ -1005,11 +1002,15 @@ def task_runCollectionSystemTransfer(gearman_worker, current_job):
         output_results = transfer_smbSourceDir(gearman_worker, current_job)
     elif  gearman_worker.collectionSystemTransfer['transferType'] == "4": # SSH Server
         output_results = transfer_sshSourceDir(gearman_worker, current_job)
+    else:
+        logging.error("Unknown Transfer Type")
+        job_results['parts'].append({"partName": "Transfer Files", "result": "Fail", "reason": "Unknown transfer type"})
+        return json.dumps(job_results)
 
     if not output_results['verdict']:
         logging.error("Transfer of remote files failed: {}".format(output_results['reason']))
         job_results['parts'].append({"partName": "Transfer Files", "result": "Fail", "reason": output_results['reason']})
-        return job_results
+        return json.dumps(job_results)
 
     logging.debug("Transfer completed successfully")
     job_results['files'] = output_results['files']
@@ -1054,7 +1055,7 @@ def task_runCollectionSystemTransfer(gearman_worker, current_job):
         else:
             logging.error("Error writing transfer logfile: {}".format(logfileName))
             job_results['parts'].append({"partName": "Write transfer logfile", "result": "Fail", "reason": output_results['reason']})
-            return job_results
+            return json.dumps(job_results)
     
         output_results = set_ownerGroupPermissions(warehouseUser, os.path.join(build_logfileDirPath(gearman_worker), logfileName))
 
