@@ -154,16 +154,6 @@ function configure_supervisor {
     sed -e '/### Added by OpenVDM install script ###/,/### Added by OpenVDM install script ###/d' /etc/supervisor/supervisord.conf.orig |
     sed -e :a -e '/^\n*$/{$d;N;};/\n$/ba' > /etc/supervisor/supervisord.conf
 
-#     cat >> /etc/supervisor/supervisord.conf <<EOF
-
-# ### Added by OpenVDM install script ###
-# [inet_http_server]
-# username = ${OPENVDM_USER}
-# port = 9001
-# ### Added by OpenVDM install script ###
-# EOF
-
-
     if [ $SUPERVISORD_WEBINTERFACE == 'yes' ]; then
         cat >> /etc/supervisor/supervisord.conf <<EOF
 
@@ -183,6 +173,178 @@ EOF
 ### Added by OpenVDM install script ###
 EOF
     fi
+
+    cat > /etc/supervisor/conf.d/openvdm.conf << EOF
+[program:cruise]
+command=/opt/openvdm/venv/bin/python ./server/workers/cruise.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/cruise.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:cruise_directory]
+command=/opt/openvdm/venv/bin/python ./server/workers/cruise_directory.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/cruiseDirectory.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:data_dashboard]
+command=/opt/openvdm/venv/bin/python ./server/workers/data_dashboard.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/dataDashboard.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:lowering]
+command=/opt/openvdm/venv/bin/python ./server/workers/lowering.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/lowering.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:lowering_directory]
+command=/opt/openvdm/venv/bin/python ./server/workers/lowering_directory.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/lowering_directory.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:md5_summary]
+command=/opt/openvdm/venv/bin/python ./server/workers/md5_summary.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/md5_summary.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:post_hooks]
+command=/opt/openvdm/venv/bin/python ./server/workers/post_hooks.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/post_hooks.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:reboot_reset]
+command=/opt/openvdm/venv/bin/python ./server/workers/reboot_reset.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/reboot_reset.log
+user=root
+autostart=true
+autorestart=false
+stopsignal=INT
+
+[program:run_collection_system_transfer]
+command=/opt/openvdm/venv/bin/python ./server/workers/run_collection_system_transfer.py
+directory=/opt/openvdm
+process_name=%(program_name)s_%(process_num)s
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/run_collection_system_transfer.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:run_cruise_data_transfer]
+command=/opt/openvdm/venv/bin/python ./server/workers/run_cruise_data_transfer.py
+directory=/opt/openvdm
+process_name=%(program_name)s_%(process_num)s
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/run_cruise_data_transfer.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:run_ship_to_shore_transfer]
+command=/opt/openvdm/venv/bin/python ./server/workers/run_ship_to_shore_transfer.py
+directory=/opt/openvdm
+process_name=%(program_name)s_%(process_num)s
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/run_ship_to_shore_transfer.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:scheduler]
+command=/opt/openvdm/venv/bin/python ./server/workers/scheduler.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/scheduler.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:size_cacher]
+command=/opt/openvdm/venv/bin/python ./server/workers/size_cacher.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/size_cacher.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:stop_job]
+command=/opt/openvdm/venv/bin/python ./server/workers/stop_job.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/stop_job.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:test_collection_system_transfer]
+command=/opt/openvdm/venv/bin/python ./server/workers/test_collection_system_transfer.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/test_collection_system_transfer.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[program:test_cruise_data_transfer]
+command=/opt/openvdm/venv/bin/python ./server/workers/test_cruise_data_transfer.py
+directory=/opt/openvdm
+redirect_stderr=true
+stdout_logfile=/var/log/openvdm/test_cruise_data_transfer.log
+user=root
+autostart=true
+autorestart=true
+stopsignal=INT
+
+[group:openvdm]
+programs=cruise,cruise_directory,data_dashboard,lowering,lowering_directory,md5_summary,post_collection_system_transfer,post_hooks,reboot_reset,run_collection_system_transfer,run_cruise_data_transfer,run_ship_to_shore_transfer,scheduler,size_cacher,stop_job,test_collection_system_transfer,test_cruise_data_transfer
+
+EOF
 
     systemctl restart supervisor.service 
 
@@ -219,7 +381,7 @@ include = /etc/samba/openvdm.conf
 /### Added by OpenVDM install script ###
 EOF
 
-    cat >> /etc/samba/openvdm.conf <<EOF
+    cat > /etc/samba/openvdm.conf <<EOF
 # SMB Shares for OpenVDM
 
 [CruiseData]
@@ -270,7 +432,7 @@ EOF
 
 function configure_apache {
 
-    cat >> ~/openvdm.conf <<EOF
+    cat > ~/openvdm.conf <<EOF
 <VirtualHost *:80>
     ServerName $HOSTNAME
 
@@ -545,8 +707,8 @@ function configure_directories {
 
     fi
 
-    if [ ! -d  /var/log/OpenVDM ]; then
-      mkdir /var/log/OpenVDM
+    if [ ! -d  /var/log/openvdm ]; then
+      mkdir /var/log/openvdm
     fi
 
 }
