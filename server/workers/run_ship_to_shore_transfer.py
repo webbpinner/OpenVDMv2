@@ -81,7 +81,7 @@ def build_filelist(gearman_worker):
     baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
 
-    returnFiles = {'include':[], 'new':[], 'updated':[]}
+    returnFiles = {'include':[], 'new':[], 'updated':[], 'exclude':[]}
     for root, dirnames, filenames in os.walk(cruiseDir):
         for filename in filenames:
             for includeFilter in procfilters['includeFilter']:
@@ -115,39 +115,43 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
 
     logging.debug("Transfer to SSH Server")
 
+    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
+
     logging.debug("Building file list")
-    files = build_filelist(gearman_worker)
+    output_results = build_filelist(gearman_worker)
+
+    if not output_results['verdict']:
+        logging.error("Building list of files to transfer failed: {}".format(output_results['reason']))
+        return output_results
+    
+    files = output_results['files']
 
     destDir = gearman_worker.cruiseDataTransfer['destDir'].rstrip('/')
             
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
 
-    sshExcludeListPath = os.path.join(tmpdir, 'sshExcludeList.txt')
+    sshIncludeListPath = os.path.join(tmpdir, 'sshIncludeList.txt')
     
     fileIndex = 0
     fileCount = len(files['include'])
 
     try:
-        with open(sshExcludeListPath, 'w') as sshExcludeFileListFile:
-            sshExcludeFileListFile.write('\n'.join(files['exclude']))
+        with open(sshIncludeListPath, 'w') as sshIncludeFileListFile:
+            sshIncludeFileListFile.write('\n'.join([os.path.join(gearman_worker.cruiseID, filename) for filename in files['include']]))
 
     except IOError:
-        logging.debug("Error Saving temporary ssh exclude filelist file")
+        logging.debug("Error Saving temporary ssh include filelist file")
             
         # Cleanup
         shutil.rmtree(tmpdir)
             
-        return {'verdict': False, 'reason': 'Error Saving temporary ssh exclude filelist file: ' + sshExcludeListPath, 'files':[]}
+        return {'verdict': False, 'reason': 'Error Saving temporary ssh exclude filelist file: ' + sshIncludeListPath, 'files':[]}
 
-    bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
+    bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' and gearman_worker.bandwidthLimitStatus  else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
     
-    # command = ['ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'mkdir ' + os.path.join(destDir, gearman_worker.cruiseID)] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'mkdir ' + os.path.join(destDir, gearman_worker.cruiseID)]
-
-    # proc = subprocess.Popen(command, stdout=subprocess.PIPE)
-    # proc.communicate()
-
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+    command = ['rsync', '-trim', bandwidthLimit, '--files-from=' + sshIncludeListPath, '-e', 'ssh', baseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trim', bandwidthLimit, '--files-from=' + sshIncludeListPath, '-e', 'ssh', baseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
     logging.debug("Transfer Command: {}".format(' '.join(command)))
     
@@ -164,12 +168,12 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
             continue
         
         logging.debug("Line: {}".format(line))
-        if line.startswith( '>f+++++++++' ):
+        if line.startswith( '<f+++++++++' ):
             filename = line.split(' ',1)[1]
             files['new'].append(filename)
             gearman_worker.send_job_status(gearman_job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
             fileIndex += 1
-        elif line.startswith( '>f.' ):
+        elif line.startswith( '<f.' ):
             filename = line.split(' ',1)[1]
             files['updated'].append(filename)
             gearman_worker.send_job_status(gearman_job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
@@ -189,7 +193,7 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
     return {'verdict': True, 'files': files}
 
         
-class OVDMGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
     def __init__(self):
         self.stop = False
@@ -215,7 +219,8 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
         payloadObj = json.loads(current_job.data)
 
         self.cruiseDataTransfer = self.getShipToShoreTransfer()
-        self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
+        if 'cruiseDataTransfer' in payloadObj:
+            self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
         self.systemStatus = payloadObj['systemStatus'] if 'systemStatus' in payloadObj else self.OVDM.getSystemStatus()
 
         if self.systemStatus == "Off" or self.cruiseDataTransfer['enable'] == '0':
@@ -371,7 +376,7 @@ def task_runShipToShoreTransfer(gearman_worker, current_job):
             job_results['parts'].append({"partName": "Set OpenVDM config file ownership/permissions", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
 
-    gearman_worker.send_job_status(job, 10, 10)
+    gearman_worker.send_job_status(current_job, 10, 10)
     
     time.sleep(2)
 
