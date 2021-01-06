@@ -283,7 +283,7 @@ INSERT INTO `OVDM_ShipToShoreTransfers` (`shipToShoreTransferID`, `name`, `longN
 VALUES
 	(1,'DashboardData','Dashboard Data',1,0,2,'*',1,1),
 	(2,'TransferLogs','Transfer Logs',1,0,1,'*',0,1),
-	(3,'MD5Summary','MD5 Summary',1,0,0,'MD5_Summary.txt MD5_Summary.md5 ',1,1),
+	(3,'MD5Summary','MD5 Summary',1,0,0,'MD5_Summary.txt,MD5_Summary.md5 ',1,1),
 	(4,'OVDM_Config','OpenVDM Configuration',1,0,0,'ovdmConfig.json',1,1);
 
 /*!40000 ALTER TABLE `OVDM_ShipToShoreTransfers` ENABLE KEYS */;
