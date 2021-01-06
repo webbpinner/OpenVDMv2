@@ -109,17 +109,18 @@ def test_smbDestDir(gearman_worker):
     server_test_command = ['smbclient', '-L', gearman_worker.cruiseDataTransfer['smbServer'], '-W', gearman_worker.cruiseDataTransfer['smbDomain'], '-m', 'SMB2', '-g', '-N'] if gearman_worker.cruiseDataTransfer['smbUser'] == 'guest' else ['smbclient', '-L', gearman_worker.cruiseDataTransfer['smbServer'], '-W', gearman_worker.cruiseDataTransfer['smbDomain'], '-m', 'SMB2', '-g', '-U', gearman_worker.cruiseDataTransfer['smbUser'] + '%' + gearman_worker.cruiseDataTransfer['smbPass']]
     logging.debug("Server test command: {}".format(' '.join(server_test_command)))
     
-    proc = subprocess.run(command, capture_output=True, text=True)
+    proc = subprocess.run(server_test_command, capture_output=True, text=True)
 
     vers = "2.1"
     foundServer = False
     for line in proc.stdout.splitlines():
-        logging.debug('STDOUT Line:', line.rstrip('\n')) # yield line
+        logging.debug('STDOUT Line: {}'.format(line.rstrip('\n'))) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
+            break
 
     for line in proc.stderr.splitlines():
-        logging.debug('STDERR Line:', line.rstrip('\n')) # yield line
+        logging.debug('STDERR Line: {}'.format(line.rstrip('\n'))) # yield line
         if line.startswith('OS=[Windows 5.1]'):
             vers="1.0"
     
@@ -140,11 +141,11 @@ def test_smbDestDir(gearman_worker):
     os.mkdir(mntPoint, 0o755)
 
     # Mount SMB Share
-    command = ['mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+gearman_worker.cruiseDataTransfer['smbDomain']+',vers='+vers] if gearman_worker.cruiseDataTransfer['smbUser'] == 'guest' else ['mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+gearman_worker.cruiseDataTransfer['smbUser']+',password='+gearman_worker.cruiseDataTransfer['smbPass']+',domain='+gearman_worker.cruiseDataTransfer['smbDomain']+',vers='+vers]
+    mount_command = ['mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',guest'+',domain='+gearman_worker.cruiseDataTransfer['smbDomain']+',vers='+vers] if gearman_worker.cruiseDataTransfer['smbUser'] == 'guest' else ['mount', '-t', 'cifs', gearman_worker.cruiseDataTransfer['smbServer'], mntPoint, '-o', 'rw'+',username='+gearman_worker.cruiseDataTransfer['smbUser']+',password='+gearman_worker.cruiseDataTransfer['smbPass']+',domain='+gearman_worker.cruiseDataTransfer['smbDomain']+',vers='+vers]
 
-    logging.debug('Mount command: {}'.format(' '.join(command)))
+    logging.debug('Mount command: {}'.format(' '.join(mount_command)))
 
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(mount_command, capture_output=True)
 
     if proc.returncode != 0:
         returnVal.extend([
@@ -218,7 +219,7 @@ def test_rsyncDestDir(gearman_worker):
     proc = subprocess.run(server_test_command, capture_output=True)
 
     if proc.returncode != 0:
-    	returnVal.extend([
+        returnVal.extend([
             {"testName": "Rsync Connection", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.cruiseDataTransfer['rsyncServer'], gearman_worker.cruiseDataTransfer['rsyncUser'])},
             {"testName": "Destination Directory", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.cruiseDataTransfer['rsyncServer'], gearman_worker.cruiseDataTransfer['rsyncUser'])},
             {"testName": "Write Test", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.cruiseDataTransfer['rsyncServer'], gearman_worker.cruiseDataTransfer['rsyncUser'])}
@@ -263,7 +264,7 @@ def test_rsyncDestDir(gearman_worker):
     proc = subprocess.run(command, capture_output=True)
 
     if proc.returncode != 0:
-    	returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: {} on the Rsync Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['rsyncServer'])})
+        returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: {} on the Rsync Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['rsyncServer'])})
         
     else:
 
@@ -289,11 +290,11 @@ def test_sshDestDir(gearman_worker):
     
     returnVal = []
 
-    connection_test_command = ['ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'ls'] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'ls']
+    server_test_command = ['ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'ls'] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'ls']
     
-    logging.debug('Connection test command: {}'.format(' '.join(connection_test_command)))
+    logging.debug('Connection test command: {}'.format(' '.join(server_test_command)))
     
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(server_test_command, capture_output=True)
 
     if proc.returncode != 0:
         returnVal.extend([
@@ -311,10 +312,10 @@ def test_sshDestDir(gearman_worker):
     
     logging.debug("Destination test command: {}".format(dest_test_command))
 
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(dest_test_command, capture_output=True)
 
     if proc.returncode != 0:
-        returnVal.exend([
+        returnVal.extend([
             {"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: {} on the SSH Server: {}".format(destDir,gearman_worker.cruiseDataTransfer['sshServer'])},
             {"testName": "Write Test", "result": "Fail", "reason": "Unable to find destination directory: {} on the SSH Server: {}".format(destDir,gearman_worker.cruiseDataTransfer['sshServer'])}
         ])
@@ -325,12 +326,12 @@ def test_sshDestDir(gearman_worker):
 
     write_test_command = ['ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'touch ' + os.path.join(destDir, 'writeTest.txt')] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'touch ' + os.path.join(destDir, 'writeTest.txt')]
         
-    logger.debug('Write test command: {}'.format(write_test_command))
+    logging.debug('Write test command: {}'.format(write_test_command))
 
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(write_test_command, capture_output=True)
 
     if proc.returncode != 0:
-    	returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: {} on the SSH Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['sshServer'])})
+        returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: {} on the SSH Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['sshServer'])})
 
         return returnVal
         
@@ -338,7 +339,7 @@ def test_sshDestDir(gearman_worker):
 
     logging.debug("Write test cleanup command: {}".format(' '.join(write_cleanup_command)))
 
-    proc = subprocess.Popen(write_cleanup_command, capture_output=True)
+    proc = subprocess.run(write_cleanup_command, capture_output=True)
 
     if proc.returncode != 0:
         returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to cleanup test file from destination directory: {} on the SSH Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['sshServer'])})
@@ -388,6 +389,8 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         logging.info("Job: {}, {} transfer test started at: {}".format(current_job.handle, self.cruiseDataTransfer['name'], time.strftime("%D %T", time.gmtime())))
 
+        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
+        
         return super(OVDMGearmanWorker, self).on_job_execute(current_job)
 
 
@@ -435,6 +438,8 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 def task_testCruiseDataTransfer(gearman_worker, current_job):
 
     job_results = {'parts':[]}
+
+    gearman_worker.OVDM.setRunning_cruiseDataTransferTest(gearman_worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
 
     gearman_worker.send_job_status(current_job, 1, 4)
     
