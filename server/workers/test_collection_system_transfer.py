@@ -91,23 +91,19 @@ def test_smbSourceDir(gearman_worker):
     server_test_command = ['smbclient', '-L', gearman_worker.collectionSystemTransfer['smbServer'], '-W', gearman_worker.collectionSystemTransfer['smbDomain'], '-m', 'SMB2', '-g', '-N'] if gearman_worker.collectionSystemTransfer['smbUser'] == 'guest' else ['smbclient', '-L', gearman_worker.collectionSystemTransfer['smbServer'], '-W', gearman_worker.collectionSystemTransfer['smbDomain'], '-m', 'SMB2', '-g', '-U', gearman_worker.collectionSystemTransfer['smbUser'] + '%' + gearman_worker.collectionSystemTransfer['smbPass']]
     logging.debug('SMB Server test command: {}'.format(' '.join(server_test_command)))
 
-    vers="2.1"
     proc = subprocess.run(server_test_command, capture_output=True, text=True)
 
+    vers = "2.1"
     foundServer = False
     for line in proc.stdout.splitlines():
-        logging.debug("Line: {}".format(line.rstrip('\n')))
-
-        if line.startswith('OS=[Windows 5.1]'):
-            vers="1.0"
-
+        logging.debug('STDOUT Line:', line.rstrip('\n')) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
 
-    # for line in stderr_iterator:
-    #     # debugPrint('stderr:', line.rstrip('\n')) # yield line
-    #     if line.startswith( 'OS=[Windows 5.1]'):
-    #         vers=",vers=1.0"
+    for line in proc.stderr.splitlines():
+        logging.debug('STDERR Line:', line.rstrip('\n')) # yield line
+        if line.startswith('OS=[Windows 5.1]'):
+            vers="1.0"
 
     if not foundServer:
         logging.warning("Server Test Failed")
@@ -127,14 +123,14 @@ def test_smbSourceDir(gearman_worker):
     
 
     # Mount SMB Share
-    mount_command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+vers] if gearman_worker.collectionSystemTransfer['smbUser'] == 'guest' else ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+gearman_worker.collectionSystemTransfer['smbUser']+',password='+gearman_worker.collectionSystemTransfer['smbPass']+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+vers]
+    mount_command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+',vers='vers] if gearman_worker.collectionSystemTransfer['smbUser'] == 'guest' else ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+gearman_worker.collectionSystemTransfer['smbUser']+',password='+gearman_worker.collectionSystemTransfer['smbPass']+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+',vers='+vers]
 
     logging.debug("Mount command: {}".format(' '.join(mount_command)))
 
     proc = subprocess.run(mount_command, capture_output=True)
 
     if proc.returncode != 0:
-        logging.warning("Connection Test Failed")
+        logging.warning("Connection test failed")
         returnVal.extend([
             {"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Share: {} as {}".format( gearman_worker.collectionSystemTransfer['smbServer'],  gearman_worker.collectionSystemTransfer['smbUser'])},
             {"testName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Share: {} as {}".format( gearman_worker.collectionSystemTransfer['smbServer'],  gearman_worker.collectionSystemTransfer['smbUser'])}
@@ -198,14 +194,14 @@ def test_rsyncSourceDir(gearman_worker):
 
     os.chmod(rsyncPasswordFilePath, 0o600)
 
-    command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + gearman_worker.collectionSystemTransfer['rsyncUser'] + '@' + gearman_worker.collectionSystemTransfer['rsyncServer']]
+    server_test_command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + gearman_worker.collectionSystemTransfer['rsyncUser'] + '@' + gearman_worker.collectionSystemTransfer['rsyncServer']]
 
-    logging.debug('Connection Command: {}'.format(' '.join(command)))
+    logging.debug('Server test command: {}'.format(' '.join(server_test_command)))
 
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(server_test_command, capture_output=True)
 
     if proc.returncode != 0:
-        logging.warning("Connection Test Failed")
+        logging.warning("Connection test failed")
         returnVal.extend([
             {"testName": "Rsync Connection", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.collectionSystemTransfer['rsyncServer'], gearman_worker.collectionSystemTransfer['rsyncUser'])},
             {"testName": "Source Directory", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.collectionSystemTransfer['rsyncServer'], gearman_worker.collectionSystemTransfer['rsyncUser'])}
@@ -217,11 +213,11 @@ def test_rsyncSourceDir(gearman_worker):
         sourceDir = build_sourceDir(gearman_worker)
         logging.debug('Source Dir: {}'.format(sourceDir))
 
-        command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + gearman_worker.collectionSystemTransfer['rsyncUser'] + '@' + gearman_worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
+        source_test_command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + gearman_worker.collectionSystemTransfer['rsyncUser'] + '@' + gearman_worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
 
-        logging.debug('Source Dir Test Command: {}'.format(' '.join(command)))
+        logging.debug('Source test command: {}'.format(' '.join(source_test_command)))
 
-        proc = subprocess.run(command, capture_output=True)
+        proc = subprocess.run(source_test_command, capture_output=True)
 
         if proc.returncode != 0:
             logging.warning("Source Directory Test Failed")
@@ -239,14 +235,14 @@ def test_sshSourceDir(gearman_worker):
     
     returnVal = []
 
-    command = ['ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PasswordAuthentication=no', 'ls'] if gearman_worker.collectionSystemTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.collectionSystemTransfer['sshPass'], 'ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'ls']
+    server_test_command = ['ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PasswordAuthentication=no', 'ls'] if gearman_worker.collectionSystemTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.collectionSystemTransfer['sshPass'], 'ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'ls']
 
-    logging.debug('Connection Command: {}'.format(' '.join(command)))
+    logging.debug('Server test command: {}'.format(' '.join(server_test_command)))
     
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(server_test_command, capture_output=True)
 
     if proc.returncode != 0:
-        logging.warning("Connection Test Failed")
+        logging.warning("Connection test failed")
         returnVal.extend([
             {"testName": "SSH Connection", "result": "Fail", "reason": "Unable to connect to ssh server: {} as {}".format(gearman_worker.collectionSystemTransfer['sshServer'], gearman_worker.collectionSystemTransfer['sshUser'])},
             {"testName": "Source Directory", "result": "Fail", "reason":"Unable to connect to ssh server: {} as {}".format(gearman_worker.collectionSystemTransfer['sshServer'], gearman_worker.collectionSystemTransfer['sshUser'])}
@@ -259,14 +255,14 @@ def test_sshSourceDir(gearman_worker):
         sourceDir = build_sourceDir(gearman_worker)
         logging.debug('Source Dir: {}'.format(sourceDir))
 
-        command = ['ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PasswordAuthentication=no', 'ls', sourceDir] if gearman_worker.collectionSystemTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.collectionSystemTransfer['sshPass'], 'ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'ls', sourceDir]
+        source_test_command = ['ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PasswordAuthentication=no', 'ls', sourceDir] if gearman_worker.collectionSystemTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.collectionSystemTransfer['sshPass'], 'ssh', gearman_worker.collectionSystemTransfer['sshServer'], '-l', gearman_worker.collectionSystemTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'ls', sourceDir]
         
-        logging.debug('Source Dir Test Command: {}'.format(' '.join(command)))
+        logging.debug('Source test command: {}'.format(' '.join(source_test_command)))
     
-        proc = subprocess.run(command, capture_output=True)
+        proc = subprocess.run(source_test_command, capture_output=True)
 
         if proc.returncode != 0:
-            logging.warning("Source Directory Test Failed")
+            logging.warning("Source directory test failed")
             returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} on the SSH Server: {}".format(sourceDir, gearman_worker.collectionSystemTransfer['sshServer'])})
         else:
             returnVal.append({"testName": "Source Directory", "result": "Pass"})
@@ -314,14 +310,10 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
             if not self.collectionSystemTransfer:
                 return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find configuration data for collection system transfer"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
-            elif self.collectionSystemTransfer['status'] == "1": #not running
-                logging.info("Transfer job for {} skipped because a transfer for that collection system is already in-progress".format(self.collectionSystemTransfer['name']))
-                return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer In-Progress", "result": "Fail", "reason": "Transfer is already in-progress"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         except:
             return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find retrieve data for collection system transfer from OpenVDM API"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
-        self.systemStatus = payloadObj['systemStatus'] if 'systemStatus' in payloadObj else self.OVDM.getSystemStatus()
         self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
         self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
         self.loweringID = payloadObj['loweringID'] if 'loweringID' in payloadObj else self.OVDM.getLoweringID()

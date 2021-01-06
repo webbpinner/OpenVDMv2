@@ -537,7 +537,7 @@ def transfer_smbSourceDir(gearman_worker, gearman_job):
     mount_command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro' + ',guest' + ',domain=' + gearman_worker.collectionSystemTransfer['smbDomain'] + ',vers=' + vers] if gearman_worker.collectionSystemTransfer['smbUser'] == 'guest' else ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro' + ',username=' + gearman_worker.collectionSystemTransfer['smbUser'] + ',password=' + gearman_worker.collectionSystemTransfer['smbPass'] + ',domain=' + gearman_worker.collectionSystemTransfer['smbDomain'] + ',vers=' + vers]
     logging.debug("Mount command: {}".format(' '.join(mount_command)))
     
-    proc = subprocess.run(mount_command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc = subprocess.run(mount_command)
     
     logging.debug("Build file list")
     output_results = build_filelist(gearman_worker, sourceDir)
@@ -850,11 +850,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
-        # self.cruiseStartDate = payloadObj['cruiseStartDate'] if 'cruiseStartDate' in payloadObj else self.OVDM.getCruiseStartDate()
-        # self.cruiseEndDate = payloadObj['cruiseEndDate'] if 'cruiseEndDate' in payloadObj else self.OVDM.getCruiseEndDate()
         self.loweringID = payloadObj['loweringID'] if 'loweringID' in payloadObj else self.OVDM.getLoweringID()
-        # self.loweringStartDate = payloadObj['loweringStartDate'] if 'loweringStartDate' in payloadObj else self.OVDM.getLoweringStartDate()
-        # self.loweringEndDate = payloadObj['loweringEndDate'] if 'loweringEndDate' in payloadObj else self.OVDM.getLoweringEndDate()
 
         logging.info("Job: {}, {} transfer started at: {}".format(current_job.handle, self.collectionSystemTransfer['name'], time.strftime("%D %T", time.gmtime())))
 
@@ -915,7 +911,6 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
             for task in self.OVDM.getTasksForHook('runCollectionSystemTransfer'):
                 logging.info("Adding post task: {}".format(task))
                 submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
-
 
         if len(resultsObj['parts']) > 0:
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
