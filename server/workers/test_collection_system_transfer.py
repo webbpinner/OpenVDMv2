@@ -61,21 +61,21 @@ def build_sourceDir(gearman_worker):
 def test_localSourceDir(gearman_worker):
     returnVal = []
 
-    sourceDir = build_sourceDir(worker)
+    sourceDir = build_sourceDir(gearman_worker)
     logging.debug("Source Dir: {}".format(sourceDir))
 
     if not os.path.isdir(sourceDir):
         returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
-        if worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
-            returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
+        if gearman_worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
+            returnVal.append({"testName": "Source Directory is a Mountpoint", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
     else:
         returnVal.append({"testName": "Source Directory", "result": "Pass"})
 
-        if worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
+        if gearman_worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
             if not os.path.ismount(sourceDir):
-                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Fail", "reason": "Source directory: {} is not a mountpoint on the Data Warehouse".format(sourceDir)})
+                returnVal.append({"testName": "Source Directory is a Mountpoint", "result": "Fail", "reason": "Source directory: {} is not a mountpoint on the Data Warehouse".format(sourceDir)})
             else:
-                returnVal.append({"testName": "Destination Directory is a Mountpoint", "result": "Pass"})
+                returnVal.append({"testName": "Source Directory is a Mountpoint", "result": "Pass"})
 
     return returnVal
 
@@ -92,8 +92,9 @@ def test_smbSourceDir(gearman_worker):
     logging.debug('SMB Server test command: {}'.format(' '.join(server_test_command)))
 
     vers="2.1"
-    proc = subprocess.run(ver_test_command, capture_output=True, text=True)
+    proc = subprocess.run(server_test_command, capture_output=True, text=True)
 
+    foundServer = False
     for line in proc.stdout.splitlines():
         logging.debug("Line: {}".format(line.rstrip('\n')))
 
@@ -122,13 +123,11 @@ def test_smbSourceDir(gearman_worker):
 
     # Create mountpoint
     mntPoint = os.path.join(tmpdir, 'mntpoint')
-    os.mkdir(mntPoint, 0755)
+    os.mkdir(mntPoint, 0o755)
+    
 
     # Mount SMB Share
-    if gearman_worker.collectionSystemTransfer['smbUser'] == 'guest':
-        command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+vers]
-    else:
-        command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+gearman_worker.collectionSystemTransfer['smbUser']+',password='+gearman_worker.collectionSystemTransfer['smbPass']+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+vers]
+    mount_command = ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',guest'+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+vers] if gearman_worker.collectionSystemTransfer['smbUser'] == 'guest' else ['sudo', 'mount', '-t', 'cifs', gearman_worker.collectionSystemTransfer['smbServer'], mntPoint, '-o', 'ro'+',username='+gearman_worker.collectionSystemTransfer['smbUser']+',password='+gearman_worker.collectionSystemTransfer['smbPass']+',domain='+gearman_worker.collectionSystemTransfer['smbDomain']+vers]
 
     logging.debug("Mount command: {}".format(' '.join(mount_command)))
 
@@ -197,7 +196,7 @@ def test_rsyncSourceDir(gearman_worker):
 
         return returnVal
 
-    os.chmod(rsyncPasswordFilePath, 0600)
+    os.chmod(rsyncPasswordFilePath, 0o600)
 
     command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + gearman_worker.collectionSystemTransfer['rsyncUser'] + '@' + gearman_worker.collectionSystemTransfer['rsyncServer']]
 
@@ -215,7 +214,8 @@ def test_rsyncSourceDir(gearman_worker):
     else:
         returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
 
-        logging.debug('Source Dir:', build_sourceDir(gearman_worker))
+        sourceDir = build_sourceDir(gearman_worker)
+        logging.debug('Source Dir: {}'.format(sourceDir))
 
         command = ['rsync', '--no-motd', '--password-file=' + rsyncPasswordFilePath, 'rsync://' + gearman_worker.collectionSystemTransfer['rsyncUser'] + '@' + gearman_worker.collectionSystemTransfer['rsyncServer'] + sourceDir]
 
@@ -292,7 +292,7 @@ def test_destDir(gearman_worker):
     return [{"testName": "Destination Directory", "result": "Pass"}] if os.path.isdir(destDir) else [{"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: {} on Data Warehouse".format(destDir)}]
 
     
-class OVDMGearmanWorker(gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
     def __init__(self):
         self.stop = False
@@ -352,9 +352,9 @@ class OVDMGearmanWorker(gearman.GearmanWorker):
             if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
                 self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], resultsObj['parts'][-1]['reason'])
             else:
-                self.OVDM.clearError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'])
+                self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
         else:
-            self.OVDM.clearError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'])
+            self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
 
         logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
         logging.info("Job: {}, {} transfer test completed at: {}".format(current_job.handle, self.collectionSystemTransfer['name'], time.strftime("%D %T", time.gmtime())))
@@ -379,7 +379,7 @@ def task_testCollectionSystemTransfer(gearman_worker, current_job):
 
     gearman_worker.OVDM.setRunning_collectionSystemTransferTest(gearman_worker.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
 
-    gearman_worker.send_job_status(job, 1, 4)
+    gearman_worker.send_job_status(current_job, 1, 4)
     
     logging.info("Testing Source Directory")
     if gearman_worker.collectionSystemTransfer['transferType'] == "1": # Local Directory
@@ -391,12 +391,12 @@ def task_testCollectionSystemTransfer(gearman_worker, current_job):
     elif  gearman_worker.collectionSystemTransfer['transferType'] == "4": # SSH Server
         job_results['parts'] += test_sshSourceDir(gearman_worker)
 
-    gearman_worker.send_job_status(job, 2, 4)
+    gearman_worker.send_job_status(current_job, 2, 4)
 
     if gearman_worker.collectionSystemTransfer['enable'] == '1':
         logging.info("Testing Destination Directory")
         job_results['parts'] += test_destDir(gearman_worker)
-        gearman_worker.send_job_status(job, 3, 4)
+        gearman_worker.send_job_status(current_job, 3, 4)
         
     verdict = True
     for test in job_results['parts']:
@@ -408,7 +408,7 @@ def task_testCollectionSystemTransfer(gearman_worker, current_job):
     if verdict:
         job_results['parts'].append({"testName": "Final Verdict", "result": "Pass"})
 
-    gearman_worker.send_job_status(job, 4, 4)
+    gearman_worker.send_job_status(current_job, 4, 4)
 
     return json.dumps(job_results)
 
