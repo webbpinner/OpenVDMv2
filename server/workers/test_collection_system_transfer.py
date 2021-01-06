@@ -96,12 +96,13 @@ def test_smbSourceDir(gearman_worker):
     vers = "2.1"
     foundServer = False
     for line in proc.stdout.splitlines():
-        logging.debug('STDOUT Line:', line.rstrip('\n')) # yield line
+        logging.debug('STDOUT Line: {}'.format(line.rstrip('\n'))) # yield line
         if line.startswith( 'Disk' ):
             foundServer = True
+            break
 
     for line in proc.stderr.splitlines():
-        logging.debug('STDERR Line:', line.rstrip('\n')) # yield line
+        logging.debug('STDERR Line: {}'.format(line.rstrip('\n'))) # yield line
         if line.startswith('OS=[Windows 5.1]'):
             vers="1.0"
 
