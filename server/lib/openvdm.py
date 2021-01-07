@@ -41,7 +41,7 @@ sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils import read_config, timestamp
 
-DEFAULT_CONFIG_FILE = '/usr/local/etc/openvdm/openvdm.yaml'
+DEFAULT_CONFIG_FILE = '/opt/openvdm/server/etc/openvdm.yaml'
 
 DEFAULT_CRUISE_CONFIG_FN = 'ovdmConfig.json'
 

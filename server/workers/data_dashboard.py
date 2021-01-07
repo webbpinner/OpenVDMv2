@@ -383,13 +383,14 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
 
         output_results = output_JSONDataToFile(dataDashboardManifestFilePath, existingManifestEntries)
 
-        if output_results['verdict']:
-            job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
-        else:
+        if not output_results['verdict']:
             logging.error("Error Writing Dashboard manifest file: {}".format(dataDashboardManifestFilePath))
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
     
+        job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
+        job_results['files']['updated'].append(os.path.join(gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'], DEFAULT_DATA_DASHBOARD_MANIFEST_FN))
+
         gearman_worker.send_job_status(gearman_job, 9, 10)
 
         logging.info("Setting file ownership/permissions")
@@ -594,7 +595,7 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
 
     gearman_worker.send_job_status(gearman_job, 99, 100)
 
-    job_results['files']['updated'] = build_filelist(dataDashboardDir) # might need to remove cruiseDir from begining of filepaths
+    job_results['files']['updated'] = [os.path.join(gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'], filepath) for filepath in build_filelist(dataDashboardDir)]# might need to remove cruiseDir from begining of filepaths
 
     gearman_worker.send_job_status(gearman_job, 10, 10)
 

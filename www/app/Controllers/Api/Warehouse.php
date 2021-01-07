@@ -204,7 +204,7 @@ class Warehouse extends Controller {
         $requiredExtraDirectories = $extraDirectoriesModel->getRequiredExtraDirectories();
         $transferLogDir ='';
         foreach($requiredExtraDirectories as $row) {
-            if(strcmp($row->name, "Transfer Logs") === 0) {
+            if(strcmp($row->name, "Transfer_Logs") === 0) {
                 $transferLogDir = $row->destDir;
                 break;
             }

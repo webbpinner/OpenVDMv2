@@ -46,7 +46,7 @@ class DashboardData extends Model {
                         $ovdmConfigJSON = json_decode($ovdmConfigContents,true);
                         //Get the the directory that holds the DashboardData
                         for($i = 0; $i < sizeof($ovdmConfigJSON['extraDirectoriesConfig']); $i++){
-                            if(strcmp($ovdmConfigJSON['extraDirectoriesConfig'][$i]['name'], 'Dashboard Data') === 0){
+                            if(strcmp($ovdmConfigJSON['extraDirectoriesConfig'][$i]['name'], 'Dashboard_Data') === 0){
                                 $dataDashboardList = scandir($this->_cruiseDataDir . DIRECTORY_SEPARATOR . $this->_cruiseID . DIRECTORY_SEPARATOR . $ovdmConfigJSON['extraDirectoriesConfig'][$i]['destDir']);
                                 foreach ($dataDashboardList as $dataDashboardKey => $dataDashboardValue){
                                     //If a manifest file is found, add CruiseID to output

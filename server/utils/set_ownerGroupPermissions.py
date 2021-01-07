@@ -7,6 +7,9 @@ from grp import getgrnam
 from pwd import getpwnam
 import logging
 
+def remove_prefix(text, prefix):
+    return text[text.startswith(prefix) and len(prefix):]
+
 def set_ownerGroupPermissions(user, path):
 
     reasons = []
@@ -23,37 +26,37 @@ def set_ownerGroupPermissions(user, path):
             chown(path, uid, gid)
             chmod(path, 0o644)
         except OSError:
-            logging.error("Unable to set ownership/permissions for {}".format(basenamePath))
-            reasons.append("Unable to set ownership/permissions for {}".format(basenamePath))
+            logging.error("Unable to set ownership/permissions for /{}".format(basenamePath))
+            reasons.append("Unable to set ownership/permissions for /{}".format(basenamePath))
 
     else: #directory
         try:
             chown(path, uid, gid)
             chmod(path, 0o755)
         except OSError:
-            logging.error("Unable to set ownership/permissions for {}".format(basenamePath))
-            reasons.append("Unable to set ownership/permissions for {}".format(basenamePath))
+            logging.error("Unable to set ownership/permissions for /{}".format(basenamePath))
+            reasons.append("Unable to set ownership/permissions for /{}".format(basenamePath))
 
         for root, dirs, files in walk(path):
             for file in files:
                 fname = join(root, file)
-                logging.debug("Setting ownership/permissions for {}".format(join(root,file).lstrip(rootDirname)))
+                logging.debug("Setting ownership/permissions for {}".format(remove_prefix(join(root,file), rootDirname)))
                 try:
                     chown(fname, uid, gid)
                     chmod(fname, 0o644)
                 except OSError:
-                    logging.error("Unable to set ownership/permissions for {}".format(join(root,file).lstrip(rootDirname)))
-                    reasons.append("Unable to set ownership/permissions for {}".format(join(root,file).lstrip(rootDirname)))
+                    logging.error("Unable to set ownership/permissions for {}".format(remove_prefix(join(root,file), rootDirname)))
+                    reasons.append("Unable to set ownership/permissions for {}".format(remove_prefix(join(root,file), rootDirname)))
 
             for directory in dirs:
                 dname = join(root, directory)
-                logging.debug("Setting ownership/permissions for {}".format(join(root,directory).lstrip(rootDirname)))
+                logging.debug("Setting ownership/permissions for {}".format(remove_prefix(join(root,directory),rootDirname)))
                 try:
                     chown(dname, uid, gid)
                     chmod(dname, 0o755)
                 except OSError:
-                    logging.error("Unable to set ownership/permissions for {}".format(join(root,directory).lstrip(rootDirname)))
-                    reasons.append("Unable to set ownership/permissions for {}".format(join(root,directory).lstrip(rootDirname)))
+                    logging.error("Unable to set ownership/permissions for {}".format(remove_prefix(join(root,directory), rootDirname)))
+                    reasons.append("Unable to set ownership/permissions for {}".format(remove_prefix(join(root,directory), rootDirname)))
 
     if len(reasons) > 0:
         return {'verdict': False, 'reason': '\n'.join(reasons)}

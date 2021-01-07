@@ -3,11 +3,11 @@ __pycache__
 database/OpenVDMv2_db_custom.sql
 server/bin/*.py
 server/bin/plugins/*.py
-server/etc/openvdm/openvdm.yaml
+server/etc/openvdm.yaml
 www/app/Core/Config.php
 www/app/templates/default/js/dataDashboardMainCustom.js
 www/bower_components
-vwww/etc/datadashboard.yaml
+www/etc/datadashboard.yaml
 www/vendor
 www/.htaccess
 www/composer.lock

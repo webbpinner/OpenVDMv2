@@ -74,15 +74,17 @@ def build_filelist(sourceDir):
 
 
 def hash_file(filepath):
-    md5 = hashlib.md5()
-    with open(filepath, 'rb') as f:
-        while True:
-            data = f.read(BUF_SIZE)
-            if not data:
-                break
-            md5.update(data)
-    return md5.hexdigest()
-
+    try:
+        md5 = hashlib.md5()
+        with open(filepath, 'rb') as f:
+            while True:
+                data = f.read(BUF_SIZE)
+                if not data:
+                    break
+                md5.update(data)
+        return md5.hexdigest()
+    except Exception as e:
+        raise e
 
 def build_hashes(gearman_worker, gearman_job, fileList):
 
@@ -102,13 +104,19 @@ def build_hashes(gearman_worker, gearman_job, fileList):
 
         if filesizeLimitStatus == 'On' and filesizeLimit != '0':
             if os.stat(filepath).st_size < int(filesizeLimit) * 1000000:
-                hashes.append({'hash': hash_file(filepath), 'filename': filename})
+                try:
+                    hashes.append({'hash': hash_file(filepath), 'filename': filename})
+                except:
+                    logging.error("Could not generate md5 hash for file: {}".format(filename))
 
             else:
                 hashes.append({'hash': '********************************', 'filename': filename})
         else:
-
+            try:
                 hashes.append({'hash': hash_file(filepath), 'filename': filename})
+            except Exception as err:
+                logging.error("Could not generate md5 hash for file: {}".format(filename))
+                logging.error(str(err))
 
         gearman_worker.send_job_status(gearman_job, int(20 + 60*float(idx)/float(len(fileList))), 100)
 

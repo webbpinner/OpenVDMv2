@@ -17,7 +17,7 @@ class TransferLogs extends Model {
         $this->_cruiseDataDir = $this->_warehouseModel->getShipboardDataWarehouseBaseDir();
         $this->_cruiseID = $this->_warehouseModel->getCruiseID();
         $this->_extraDirectoryModel = new \Models\Config\ExtraDirectories();
-        $this->_transferLogsDir = $this->_extraDirectoryModel->getExtraDirectoryByName('Transfer Logs')[0]->destDir;
+        $this->_transferLogsDir = $this->_extraDirectoryModel->getExtraDirectoryByName('Transfer_Logs')[0]->destDir;
     }
 
     private function outputLogFilenames($files) {
