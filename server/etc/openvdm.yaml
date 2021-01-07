@@ -8,12 +8,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2016-02-02
-#     REVISION:  2020-11-19
+#     REVISION:  2021-01-06
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 # ----------------------------------------------------------------------------------- #
 
 # The siteRoot for the OpenVDM web-application/API
-siteRoot: "http://localhost:8081/OpenVDMv2/"
+siteRoot: "http://127.0.0.1/OpenVDMv2/"
 
 # The transferInterval defines the interval for performing collectionSystemTransfer.
 # The unit is in minutes.
@@ -51,8 +51,8 @@ showOnlyCurrentCruiseDir: No
 # processingScriptSuffix --> the suffix appended to dashboardData processing scripts
 #     i.e. with SCS_dataDashboard.py the suffix is _dataDashboard.py
 dashboardData:
-    processingScriptDir: "/Users/webbpinner/Documents/Computer-Related/GitHub_Repos/OpenVDMv2/usr/local/bin/OVDM_dashboardDataScripts"
-    processingScriptSuffix: "_dashboardData.py"
+    processingScriptDir: "../bin/dashboard_data_plugins"
+    processingScriptSuffix: "_plugin.py"
 
 # The hooks section contains any additional Gearman tasks that should be performed
 # after the successful completion of the primary OpenVDM Gearman task.  Any subsequent
@@ -68,9 +68,57 @@ hooks:
         - postDataDashboard
     rebuildDataDashboard:
         - updateMD5Summary
-#        - postDataDashboard
-#    setupNewCruise:
-#        - postSetupNewCruise
-#    setupNewLowering:
-#        - postSetupNewLowering
-#    finalizeCurrentCruise:
+        - postDataDashboard
+    setupNewCruise:
+        - postSetupNewCruise
+    setupNewLowering:
+        - postSetupNewLowering
+    finalizeCurrentCruise:
+        - postFinalizeCurrentCruise
+    finalizeCurrentLowering:
+        - postFinalizeCurrentLowering
+
+# The postHookCommands section contains any additional commands that should be performed
+# after the successful completion of the primary OpenVDM Gearman task.  Any subsequent
+# tasks called with be called as background Gearman tasks so to not interfer with
+# OpenVDM's primary operation.
+postHookCommands:
+    postCollectionSystemTransfer:
+        #- collectionSystemTransferName: OpenRVDAS
+        #  commandList:
+        #  - name: "R2R NavManager"
+        #    command:
+        #    - /opt/openvdm/venv/bin/python
+        #    - /opt/openvdm/bin/r2r_nav_manager.py
+        #    - SCS
+    postDataDashboard:
+        #- collectionSystemTransferName: OpenRVDAS
+        #  commandList:
+        #  - name: "Build cruise tracks"
+        #    command:
+        #    - /opt/openvdm/venv/bin/python
+        #    - /opt/openvdm/bin/build_cruise_tracks.py
+    postSetupNewCruise:
+        #commandList:
+        #- name: "Setup Remote Cruise Directories"
+        #  command:
+        #  - /opt/openvdm/venv/bin/python
+        #  - /opt/openvdm/bin/setup_remote_cruise_directories.py
+    postSetupNewLowering:
+        #commandList:
+        #- name: "Setup Remote Lowering Directories"
+        #  command:
+        #  - /opt/openvdm/venv/bin/python
+        #  - /opt/openvdm/bin/setup_remote_lowering_directories.py
+    postFinalizeCurrentCruise:
+        #commandList:
+        #- name: "Export Sealog Vessel Data"
+        #  command:
+        #  - /opt/sealog-server-vessel/venv/bin/python
+        #  - /opt/sealog-server-vessel/misc/sealog_vessel_data_export.py
+    postFinalizeCurrentLowering:
+        #commandList:
+        #- name: "Export Sealog Vessel Data"
+        #  command:
+        #  - /opt/sealog-server-vehicle/venv/bin/python
+        #  - /opt/sealog-server-vehicle/misc/sealog_vehicle_data_export.py

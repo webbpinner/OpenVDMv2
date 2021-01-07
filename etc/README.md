@@ -1,1 +1,0 @@
-Directory contains config file templates for the various services leverage by OpenVDM

@@ -8,12 +8,12 @@
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  2.4
+#      VERSION:  2.5
 #      CREATED:  2016-02-02
-#     REVISION:  2020-11-19
+#     REVISION:  2021-01-06
 #
-# LICENSE INFO: Open Vessel Data Management v2.4 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2020
+# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+#               Copyright (C) OceanDataRat.org 2021
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -51,8 +51,8 @@ showOnlyCurrentCruiseDir: No
 # processingScriptSuffix --> the suffix appended to dashboardData processing scripts
 #     i.e. with SCS_dataDashboard.py the suffix is _dataDashboard.py
 dashboardData:
-    processingScriptDir: "/usr/local/bin/OVDM_dashboardDataScripts"
-    processingScriptSuffix: "_dashboardData.py"
+    processingScriptDir: "../bin/dashboard_data_plugins"
+    processingScriptSuffix: "_plugin.py"
 
 # The hooks section contains any additional Gearman tasks that should be performed
 # after the successful completion of the primary OpenVDM Gearman task.  Any subsequent
@@ -88,37 +88,37 @@ postHookCommands:
         #  commandList:
         #  - name: "R2R NavManager"
         #    command:
-        #    - python
-        #    - /usr/local/bin/r2rNavManager.py
+        #    - /opt/openvdm/venv/bin/python
+        #    - /opt/openvdm/bin/r2r_nav_manager.py
         #    - SCS
     postDataDashboard:
         #- collectionSystemTransferName: OpenRVDAS
         #  commandList:
         #  - name: "Build cruise tracks"
         #    command:
-        #    - python
-        #    - /usr/local/bin/buildCruiseTracks.py
+        #    - /opt/openvdm/venv/bin/python
+        #    - /opt/openvdm/bin/build_cruise_tracks.py
     postSetupNewCruise:
         #commandList:
         #- name: "Setup Remote Cruise Directories"
         #  command:
-        #  - python
-        #  - /usr/local/bin/setupRemoteCruiseDirectories.py
+        #  - /opt/openvdm/venv/bin/python
+        #  - /opt/openvdm/bin/setup_remote_cruise_directories.py
     postSetupNewLowering:
         #commandList:
         #- name: "Setup Remote Lowering Directories"
         #  command:
-        #  - python
-        #  - /usr/local/bin/setupRemoteLoweringDirectories.py
+        #  - /opt/openvdm/venv/bin/python
+        #  - /opt/openvdm/bin/setup_remote_lowering_directories.py
     postFinalizeCurrentCruise:
         #commandList:
         #- name: "Export Sealog Vessel Data"
         #  command:
-        #  - /home/survey/sealog-server-vessel/venv/bin/python
-        #  - /home/survey/sealog-server-vessel/misc/sealog_vessel_data_export.py
+        #  - /opt/sealog-server-vessel/venv/bin/python
+        #  - /opt/sealog-server-vessel/misc/sealog_vessel_data_export.py
     postFinalizeCurrentLowering:
         #commandList:
         #- name: "Export Sealog Vessel Data"
         #  command:
-        #  - /home/survey/sealog-server-vehicle/venv/bin/python
-        #  - /home/survey/sealog-server-vehicle/misc/sealog_vehicle_data_export.py
+        #  - /opt/sealog-server-vehicle/venv/bin/python
+        #  - /opt/sealog-server-vehicle/misc/sealog_vehicle_data_export.py
