@@ -47,7 +47,7 @@ class Config
         /*
          * Define location/name of the data dashboard configuration file
          */
-        define('DASHBOARD_CONF', '/usr/local/etc/openvdm/datadashboard.yaml');
+        define('DASHBOARD_CONF', '/opt/openvdm/www/etc/datadashboard.yaml');
 
         /*
          * Directory within cruise directory to store vehicle data. (i.e. 'Vehicle')
@@ -115,7 +115,7 @@ class Config
         /*
          * Optional create a constant for the name of the site.
          */
-        define('SITETITLE', 'Open Vessel Data Management v2.4');
+        define('SITETITLE', 'Open Vessel Data Management v2.5');
 
         /*
          * Optionall set a site email address.
@@ -131,7 +131,7 @@ class Config
         /*
          * Set timezone.
          */
-        date_default_timezone_set('Europe/London');
+        date_default_timezone_set('UTC');
 
         /*
          * Start sessions.

@@ -4,8 +4,8 @@
  *
  * @license   http://opensource.org/licenses/GPL-3.0
  * @author Webb Pinner - oceandatarat@gmail.com - http://www.oceandatarat.org
- * @version 2.4
- * @date 2017-11-19
+ * @version 2.5
+ * @date 2021-01-10
  */
 
 namespace Controllers\Api;
