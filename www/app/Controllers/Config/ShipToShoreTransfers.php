@@ -144,7 +144,7 @@ class shipToShoreTransfers extends Controller {
             if($includeFilter == ''){
                 $includeFilter = '*';
             } else {
-                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter)
+                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter);
             }
 
             if(!$error){
@@ -201,7 +201,7 @@ class shipToShoreTransfers extends Controller {
             if($includeFilter == ''){
                 $includeFilter = '*';
             } else {
-                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter)
+                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter);
             }
                 
             if(!$error){

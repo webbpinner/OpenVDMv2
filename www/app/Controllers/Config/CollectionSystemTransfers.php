@@ -171,15 +171,15 @@ class CollectionSystemTransfers extends Controller {
             if($includeFilter == ''){
                 $includeFilter = '*';
             } else {
-                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter)
+                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter);
             }
 
             if($excludeFilter != ''){
-                $excludeFilter = preg_replace("/\s*,\s*/", ",",$excludeFilter)
+                $excludeFilter = preg_replace("/\s*,\s*/", ",",$excludeFilter);
             }
 
             if($ignoreFilter != ''){
-                $ignoreFilter = preg_replace("/\s*,\s*/", ",",$ignoreFilter)
+                $ignoreFilter = preg_replace("/\s*,\s*/", ",",$ignoreFilter);
             }
 
             if ($bandwidthLimit === '') {
@@ -598,15 +598,15 @@ class CollectionSystemTransfers extends Controller {
             if($includeFilter == ''){
                 $includeFilter = '*';
             } else {
-                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter)
+                $includeFilter = preg_replace("/\s*,\s*/", ",",$includeFilter);
             }
 
             if($excludeFilter != ''){
-                $excludeFilter = preg_replace("/\s*,\s*/", ",",$excludeFilter)
+                $excludeFilter = preg_replace("/\s*,\s*/", ",",$excludeFilter);
             }
 
             if($ignoreFilter != ''){
-                $ignoreFilter = preg_replace("/\s*,\s*/", ",",$ignoreFilter)
+                $ignoreFilter = preg_replace("/\s*,\s*/", ",",$ignoreFilter);
             }
             
             if ($bandwidthLimit === '') {
