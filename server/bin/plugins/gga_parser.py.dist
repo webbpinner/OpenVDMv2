@@ -48,12 +48,13 @@ import pandas as pd
 import numpy as np
 import argparse
 import tempfile
+import logging
 from datetime import datetime
 from geopy import Point
 from geopy.distance import great_circle
 
 from os.path import dirname, realpath
-sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
+sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 
 from server.lib.openvdm_plugin import OpenVDMPluginCSV, csvCleanup
 
@@ -71,18 +72,22 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 
 
 class GGAPlugin(OpenVDMPluginCSV):
+
     def __int__(self, raw_cols, proc_cols, crop_cols, csvkit=False, start_ts=None, stop_ts=None):
-        self.start_ts = start_ts
-        self.stop_ts = stop_ts
-        super().__init__(raw_cols, proc_cols, crop_cols, csvkit)
+        self.start = start_ts
+        self.stop = stop_ts
+        logging.debug("start: {}".format(self.start))
+        super().__init__(raw_cols=raw_cols, proc_cols=proc_cols, crop_cols=crop_cols, csvkit=csvkit)
 
 
-    def _hemisphere_correction(lat_lon, hemisphere):
+    def _hemisphere_correction(self, lat_lon, hemisphere):
         if hemisphere == 'W' or hemisphere == "S":
-            return = lat_lon * -1.0
+            return lat_lon * -1.0
 
-    return lat_lon
+        return lat_lon
 
+    def __str__(self):
+        return "start: {}, stop: {}".format(self.start, self.stop)
 
     def process_file(self, filePath):
 
@@ -105,48 +110,59 @@ class GGAPlugin(OpenVDMPluginCSV):
 
                 try:
                     date_time = ' '.join([line['date'], line['time']])
-                    longitude = (self._hemisphere_correction(float(line['longitude'][:3]) + float(line['longitude'][3:])/60), line['EW'])
-                    latitude = (self._hemisphere_correction(float(line['latitude'][:2]) + float(line['latitude'][2:])/60), line['NS'])
+                    longitude = (self._hemisphere_correction(float(line['longitude'][:3]) + float(line['longitude'][3:])/60, line['EW']))
+                    latitude = (self._hemisphere_correction(float(line['latitude'][:2]) + float(line['latitude'][2:])/60, line['NS']))
                     num_satellites = int(line['num_satellites'])
                     hdop = float(line['hdop'])
-                    altitude = line['altitude'] if line['altitude'] != '' else float(0)
-                    height_wgs84 = line['height_wgs84'] if line['height_wgs84'] != '' else float(0)
+                    altitude = float(line['altitude']) if line['altitude'] != '' else 0.0
+                    height_wgs84 = float(line['height_wgs84']) if line['height_wgs84'] != '' else 0.0
 
-                except:
+                except Exception as err:
                     logging.warning('Parsing error: {}'.format(line))
+                    logging.debug(str(err))
                     errors += 1
 
                 else:
-                    raw_into_df['date_time'] += date_time,
-                    raw_into_df['longitude'] += longitude,
-                    raw_into_df['latitude'] += latitude,
-                    raw_into_df['num_satellites'] += num_satellites,
-                    raw_into_df['hdop'] += hdop,
-                    raw_into_df['altitude'] += altitude,
-                    raw_into_df['height_wgs84'] += height_wgs84
+                    raw_into_df['date_time'].append(date_time)
+                    raw_into_df['longitude'].append(longitude)
+                    raw_into_df['latitude'].append(latitude)
+                    raw_into_df['num_satellites'].append(num_satellites)
+                    raw_into_df['hdop'].append(hdop)
+                    raw_into_df['altitude'].append(altitude)
+                    raw_into_df['height_wgs84'].append(height_wgs84)
 
+        logging.info("Finished parsing data file")
         if self.csvkit:
             shutil.rmtree(tmpdir)
 
         # If no data ingested from file, quit
         if len(raw_into_df['date_time']) == 0:
+            logging.warning("dataframe is empty, quitting")
             return None
 
         # Build DataFrame
+        logging.debug("building dataframe")
         df_proc = pd.DataFrame(raw_into_df)
 
         # Convert Date/time column to datetime objects
+        logging.debug("converting data_time to datetime datatype")
         df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
         # Optionally crop data by start/stop times
-        if self.start_ts not None:
-            df_proc = df_proc[(df_proc['date_time'] >= self.start_ts)]
+        if self.start or self.stop_ts:
+            logging.debug("cropping data")
 
-        if self.stop_ts not None:
+        if self.start is not None:
+            logging.debug("start: {}".format(self.start))
+            df_proc = df_proc[(df_proc['date_time'] >= self.start)]
+
+        if self.stop is not None:
+            logging.debug("stop: {}".format(self.stop))
             df_proc = df_proc[(df_proc['date_time'] <= self.stop)]
 
         # If the crop operation emptied the dataframe, quit
         if df_proc.shape[0] == 0:
+            logging.warning("cropped dataframe is now empty, quitting")
             return None
 
         # set index
@@ -167,6 +183,7 @@ class GGAPlugin(OpenVDMPluginCSV):
         # Calculate velocity column
         df_proc['velocity'] = df_proc['distance'] / (df_proc.deltaT.dt.total_seconds() / 3600)
 
+        logging.debug("calculating stats")
         self.add_stat({'statName': 'Row Validity', 'statType': 'rowValidity', 'statData': [len(df_proc), errors]})
         self.add_stat({'statName': 'Geographic Bounds', 'statUnit': 'ddeg', 'statType': 'geoBounds', 'statData': [round(df_proc.latitude.max(),3),round(df_proc.longitude.max(),3),round(df_proc.latitude.min(),3),round(df_proc.longitude.min(),3)]})
         self.add_stat({'statName': 'Velocity Bounds', 'statUnit': 'kts', 'statType': 'bounds', 'statData': [round(df_proc.velocity.min(),3), 999999.999 if np.isinf(df_proc.velocity.max()) else round(df_proc.velocity.max(),3)]})
@@ -180,6 +197,7 @@ class GGAPlugin(OpenVDMPluginCSV):
         self.add_stat({'statName': 'Altitude', 'statUnit': 'm', 'statType': 'bounds', 'statData': [round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)]})
         self.add_stat({'statName': 'Height WGS84', 'statUnit': 'm', 'statType': 'bounds', 'statData': [round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)]})
 
+        logging.debug("calculating quality tests")
         # % of bad rows in datafile
         error_rate = errors / len(df_proc)
         if error_rate > .25:
@@ -211,12 +229,15 @@ class GGAPlugin(OpenVDMPluginCSV):
         # df_proc = df_proc.set_index('date_time')
 
         # resample data
+        logging.debug("resampling data")
         df_proc = self.resample_data(df_proc)
 
         # round data
+        logging.debug("rounding data")
         df_proc = self.round_data(df, ROUNDING)
 
         # split data where there are gaps
+        logging.debug("building visualization data")
         events = np.split(proc_df, np.where(np.isnan(proc_df['latitude']))[0])
 
         # removing NaN entries
@@ -257,7 +278,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
                         help='Increase output verbosity')
-    parser.add_argument('-c', '--csvkit', action='store_true', default=False
+    parser.add_argument('-c', '--csvkit', action='store_true', default=False,
                         help='clean datafile using CSVKit')
     parser.add_argument('--startTS', default=None,
                         type=lambda s: datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ'),
@@ -281,7 +302,8 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    ovdm_plugin = GGAPlugin(RAW_COLUMNS, PROC_COLUMNS, CROP_COLUMNS, csvkit=parsed_args.csvkit, start_ts=parsed_args.start_ts, stop_ts=parsed_args.stop_ts)
+    ovdm_plugin = GGAPlugin(RAW_COLUMNS, PROC_COLUMNS, CROP_COLUMNS, csvkit=parsed_args.csvkit)
+    logging.debug(str(ovdm_plugin))
 
     if not os.path.isfile(parsed_args.dataFile):
         logging.error('Data file not found: {}'.format(parsed_args.dataFile))

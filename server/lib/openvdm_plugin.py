@@ -45,8 +45,8 @@ class OpenVDMPlugin():
     
     def __init__(self):
         self.plugin_data = {
-            'visualizerData': []
-            'qualityTests': []
+            'visualizerData': [],
+            'qualityTests': [],
             'stats': []
         }
 
@@ -73,10 +73,10 @@ class OpenVDMPlugin():
 
 class OpenVDMPluginCSV(OpenVDMPlugin):
 
-    def __init__(self, raw_cols=[], proc_cols=[], crop_cols=[], csvkit=False):
-        self.raw_cols = raw_cols
-        self.proc_cols = proc_cols
-        self.crop_cols = crop_cols
+    def __init__(self, raw_cols=None, proc_cols=None, crop_cols=None, csvkit=False):
+        self.raw_cols = raw_cols or []
+        self.proc_cols = proc_cols or []
+        self.crop_cols = crop_cols or []
         self.csvkit = csvkit
         super().__init__()
 
