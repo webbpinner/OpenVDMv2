@@ -93,9 +93,9 @@ class OpenVDMPluginCSV(OpenVDMPlugin):
         super().__init__()
 
 
-    # def __del__(self):
-    #    if self.csvkit and self.tmpdir:
-    #        shutil.rmtree(self.tmpdir)
+    def __del__(self):
+       if self.csvkit and self.tmpdir:
+           shutil.rmtree(self.tmpdir)
 
 
     def _get_filepath(self, filePath):
