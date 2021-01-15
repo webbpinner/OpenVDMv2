@@ -43,11 +43,9 @@ import os
 import sys
 import csv
 import json
-import shutil
 import pandas as pd
 import numpy as np
 import argparse
-import tempfile
 import logging
 from datetime import datetime
 from geopy import Point
@@ -56,7 +54,7 @@ from geopy.distance import great_circle
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 
-from server.lib.openvdm_plugin import OpenVDMPluginCSV, csvCleanup, NpEncoder
+from server.lib.openvdm_plugin import OpenVDMPluginCSV
 
 RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
 PROC_COLUMNS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
@@ -69,16 +67,16 @@ ROUNDING = {
 MAX_VELOCITY = 13.8 #Max speed of vessel (mph)
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f"
+
 
 class GGAPlugin(OpenVDMPluginCSV):
 
-    def __init__(self, raw_cols, proc_cols, csvkit=False, start_dt=None, stop_dt=None, time_format="%Y/%m/%dT%H:%M:%S.%f"):
-        super().__init__(csvkit=csvkit)
+    def __init__(self, raw_cols, proc_cols, start_dt=None, stop_dt=None, time_format="%Y/%m/%dT%H:%M:%S.%f"):
+        super().__init__(start_dt=start_dt, stop_dt=stop_dt)
         self.raw_cols = raw_cols
         self.proc_cols = proc_cols
         self.time_format = time_format
-        self.start_dt = start_dt
-        self.stop_dt = stop_dt
 
 
     def _hemisphere_correction(self, lat_lon, hemisphere):
@@ -90,43 +88,42 @@ class GGAPlugin(OpenVDMPluginCSV):
 
     def process_file(self, filePath):
 
+        raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
+
+        logging.debug("Parsing data file...")
         try:
-            errors, datafile = self._get_filepath(filePath)
+            with open(filePath, 'r') as csvfile:
+                reader = csv.DictReader(csvfile, self.raw_cols)
+
+                for line in reader:
+
+                    try:
+                        date_time = ' '.join([line['date'], line['time']])
+                        longitude = (self._hemisphere_correction(float(line['longitude'][:3]) + float(line['longitude'][3:])/60, line['EW']))
+                        latitude = (self._hemisphere_correction(float(line['latitude'][:2]) + float(line['latitude'][2:])/60, line['NS']))
+                        num_satellites = int(line['num_satellites'])
+                        hdop = float(line['hdop'])
+                        altitude = float(line['altitude']) if line['altitude'] != '' else 0.0
+                        height_wgs84 = float(line['height_wgs84']) if line['height_wgs84'] != '' else 0.0
+
+                    except Exception as err:
+                        logging.warning('Parsing error: {}'.format(line))
+                        logging.debug(str(err))
+                        errors += 1
+
+                    else:
+                        raw_into_df['date_time'].append(date_time)
+                        raw_into_df['longitude'].append(longitude)
+                        raw_into_df['latitude'].append(latitude)
+                        raw_into_df['num_satellites'].append(num_satellites)
+                        raw_into_df['hdop'].append(hdop)
+                        raw_into_df['altitude'].append(altitude)
+                        raw_into_df['height_wgs84'].append(height_wgs84)
+
         except Exception as err:
             logging.error("Problem accessing input file: {}".format(filePath))
             logging.error(str(err))
             return None
-          
-        raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
-
-        logging.debug("Parsing data file...")
-        with open(datafile, 'r') as csvfile:
-            reader = csv.DictReader( csvfile, self.raw_cols)
-
-            for line in reader:
-
-                try:
-                    date_time = ' '.join([line['date'], line['time']])
-                    longitude = (self._hemisphere_correction(float(line['longitude'][:3]) + float(line['longitude'][3:])/60, line['EW']))
-                    latitude = (self._hemisphere_correction(float(line['latitude'][:2]) + float(line['latitude'][2:])/60, line['NS']))
-                    num_satellites = int(line['num_satellites'])
-                    hdop = float(line['hdop'])
-                    altitude = float(line['altitude']) if line['altitude'] != '' else 0.0
-                    height_wgs84 = float(line['height_wgs84']) if line['height_wgs84'] != '' else 0.0
-
-                except Exception as err:
-                    logging.warning('Parsing error: {}'.format(line))
-                    logging.debug(str(err))
-                    errors += 1
-
-                else:
-                    raw_into_df['date_time'].append(date_time)
-                    raw_into_df['longitude'].append(longitude)
-                    raw_into_df['latitude'].append(latitude)
-                    raw_into_df['num_satellites'].append(num_satellites)
-                    raw_into_df['hdop'].append(hdop)
-                    raw_into_df['altitude'].append(altitude)
-                    raw_into_df['height_wgs84'].append(height_wgs84)
 
         logging.debug("Finished parsing data file")
         
@@ -150,13 +147,7 @@ class GGAPlugin(OpenVDMPluginCSV):
         if self.start_dt or self.stop_dt:
             logging.debug("Cropping data...")
 
-        if self.start_dt is not None:
-            logging.debug("  start_dt: {}".format(self.start_dt))
-            df_proc = df_proc[(df_proc['date_time'] >= self.start_dt)]
-
-        if self.stop_dt is not None:
-            logging.debug("  stop_dt: {}".format(self.stop_dt))
-            df_proc = df_proc[(df_proc['date_time'] <= self.stop_dt)]
+            df_proc = self.crop_data(df_proc)
 
         # If the crop operation emptied the dataframe, quit
         if df_proc.shape[0] == 0:
@@ -277,8 +268,8 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
                         help='Increase output verbosity')
-    parser.add_argument('-c', '--csvkit', action='store_true', default=False,
-                        help='clean datafile using CSVKit')
+    parser.add_argument('--timeFormat', default=DEFAULT_TIME_FORMAT,
+                        help='timestamp format, default: %(default)')
     parser.add_argument('--startDT', default=None,
                         type=lambda s: datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ'),
                         help=' crop start timestamp (iso8601)')
@@ -301,12 +292,12 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    ovdm_plugin = GGAPlugin(RAW_COLUMNS, PROC_COLUMNS, csvkit=parsed_args.csvkit, start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format="%m/%d/%Y %H:%M:%S.%f")
+    ovdm_plugin = GGAPlugin(RAW_COLUMNS, PROC_COLUMNS, start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat)
 
     try:
         logging.info("Processing file: {}".format(parsed_args.dataFile))
         ovdm_plugin.process_file(parsed_args.dataFile)
-        print(json.dumps(ovdm_plugin.get_plugin_data(), cls=NpEncoder))
+        print(ovdm_plugin.toJSON())
         logging.info("Done!")
     except Exception as err:
         logging.error(str(err))

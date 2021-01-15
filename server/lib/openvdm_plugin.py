@@ -7,41 +7,6 @@ import numpy as np
 import pandas as pd
 from itertools import (takewhile, repeat)
 
-# import numpy as np
-
-# from os.path import dirname, realpath
-# sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
-
-def rawincount(filePath):
-
-    try:
-        with open(filePath, 'rb') as file:
-            bufgen = takewhile(lambda x: x, (file.read(1024*1024) for _ in repeat(None)))
-
-            return sum( buf.count(b'\n') for buf in bufgen )
-    
-    except Exception as e:
-        raise e
-
-
-def csvCleanup(filePath):
-
-    clean_command = ['csvclean', filePath]
-    logging.debug("Clean command: {}".format(' '.join(clean_command)))
-
-    (dirname, basename) = os.path.split(filePath)
-    outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
-    errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
-
-    # logging.debug("Outfile: {}".format(outfile))
-    # logging.debug("Errfile: {}".format(errfile))
-
-    proc = subprocess.run(clean_command)
-
-    errors = rawincount(errfile)-1 if os.path.isfile(errfile) else 0
-
-    return (errors, outfile)
-
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -87,38 +52,38 @@ class OpenVDMPlugin():
 
 class OpenVDMPluginCSV(OpenVDMPlugin):
 
-    def __init__(self, csvkit=False):
-        self.csvkit = csvkit
+    def __init__(self, start_dt=None, stop_dt=None):
+        self.start_dt = start_dt
+        self.stop_dt = stop_dt
         self.tmpdir = None
         super().__init__()
 
 
-    def __del__(self):
-       if self.csvkit and self.tmpdir:
-           shutil.rmtree(self.tmpdir)
+    def crop_data(self, df):
+        try:
+            if self.start_dt is not None:
+                logging.debug("  start_dt: {}".format(self.start_dt))
+                df = df[(df['date_time'] >= self.start_dt)]
 
+            if self.stop_dt is not None:
+                logging.debug("  stop_dt: {}".format(self.stop_dt))
+                df = df[(df['date_time'] <= self.stop_dt)]
+        except Exception as err:
+            logging.error("Could not crop data")
+            logging.error(str(err))
+            raise err
 
-    def _get_filepath(self, filePath):
-
-        if not os.path.isfile(filePath):
-            logging.error("File not found")
-            return False
-
-        if self.csvkit:
-            try:
-                self.tmpdir = tempfile.mkdtemp()    
-                shutil.copy(filePath, self.tmpdir)
-                (errors, outfile) = csvCleanup(os.path.join(self.tmpdir, os.path.basename(filePath)))
-                logging.debug('Errors: {}'.format(errors))
-                return errors, outfile
-            except Exception as err:
-                raise err
-        return 0, filePath
+        return df
 
 
     def resample_data(self, df, resample_interval='1T'):
         # resample data
-        resample_df = df.resample(resample_interval, label='right', closed='right').mean()
+        try:
+            resample_df = df.resample(resample_interval, label='right', closed='right').mean()
+        except Exception as err:
+            logging.error("Could not resample data")
+            logging.error(str(err))
+            raise err
 
         # reset index
         return resample_df.reset_index()
@@ -127,8 +92,15 @@ class OpenVDMPluginCSV(OpenVDMPlugin):
     def round_data(self, df, precision={}):
 
         if bool(precision):
-            decimals = pd.Series(precision.values(), index=precision.keys())
-            return df.round(decimals)
-
+            try:
+                decimals = pd.Series(precision.values(), index=precision.keys())
+                return df.round(decimals)
+            except Exception as err:
+                logging.error("Could not round data")
+                logging.error(str(err))
+                raise err
         return df
+
+    def toJSON(self):
+        return json.dumps(self.get_plugin_data(), cls=NpEncoder)
 
