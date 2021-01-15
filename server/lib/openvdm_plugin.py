@@ -1,7 +1,9 @@
 
 import os
+import json
 import logging
 import subprocess
+import numpy as np
 import pandas as pd
 from itertools import (takewhile, repeat)
 
@@ -41,6 +43,18 @@ def csvCleanup(filePath):
     return (errors, outfile)
 
 
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)
+
+
 class OpenVDMPlugin():
     
     def __init__(self):
@@ -59,16 +73,16 @@ class OpenVDMPlugin():
         raise NotImplementedError('process_file must be implemented by subclass')
 
 
-    def add_visualization_data(data):
-        self.plugin_data.visualizerData.append(data)
+    def add_visualization_data(self, data):
+        self.plugin_data['visualizerData'].append(data)
 
 
-    def add_quality_test(data):
-        self.plugin_data.qualityTests.append(data)
+    def add_quality_test(self, data):
+        self.plugin_data['qualityTests'].append(data)
 
 
-    def add_stat(data):
-        self.plugin_data.stats.append(data)
+    def add_stat(self, data):
+        self.plugin_data['stats'].append(data)
 
 
 class OpenVDMPluginCSV(OpenVDMPlugin):
@@ -101,10 +115,9 @@ class OpenVDMPluginCSV(OpenVDMPlugin):
         return resample_df.reset_index()
 
 
-    def round_data(df, precision={}):
+    def round_data(self, df, precision={}):
 
         if bool(precision):
-            logging.debug("Precision: {}".format(json.dumps(precision, indent=2)))
             decimals = pd.Series(precision.values(), index=precision.keys())
             return df.round(decimals)
 
