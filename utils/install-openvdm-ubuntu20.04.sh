@@ -125,12 +125,16 @@ function install_packages {
     apt install -y ssh sshpass rsync samba smbclient git gearman-job-server \
         libgearman-dev python-pip curl nodejs nodejs-dev node-gyp npm \
         supervisor mysql-server mysql-client cifs-utils apache2 \
-        libapache2-mod-wsgi libapache2-mod-php7.3 php7.3 php7.3-cli \
+        libapache2-mod-wsgi-py3 libapache2-mod-php7.3 php7.3 php7.3-cli \
         php7.3-mysql php7.3-zip gdal-bin php7.3-curl php7.3-gearman \
-        php-yaml python-pip python-pil python-yaml libgeos-dev \
+        php-yaml python-pip python-pil python-yaml libgeos-dev mapproxy\
         python-gdal python-lxml python-shapely python-requests proj-bin 
 
-    pip install gearman MapProxy pandas geopy
+    pip install python3_gearman pandas geopy
+
+    # change from cgi import escape to from html import escape in 
+    # /usr/lib/python3/dist-packages/mapproxy/service/template_helper.py 
+    # (line 16)
 
     startingDir=${PWD}
 
@@ -342,7 +346,7 @@ autorestart=true
 stopsignal=INT
 
 [group:openvdm]
-programs=cruise,cruise_directory,data_dashboard,lowering,lowering_directory,md5_summary,post_collection_system_transfer,post_hooks,reboot_reset,run_collection_system_transfer,run_cruise_data_transfer,run_ship_to_shore_transfer,scheduler,size_cacher,stop_job,test_collection_system_transfer,test_cruise_data_transfer
+programs=cruise,cruise_directory,data_dashboard,lowering,lowering_directory,md5_summary,post_hooks,reboot_reset,run_collection_system_transfer,run_cruise_data_transfer,run_ship_to_shore_transfer,scheduler,size_cacher,stop_job,test_collection_system_transfer,test_cruise_data_transfer
 
 EOF
 
@@ -666,7 +670,7 @@ EOF
     echo Setting up OpenVDM database user
     mysql -u root -p$NEW_ROOT_DATABASE_PASSWORD <<EOF
 drop user if exists '$OPENVDM_USER'@'localhost';
-create user '$OPENVDM_USER'@'localhost' identified by '$OPENVDM_DATABASE_PASSWORD';
+create user '$OPENVDM_USER'@'localhost' IDENTIFIED WITH mysql_native_password BY '$OPENVDM_DATABASE_PASSWORD';
 flush privileges;
 \q
 EOF
