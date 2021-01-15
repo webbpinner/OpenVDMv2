@@ -87,24 +87,33 @@ class OpenVDMPlugin():
 
 class OpenVDMPluginCSV(OpenVDMPlugin):
 
-    def __init__(self, raw_cols=None, proc_cols=None, crop_cols=None, csvkit=False):
-        self.raw_cols = raw_cols or []
-        self.proc_cols = proc_cols or []
-        self.crop_cols = crop_cols or []
+    def __init__(self, csvkit=False):
         self.csvkit = csvkit
+        self.tmpdir = None
         super().__init__()
 
 
-    def set_raw_cols(self, raw_cols):
-        self.raw_cols = raw_cols
+    def __del__(self):
+        if self.csvkit and self.tmpdir:
+            shutil.rmtree(self.tmpdir)
 
 
-    def set_proc_cols(self, proc_cols):
-        self.proc_cols = proc_cols
+    def _get_filepath(self, filePath):
 
+        if not os.path.isfile(filePath):
+            logging.error("File not found")
+            return False
 
-    def set_crop_cols(self, crop_cols):
-        self.crop_cols = crop_cols
+        if self.csvkit:
+            try:
+                self.tmpdir = tempfile.mkdtemp()    
+                shutil.copy(filePath, self.tmpdir)
+                (errors, outfile) = csvCleanup(os.path.join(self.tmpdir, os.path.basename(filePath)))
+                logging.debug('Errors: {}'.format(errors))
+                return errors, outfile
+            except Exception as err:
+                raise err
+        return 0, filePath
 
 
     def resample_data(self, df, resample_interval='1T'):

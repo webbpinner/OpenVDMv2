@@ -60,7 +60,6 @@ from server.lib.openvdm_plugin import OpenVDMPluginCSV, csvCleanup, NpEncoder
 
 RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
 PROC_COLUMNS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
-CROP_COLUMNS = ['date_time','latitude','longitude']
 
 ROUNDING = {
     'latitude': 8,
@@ -73,8 +72,11 @@ MAX_DELTA_T = pd.Timedelta('10 seconds')
 
 class GGAPlugin(OpenVDMPluginCSV):
 
-    def __init__(self, raw_cols, proc_cols, crop_cols, csvkit=False, start_dt=None, stop_dt=None):
-        super().__init__(raw_cols=raw_cols, proc_cols=proc_cols, crop_cols=crop_cols, csvkit=csvkit)
+    def __init__(self, raw_cols, proc_cols, crop_cols, csvkit=False, start_dt=None, stop_dt=None, time_format="%m/%d/%y %H:%M:%S.%f"):
+        super().__init__(csvkit=csvkit)
+        self.raw_cols = raw_cols
+        self.proc_cols = proc_cols
+        self.time_format = time_format
         self.start_dt = start_dt
         self.stop_dt = stop_dt
 
@@ -85,21 +87,20 @@ class GGAPlugin(OpenVDMPluginCSV):
 
         return lat_lon
 
+
     def process_file(self, filePath):
 
-        errors = 0
-
-        if self.csvkit:
-            tmpdir = tempfile.mkdtemp()    
-            shutil.copy(filePath, tmpdir)
-            (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
-            logging.debug('Errors: {}'.format(errors))
-            filePath = outfile
+        try:
+            errors, datafile = self._get_filepath(filePath)
+        except Exception as err:
+            logging.error("Problem accessing input file: {}".format(filePath))
+            logging.error(str(err))
+            return None
           
-        # raw_into_df = {'date_time':[],'latitude':[],'longitude':[],'num_satellites':[],'hdop':[],'altitude':[],'height_wgs84':[]}
         raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
 
-        with open(filePath, 'r') as csvfile:
+        logging.info("Parsing data file...")
+        with open(datafile, 'r') as csvfile:
             reader = csv.DictReader( csvfile, self.raw_cols)
 
             for line in reader:
@@ -127,46 +128,46 @@ class GGAPlugin(OpenVDMPluginCSV):
                     raw_into_df['altitude'].append(altitude)
                     raw_into_df['height_wgs84'].append(height_wgs84)
 
-        logging.info("Finished parsing data file")
-        if self.csvkit:
-            shutil.rmtree(tmpdir)
-
+        logging.debug("Finished parsing data file")
+        
         # If no data ingested from file, quit
         if len(raw_into_df['date_time']) == 0:
-            logging.warning("dataframe is empty, quitting")
+            logging.warning("Dataframe is empty... quitting")
             return None
 
         # Build DataFrame
-        logging.debug("building dataframe")
+        logging.debug("Building dataframe from parsed data...")
         df_proc = pd.DataFrame(raw_into_df)
 
         # Convert Date/time column to datetime objects
-        logging.debug("converting data_time to datetime datatype")
-        df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
+        logging.debug("Converting data_time to datetime datatype...")
+        # df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
+        #04/28/2012,00:00:00.656
+        df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], format=self.time_format)
 
         # Optionally crop data by start/stop times
         if self.start_dt or self.stop_dt:
-            logging.debug("cropping data")
+            logging.debug("Cropping data...")
 
         if self.start_dt is not None:
-            logging.debug("start_dt: {}".format(self.start_dt))
+            logging.debug("  start_dt: {}".format(self.start_dt))
             df_proc = df_proc[(df_proc['date_time'] >= self.start_dt)]
 
         if self.stop_dt is not None:
-            logging.debug("stop_dt: {}".format(self.stop_dt))
+            logging.debug("  stop_dt: {}".format(self.stop_dt))
             df_proc = df_proc[(df_proc['date_time'] <= self.stop_dt)]
 
         # If the crop operation emptied the dataframe, quit
         if df_proc.shape[0] == 0:
-            logging.warning("cropped dataframe is now empty, quitting")
+            logging.warning("Cropped dataframe is empty... quitting")
             return None
 
         # Calculate deltaT column
-        logging.debug('calculate deltaT column')
+        logging.debug('Calculating deltaT column...')
         df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
 
         # Calculate distance column
-        logging.debug("calculate distance column")
+        logging.debug("Calculating distance column...")
         df_proc['point'] = df_proc.apply(lambda row: Point(latitude=row['latitude'], longitude=row['longitude']), axis=1)
         df_proc['point_next'] = df_proc['point'].shift(1)
         df_proc.loc[df_proc['point_next'].isna(), 'point_next'] = None
@@ -176,10 +177,10 @@ class GGAPlugin(OpenVDMPluginCSV):
         df_proc = df_proc.drop('point', axis=1)
 
         # Calculate velocity column
-        logging.debug("calculate velocity column")
+        logging.debug("Calculate velocity column...")
         df_proc['velocity'] = df_proc['distance'] / (df_proc.deltaT.dt.total_seconds() / 3600)
 
-        logging.debug("calculating stats")
+        logging.debug("Calculating stats...")
         self.add_stat({'statName': 'Row Validity', 'statType': 'rowValidity', 'statData': [len(df_proc), errors]})
         self.add_stat({'statName': 'Geographic Bounds', 'statUnit': 'ddeg', 'statType': 'geoBounds', 'statData': [round(df_proc.latitude.max(),3),round(df_proc.longitude.max(),3),round(df_proc.latitude.min(),3),round(df_proc.longitude.min(),3)]})
         self.add_stat({'statName': 'Velocity Bounds', 'statUnit': 'kts', 'statType': 'bounds', 'statData': [round(df_proc.velocity.min(),3), 999999.999 if np.isinf(df_proc.velocity.max()) else round(df_proc.velocity.max(),3)]})
@@ -193,7 +194,7 @@ class GGAPlugin(OpenVDMPluginCSV):
         self.add_stat({'statName': 'Altitude', 'statUnit': 'm', 'statType': 'bounds', 'statData': [round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)]})
         self.add_stat({'statName': 'Height WGS84', 'statUnit': 'm', 'statType': 'bounds', 'statData': [round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)]})
 
-        logging.debug("calculating quality tests")
+        logging.debug("Calculating quality tests...")
         # % of bad rows in datafile
         error_rate = errors / len(df_proc)
         if error_rate > .25:
@@ -222,19 +223,19 @@ class GGAPlugin(OpenVDMPluginCSV):
             self.add_quality_test({"testName": "DeltaT", "results": "Passed"})
 
         # set index
-        # logging.debug('set index')
+        logging.debug('Setting index...')
         df_proc = df_proc.set_index('date_time')
 
         # resample data
-        logging.debug("resampling data")
+        logging.debug("Resampling data...")
         df_proc = self.resample_data(df_proc)
 
         # round data
-        logging.debug("rounding data: {}".format(ROUNDING))
+        logging.debug("Rounding data: {}".format(ROUNDING))
         df_proc = self.round_data(df_proc, ROUNDING)
 
         # split data where there are gaps
-        logging.debug("building visualization data")
+        logging.debug("Building visualization data...")
         events = np.split(df_proc, np.where(np.isnan(df_proc['latitude']))[0])
 
         # removing NaN entries
@@ -302,11 +303,8 @@ if __name__ == "__main__":
     logging.debug("start: {}".format(parsed_args.startDT))
     ovdm_plugin = GGAPlugin(RAW_COLUMNS, PROC_COLUMNS, CROP_COLUMNS, csvkit=parsed_args.csvkit, start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT)
 
-    if not os.path.isfile(parsed_args.dataFile):
-        logging.error('Data file not found: {}'.format(parsed_args.dataFile))
-        sys.exit(1)
-
     try:
+        logging.info("Processing file: {}".format(parsed_args.dataFile))
         ovdm_plugin.process_file(parsed_args.dataFile)
         print(json.dumps(ovdm_plugin.get_plugin_data(), cls=NpEncoder))
     except Exception as err:
