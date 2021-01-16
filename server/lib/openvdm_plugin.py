@@ -5,6 +5,7 @@ import logging
 import subprocess
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from itertools import (takewhile, repeat)
 
 
@@ -31,6 +32,8 @@ class NpEncoder(json.JSONEncoder):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, datetime):
+            return obj.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
         else:
             return super(NpEncoder, self).default(obj)
 
@@ -44,7 +47,7 @@ class OpenVDMPluginQualityTest():
             raise ValueError("Invalid test result type, must be one of: {}".format(', '.join(QUALITY_TEST_RESULT_TYPES)))
         
         self.test_data = {
-            'testName': stat_name,
+            'testName':test_name,
             'results': test_value
         }
 
@@ -82,43 +85,44 @@ class OpenVDMPluginStat():
             if not isinstance(stat_value, list) or len(stat_value) != 2:
                 raise ValueError("bounds stat requires list of length 2")
             else:
-                for element in a_list:
-                    if not isinstance(element, float) or not isinstance(element, int):
+                for element in stat_value:
+                    if not isinstance(element, float) and not isinstance(element, int):
                         raise ValueError("bounds stat requires list of 2 numbers")
         elif stat_type == 'geoBounds':
             if not isinstance(stat_value, list) or len(stat_value) != 4:
                 raise ValueError("geoBounds stat requires list of 4 numbers")
             else:
-                for element in a_list:
-                    if not isinstance(element, float) or not isinstance(element, int):
+                for element in stat_value:
+                    if not isinstance(element, float) and not isinstance(element, int):
                         raise ValueError("geoBounds stat requires list of 4 numbers")
         elif stat_type == 'rowValidity':
             if not isinstance(stat_value, list) or len(stat_value) != 2:
                 raise ValueError("rowValidity stat requires list 2 integers")
             else:
-                for element in a_list:
+                for element in stat_value:
                     if not isinstance(element, int):
                         raise ValueError("rowValidity stat requires list 2 integers")
         elif stat_type == 'timeBounds':
             if not isinstance(stat_value, list) or len(stat_value) != 2:
-                raise ValueError("timeBounds stat requires list 2 numbers")
+                raise ValueError("timeBounds stat requires list 2 datetime")
             else:
-                for element in a_list:
-                    if not isinstance(element, float) or not isinstance(element, int):
-                        raise ValueError("timeBounds stat requires list 2 numbers")
+                for element in stat_value:
+                    if not isinstance(element, datetime):
+                        logging.debug(type(element))
+                        raise ValueError("timeBounds stat requires list 2 datetime objects")
         elif stat_type == 'totalValue':
             if not isinstance(stat_value, list) or len(stat_value) != 1:
                 raise ValueError("totalValue stat requires list 1 number")
             else:
-                for element in a_list:
-                    if not isinstance(element, float) or not isinstance(element, int):
+                for element in stat_value:
+                    if not isinstance(element, float) and not isinstance(element, int):
                         raise ValueError("totalValue stat requires list 1 number")
         elif stat_type == 'valueValidity':
             if not isinstance(stat_value, list) or len(stat_value) != 2:
                 raise ValueError("valueValidity stat requires list 2 numbers")
             else:
-                for element in a_list:
-                    if not isinstance(element, float) or not isinstance(element, int):
+                for element in stat_value:
+                    if not isinstance(element, float) and not isinstance(element, int):
                         raise ValueError("valueValidity stat requires list 2 numbers")
         
         self.stat_data = {
@@ -147,7 +151,7 @@ class OpenVDMPluginGeoBoundsStat(OpenVDMPluginStat):
         super().__init__(stat_name=stat_name, stat_type="geoBounds", stat_value=stat_value, stat_uom=stat_uom)
 
 
-class OpenVDMPluginRowValiditysStat(OpenVDMPluginStat):
+class OpenVDMPluginRowValidityStat(OpenVDMPluginStat):
     def __init__(self, stat_value):
         super().__init__(stat_name="Row Validity", stat_type="rowValidity", stat_value=stat_value, stat_uom='')
 

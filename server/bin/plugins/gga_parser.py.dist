@@ -182,10 +182,10 @@ class GGAPlugin(OpenVDMPluginCSV):
         self.add_bounds_stat([round(df_proc.velocity.min(),3), 999999.999 if np.isinf(df_proc.velocity.max()) else round(df_proc.velocity.max(),3)], 'Velocity Bounds', 'kts')
         self.add_value_validity_stat([len(df_proc[(df_proc['velocity'] <= MAX_VELOCITY)]),len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)])], 'Velocity Validity')
         self.add_total_value_stat([round(df_proc.distance.sum(axis=0),3)], 'Distance Traveled', 'nm')
-        self.add_time_bounds_stat([df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')])
+        self.add_time_bounds_stat([df_proc.date_time.min(), df_proc.date_time.max()])
         self.add_bounds_stat([round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
         self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
-        self.add_bounds_stat([round(df_proc.num_satellites.min(),3), round(df_proc.num_satellites.max(),3)], 'Number of Satellites', 'sats')
+        self.add_bounds_stat([int(df_proc.num_satellites.min()), int(df_proc.num_satellites.max())], 'Number of Satellites', 'sats')
         self.add_bounds_stat([round(df_proc.hdop.min(),3), round(df_proc.hdop.max(),3)], 'Horizontal Degree of Precision')
         self.add_bounds_stat([round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)], 'Altitude', 'm')
         self.add_bounds_stat([round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)], 'Height WGS84', 'm')
@@ -265,7 +265,7 @@ class GGAPlugin(OpenVDMPluginCSV):
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:
-            self.openvdm.sendMsg('Parsing ', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath), ', '.join(errors))
+            self.openvdm.sendMsg('Parsing ', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join(errors)))
 
 
 # -------------------------------------------------------------------------------------
