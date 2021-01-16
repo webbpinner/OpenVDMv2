@@ -55,6 +55,7 @@ from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 
 from server.lib.openvdm_plugin import OpenVDMPluginCSV
+from server.lib.openvdm import OpenVDM_API
 
 RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
 PROC_COLUMNS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
@@ -67,16 +68,18 @@ ROUNDING = {
 MAX_VELOCITY = 13.8 #Max speed of vessel (mph)
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f"
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS Format
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS default
 
 
 class GGAPlugin(OpenVDMPluginCSV):
 
-    def __init__(self, raw_cols, proc_cols, start_dt=None, stop_dt=None, time_format="%Y/%m/%dT%H:%M:%S.%f"):
+    def __init__(self, raw_cols, proc_cols, start_dt=None, stop_dt=None, time_format=DEFAULT_TIME_FORMAT, use_openvdm_api=True):
         super().__init__(start_dt=start_dt, stop_dt=stop_dt)
         self.raw_cols = raw_cols
         self.proc_cols = proc_cols
         self.time_format = time_format
+        self.openvdm = OpenVDM_API() if use_openvdm_api else None
 
 
     def _hemisphere_correction(self, lat_lon, hemisphere):
@@ -91,11 +94,12 @@ class GGAPlugin(OpenVDMPluginCSV):
         raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
 
         logging.debug("Parsing data file...")
+        errors = []
         try:
             with open(filePath, 'r') as csvfile:
                 reader = csv.DictReader(csvfile, self.raw_cols)
 
-                for line in reader:
+                for lineno, line in enumerate(reader):
 
                     try:
                         date_time = ' '.join([line['date'], line['time']])
@@ -107,9 +111,10 @@ class GGAPlugin(OpenVDMPluginCSV):
                         height_wgs84 = float(line['height_wgs84']) if line['height_wgs84'] != '' else 0.0
 
                     except Exception as err:
-                        logging.warning('Parsing error: {}'.format(line))
+                        errors.append(lineno)
+                        logging.warning("Parsing error encountered on line {}".format(lineno))
+                        logging.debug(line)
                         logging.debug(str(err))
-                        errors += 1
 
                     else:
                         raw_into_df['date_time'].append(date_time)
@@ -138,10 +143,9 @@ class GGAPlugin(OpenVDMPluginCSV):
 
         # Convert Date/time column to datetime objects
         logging.debug("Converting data_time to datetime datatype...")
-        #df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
         
-        #04/28/2012,00:00:00.656
         df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], format=self.time_format)
+        # df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
 
         # Optionally crop data by start/stop times
         if self.start_dt or self.stop_dt:
@@ -173,46 +177,46 @@ class GGAPlugin(OpenVDMPluginCSV):
         df_proc['velocity'] = df_proc['distance'] / (df_proc.deltaT.dt.total_seconds() / 3600)
 
         logging.debug("Tabulating statistics...")
-        self.add_stat({'statName': 'Row Validity', 'statType': 'rowValidity', 'statData': [len(df_proc), errors]})
-        self.add_stat({'statName': 'Geographic Bounds', 'statUnit': 'ddeg', 'statType': 'geoBounds', 'statData': [round(df_proc.latitude.max(),3),round(df_proc.longitude.max(),3),round(df_proc.latitude.min(),3),round(df_proc.longitude.min(),3)]})
-        self.add_stat({'statName': 'Velocity Bounds', 'statUnit': 'kts', 'statType': 'bounds', 'statData': [round(df_proc.velocity.min(),3), 999999.999 if np.isinf(df_proc.velocity.max()) else round(df_proc.velocity.max(),3)]})
-        self.add_stat({'statName': 'Velocity Validity', 'statType': 'valueValidity', 'statData': [len(df_proc[(df_proc['velocity'] <= MAX_VELOCITY)]),len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)])]})
-        self.add_stat({'statName': 'Distance Traveled', 'statUnit': 'nm', 'statType': 'totalValue', 'statData': [round(df_proc.distance.sum(axis=0),3)]})
-        self.add_stat({'statName': 'Temporal Bounds', 'statUnit': 'seconds', 'statType': 'timeBounds', 'statData': [df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]})
-        self.add_stat({"statName": 'Delta-T Bounds', 'statUnit': 'seconds', 'statType': 'bounds','statData': [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]})
-        self.add_stat({'statName': 'DeltaT Validity', 'statType': 'valueValidity', 'statData': [len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]})
-        self.add_stat({'statName': 'Number of Satellites', 'statUnit': 'sats', 'statType': 'bounds', 'statData': [round(df_proc.num_satellites.min(),3), round(df_proc.num_satellites.max(),3)]})
-        self.add_stat({'statName': 'Horizontal Degree of Precision', 'statUnit': '', 'statType': 'bounds', 'statData': [round(df_proc.hdop.min(),3), round(df_proc.hdop.max(),3)]})
-        self.add_stat({'statName': 'Altitude', 'statUnit': 'm', 'statType': 'bounds', 'statData': [round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)]})
-        self.add_stat({'statName': 'Height WGS84', 'statUnit': 'm', 'statType': 'bounds', 'statData': [round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)]})
+        self.add_row_validity_stat([len(df_proc), len(errors)])
+        self.add_geobounds_stat([round(df_proc.latitude.max(),3),round(df_proc.longitude.max(),3),round(df_proc.latitude.min(),3),round(df_proc.longitude.min(),3)])
+        self.add_bounds_stat([round(df_proc.velocity.min(),3), 999999.999 if np.isinf(df_proc.velocity.max()) else round(df_proc.velocity.max(),3)], 'Velocity Bounds', 'kts')
+        self.add_value_validity_stat([len(df_proc[(df_proc['velocity'] <= MAX_VELOCITY)]),len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)])], 'Velocity Validity')
+        self.add_total_value_stat([round(df_proc.distance.sum(axis=0),3)], 'Distance Traveled', 'nm')
+        self.add_time_bounds_stat([df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')])
+        self.add_bounds_stat([round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
+        self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
+        self.add_bounds_stat([round(df_proc.num_satellites.min(),3), round(df_proc.num_satellites.max(),3)], 'Number of Satellites', 'sats')
+        self.add_bounds_stat([round(df_proc.hdop.min(),3), round(df_proc.hdop.max(),3)], 'Horizontal Degree of Precision')
+        self.add_bounds_stat([round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)], 'Altitude', 'm')
+        self.add_bounds_stat([round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)], 'Height WGS84', 'm')
 
         logging.debug("Running quality tests...")
         # % of bad rows in datafile
-        error_rate = errors / len(df_proc)
+        error_rate = len(errors) / (len(df_proc) + len(errors))
         if error_rate > .25:
-            self.add_quality_test({"testName": "Rows", "results": "Failed"})
+            self.add_quality_test_failed("Rows")
         elif error_rate > .10:
-            self.add_quality_test({"testName": "Rows", "results": "Warning"})
+            self.add_quality_test_warning("Rows")
         else:
-            self.add_quality_test({"testName": "Rows", "results": "Passed"})
+            self.add_quality_test_passed("Rows")
 
         # % of time gaps in data
         error_rate = len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)]) / len(df_proc)
         if error_rate > .25:
-            self.add_quality_test({"testName": "DeltaT", "results": "Failed"})
+            self.add_quality_test_failed("DeltaT")
         elif error_rate > .10:
-            self.add_quality_test({"testName": "DeltaT", "results": "Warning"})
+            self.add_quality_test_warning("DeltaT")
         else:
-            self.add_quality_test({"testName": "DeltaT", "results": "Passed"})
+            self.add_quality_test_passed("DeltaT")
 
         # % of bad velocities in data
         error_rate = len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)]) / len(df_proc)
         if error_rate > .25:
-            self.add_quality_test({"testName": "DeltaT", "results": "Failed"})
+            self.add_quality_test_failed("Velocity")
         elif error_rate > .10:
-            self.add_quality_test({"testName": "DeltaT", "results": "Warning"})
+            self.add_quality_test_warning("Velocity")
         else:
-            self.add_quality_test({"testName": "DeltaT", "results": "Passed"})
+            self.add_quality_test_passed("Velocity")
 
         # set index
         logging.debug('Setting index...')
@@ -258,6 +262,10 @@ class GGAPlugin(OpenVDMPluginCSV):
             visualizerDataObj['features'].append(feature)
 
         self.add_visualization_data(visualizerDataObj)
+
+        # send message about errors encountered to OpenVDM
+        if self.openvdm is not None:
+            self.openvdm.sendMsg('Parsing ', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath), ', '.join(errors))
 
 
 # -------------------------------------------------------------------------------------

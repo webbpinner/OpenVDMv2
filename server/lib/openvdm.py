@@ -58,7 +58,6 @@ class OpenVDM_API():
 
     def __init__(self, config_file = DEFAULT_CONFIG_FILE):
 
-        self.config = {}
         self.config = read_config.read_config(config_file)
 
 

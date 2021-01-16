@@ -9,7 +9,7 @@ except ModuleNotFoundError:
     pass
 
 
-def parse(source):
+def parse_yaml(source):
     """Read the passed text/stream assuming it's YAML or JSON (a subset of
     YAML) and try to parse it into a Python dict.
     """
@@ -30,7 +30,7 @@ def read_config(filename):
 
     try:
         with open(filename, 'r') as file:
-            return parse(file)
+            return parse_yaml(file)
     except IOError as e:
         logging.error("Unable to open configuration file: {}".format(filename))
         raise e
