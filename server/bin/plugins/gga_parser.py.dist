@@ -65,7 +65,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMPluginCSV
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
+RAW_COLUMNS = ['date_time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
+#RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum']
 PROC_COLUMNS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
 
 ROUNDING = {
@@ -110,7 +111,8 @@ class GGAPlugin(OpenVDMPluginCSV):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        date_time = ' '.join([line['date'], line['time']])
+                        date_time = line['date_time']
+                        # date_time = ' '.join([line['date'], line['time']])
                         longitude = (self._hemisphere_correction(float(line['longitude'][:3]) + float(line['longitude'][3:])/60, line['EW']))
                         latitude = (self._hemisphere_correction(float(line['latitude'][:2]) + float(line['latitude'][2:])/60, line['NS']))
                         num_satellites = int(line['num_satellites'])
