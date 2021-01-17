@@ -2,30 +2,38 @@
 #
 #         FILE:  gga_parser.py
 #
-#        USAGE:  gga_parser.py [-h] [-c] <dataFile>
+#        USAGE:  gga_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
 #
 #  DESCRIPTION:  Parse the supplied NMEA-formtted GGA file (w/ SCS formatted timestamp)
 #                and return the json-formatted string used by OpenVDM as part of it's
 #                Data dashboard.
 #
 #      OPTIONS:  [-h] Return the help message.
-#                [-c] Use CSVkit to clean the datafile prior to processing
+#                [-v] Increase verbosity (default: warning)
+#                [--timeFormat] date/time format to use when parsing datafile, default
+#                               yyyy-mm-ddTHH:MM:SS.sssZ
+#                [--startTS] optional start crop time (strptime format)
+#                [--stopTS] optional stop crop time (strptime format)
 #                <dataFile> Full or relative path of the data file to process.
 #
-# REQUIREMENTS:  python2.7, Python Modules: sys, os, argparse, json, pandas
+# REQUIREMENTS:  Python3.8
+#                Python Modules:
+#                    geopy==2.1.0
+#                    numpy==1.19.5
+#                    pandas==1.2.0
+#                    PyYAML==5.3.1
+#                    requests==2.25.1
 #
 #         BUGS:
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  1.0
+#      VERSION:  2.5
 #      CREATED:  2016-08-29
-#     REVISION:  2016-10-30
+#     REVISION:  2021-01-16
 #
-# LICENSE INFO:  Open Vessel Data Management v2.2 (OpenVDMv2)
-#                Copyright (C) 2017 OceanDataRat.org
-#
-#        NOTES:  Requires Pandas v0.18 or higher
+# LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
+#                Copyright (C) 2021 OceanDataRat.org
 #
 #    This program is free software: you can redistribute it and/or modify it under the
 #    terms of the GNU General Public License as published by the Free Software
@@ -68,8 +76,8 @@ ROUNDING = {
 MAX_VELOCITY = 13.8 #Max speed of vessel (mph)
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS Format
-# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS default
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS default
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS Format
 
 
 class GGAPlugin(OpenVDMPluginCSV):
