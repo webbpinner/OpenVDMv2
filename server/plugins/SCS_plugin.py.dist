@@ -51,11 +51,9 @@ import logging
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
+from server.lib.openvdm_plugin import OpenVDMPlugin
 from server.plugins.parsers.gga_parser import GGAParser
-from server.plugins.parsers.met_parser import METParser
-from server.plugins.parsers.svp_parser import SVPParser
-from server.plugins.parsers.tsg_parser import TSGParser
-from server.plugins.parsers.twind_parser import TWINDParser
+from server.plugins.parsers.vtg_parser import VTGParser
 
 # -------------------------------------------------------------------------------------
 # This array defines the various dataTypes collected by SCS and the cooresponding file
@@ -70,60 +68,38 @@ fileTypeFilters = [
 # Function to determine the datatype of the raw datafile.  If the datatype can not be
 # determined, the function returns false
 # -------------------------------------------------------------------------------------
-def getDataType(filePath):
-
-    for fileTypeFilter in fileTypeFilters:
-        if fnmatch.fnmatch(filePath, fileTypeFilter['regex']):
-            return fileTypeFilter['dataType']
-
-    return None
 
 
-# -------------------------------------------------------------------------------------
-# Function to determine the parser to use with the raw datafile.  If the datatype can
-# not be determined, the function returns false
-# -------------------------------------------------------------------------------------
-def getParser(filePath):
+class SCS_OpenVDMPlugin(OpenVDMPlugin):
 
-    fileTypeFilter = list(filter(lambda fileTypeFilter: fnmatch.fnmatch(filePath, fileTypeFilter['regex']), fileTypeFilters))
+    def __init__(self):
+        super().__init__(fileTypeFilters)
 
-    if len(fileTypeFilter) == 0:
-        return None
-    else:
-        fileTypeFilter = fileTypeFilter[0]
+    # -------------------------------------------------------------------------------------
+    # Function to determine the parser to use with the raw datafile.  If the datatype can
+    # not be determined, the function returns false
+    # -------------------------------------------------------------------------------------
+    def get_parser(filePath):
 
-    if fileTypeFilter['parser'] == "GGA":
-        return GGAParser(**fileTypeFilter['parser_options'])
-    elif fileTypeFilter['parser'] == "VTG":
-        return VTGParser(**fileTypeFilter['parser_options'])
-    else:
-        return None
+        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filePath, file_type_filter['regex']), self.file_type_filters))
 
-    
-# -------------------------------------------------------------------------------------
-# Function to process the raw datafile and return a json-formatted representation.  If
-# the datatype can not be determined, the function returns false.  With collection 
-# systems that contain multiple dataTypes, this function may route the raw datafile to
-# a dataType-specific processing sub-routine. 
-# -------------------------------------------------------------------------------------
-def getJsonObj(filePath):
+        if len(file_type_filter) == 0:
+            return None
+        else:
+            file_type_filter = file_type_filter[0]
 
-    parser = getParser(filePath)
-    
-    if parser is None:
-        return False
-
-    parser.process_file(filePath)
-
-    return parser.toJSON()     
-    # return {'error': 'Unknown parsing error in ' + filePath + ' occurred<br>Command: ' + s.join(command)}
+        if file_type_filter['parser'] == "GGA":
+            return GGAParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "VTG":
+            return VTGParser(**file_type_filter['parser_options'])
+        else:
+            return None
 
 
 # -------------------------------------------------------------------------------------
-# Main function of the script should it be run as a stand-alone utility.
+# Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
-def main(argv):
-
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='OpenVDM plugin for SCS')
     parser.add_argument('--dataType', action='store_true',
                         help='return the dataType of the file')
@@ -151,21 +127,19 @@ def main(argv):
         sys.exit(1)
     elif os.stat(parsed_args.dataFile).st_size == 0:
         logging.warning("File is empty")
-    elif parsed_args.dataType:
-        dataType = getDataType(parsed_args.dataFile)
+        sys.exit(0)
+
+    plugin = SCS_OpenVDMPlugin()
+
+    if parsed_args.dataType:
+        dataType = plugin.get_data_type(parsed_args.dataFile)
         if dataType is None:
             logging.warning("File is of unknown type")
             sys.exit(1)
         print(dataType)
     else:
-        jsonObj = getJsonObj(parsed_args.dataFile)
+        jsonOBJ = plugin.get_json_obj(parsed_args.dataFile)
         if jsonObj is None:
             logging.warning("Nothing returned from parser")
             sys.exit(1)
         print(json.dumps(jsonObj))
-
-# -------------------------------------------------------------------------------------
-# Required python code for running the script as a stand-alone utility
-# -------------------------------------------------------------------------------------
-if __name__ == "__main__":
-    main(sys.argv[1:])

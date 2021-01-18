@@ -292,3 +292,36 @@ class OpenVDMCSVParser(OpenVDMParser):
     def toJSON(self):
         return json.dumps(self.get_plugin_data(), cls=NpEncoder)
 
+
+class OpenVDMPlugin():
+    
+    def __init__(self, file_type_filters):
+        self.file_type_filters = file_type_filters
+
+
+    def get_data_type(self, filePath):
+
+        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filePath, file_type_filter['regex']), self.file_type_filters))
+
+        if len(file_type_filter) == 0:
+            return None
+
+        return file_type_filter['data_type']
+
+
+    def get_parser(self, filePath):
+        raise NotImplementedError('process_file must be implemented by subclass')
+
+
+    def get_json_obj(self, filePath):
+
+        parser = self.get_parser(filePath)
+        
+        if parser is None:
+            return False
+
+        parser.process_file(filePath)
+
+        return parser.toJSON()    
+
+
