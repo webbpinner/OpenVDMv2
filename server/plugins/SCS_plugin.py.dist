@@ -41,39 +41,30 @@
 #
 # =================================================================================== #
 
-from __future__ import print_function
 import sys
 import os
-import time
-import argparse
 import json
 import fnmatch
-import csv
-import subprocess
+import argparse
+import logging
 
-SCRIPT_DIR = '/usr/local/bin/OVDM_dashboardDataScripts/'
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
+
+from server.plugins.parsers.gga_parser import GGAParser
+from server.plugins.parsers.met_parser import METParser
+from server.plugins.parsers.svp_parser import SVPParser
+from server.plugins.parsers.tsg_parser import TSGParser
+from server.plugins.parsers.twind_parser import TWINDParser
 
 # -------------------------------------------------------------------------------------
 # This array defines the various dataTypes collected by SCS and the cooresponding file
 # regex expression.
 # -------------------------------------------------------------------------------------
 fileTypeFilters = [
-    {"dataType":"twind",     "regex": "*METOC/TrueWind-RAW_*.Raw",          "command": ['python', SCRIPT_DIR + 'twind_parser.py']},
-    {"dataType":"tsg",       "regex": "*METOC/TSG-RAW_*.Raw",               "command": ['python', SCRIPT_DIR + 'tsg_parser.py']},
-    {"dataType":"met",       "regex": "*METOC/MET-M01_*.Raw",               "command": ['python', SCRIPT_DIR + 'met_parser.py']},
-    {"dataType":"svp",       "regex": "*METOC/Sound-Velocity-Probe_*.Raw",  "command": ['python', SCRIPT_DIR + 'svp_parser.py']},
-    {"dataType":"gga-posmv", "regex": "*NAV/POSMV-GGA_*.Raw",               "command": ['python', SCRIPT_DIR + 'gga_parser.py']},
+    {"dataType":"gga",       "regex": "*Seapath_1_GGA_*.Raw",   "parser": "GGA",    'parser_options':{}},
+    {"dataType":"vtg",       "regex": "*Seapath_1_VTG_*.Raw",   "parser": "VTG",    'parser_options':{}},
 ]
-
-DEBUG = False
-
-
-def debugPrint(*args, **kwargs):
-    if DEBUG:
-        errPrint(*args, **kwargs)
-
-def errPrint(*args, **kwargs):
-        print(*args, file=sys.stderr, **kwargs)
 
 # -------------------------------------------------------------------------------------
 # Function to determine the datatype of the raw datafile.  If the datatype can not be
@@ -85,20 +76,28 @@ def getDataType(filePath):
         if fnmatch.fnmatch(filePath, fileTypeFilter['regex']):
             return fileTypeFilter['dataType']
 
-    return False
+    return None
 
 
 # -------------------------------------------------------------------------------------
-# Function to determine the command to run against a raw datafile to produce the
-# dashboardData.  If the command can not be determined, the function returns false
+# Function to determine the parser to use with the raw datafile.  If the datatype can
+# not be determined, the function returns false
 # -------------------------------------------------------------------------------------
-def getCommandByFile(filePath):
+def getParser(filePath):
 
-    for fileTypeFilter in fileTypeFilters:
-        if fnmatch.fnmatch(filePath, fileTypeFilter['regex']):
-            return fileTypeFilter['command']
+    fileTypeFilter = list(filter(lambda fileTypeFilter: fnmatch.fnmatch(filePath, fileTypeFilter['regex']), fileTypeFilters))
 
-    return False
+    if len(fileTypeFilter) == 0:
+        return None
+    else:
+        fileTypeFilter = fileTypeFilter[0]
+
+    if fileTypeFilter['parser'] == "GGA":
+        return GGAParser(**fileTypeFilter['parser_options'])
+    elif fileTypeFilter['parser'] == "VTG":
+        return VTGParser(**fileTypeFilter['parser_options'])
+    else:
+        return None
 
     
 # -------------------------------------------------------------------------------------
@@ -109,27 +108,15 @@ def getCommandByFile(filePath):
 # -------------------------------------------------------------------------------------
 def getJsonObj(filePath):
 
-    command = getCommandByFile(filePath)
+    parser = getParser(filePath)
     
-    if not command:
+    if parser is None:
         return False
 
-    if DEBUG:
-        command.append('-d')
+    parser.process_file(filePath)
 
-    command.append(filePath)
-
-    s = ' '
-    debugPrint('Command: ' + s.join(command))
-
-    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    out, err = proc.communicate()
-    debugPrint('Err:',err)
-
-    if out:
-        return json.loads(out)
-    
-    return {'error': 'Unknown parsing error in ' + filePath + ' occurred<br>Command: ' + s.join(command)}
+    return parser.toJSON()     
+    # return {'error': 'Unknown parsing error in ' + filePath + ' occurred<br>Command: ' + s.join(command)}
 
 
 # -------------------------------------------------------------------------------------
@@ -137,38 +124,45 @@ def getJsonObj(filePath):
 # -------------------------------------------------------------------------------------
 def main(argv):
 
-    parser = argparse.ArgumentParser(description='SCS dataDashboard Processing Utilty')
-    parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
-    parser.add_argument('--dataType', action='store_true', help='return the dataType of the file')
-    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
+    parser = argparse.ArgumentParser(description='OpenVDM plugin for SCS')
+    parser.add_argument('--dataType', action='store_true',
+                        help='return the dataType of the file')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+    parser.add_argument('dataFile', metavar='dataFile',
+                        help='the raw data file to process')
 
-    args = parser.parse_args()
-    if args.debug:
-        global DEBUG
-        DEBUG = True
-        debugPrint("Running in debug mode")
+    parsed_args = parser.parse_args()
 
-    if not os.path.isfile(args.dataFile):
-        sys.stderr.write('ERROR: File not found\n')
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    if not os.path.isfile(parsed_args.dataFile):
+        logging.error("File not found")
         sys.exit(1)
-    elif os.stat(args.dataFile).st_size == 0:
-        sys.stderr.write('File is empty')
-        sys.exit(0)
-
-    if args.dataType:
-        dataType = getDataType(args.dataFile)
-        if dataType:
-            print(dataType)
-            sys.exit(0)
-        else:
+    elif os.stat(parsed_args.dataFile).st_size == 0:
+        logging.warning("File is empty")
+    elif parsed_args.dataType:
+        dataType = getDataType(parsed_args.dataFile)
+        if dataType is None:
+            logging.warning("File is of unknown type")
             sys.exit(1)
+        print(dataType)
     else:
-        jsonObj = getJsonObj(args.dataFile)
-        if jsonObj:
-            print(json.dumps(jsonObj))
-            sys.exit(0)
-        else:
+        jsonObj = getJsonObj(parsed_args.dataFile)
+        if jsonObj is None:
+            logging.warning("Nothing returned from parser")
             sys.exit(1)
+        print(json.dumps(jsonObj))
 
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility

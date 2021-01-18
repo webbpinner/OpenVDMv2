@@ -39,7 +39,7 @@ class NpEncoder(json.JSONEncoder):
 
 
 
-class OpenVDMPluginQualityTest():
+class OpenVDMParserQualityTest():
     
     def __init__(self, test_name, test_value):
 
@@ -60,22 +60,22 @@ class OpenVDMPluginQualityTest():
         return json.dumps(self.get_test_data(), cls=NpEncoder)
 
 
-class OpenVDMPluginQualityTestFailed(OpenVDMPluginQualityTest):
+class OpenVDMParserQualityTestFailed(OpenVDMParserQualityTest):
     def __init__(self, test_name):
         super().__init__(test_name=test_name, test_value='Failed')
 
 
-class OpenVDMPluginQualityTestWarning(OpenVDMPluginQualityTest):
+class OpenVDMParserQualityTestWarning(OpenVDMParserQualityTest):
     def __init__(self, test_name):
         super().__init__(test_name=test_name, test_value='Warning')
 
 
-class OpenVDMPluginQualityTestPassed(OpenVDMPluginQualityTest):
+class OpenVDMParserQualityTestPassed(OpenVDMParserQualityTest):
     def __init__(self, test_name):
         super().__init__(test_name=test_name, test_value='Passed')
 
 
-class OpenVDMPluginStat():
+class OpenVDMParserStat():
     
     def __init__(self, stat_name, stat_type, stat_value, stat_uom=''):
 
@@ -141,37 +141,37 @@ class OpenVDMPluginStat():
         return json.dumps(self.get_stat_data(), cls=NpEncoder)
 
 
-class OpenVDMPluginBoundsStat(OpenVDMPluginStat):
+class OpenVDMParserBoundsStat(OpenVDMParserStat):
     def __init__(self, stat_value, stat_name, stat_uom=''):
         super().__init__(stat_name=stat_name, stat_type="bounds", stat_value=stat_value, stat_uom=stat_uom)
 
 
-class OpenVDMPluginGeoBoundsStat(OpenVDMPluginStat):
+class OpenVDMParserGeoBoundsStat(OpenVDMParserStat):
     def __init__(self, stat_value, stat_name='Geographic Bounds', stat_uom='ddeg'):
         super().__init__(stat_name=stat_name, stat_type="geoBounds", stat_value=stat_value, stat_uom=stat_uom)
 
 
-class OpenVDMPluginRowValidityStat(OpenVDMPluginStat):
+class OpenVDMParserRowValidityStat(OpenVDMParserStat):
     def __init__(self, stat_value):
         super().__init__(stat_name="Row Validity", stat_type="rowValidity", stat_value=stat_value, stat_uom='')
 
 
-class OpenVDMPluginTimeBoundsStat(OpenVDMPluginStat):
+class OpenVDMParserTimeBoundsStat(OpenVDMParserStat):
     def __init__(self, stat_value, stat_name='Temporal Bounds', stat_uom='seconds'):
         super().__init__(stat_name=stat_name, stat_type="timeBounds", stat_value=stat_value, stat_uom=stat_uom)
 
 
-class OpenVDMPluginTotalValueStat(OpenVDMPluginStat):
+class OpenVDMParserTotalValueStat(OpenVDMParserStat):
     def __init__(self, stat_value, stat_name, stat_uom=''):
         super().__init__(stat_name=stat_name, stat_type="totalValue", stat_value=stat_value, stat_uom=stat_uom)
 
 
-class OpenVDMPluginValueValidityStat(OpenVDMPluginStat):
+class OpenVDMParserValueValidityStat(OpenVDMParserStat):
     def __init__(self, stat_value, stat_name):
         super().__init__(stat_name=stat_name, stat_type="valueValidity", stat_value=stat_value, stat_uom='')
 
 
-class OpenVDMPlugin():
+class OpenVDMParser():
     
     def __init__(self):
         self.plugin_data = {
@@ -194,51 +194,51 @@ class OpenVDMPlugin():
 
 
     def add_quality_test_failed(self, name):
-        test = OpenVDMPluginQualityTestFailed(name)
+        test = OpenVDMParserQualityTestFailed(name)
         self.plugin_data['qualityTests'].append(test.get_test_data())
 
 
     def add_quality_test_warning(self, name):
-        test = OpenVDMPluginQualityTestWarning(name)
+        test = OpenVDMParserQualityTestWarning(name)
         self.plugin_data['qualityTests'].append(test.get_test_data())
 
 
     def add_quality_test_passed(self, name):
-        test = OpenVDMPluginQualityTestPassed(name)
+        test = OpenVDMParserQualityTestPassed(name)
         self.plugin_data['qualityTests'].append(test.get_test_data())
 
 
     def add_bounds_stat(self, value, name, uom=''):
-        stat = OpenVDMPluginBoundsStat(value, name, uom)
+        stat = OpenVDMParserBoundsStat(value, name, uom)
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
     def add_geobounds_stat(self, value, name='Geographic Bounds', uom='ddeg'):
-        stat = OpenVDMPluginGeoBoundsStat(value, name, uom)
+        stat = OpenVDMParserGeoBoundsStat(value, name, uom)
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
     def add_row_validity_stat(self, value):
-        stat = OpenVDMPluginRowValidityStat(value)
+        stat = OpenVDMParserRowValidityStat(value)
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
     def add_time_bounds_stat(self, value, name='Temporal Bounds', uom='seconds'):
-        stat = OpenVDMPluginTimeBoundsStat(value, name, uom)
+        stat = OpenVDMParserTimeBoundsStat(value, name, uom)
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
     def add_total_value_stat(self, value, name, uom=''):
-        stat = OpenVDMPluginTotalValueStat(value, name, uom)
+        stat = OpenVDMParserTotalValueStat(value, name, uom)
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
     def add_value_validity_stat(self, value, name):
-        stat = OpenVDMPluginValueValidityStat(value, name)
+        stat = OpenVDMParserValueValidityStat(value, name)
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
-class OpenVDMPluginCSV(OpenVDMPlugin):
+class OpenVDMCSVParser(OpenVDMParser):
 
     def __init__(self, start_dt=None, stop_dt=None):
         self.start_dt = start_dt
