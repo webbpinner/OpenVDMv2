@@ -318,7 +318,7 @@ class OpenVDMPlugin():
         parser = self.get_parser(filePath)
         
         if parser is None:
-            return False
+            return None
 
         parser.process_file(filePath)
 
