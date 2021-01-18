@@ -51,7 +51,7 @@ showOnlyCurrentCruiseDir: No
 # processingScriptSuffix --> the suffix appended to dashboardData processing scripts
 #     i.e. with SCS_dataDashboard.py the suffix is _dataDashboard.py
 dashboardData:
-    processingScriptDir: "../plugins"
+    processingScriptDir: "./server/plugins"
     processingScriptSuffix: "_plugin.py"
 
 # The hooks section contains any additional Gearman tasks that should be performed
