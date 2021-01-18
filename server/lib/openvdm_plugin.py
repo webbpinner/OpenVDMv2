@@ -1,6 +1,7 @@
 
 import os
 import json
+import fnmatch
 import logging
 import subprocess
 import numpy as np
@@ -306,7 +307,7 @@ class OpenVDMPlugin():
         if len(file_type_filter) == 0:
             return None
 
-        return file_type_filter['data_type']
+        return file_type_filter[0]['data_type']
 
 
     def get_parser(self, filePath):

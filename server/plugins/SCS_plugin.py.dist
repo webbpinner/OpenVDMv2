@@ -60,8 +60,8 @@ from server.plugins.parsers.vtg_parser import VTGParser
 # regex expression.
 # -------------------------------------------------------------------------------------
 fileTypeFilters = [
-    {"dataType":"gga",       "regex": "*Seapath_1_GGA_*.Raw",   "parser": "GGA",    'parser_options':{}},
-    {"dataType":"vtg",       "regex": "*Seapath_1_VTG_*.Raw",   "parser": "VTG",    'parser_options':{}},
+    {"data_type":"gga",       "regex": "*/NAV/POSMV-GGA_*.Raw",   "parser": "GGA",    'parser_options':{}},
+    {"data_type":"vtg",       "regex": "*/NAV/POSMV-VTG_*.Raw",   "parser": "VTG",    'parser_options':{}},
 ]
 
 # -------------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ class SCS_OpenVDMPlugin(OpenVDMPlugin):
     # Function to determine the parser to use with the raw datafile.  If the datatype can
     # not be determined, the function returns false
     # -------------------------------------------------------------------------------------
-    def get_parser(filePath):
+    def get_parser(self, filePath):
 
         file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filePath, file_type_filter['regex']), self.file_type_filters))
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         print(dataType)
     else:
         jsonOBJ = plugin.get_json_obj(parsed_args.dataFile)
-        if jsonObj is None:
+        if jsonOBJ is None:
             logging.warning("Nothing returned from parser")
             sys.exit(1)
-        print(json.dumps(jsonObj))
+        print(json.dumps(jsonOBJ))

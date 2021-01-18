@@ -2,7 +2,8 @@ __pycache__
 **/.DS_Store
 database/OpenVDMv2_db_custom.sql
 server/bin/*.py
-server/bin/plugins/*.py
+server/plugins/*.py
+server/plugins/parsers/*.py
 server/etc/openvdm.yaml
 www/app/Core/Config.php
 www/app/templates/default/js/dataDashboardMainCustom.js
