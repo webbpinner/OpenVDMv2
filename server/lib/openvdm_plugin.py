@@ -39,7 +39,6 @@ class NpEncoder(json.JSONEncoder):
             return super(NpEncoder, self).default(obj)
 
 
-
 class OpenVDMParserQualityTest():
     
     def __init__(self, test_name, test_value):
@@ -314,7 +313,7 @@ class OpenVDMPlugin():
         raise NotImplementedError('process_file must be implemented by subclass')
 
 
-    def get_json_obj(self, filePath):
+    def get_json_str(self, filePath):
 
         parser = self.get_parser(filePath)
         
@@ -323,6 +322,6 @@ class OpenVDMPlugin():
 
         parser.process_file(filePath)
 
-        return parser.toJSON()    
+        return parser.toJSON()
 
 

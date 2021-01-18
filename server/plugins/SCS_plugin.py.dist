@@ -138,8 +138,8 @@ if __name__ == "__main__":
             sys.exit(1)
         print(dataType)
     else:
-        jsonOBJ = plugin.get_json_obj(parsed_args.dataFile)
-        if jsonOBJ is None:
+        jsonSTR = plugin.get_json_str(parsed_args.dataFile)
+        if jsonSTR is None:
             logging.warning("Nothing returned from parser")
             sys.exit(1)
-        print(json.dumps(jsonOBJ))
+        print(jsonSTR)
