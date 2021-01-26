@@ -233,7 +233,7 @@ if __name__ == "__main__":
     collectionSystem = openVDM.getCollectionSystemTransferByName(parsed_args.collectionSystem)
     if not collectionSystem:
         logging.error("Collection System: {} not found.".format(parsed_args.collectionSystem))
-        return -1
+        sys.exit(1)
     
     # Retrieve the shipboard data warehouse configuration
     shipboardDataWarehouseConfig = openVDM.getShipboardDataWarehouseConfig()
@@ -245,28 +245,28 @@ if __name__ == "__main__":
     # Verify the cruise data directory exists
     if not os.path.isdir(cruiseDir):
         logging.error("Cruise data directory: {} not found!".format(cruiseDir))
-        return -1
+        sys.exit(1)
 
     tracklineDir = os.path.join(cruiseDir, openVDM.getExtraDirectoryByName(TRACKLINE_EXTRA_DIR_NAME)['dest'])
 
     # Verify the trackline directory exists
     if not os.path.isdir(tracklineDir):
         logging.error("Trackline Directory: {} not found".format(tracklineDir))
-        return -1
+        sys.exit(1)
 
     dashboardDataDir = os.path.join(cruiseDir, openVDM.getExtraDirectoryByName(DASHBOARD_EXTRA_DIR_NAME)['dest'])
 
     # Verify the trackline directory exists
     if not os.path.isdir(dashboardDataDir):
         logging.error("Dashboard Data Directory: {} not found".format(dashboardDataDir))
-        return -1
+        sys.exit(1)
 
     collectionSystemDashboardDataDir = os.path.join(dashboardDataDir, collectionSystem['destDir'])
 
     # Verify the dashboard data directory for the specified collecion system exists
     if not os.path.isdir(collectionSystemDashboardDataDir):
         logging.error('Dashboard Data Directory for {}: {} not found'.format(collectionSystem['name'], collectionSystemDashboardDataDir))
-        return -1
+        sys.exit(1)
     
     # Loop through the AllGPSSources object
     for GPSSources in AllGPSSources:
@@ -290,10 +290,10 @@ if __name__ == "__main__":
                 # If there was a problem, exit
                 if not combineGeoJsonObj:
                     logging.error("Problem combining data files")
-                    return -1
+                    sys.exit(1)
                 elif combineGeoJsonObj is None:
                     logging.error("No data returned after combining data files")
-                    return -1
+                    sys.exit(1)
 
                 warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 

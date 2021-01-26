@@ -41,7 +41,7 @@ sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils import read_config, timestamp
 
-DEFAULT_CONFIG_FILE = '/opt/openvdm/server/etc/openvdm.yaml'
+DEFAULT_CONFIG_FILE = './server/etc/openvdm.yaml'
 
 DEFAULT_CRUISE_CONFIG_FN = 'ovdmConfig.json'
 
@@ -313,7 +313,7 @@ class OpenVDM_API():
         try:
             r = requests.get(url)
             returnVal = json.loads(r.text)
-            return returnVal[0] if len(returnVal) > 0 else False
+            return returnVal[0] if len(returnVal) > 0 else None
         except Exception as e:
             logging.error("Unable to retrieve extra directory: {} from OpenVDM API".format(extraDirectoryID))
             raise e
@@ -321,7 +321,7 @@ class OpenVDM_API():
     def getExtraDirectoryByName(self, extraDirectoryName):
 
         extraDirectory = list(filter(lambda directory: directory['name'] == extraDirectoryName, self.getExtraDirectories()))
-        return extraDirectory[0] if len(extraDirectory) > 0 else False
+        return extraDirectory[0] if len(extraDirectory) > 0 else None
     
     def getExtraDirectories(self):
         
@@ -352,7 +352,7 @@ class OpenVDM_API():
     def getRequiredExtraDirectoryByName(self, extraDirectoryName):
 
         extraDirectory = list(filter(lambda directory: directory['name'] == extraDirectoryName, self.getRequiredExtraDirectories()))
-        return extraDirectory[0] if len(extraDirectory) > 0 else False 
+        return extraDirectory[0] if len(extraDirectory) > 0 else None 
     
     
     def getRequiredExtraDirectories(self):

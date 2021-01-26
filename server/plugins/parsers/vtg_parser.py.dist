@@ -62,9 +62,9 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLUMNS = ['date_time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # OpenRVDAS style
-# RAW_COLUMNS = ['date', 'time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # SCS style
-PROC_COLUMNS = ['date_time','cog_t','cog_m','sog_kts','sog_kph']
+RAW_COLS = ['date_time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # OpenRVDAS style
+# RAW_COLS = ['date', 'time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # SCS style
+PROC_COLS = ['date_time','cog_t','cog_m','sog_kts','sog_kph']
 
 ROUNDING = {
     'cog_t': 3,
@@ -109,7 +109,7 @@ class VTGParser(OpenVDMCSVParser):
 
                     try:
                         date_time = line['date_time'] # OpenRVDAS style
-                        #date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
                         cog_t = np.nan if line['cog_t'] == '' else float(line['cog_t'])
                         cog_m = np.nan if line['cog_m'] == '' else float(line['cog_m'])
                         sog_kts = np.nan if line['sog_kts'] == '' else float(line['sog_kts'])
@@ -166,23 +166,18 @@ class VTGParser(OpenVDMCSVParser):
 
         logging.debug("Tabulating statistics...")
         self.add_row_validity_stat([len(df_proc), len(errors)])
-
+        self.add_time_bounds_stat([df_proc['date_time'].min(), df_proc['date_time'].max()])
+        self.add_bounds_stat([round(df_proc['deltaT'].min().total_seconds(),3), round(df_proc['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
+        self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
         self.add_bounds_stat([round(df_proc['cog_t'].min(),3), round(df_proc['cog_t'].max(),3)], "COG True Bounds", "deg")
         self.add_value_validity_stat([len(df_proc[(df_proc['cog_t'] >= MIN_COG) & (df_proc['cog_t'] <= MAX_COG)]),len(df_proc[(df_proc['cog_t'] < MIN_COG) & (df_proc['cog_t'] > MAX_COG)])], "COG True Validity")
-
         self.add_bounds_stat([round(df_proc['cog_m'].min(),3), round(df_proc['cog_m'].max(),3)], "COG Magnetic Bounds", "deg")
         self.add_value_validity_stat([len(df_proc[(df_proc['cog_t'] >= MIN_COG) & (df_proc['cog_t'] <= MAX_COG)]),len(df_proc[(df_proc['cog_t'] < MIN_COG) & (df_proc['cog_t'] > MAX_COG)])], "COG Magnetic Validity")
-
         self.add_bounds_stat([round(df_proc['sog_kts'].min(),3), round(df_proc['sog_kts'].max(),3)], 'SOG Knots Bounds', 'deg')
         self.add_value_validity_stat([len(df_proc[(df_proc['sog_kts'] <= MAX_SOG_KTS)]),len(df_proc[(df_proc['sog_kts'] > MAX_SOG_KTS)])], "SOG Knots Validity")
-    
         self.add_bounds_stat([round(df_proc['sog_kph'].min(),3), round(df_proc['sog_kph'].max(),3)], 'SOG KPH Bounds', 'deg')
         self.add_value_validity_stat([len(df_proc[(df_proc['sog_kph'] <= MAX_SOG_KPH)]),len(df_proc[(df_proc['sog_kph'] > MAX_SOG_KPH)])], "SOG KPH Validity")
 
-        self.add_time_bounds_stat([df_proc.date_time.min(), df_proc.date_time.max()])
-        
-        self.add_bounds_stat([round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
-        self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
     
         logging.debug("Running quality tests...")
         # % of bad rows in datafile
@@ -277,7 +272,7 @@ class VTGParser(OpenVDMCSVParser):
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:
-            self.openvdm.sendMsg('Parsing ', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join(errors)))
+            self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join(errors)))
 
 
 # -------------------------------------------------------------------------------------

@@ -64,16 +64,16 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLUMNS = ['date_time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum'] # OpenRVDAS style
-#RAW_COLUMNS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum'] # SCS style
-PROC_COLUMNS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
+RAW_COLS = ['date_time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum'] # OpenRVDAS style
+#RAW_COLS = ['date','time','hdr','gps_time','latitude','NS','longitude','EW','fix_quality','num_satellites','hdop','altitude','altitude_m','height_wgs84','height_wgs84_m','last_update','dgps_station_checksum'] # SCS style
+PROC_COLS = ['date_time','latitude','longitude','num_satellites','hdop','altitude','height_wgs84']
 
 ROUNDING = {
     'latitude': 8,
     'longitude': 8
 }
 
-MAX_VELOCITY = 13.8 #Max speed of vessel (mph)
+MAX_VELOCITY = 18 #Max speed of vessel (mph)
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
 DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
@@ -84,8 +84,8 @@ class GGAParser(OpenVDMCSVParser):
 
     def __init__(self, start_dt=None, stop_dt=None, time_format=DEFAULT_TIME_FORMAT, use_openvdm_api=True):
         super().__init__(start_dt=start_dt, stop_dt=stop_dt)
-        self.raw_cols = RAW_COLUMNS
-        self.proc_cols = PROC_COLUMNS
+        self.raw_cols = RAW_COLS
+        self.proc_cols = PROC_COLS
         self.time_format = time_format
         self.openvdm = OpenVDM_API() if use_openvdm_api else None
 
@@ -186,17 +186,17 @@ class GGAParser(OpenVDMCSVParser):
 
         logging.debug("Tabulating statistics...")
         self.add_row_validity_stat([len(df_proc), len(errors)])
-        self.add_geobounds_stat([round(df_proc.latitude.max(),3),round(df_proc.longitude.max(),3),round(df_proc.latitude.min(),3),round(df_proc.longitude.min(),3)])
-        self.add_bounds_stat([round(df_proc.velocity.min(),3), 999999.999 if np.isinf(df_proc.velocity.max()) else round(df_proc.velocity.max(),3)], 'Velocity Bounds', 'kts')
-        self.add_value_validity_stat([len(df_proc[(df_proc['velocity'] <= MAX_VELOCITY)]),len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)])], 'Velocity Validity')
-        self.add_total_value_stat([round(df_proc.distance.sum(axis=0),3)], 'Distance Traveled', 'nm')
-        self.add_time_bounds_stat([df_proc.date_time.min(), df_proc.date_time.max()])
-        self.add_bounds_stat([round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
+        self.add_time_bounds_stat([df_proc['date_time'].min(), df_proc['date_time'].max()])
+        self.add_bounds_stat([round(df_proc['deltaT'].min().total_seconds(),3), round(df_proc['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
         self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
-        self.add_bounds_stat([int(df_proc.num_satellites.min()), int(df_proc.num_satellites.max())], 'Number of Satellites', 'sats')
-        self.add_bounds_stat([round(df_proc.hdop.min(),3), round(df_proc.hdop.max(),3)], 'Horizontal Degree of Precision')
-        self.add_bounds_stat([round(df_proc.altitude.min(),3), round(df_proc.altitude.max(),3)], 'Altitude', 'm')
-        self.add_bounds_stat([round(df_proc.height_wgs84.min(),3), round(df_proc.height_wgs84.max(),3)], 'Height WGS84', 'm')
+        self.add_geobounds_stat([round(df_proc['latitude'].max(),3),round(df_proc['longitude'].max(),3),round(df_proc['latitude'].min(),3),round(df_proc['longitude'].min(),3)])
+        self.add_bounds_stat([round(df_proc['velocity'].min(),3), 999999.999 if np.isinf(df_proc['velocity'].max()) else round(df_proc['velocity'].max(),3)], 'Velocity Bounds', 'kts')
+        self.add_value_validity_stat([len(df_proc[(df_proc['velocity'] <= MAX_VELOCITY)]),len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)])], 'Velocity Validity')
+        self.add_total_value_stat([round(df_proc['distance'].sum(axis=0),3)], 'Distance Traveled', 'nm')
+        self.add_bounds_stat([int(df_proc['num_satellites'].min()), int(df_proc['num_satellites'].max())], 'Number of Satellites', 'sats')
+        self.add_bounds_stat([round(df_proc['hdop'].min(),3), round(df_proc['hdop'].max(),3)], 'Horizontal Degree of Precision')
+        self.add_bounds_stat([round(df_proc['altitude'].min(),3), round(df_proc['altitude'].max(),3)], 'Altitude', 'm')
+        self.add_bounds_stat([round(df_proc['height_wgs84'].min(),3), round(df_proc['height_wgs84'].max(),3)], 'Height WGS84', 'm')
 
         logging.debug("Running quality tests...")
         # % of bad rows in datafile
@@ -273,7 +273,7 @@ class GGAParser(OpenVDMCSVParser):
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:
-            self.openvdm.sendMsg('Parsing ', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join(errors)))
+            self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
 
 
 # -------------------------------------------------------------------------------------
@@ -308,7 +308,7 @@ if __name__ == "__main__":
     parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
     logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
 
-    ovdm_parser = GGAParser(start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat)
+    ovdm_parser = GGAParser(start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat, use_openvdm_api=False)
 
     try:
         logging.info("Processing file: {}".format(parsed_args.dataFile))

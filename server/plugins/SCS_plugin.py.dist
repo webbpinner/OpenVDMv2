@@ -1,8 +1,8 @@
 # =================================================================================== #
 #
-#         FILE:  SCS_dashboardData.py
+#         FILE:  SCS_plugin.py
 #
-#        USAGE:  SCS_dashboardData.py [-h] [--dataType] <dataFile>
+#        USAGE:  SCS_plugin.py [-h] [--dataType] <dataFile>
 #
 #  DESCRIPTION:  This python script interprets raw files created by the SCS Data
 #                Acquision System.  Depending on the command-line arguments, the script
@@ -15,7 +15,8 @@
 #                    fileTypeFilter array.
 #                <dataFile> Full or relative path of the data file to process.
 #
-# REQUIREMENTS:  python2.7, Python Modules: sys, os, time, argparse, json, fnmatch, csv
+# REQUIREMENTS:  Python3.8
+#                Python Modules:
 #
 #         BUGS:
 #        NOTES:
@@ -23,10 +24,10 @@
 #      COMPANY:  Capable Solutions
 #      VERSION:  1.0
 #      CREATED:  2016-10-23
-#     REVISION:  2016-12-29
+#     REVISION:  2021-01-23
 #
-# LICENSE INFO:  Open Vessel Data Management 2.2 (OpenVDMv2)
-#                Copyright (C) 2017 OceanDataRat.org
+# LICENSE INFO:  Open Vessel Data Management 2.5 (OpenVDMv2)
+#                Copyright (C) 2021 OceanDataRat.org
 #
 #    This program is free software: you can redistribute it and/or modify it under the
 #    terms of the GNU General Public License as published by the Free Software
@@ -36,8 +37,8 @@
 #    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 #    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License #    along with
-#    this program.  If not, see <http://www.gnu.org/licenses/>.
+#    You should have received a copy of the GNU General Public License along with this
+#    program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =================================================================================== #
 

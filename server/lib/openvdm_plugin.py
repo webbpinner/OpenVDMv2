@@ -238,6 +238,10 @@ class OpenVDMParser():
         self.plugin_data['stats'].append(stat.get_stat_data())
 
 
+    def toJSON(self):
+        return json.dumps(self.get_plugin_data())
+
+
 class OpenVDMCSVParser(OpenVDMParser):
 
     def __init__(self, start_dt=None, stop_dt=None):

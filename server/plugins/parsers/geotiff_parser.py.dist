@@ -1,0 +1,194 @@
+# =================================================================================== #
+#
+#         FILE:  geotiff_parser.py
+#
+#        USAGE:  geotiff_parser.py [-h] [-v+] <dataFile>
+#
+#  DESCRIPTION:  Parse the supplied NMEA-formtted GGA file and return the json-
+#                formatted string used by OpenVDM as part of it's Data dashboard.
+#
+#      OPTIONS:  [-h] Return the help message.
+#                [-v] Increase verbosity (default: warning)
+#                [--timeFormat] date/time format to use when parsing datafile, default
+#                               yyyy-mm-ddTHH:MM:SS.sssZ
+#                <dataFile> Full or relative path of the data file to process.
+#
+# REQUIREMENTS:  Python3.8
+#                Python Modules:
+#                    geopy==2.1.0
+#                    numpy==1.19.5
+#                    pandas==1.2.0
+#                    PyYAML==5.3.1
+#                    requests==2.25.1
+#
+#         BUGS:
+#        NOTES:
+#       AUTHOR:  Webb Pinner
+#      COMPANY:  Capable Solutions
+#      VERSION:  2.5
+#      CREATED:  2016-08-29
+#     REVISION:  2021-01-16
+#
+# LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
+#                Copyright (C) 2021 OceanDataRat.org
+#
+#    This program is free software: you can redistribute it and/or modify it under the
+#    terms of the GNU General Public License as published by the Free Software
+#    Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful, but WITHOUT ANY
+#    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+#    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License #    along with
+#    this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =================================================================================== #
+import os
+import sys
+import csv
+import json
+import shutil
+import subprocess
+import argparse
+import logging
+
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
+
+from server.lib.openvdm_plugin import OpenVDMParser
+from server.lib.openvdm import OpenVDM_API
+
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+
+class GeoTIFFParser(OpenVDMParser):
+
+    def __init__(self, use_openvdm_api=True, output_dir=None):
+        super().__init__(start_dt=start_dt, stop_dt=stop_dt)
+        self.raw_cols = RAW_COLS
+        self.proc_cols = PROC_COLS
+        self.time_format = time_format
+        self.openvdm = OpenVDM_API() if use_openvdm_api else None
+
+        if output_dir is not None and not os.path.isdir(output_dir):
+            raise FileNotFoundError("Output directory does not exist")
+
+        self.output_dir = output_dir
+
+    def process_file(self, filePath):
+
+        logging.debug("Parsing data file...")
+
+        dirname, filename = os.path.split(filePath)
+        label = os.path.splitext(filename)[0]
+
+        if self.output_dir is None:
+            if self.openvdm:
+                # parse the filePath to get the name of the file without the file extension
+                dataWarehouseConfig = self.openvdm.getShipboardDataWarehouseConfig()
+                dashboardDataDir = self.openvdm.getRequiredExtraDirectoryByName("Data_Dashboard")['destDir']
+                cruiseID = self.openvdm.getCruiseID()
+
+                collectionSystemDir = dirname.replace(os.path.join(dataWarehouseConfig['shipboardDataWarehouseBaseDir'], cruiseID), '').rstrip('/')
+                self.output_dir = os.path.join(dataWarehouseConfig['shipboardDataWarehouseBaseDir'], cruiseID, dashboardDataDir, collectionSystemDir)
+            else:
+                self.output_dir = dirname
+    
+        # Directory where the tiles will go.
+        tilePath = os.path.join(self.output_dir, label)
+
+        # Create temp directory
+        tmpdir = tempfile.mkdtemp()
+
+        llFilePath = os.path.join(tmpdir, label + "_LL.tif")
+        vrtFilePath = os.path.join(tmpdir, 'temp.vrt')
+
+        t_srsOptions = "+proj=latlong +datum=WGS84"
+
+        command = ['gdalwarp', '-t_srs', t_srsOptions, filePath, llFilePath]
+        logging.debug('Command: {}'.format(' '.join(command)))
+
+        proc = subprocess.run(command, capture_output=True)
+
+        # open the ll geoTiff
+        ds = gdal.Open(llFilePath)
+
+        # process the geoTiff
+        width = ds.RasterXSize
+        height = ds.RasterYSize
+        gt = ds.GetGeoTransform()
+
+        # calculate the bounds of the geoTiff
+        minx = gt[0]
+        miny = gt[3] + width*gt[4] + height*gt[5] 
+        maxx = gt[0] + width*gt[1] + height*gt[2]
+        maxy = gt[3]
+
+        command = ['gdal_translate', '-of', 'vrt', llFilePath, vrtFilePath]
+        logging.debug('Command: {}'.format(' '.join(command)))
+
+        proc = subprocess.run(command, capture_output=True)
+
+        command = ['gdal2tiles.py', '-v', '--profile=mercator', '--zoom=5-12', '--webviewer=none', vrtFilePath, tilePath]
+        logging.debug('Command: {}'.format(' '.join(command)))
+        proc = subprocess.run(command, capture_output=True)
+
+        shutil.rmtree(tmpdir)
+
+        logging.debug("Finished parsing data file")
+        
+        logging.debug("Tabulating statistics...")
+        self.add_geobounds_stat([minx,miny,maxx,maxy])
+
+        logging.debug("Building visualization data...")
+
+        visualizerDataObj = {
+            "label": label,
+            "tileDirectory":cruiseID + '/' + dashboardDataDir + '/' + collectionSystemDir + '/' + label,
+            "mapBounds":str(minx) + "," + str(miny) + "," + str(maxx) + "," + str(maxy)
+        }
+        self.add_visualization_data(visualizerDataObj)
+
+        # send message about errors encountered to OpenVDM
+        if self.openvdm is not None:
+            self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {}'.format(filePath))
+
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Parse GeoTiff image data')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+    parser.add_argument('--outputDir', metavar='outputDir', default=None
+                        help='where to save the output tiles')
+    parser.add_argument('dataFile', metavar='dataFile',
+                        help='the raw data file to process')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    ovdm_parser = GeoTIFFParser(use_openvdm_api=False, output_dir=parsed_args.outputDir)
+
+    try:
+        logging.info("Processing file: {}".format(parsed_args.dataFile))
+        ovdm_parser.process_file(parsed_args.dataFile)
+        print(ovdm_parser.toJSON())
+        logging.info("Done!")
+    except Exception as err:
+        logging.error(str(err))
+        raise err
+        sys.exit(1)

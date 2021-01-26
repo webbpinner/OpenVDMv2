@@ -2,30 +2,37 @@
 #
 #         FILE:  tsg_parser.py
 #
-#        USAGE:  tsg_parser.py [-h] [-c] <dataFile>
+#        USAGE:  tsg_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
 #
-#  DESCRIPTION:  Parse the supplied CSV-formtted Thermosalinigraph file (w/ SCS formatted timestamp)
-#                and return the json-formatted string used by OpenVDM as part of it's
-#                Data dashboard. 
+#  DESCRIPTION:  Parse the supplied SBE45 TSG w/ external SBE38 temperature data and
+#                return the json-formatted string used by OpenVDM as part of it's Data
+#                dashboard.
 #
 #      OPTIONS:  [-h] Return the help message.
-#                [-c] Use CSVkit to clean the datafile prior to processing
+#                [-v] Increase verbosity (default: warning)
+#                [--timeFormat] date/time format to use when parsing datafile, default
+#                               yyyy-mm-ddTHH:MM:SS.sssZ
+#                [--startTS] optional start crop time (strptime format)
+#                [--stopTS] optional stop crop time (strptime format)
 #                <dataFile> Full or relative path of the data file to process.
 #
-# REQUIREMENTS:  python2.7, Python Modules: sys, os, argparse, json, pandas
+# REQUIREMENTS:  Python3.8
+#                Python Modules:
+#                    numpy==1.19.5
+#                    pandas==1.2.0
+#                    PyYAML==5.3.1
+#                    requests==2.25.1
 #
 #         BUGS:
 #        NOTES:
 #       AUTHOR:  Webb Pinner
 #      COMPANY:  Capable Solutions
-#      VERSION:  1.0
+#      VERSION:  2.5
 #      CREATED:  2016-08-29
-#     REVISION:  2016-12-29
+#     REVISION:  2021-01-17
 #
-# LICENSE INFO:  Open Vessel Data Management v2.2 (OpenVDMv2)
-#                Copyright (C) 2017 OceanDataRat.org
-#
-#        NOTES:  Requires Pandas v0.18 or higher
+# LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
+#                Copyright (C) 2021 OceanDataRat.org
 #
 #    This program is free software: you can redistribute it and/or modify it under the
 #    terms of the GNU General Public License as published by the Free Software
@@ -39,265 +46,249 @@
 #    this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =================================================================================== #
-from __future__ import print_function
+
+import os
+import sys
+import csv
+import copy
+import json
 import pandas as pd
 import numpy as np
-import json
 import argparse
-import subprocess
-import tempfile
-import sys
-import copy
-import os
-import shutil
-import csv
-from itertools import (takewhile,repeat)
+import logging
+from datetime import datetime
 
-# visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-# statObj = {'statName':'', 'statUnit':'', 'statType':'', 'statData':[]}
-# qualityTestObj = {"testName": "", "results": ""}
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 
-RAW_COLUMNS = ['date','time','Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)']
-PROC_COLUMNS = ['date_time','Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)']
-CROP_COLUMNS = ['date_time','Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)']
+from server.lib.openvdm_plugin import OpenVDMCSVParser
+from server.lib.openvdm import OpenVDM_API
+
+RAW_COLS = ['date_time','data'] # OpenRVDAS style
+# RAW_COLS = ['date','time','data'] # SCS style
+PROC_COLUMNS = ['date_time','water_temp_int','conductivity','salinity','sound_velocity','water_temp_ext']
+
+ROUNDING = {
+    'water_temp_int': 4,
+    'conductivity': 5,
+    'salinity': 4,
+    'sound_velocity': 5
+    'water_temp_ext': 4,
+}
+
+MIN_DEPTH = 0
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-RESAMPLE_INTERVAL = '1T' # 1 minute
-
-DEBUG = False
-CSVKIT = False
-
-def debugPrint(*args, **kwargs):
-    if DEBUG:
-        errPrint(*args, **kwargs)
-
-def errPrint(*args, **kwargs):
-        print(*args, file=sys.stderr, **kwargs)
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
-def rawincount(filename):
-    f = open(filename, 'rb')
-    bufgen = takewhile(lambda x: x, (f.read(1024*1024) for _ in repeat(None)))
-    return sum( buf.count(b'\n') for buf in bufgen )
+class TSGParser(OpenVDMCSVParser):
 
-def csvCleanup(filepath):
-
-    command = ['csvclean', filepath]
-    errors = 0
-
-    s = ' '
-    debugPrint(s.join(command))
-
-    proc = subprocess.Popen(command,stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    out, err = proc.communicate()
-
-    (dirname, basename) = os.path.split(filepath)
-
-    debugPrint("Dirname:" + dirname)
-    debugPrint("Basename:" + basename)
-
-    outfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_out.csv')
-    errfile = os.path.join(dirname, os.path.splitext(basename)[0] + '_err.csv')
-
-    debugPrint("Outfile: " + outfile)
-    debugPrint("Errfile: " + errfile)
-
-    if os.path.isfile(errfile):
-        errors = rawincount(errfile)-1
-
-    return (errors, outfile)
+    def __init__(self, start_dt=None, stop_dt=None, time_format=DEFAULT_TIME_FORMAT, use_openvdm_api=True):
+        super().__init__(start_dt=start_dt, stop_dt=stop_dt)
+        self.raw_cols = RAW_COLS
+        self.proc_cols = PROC_COLS
+        self.time_format = time_format
+        self.openvdm = OpenVDM_API() if use_openvdm_api else None
 
 
-def parseFile(filePath):
-    output = {}
-    output['visualizerData'] = []
-    output['qualityTests'] = []
-    output['stats'] = []
+    def process_file(self, filePath):
 
-    tmpdir = tempfile.mkdtemp()
+        raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
 
-    outfile = filePath
-    errors = 0
-
-    if CSVKIT:
-        shutil.copy(filePath, tmpdir)
-        (errors, outfile) = csvCleanup(os.path.join(tmpdir, os.path.basename(filePath)))
-        debugPrint('Error: ', errors)
-
-    debugPrint("Errors:", errors)
-
-    rawIntoDf = {
-        'date_time':[],
-        'Internal_Temp_(C)':[],
-        'Conductivity_(S/m)':[],
-        'Salinity_(PSU)':[],
-        'Sound_Velocity_(m/s)':[],
-        'External_Temp_(C)':[],
-    }
-
-    csvfile = open(outfile, 'r')
-    reader = csv.DictReader( csvfile, RAW_COLUMNS)
-
-    for line in reader:
-
+        logging.debug("Parsing data file...")
+        errors = []
         try:
+            with open(filePath, 'r') as csvfile:
+                reader = csv.DictReader(csvfile, self.raw_cols)
 
-            line_date_time = line['date'] + ' ' + line['time']
+                for lineno, line in enumerate(reader):
 
-            line_int_temp = float(line['Internal_Temp_(C)'].split('=')[1].lstrip(' '))
-            line_cont = float(line['Conductivity_(S/m)'].split('=')[1].lstrip(' '))
-            line_sal = float(line['Salinity_(PSU)'].split('=')[1].lstrip(' '))
-            line_sv = float(line['Sound_Velocity_(m/s)'].split('=')[1].lstrip(' '))
-            line_ext_temp = float(line['External_Temp_(C)'].split('=')[1].lstrip(' '))
+                    try:
+                        date_time = line['date_time'] # OpenRVDAS style
+                        #date_time = ' '.join([line['date'], line['time']]) # SCS style
 
-        except:
+                        data_temp_1,data_cont,data_sal,data_sv,data_temp_2 =  line['data'].split()
 
-            debugPrint('Parsing error: ',line)
-            #debugPrint(line['Internal_Temp_(C)'].split('=')[1].lstrip(' '))
-            #debugPrint(line['Conductivity_(S/m)'].split('=')[1].lstrip(' '))
-            #debugPrint(line['Salinity_(PSU)'].split('=')[1].lstrip(' '))
-            #debugPrint(line['Sound_Velocity_(m/s)'].split('=')[1].lstrip(' '))
-            #debugPrint(line['External_Temp_(C)'].split('=')[1].lstrip(' '))
-            errors += 1
+                        water_temp_int = float(data_temp_1)
+                        conductivity = float(data_cont)
+                        salinity = float(data_sal)
+                        sound_velocity = float(data_sv)                        
+                        water_temp_ext = float(data_temp_2)
 
+                    except Exception as err:
+                        errors.append(lineno)
+                        logging.warning("Parsing error encountered on line {}".format(lineno))
+                        logging.debug(line)
+                        logging.debug(str(err))
+
+                    else:
+                        raw_into_df['date_time'].append(date_time)
+                        raw_into_df['water_temp_int'].append(water_temp_int)
+                        raw_into_df['conductivity'].append(conductivity)
+                        raw_into_df['salinity'].append(salinity)
+                        raw_into_df['sound_velocity'].append(sound_velocity)
+                        raw_into_df['water_temp_ext'].append(water_temp_ext)
+
+        except Exception as err:
+            logging.error("Problem accessing input file: {}".format(filePath))
+            logging.error(str(err))
+            return None
+
+        logging.debug("Finished parsing data file")
+        
+        # If no data ingested from file, quit
+        if len(raw_into_df['date_time']) == 0:
+            logging.warning("Dataframe is empty... quitting")
+            return None
+
+        # Build DataFrame
+        logging.debug("Building dataframe from parsed data...")
+        df_proc = pd.DataFrame(raw_into_df)
+
+        # Convert Date/time column to datetime objects
+        logging.debug("Converting data_time to datetime datatype...")
+        
+        df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], format=self.time_format)
+
+        # Optionally crop data by start/stop times
+        if self.start_dt or self.stop_dt:
+            logging.debug("Cropping data...")
+
+            df_proc = self.crop_data(df_proc)
+
+        # If the crop operation emptied the dataframe, quit
+        if df_proc.shape[0] == 0:
+            logging.warning("Cropped dataframe is empty... quitting")
+            return None
+
+        # Calculate deltaT column
+        logging.debug('Building deltaT column...')
+        df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
+
+        logging.debug("Tabulating statistics...")
+        self.add_row_validity_stat([len(df_proc), len(errors)])
+        self.add_time_bounds_stat([df_proc['date_time'].min(), df_proc['date_time'].max()])
+        self.add_bounds_stat([round(df_proc['deltaT'].min().total_seconds(),3), round(df_proc['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
+        self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
+        self.add_bounds_stat([round(df_proc['water_temp_int'].min(),4), round(df_proc['water_temp_int'].max(),4)], 'Internal Temp', 'C')
+        self.add_bounds_stat([round(df_proc['conductivity'].min(),5), round(df_proc['conductivity'].max(),5)], 'Conductivity', 'S/m')
+        self.add_bounds_stat([round(df_proc['salinity'].min(),4), round(df_proc['salinity'].max(),4)], 'Salinity', 'PSU')
+        self.add_bounds_stat([round(df_proc['sound_velocity'].min(),5), round(df_proc['sound_velocity'].max(),5)], 'Sound Velocity', 'm/s')
+        self.add_bounds_stat([round(df_proc['water_temp_ext'].min(),4), round(df_proc['water_temp_ext'].max(),4)], 'External Temp', 'C')
+        
+        logging.debug("Running quality tests...")
+        # % of bad rows in datafile
+        error_rate = len(errors) / (len(df_proc) + len(errors))
+        if error_rate > .25:
+            self.add_quality_test_failed("Rows")
+        elif error_rate > .10:
+            self.add_quality_test_warning("Rows")
         else:
-            rawIntoDf['date_time'].append(line_date_time)
-            rawIntoDf['Internal_Temp_(C)'].append(line_int_temp)
-            rawIntoDf['Conductivity_(S/m)'].append(line_cont)
-            rawIntoDf['Salinity_(PSU)'].append(line_sal)
-            rawIntoDf['Sound_Velocity_(m/s)'].append(line_sv)
-            rawIntoDf['External_Temp_(C)'].append(line_ext_temp)
+            self.add_quality_test_passed("Rows")
 
-    shutil.rmtree(tmpdir)
-
-    if len(rawIntoDf['date_time']) == 0:
-        errPrint("No Input")
-        return None
-
-    df_proc = pd.DataFrame(rawIntoDf)
-
-    df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], infer_datetime_format=True)
-
-    df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
-
-    rowValidityStat = {'statName':'Row Validity', 'statType':'rowValidity', 'statData':[len(df_proc), errors]}
-    output['stats'].append(rowValidityStat)
-
-    intTempStat = {'statName': 'Internal. Temp Bounds','statUnit': 'C', 'statType':'bounds', 'statData':[round(df_proc['Internal_Temp_(C)'].min(),3), round(df_proc['Internal_Temp_(C)'].max(),3)]}
-    output['stats'].append(intTempStat)
-
-    contStat = {'statName': 'Conductivity','statUnit': 'S/m', 'statType':'bounds', 'statData':[round(df_proc['Conductivity_(S/m)'].min(),3), round(df_proc['Conductivity_(S/m)'].max(),3)]}
-    output['stats'].append(contStat)
-
-    salStat = {'statName': 'Salinity','statUnit': 'PSU', 'statType':'bounds', 'statData':[round(df_proc['Salinity_(PSU)'].min(),3), round(df_proc['Salinity_(PSU)'].max(),3)]}
-    output['stats'].append(salStat)
-
-    svTempStat = {'statName': 'Sound Velocity','statUnit': 'm/s', 'statType':'bounds', 'statData':[round(df_proc['Sound_Velocity_(m/s)'].min(),3), round(df_proc['Sound_Velocity_(m/s)'].max(),3)]}
-    output['stats'].append(svTempStat)
-
-    extTempStat = {'statName': 'External. Temp Bounds','statUnit': 'C', 'statType':'bounds', 'statData':[round(df_proc['External_Temp_(C)'].min(),3), round(df_proc['External_Temp_(C)'].max(),3)]}
-    output['stats'].append(extTempStat)
-
-    temporalStat = {'statName': 'Temporal Bounds','statUnit': 'seconds', 'statType':'timeBounds', 'statData':[df_proc.date_time.min().strftime('%s'), df_proc.date_time.max().strftime('%s')]}
-    output['stats'].append(temporalStat)
-
-    deltaTStat = {"statName": "Delta-T Bounds","statUnit": "seconds","statType": "bounds","statData": [round(df_proc.deltaT.min().total_seconds(),3), round(df_proc.deltaT.max().total_seconds(),3)]}
-    output['stats'].append(deltaTStat)
-
-    deltaTValidityStat = {'statName':'Temporal Validity', 'statType':'valueValidity', 'statData':[len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])]}
-    output['stats'].append(deltaTValidityStat)
-
-    rowQualityTest = {"testName": "Rows", "results": "Passed"}
-    if rowValidityStat['statData'][1] > 0:
-        if rowValidityStat['statData'][1]/rowValidityStat['statData'][0] > .10:
-            rowQualityTest['results'] = "Failed"
+        # % of time gaps in data
+        error_rate = len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)]) / len(df_proc)
+        if error_rate > .25:
+            self.add_quality_test_failed("DeltaT")
+        elif error_rate > .10:
+            self.add_quality_test_warning("DeltaT")
         else:
-            rowQualityTest['results'] = "Warning"
-    output['qualityTests'].append(rowQualityTest)
+            self.add_quality_test_passed("DeltaT")
 
-    deltaTQualityTest = {"testName": "DeltaT", "results": "Passed"}
-    if deltaTValidityStat['statData'][1] > 0:
-        if deltaTValidityStat['statData'][1]/len(df_proc) > .10:
-            deltaTQualityTest['results'] = "Failed"
-        else:
-            deltaTQualityTest['results'] = "Warning"
-    output['qualityTests'].append(deltaTQualityTest)
+        # set index
+        logging.debug('Setting index...')
+        df_proc = df_proc.set_index('date_time')
 
-    df_crop = df_proc[CROP_COLUMNS]
+        # resample data
+        logging.debug("Resampling data...")
+        df_proc = self.resample_data(df_proc)
 
-    df_crop = df_crop.set_index('date_time')
+        # round data
+        logging.debug("Rounding data: {}".format(ROUNDING))
+        df_proc = self.round_data(df_proc, ROUNDING)
 
-    df_crop = df_crop.resample(RESAMPLE_INTERVAL, label='right', closed='right').mean()
+        # split data where there are gaps
+        logging.debug("Building visualization data...")
 
-    df_crop = df_crop.reset_index()
+        visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+        visualizerDataObj['data'] = json.loads(df_crop[['date_time','water_temp_int']].to_json(orient='values'))
+        visualizerDataObj['unit'] = 'C'
+        visualizerDataObj['label'] = 'Internal Water Temp'
+        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        self.add_visualization_data(visualizerDataObj)
 
-    decimals = pd.Series([4,5,4,3,4], index=['Internal_Temp_(C)','Conductivity_(S/m)','Salinity_(PSU)','Sound_Velocity_(m/s)','External_Temp_(C)'])
-    df_crop = df_crop.round(decimals)
-    
-    visualizerDataObj = {'data':[], 'unit':'', 'label':''}
+        visualizerDataObj['data'] = json.loads(df_crop[['date_time','conductivity']].to_json(orient='values'))
+        visualizerDataObj['unit'] = 'S/m'
+        visualizerDataObj['label'] = 'Conductivity'
+        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        self.add_visualization_data(visualizerDataObj)
 
-    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Internal_Temp_(C)']].to_json(orient='values'))
-    visualizerDataObj['unit'] = 'C'
-    visualizerDataObj['label'] = 'Internal Temp'
-    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        visualizerDataObj['data'] = json.loads(df_crop[['date_time','salinity']].to_json(orient='values'))
+        visualizerDataObj['unit'] = 'PSU'
+        visualizerDataObj['label'] = 'Salinity'
+        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        self.add_visualization_data(visualizerDataObj)
 
-    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Conductivity_(S/m)']].to_json(orient='values'))
-    visualizerDataObj['unit'] = 'S/m'
-    visualizerDataObj['label'] = 'Conductivity'
-    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        visualizerDataObj['data'] = json.loads(df_crop[['date_time','sound_velocity']].to_json(orient='values'))
+        visualizerDataObj['unit'] = 'm/s'
+        visualizerDataObj['label'] = 'Sound Velocity'
+        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        self.add_visualization_data(visualizerDataObj)
 
-    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Salinity_(PSU)']].to_json(orient='values'))
-    visualizerDataObj['unit'] = 'PSU'
-    visualizerDataObj['label'] = 'Salinity'
-    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        visualizerDataObj['data'] = json.loads(df_crop[['date_time','water_temp_ext']].to_json(orient='values'))
+        visualizerDataObj['unit'] = 'C'
+        visualizerDataObj['label'] = 'External Water Temp'
+        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        self.add_visualization_data(visualizerDataObj)
 
-    visualizerDataObj['data'] = json.loads(df_crop[['date_time','Sound_Velocity_(m/s)']].to_json(orient='values'))
-    visualizerDataObj['unit'] = 'm/s'
-    visualizerDataObj['label'] = 'Sound Velocity'
-    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
+        # send message about errors encountered to OpenVDM
+        if self.openvdm is not None:
+            self.openvdm.sendMsg('Parsing ', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
 
-    visualizerDataObj['data'] = json.loads(df_crop[['date_time','External_Temp_(C)']].to_json(orient='values'))
-    visualizerDataObj['unit'] = 'C'
-    visualizerDataObj['label'] = 'External Temp'
-    output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
 
-    return output
-
-# -------------------------------------------------------------------------------------
-# Main function of the script should it be run as a stand-alone utility.
-# -------------------------------------------------------------------------------------
-def main(argv):
-    
-    parser = argparse.ArgumentParser(description='Parse TSG data')
-    parser.add_argument('dataFile', metavar='dataFile', help='the raw data file to process')
-    parser.add_argument('-d', '--debug', action='store_true', help=' display debug messages')
-    parser.add_argument('-c', '--csvkit', action='store_true', help=' clean datafile using CSVKit')
-
-    args = parser.parse_args()
-    if args.debug:
-        global DEBUG
-        DEBUG = True
-        debugPrint("Running in debug mode")
-
-    if args.csvkit:
-        global CSVKIT
-        CSVKIT = True
-        debugPrint("Using CSVKit to clean data file prior to processing")
-
-    if not os.path.isfile(args.dataFile):
-        sys.stderr.write('ERROR: File not found\n')
-        sys.exit(1)
-    
-    jsonObj = parseFile(args.dataFile)
-    if jsonObj:
-        print(json.dumps(jsonObj))
-        sys.exit(0)
-    else:
-        sys.exit(1)
-            
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(description='Parse SBE45 TSG with SBE38 temp sensor data')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+    parser.add_argument('--timeFormat', default=DEFAULT_TIME_FORMAT,
+                        help='timestamp format, default: %(default)')
+    parser.add_argument('--startDT', default=None,
+                        type=lambda s: datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ'),
+                        help=' crop start timestamp (iso8601)')
+    parser.add_argument('--stopDT', default=None,
+                        type=lambda s: datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ'),
+                        help=' crop stop timestamp (iso8601)')
+    parser.add_argument('dataFile', metavar='dataFile',
+                        help='the raw data file to process')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+    
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    ovdm_parser = TSGParser(start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat)
+
+    try:
+        logging.info("Processing file: {}".format(parsed_args.dataFile))
+        ovdm_parser.process_file(parsed_args.dataFile)
+        print(ovdm_parser.toJSON())
+        logging.info("Done!")
+    except Exception as err:
+        logging.error(str(err))
+        raise err
+        sys.exit(1)
