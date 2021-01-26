@@ -1,0 +1,15 @@
+certifi==2020.12.5
+chardet==4.0.0
+geographiclib==1.50
+geopy==2.1.0
+idna==2.10
+numpy==1.19.5
+pandas==1.2.1
+pkg-resources==0.0.0
+python-dateutil==2.8.1
+python3-gearman==0.1.0
+pytz==2020.5
+PyYAML==5.4.1
+requests==2.25.1
+six==1.15.0
+urllib3==1.26.2
