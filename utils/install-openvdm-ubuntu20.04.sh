@@ -157,11 +157,11 @@ function install_packages {
 
     apt-get update
 
-    # LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
-    # LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2
-    # LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/pkg-gearman
+    LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+    LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/apache2
+    LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/pkg-gearman
 
-    add-apt-repository -y ppa:ubuntugis/ppa
+    # add-apt-repository -y ppa:ubuntugis/ppa
 
     apt-get update
 
@@ -169,8 +169,8 @@ function install_packages {
         cifs-utils gearman-job-server libgearman-dev nodejs libnode-dev \
         node-gyp npm python3 python3-dev python3-pip python3-venv \
         gdal-bin libgeos-dev supervisor mysql-server mysql-client \
-        apache2 libapache2-mod-wsgi-py3 libapache2-mod-php php php-cli \
-        php-mysql php-zip php-curl php-gearman php-yaml proj-bin \
+        apache2 libapache2-mod-wsgi-py3 libapache2-mod-php7.3 php7.3 php7.3-cli \
+        php7.3-mysql php7.3-zip php7.3-curl php7.3-gearman php7.3-yaml proj-bin \
 	python3-pyproj
 
     pip3 install MapProxy
