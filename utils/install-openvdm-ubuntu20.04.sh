@@ -166,12 +166,15 @@ function install_packages {
     apt-get update
 
     apt install -y openssh-server sshpass rsync curl git samba smbclient \
-        cifs-utils gearman-job-server libgearman-dev nodejs nodejs-dev \
+        cifs-utils gearman-job-server libgearman-dev nodejs libnode-dev \
         node-gyp npm python3 python3-dev python3-pip python3-venv \
         gdal-bin libgeos-dev supervisor mysql-server mysql-client \
         apache2 libapache2-mod-wsgi-py3 libapache2-mod-php php php-cli \
-        php-mysql php-zip php-curl php-gearman php-yaml mapproxy proj-bin
+        php-mysql php-zip php-curl php-gearman php-yaml proj-bin \
+	python3-pyproj
 
+    pip3 install MapProxy
+    
     # TODO Install these via virtualenv
     #python-pip python-pip python-pil python-gdal python-lxml python-shapely python-requests
 
@@ -420,8 +423,8 @@ programs=cruise,cruise_directory,data_dashboard,lowering,lowering_directory,md5_
 EOF
     echo "Starting new supervisor processes"
     supervisorctl reread
-    supervisorctl update
-
+    systemctl restart supervisor.service
+    
 }
 
 
@@ -597,7 +600,7 @@ EOF
 ###########################################################################
 # Install and configure database
 function configure_mapproxy {
-
+	
     startingDir=${PWD}
 
     cd ~
@@ -677,6 +680,7 @@ EOF
     cd /var/www/mapproxy
     mapproxy-util create -t wsgi-app -f mapproxy.yaml --force config.py
 
+    # sed -e "s|cgi import|html import|" /usr/lib/python3/dist-packages/mapproxy/service/template_helper.py > /usr/lib/python3/dist-packages/mapproxy/service/template_helper.py
     cd ${startingDir}
 
 }
@@ -842,7 +846,7 @@ EOF
 create database if not exists OpenVDMv2 character set utf8;
 GRANT ALL PRIVILEGES ON OpenVDMv2.* TO '$OPENVDM_USER'@'localhost';
 USE OpenVDMv2;
-source ./OpenVDMv2_db_custom.sql;
+source ./database/OpenVDMv2_db_custom.sql;
 flush privileges;
 \q
 EOF
