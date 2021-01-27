@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# OpenVDM is available as open source under the MIT License at
+# OpenVDM is available as open source under the GPLv3 License at
 #   https:/github.com/webbpinner/OpenVDMv2
 #
 # This script installs and configures OpenVDM to run on Ubuntu 20.04.  It
@@ -918,9 +918,6 @@ echo "Hostname will be '$HOSTNAME'"
 # Set hostname
 set_hostname $HOSTNAME
 echo
-
-# Set hostname
-set_hostname $HOSTNAME
 
 read -p "OpenRVDAS install root? ($DEFAULT_INSTALL_ROOT) " INSTALL_ROOT
 INSTALL_ROOT=${INSTALL_ROOT:-$DEFAULT_INSTALL_ROOT}
