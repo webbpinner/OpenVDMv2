@@ -45,15 +45,16 @@
 #    this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =================================================================================== #
+
 import os
 import sys
 import csv
-import copy
 import json
 import pandas as pd
 import numpy as np
 import argparse
 import logging
+from copy import deepcopy
 from datetime import datetime
 
 from os.path import dirname, realpath
@@ -62,8 +63,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-# RAW_COLS = ['date_time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # OpenRVDAS style
-RAW_COLS = ['date', 'time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # SCS style
+RAW_COLS = ['date_time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # OpenRVDAS style
+# RAW_COLS = ['date', 'time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # SCS style
 PROC_COLS = ['date_time','cog_t','cog_m','sog_kts','sog_kph']
 
 ROUNDING = {
@@ -81,8 +82,8 @@ MAX_SOG_KPH = MAX_SOG_KTS * 1.852
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
-DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class VTGParser(OpenVDMCSVParser):
@@ -108,8 +109,9 @@ class VTGParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        # date_time = line['date_time'] # OpenRVDAS style
-                        date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        date_time = line['date_time'] # OpenRVDAS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        
                         cog_t = np.nan if line['cog_t'] == '' else float(line['cog_t'])
                         cog_m = np.nan if line['cog_m'] == '' else float(line['cog_m'])
                         sog_kts = np.nan if line['sog_kts'] == '' else float(line['sog_kts'])
@@ -249,26 +251,22 @@ class VTGParser(OpenVDMCSVParser):
         visualizerDataObj['data'] = json.loads(df_proc[['date_time','cog_t']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'deg'
         visualizerDataObj['label'] = 'COG, True'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
         visualizerDataObj['data'] = json.loads(df_proc[['date_time','cog_m']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'deg'
         visualizerDataObj['label'] = 'COG, Magnetic'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
         
         visualizerDataObj['data'] = json.loads(df_proc[['date_time','sog_kts']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'kts'
         visualizerDataObj['label'] = 'SOG, kts'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
         visualizerDataObj['data'] = json.loads(df_proc[['date_time','sog_kph']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'kph'
         visualizerDataObj['label'] = 'SOG, kph'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:

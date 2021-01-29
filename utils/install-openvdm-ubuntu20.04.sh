@@ -919,7 +919,7 @@ echo "Hostname will be '$HOSTNAME'"
 set_hostname $HOSTNAME
 echo
 
-read -p "OpenRVDAS install root? ($DEFAULT_INSTALL_ROOT) " INSTALL_ROOT
+read -p "OpenVDM install root? ($DEFAULT_INSTALL_ROOT) " INSTALL_ROOT
 INSTALL_ROOT=${INSTALL_ROOT:-$DEFAULT_INSTALL_ROOT}
 echo "Install root will be '$INSTALL_ROOT'"
 echo

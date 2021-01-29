@@ -182,8 +182,10 @@ class OpenVDMParser():
 
 
     def get_plugin_data(self):
-        return self.plugin_data
+        if len(self.plugin_data['visualizerData']) > 0 or len(self.plugin_data['qualityTests']) > 0 or len(self.plugin_data['stats']) > 0:
+            return self.plugin_data
 
+        return None
 
     def process_file(self, filePath):
         raise NotImplementedError('process_file must be implemented by subclass')

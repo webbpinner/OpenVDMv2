@@ -45,15 +45,16 @@
 #    this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =================================================================================== #
+
 import os
 import sys
 import csv
-import copy
 import json
 import pandas as pd
 import numpy as np
 import argparse
 import logging
+from copy import deepcopy
 from datetime import datetime
 
 from os.path import dirname, realpath
@@ -107,7 +108,8 @@ class ROV_CTDParser(OpenVDMCSVParser):
 
                     try:
                         date_time = line['date_time'] # OpenRVDAS style
-                        #date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
+
                         conductivity = line['conductivity']
                         temperature = line['temperature']
                         pressure = line['pressure']
@@ -214,41 +216,35 @@ class ROV_CTDParser(OpenVDMCSVParser):
         logging.debug("Building visualization data...")
 
         visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','conductivity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','conductivity']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'S/m'
         visualizerDataObj['label'] = 'Conductivity'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','temperature']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','temperature']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'C'
         visualizerDataObj['label'] = 'Temperature'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','pressure']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','pressure']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'psig'
         visualizerDataObj['label'] = 'Pressure'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','depth']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','depth']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'm'
         visualizerDataObj['label'] = 'Depth'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','salinity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','salinity']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'ppt'
         visualizerDataObj['label'] = 'Salinity'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','sound_velocity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','sound_velocity']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'm/s'
         visualizerDataObj['label'] = 'Sound Velocity'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:

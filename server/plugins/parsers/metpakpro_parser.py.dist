@@ -45,15 +45,16 @@
 #    this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =================================================================================== #
+
 import os
 import sys
 import csv
-import copy
 import json
 import pandas as pd
 import numpy as np
 import argparse
 import logging
+from copy import deepcopy
 from datetime import datetime
 
 from os.path import dirname, realpath
@@ -104,7 +105,7 @@ class MetPakProParser(OpenVDMCSVParser):
 
                     try:
                         date_time = line['date_time'] # OpenRVDAS style
-                        #date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
 
                         air_pres = float(line['air_pres'])
                         air_temp = float(line['air_temp'])
@@ -206,35 +207,30 @@ class MetPakProParser(OpenVDMCSVParser):
         logging.debug("Building visualization data...")
 
         visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','air_pres']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','air_pres']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'hPa'
         visualizerDataObj['label'] = 'Air Pressure'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','air_temp']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','air_temp']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'C'
         visualizerDataObj['label'] = 'Air Temperature'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','humidity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','humidity']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Relative Humidity'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
         
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','wind_spd']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','wind_spd']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'm/s'
         visualizerDataObj['label'] = 'Relative Wind Spd'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','wind_dir']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','wind_dir']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'deg'
         visualizerDataObj['label'] = 'Relative Wind Dir'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:

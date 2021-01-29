@@ -45,15 +45,16 @@
 #    this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # =================================================================================== #
+
 import os
 import sys
 import csv
-import copy
 import json
 import pandas as pd
 import numpy as np
 import argparse
 import logging
+from copy import deepcopy
 from datetime import datetime
 
 from os.path import dirname, realpath
@@ -108,6 +109,7 @@ class CompPresParser(OpenVDMCSVParser):
                     try:
                         date_time = line['date_time'] # OpenRVDAS style
                         #date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        
                         comp1 = float(line['comp1'])
                         comp2 = float(line['comp2'])
                         comp3 = float(line['comp3'])
@@ -207,41 +209,35 @@ class CompPresParser(OpenVDMCSVParser):
         logging.debug("Building visualization data...")
 
         visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','comp1']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','comp1']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Compensator 1'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','comp2']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','comp2']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Compensator 2'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','comp3']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','comp3']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Compensator 3'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','comp4']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','comp4']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Compensator 4'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','comp5']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','comp5']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Compensator 5'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','comp6']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','comp6']].to_json(orient='values'))
         visualizerDataObj['unit'] = '%'
         visualizerDataObj['label'] = 'Compensator 6'
-        # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
-        self.add_visualization_data(visualizerDataObj)
+        self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None:
