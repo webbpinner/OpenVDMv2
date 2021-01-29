@@ -15,9 +15,7 @@
 #
 # REQUIREMENTS:  Python3.8
 #                Python Modules:
-#                    geopy==2.1.0
-#                    numpy==1.19.5
-#                    pandas==1.2.0
+#                    gdal==
 #                    PyYAML==5.3.1
 #                    requests==2.25.1
 #
@@ -48,8 +46,10 @@
 import os
 import sys
 import csv
+import gdal
 import json
 import shutil
+import tempfile
 import subprocess
 import argparse
 import logging
@@ -60,16 +60,14 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMParser
 from server.lib.openvdm import OpenVDM_API
 
-DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
 # DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 class GeoTIFFParser(OpenVDMParser):
 
     def __init__(self, use_openvdm_api=True, output_dir=None):
-        super().__init__(start_dt=start_dt, stop_dt=stop_dt)
-        self.raw_cols = RAW_COLS
-        self.proc_cols = PROC_COLS
-        self.time_format = time_format
+        super().__init__()
+        # self.time_format = time_format
         self.openvdm = OpenVDM_API() if use_openvdm_api else None
 
         if output_dir is not None and not os.path.isdir(output_dir):
@@ -88,13 +86,14 @@ class GeoTIFFParser(OpenVDMParser):
             if self.openvdm:
                 # parse the filePath to get the name of the file without the file extension
                 dataWarehouseConfig = self.openvdm.getShipboardDataWarehouseConfig()
-                dashboardDataDir = self.openvdm.getRequiredExtraDirectoryByName("Data_Dashboard")['destDir']
+                logging.debug(self.openvdm.getRequiredExtraDirectoryByName("Dashboard_Data"))
+                dashboardDataDir = self.openvdm.getRequiredExtraDirectoryByName("Dashboard_Data")['destDir']
                 cruiseID = self.openvdm.getCruiseID()
 
-                collectionSystemDir = dirname.replace(os.path.join(dataWarehouseConfig['shipboardDataWarehouseBaseDir'], cruiseID), '').rstrip('/')
+                collectionSystemDir = dirname.replace(os.path.join(dataWarehouseConfig['shipboardDataWarehouseBaseDir'], cruiseID), '').lstrip('/')
                 self.output_dir = os.path.join(dataWarehouseConfig['shipboardDataWarehouseBaseDir'], cruiseID, dashboardDataDir, collectionSystemDir)
-            else:
-                self.output_dir = dirname
+        else:
+            self.output_dir = dirname
     
         # Directory where the tiles will go.
         tilePath = os.path.join(self.output_dir, label)
@@ -131,7 +130,7 @@ class GeoTIFFParser(OpenVDMParser):
 
         proc = subprocess.run(command, capture_output=True)
 
-        command = ['gdal2tiles.py', '-v', '--profile=mercator', '--zoom=5-12', '--webviewer=none', vrtFilePath, tilePath]
+        command = ['gdal2tiles.py', '-v', '--profile=mercator', '--zoom=5-13', '--webviewer=none', vrtFilePath, tilePath]
         logging.debug('Command: {}'.format(' '.join(command)))
         proc = subprocess.run(command, capture_output=True)
 
@@ -151,10 +150,6 @@ class GeoTIFFParser(OpenVDMParser):
         }
         self.add_visualization_data(visualizerDataObj)
 
-        # send message about errors encountered to OpenVDM
-        if self.openvdm is not None:
-            self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {}'.format(filePath))
-
 
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility
@@ -164,7 +159,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
                         help='Increase output verbosity')
-    parser.add_argument('--outputDir', metavar='outputDir', default=None
+    parser.add_argument('--outputDir', metavar='outputDir', default=None,
                         help='where to save the output tiles')
     parser.add_argument('dataFile', metavar='dataFile',
                         help='the raw data file to process')

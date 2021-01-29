@@ -210,27 +210,41 @@ def transfer_localDestDir(gearman_worker, gearman_job):
         shutil.rmtree(tmpdir)
         return False
 
+    fileIndex = 0
+    fileCount = 1 # avoids divide by 0 error
+    command = ['rsync', '-trimnv', '--stats', '--exclude-from=' + rsyncExcludeListPath, cruiseDir, destDir]
+
+    logging.debug('File count Command: {}'.format(' '.join(command)))
+
+    proc = subprocess.run(command, capture_output=True, text=True)
+
+    for line in proc.stdout:
+        if line.startswith('Number of regular files transferred:'):
+            fileCount = int(line.split(':')[1])
+
     bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
     
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir, destDir]
+    command = ['rsync', '-trimv', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir, destDir]
 
     logging.debug('Transfer Command: {}'.format(' '.join(command)))
     
-    fileIndex = 0
-    fileCount = len(files['include'])
-    
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     while True:
 
         line = proc.stdout.readline().rstrip('\n')
+        errLine = proc.stderr.readline().rstrip('\n')
+
+        if errLine:
+            logging.warning("Err Line: {}".format(errLine))
+        if line:
+            logging.debug("Line: {}".format(line))
 
         if proc.poll() is not None:
             break
 
-        if not line:
-            continue
+        # if not line:
+        #     continue
         
-        logging.debug("Line: {}".format(line))
         if line.startswith( '>f+++++++++' ):
             filename = line.split(' ',1)[1]
             files['new'].append(filename)
@@ -306,7 +320,8 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
     try:
         with open(rsyncExcludeListPath, 'w') as rsyncExcludeListFile:
             rsyncExcludeListFile.write('\n'.join(files['exclude']))
-
+            
+        logging.debug('\n'.join(files['exclude']))
     except IOError:
         logging.error("Error Saving temporary rsync filelist file")
             
@@ -314,24 +329,42 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
         shutil.rmtree(tmpdir)
         return False
 
+    fileIndex = 0
+    fileCount = 1 # avoids divide by 0 error
+    command = ['rsync', '-trimnv', '--stats', '--exclude-from=' + rsyncExcludeListPath, cruiseDir, os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir']).rstrip('/') if gearman_worker.cruiseDataTransfer['destDir'] != '/' else mntPoint]
+
+    logging.debug('File count Command: {}'.format(' '.join(command)))
+    
+    proc = subprocess.run(command, capture_output=True, text=True)
+
+    for line in proc.stdout:
+        if line.startswith('Number of regular files transferred:'):
+            fileCount = int(line.split(':')[1])
+            break
+
     bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
     
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir, os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir']).rstrip('/') if gearman_worker.cruiseDataTransfer['destDir'] != '/' else mntPoint]
+    command = ['rsync', '-trimv', bandwidthLimit, '--exclude-from=' + rsyncExcludeListPath, cruiseDir, os.path.join(mntPoint, gearman_worker.cruiseDataTransfer['destDir']).rstrip('/') if gearman_worker.cruiseDataTransfer['destDir'] != '/' else mntPoint]
 
     logging.debug('Transfer Command: {}'.format(' '.join(command)))
     
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     while True:
 
         line = proc.stdout.readline().rstrip('\n')
-
+        errLine = proc.stderr.readline().rstrip('\n')
+        
+        if errLine:
+            logging.warning("Err Line: {}".format(errLine))
+        if line:
+            logging.debug("Line: {}".format(line))
+            
         if proc.poll() is not None:
             break
 
-        if not line:
-            continue
+        # if not line:
+        #     continue
         
-        logging.debug("Line: {}".format(line))
         if line.startswith( '>f+++++++++' ):
             filename = line.split(' ',1)[1]
             files['new'].append(filename)
@@ -347,9 +380,6 @@ def transfer_smbDestDir(gearman_worker, gearman_job):
             logging.debug("Stopping")
             proc.terminate()
             break
-
-    #files['new'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['new']]
-    # files['updated'] = [os.path.join('/', gearman_worker.cruiseID, filename) for filename in files['updated']]
 
     # Cleanup
     time.sleep(2)
@@ -376,9 +406,6 @@ def transfer_rsyncDestDir(gearman_worker, gearman_job):
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
 
-    fileIndex = 0
-    fileCount = len(files['include'])
-    
     rsyncPasswordFilePath = os.path.join(tmpdir, 'passwordFile')
 
     try:
@@ -398,9 +425,6 @@ def transfer_rsyncDestDir(gearman_worker, gearman_job):
     
     rsyncExcludeListPath = os.path.join(tmpdir, 'rsyncExcludeList.txt')
         
-    if not output_results['verdict']:
-        return output_results
-    
     # Create temp directory
     tmpdir = tempfile.mkdtemp()
     rsyncExcludeListPath = os.path.join(tmpdir, 'rsyncExcludeList.txt')
@@ -416,6 +440,19 @@ def transfer_rsyncDestDir(gearman_worker, gearman_job):
         shutil.rmtree(tmpdir)
         return False
     
+    fileIndex = 0
+    fileCount = 1 # avoids divide by 0 error
+    command = ['rsync', '-trimnv', '--stats', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, cruiseDir, 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+
+    logging.debug('File count Command: {}'.format(' '.join(command)))
+
+    proc = subprocess.run(command, capture_output=True, text=True)
+
+    for line in proc.stdout:
+        if line.startswith('Number of regular files transferred:'):
+            fileCount = int(line.split(':')[1])
+            break
+        
     bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
 
     # # Work around to create CruiseID at the destination
@@ -423,29 +460,34 @@ def transfer_rsyncDestDir(gearman_worker, gearman_job):
     # command = ['rsync', '-a', bandwidthLimit, '--no-motd', '--password-file=' + rsyncPasswordFilePath, os.path.join(tmpdir, gearman_worker.cruiseID), 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
     # popen = subprocess.Popen(command, stdout=subprocess.PIPE)
 
-    command = ['rsync', '-trim', bandwidthLimit, '--no-motd', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, cruiseDir, 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
+    command = ['rsync', '-trimv', bandwidthLimit, '--no-motd', '--exclude-from=' + rsyncExcludeListPath, '--password-file=' + rsyncPasswordFilePath, cruiseDir, 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir + '/']
     
     logging.debug('Transfer Command: {}'.format(' '.join(command)))
 
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     while True:
 
         line = proc.stdout.readline().rstrip('\n')
+        errLine = proc.stderr.readline().rstrip('\n')
+
+        if errLine:
+            logging.warning("Err Line: {}".format(errLine))
+        if line:
+            logging.debug("Line: {}".format(line))
 
         if proc.poll() is not None:
             break
 
-        if not line:
-            continue
+        # if not line:
+        #     continue
         
-        logging.debug('Line: {}'.format(line))
-        if line.startswith( '>f+++++++++' ):
+        if line.startswith( '<f+++++++++' ):
             filename = line.split(' ',1)[1]
             files['new'].append(filename)
             gearman_worker.send_job_status(gearman_job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
             fileIndex += 1
-        elif line.startswith( '>f.' ):
+        elif line.startswith( '<f.' ):
             filename = line.split(' ',1)[1]
             files['updated'].append(filename)
             gearman_worker.send_job_status(gearman_job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
@@ -482,9 +524,6 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
 
     sshExcludeListPath = os.path.join(tmpdir, 'sshExcludeList.txt')
     
-    fileIndex = 0
-    fileCount = len(files['include'])
-
     try:
         with open(sshExcludeListPath, 'w') as sshExcludeFileListFile:
             sshExcludeFileListFile.write('\n'.join(files['exclude']))
@@ -497,6 +536,21 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
             
         return {'verdict': False, 'reason': 'Error Saving temporary ssh exclude filelist file: ' + sshExcludeListPath, 'files':[]}
 
+    fileIndex = 0
+    fileCount = 1 # avoids divide by 0 error
+    command = ['rsync', '-trimnv', '--stats', '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':', destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trimnv', '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+
+
+    logging.debug('File count Command: {}'.format(' '.join(command)))
+
+    proc = subprocess.run(command, capture_output=True, text=True)
+
+    for line in proc.stdout:
+        if line.startswith('Number of regular files transferred:'):
+            fileCount = int(line.split(':')[1])
+            break
+
+
     bandwidthLimit = '--bwlimit=' + gearman_worker.cruiseDataTransfer['bandwidthLimit'] if gearman_worker.cruiseDataTransfer['bandwidthLimit'] != '0' else '--bwlimit=20000000' # 20GB/s a.k.a. stupid big
     
     # command = ['ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', 'PasswordAuthentication=no', 'mkdir ' + os.path.join(destDir, gearman_worker.cruiseID)] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'ssh', gearman_worker.cruiseDataTransfer['sshServer'], '-l', gearman_worker.cruiseDataTransfer['sshUser'], '-o', 'StrictHostKeyChecking=no', '-o', 'PubkeyAuthentication=no', 'mkdir ' + os.path.join(destDir, gearman_worker.cruiseID)]
@@ -504,29 +558,34 @@ def transfer_sshDestDir(gearman_worker, gearman_job):
     # proc = subprocess.Popen(command, stdout=subprocess.PIPE)
     # proc.communicate()
 
-    command = ['rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trim', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
+    command = ['rsync', '-trimv', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir] if gearman_worker.cruiseDataTransfer['sshUseKey'] == '1' else ['sshpass', '-p', gearman_worker.cruiseDataTransfer['sshPass'], 'rsync', '-trimv', bandwidthLimit, '--exclude-from=' + sshExcludeListPath, '-e', 'ssh', cruiseDir, gearman_worker.cruiseDataTransfer['sshUser'] + '@' + gearman_worker.cruiseDataTransfer['sshServer'] + ':' + destDir]
     
     logging.debug("Transfer Command: {}".format(' '.join(command)))
     
-    proc = subprocess.Popen(command, stdout=subprocess.PIPE, text=True)
+    proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     
     while True:
 
         line = proc.stdout.readline().rstrip('\n')
+        errLine = proc.stderr.readline().rstrip('\n')
+
+        if errLine:
+            logging.warning("Err Line: {}".format(errLine))
+        if line:
+            logging.debug("Line: {}".format(line))
 
         if proc.poll() is not None:
             break
 
-        if not line:
-            continue
+        # if not line:
+        #    continue
         
-        logging.debug("Line: {}".format(line))
-        if line.startswith( '>f+++++++++' ):
+        if line.startswith( '<f+++++++++' ):
             filename = line.split(' ',1)[1]
             files['new'].append(filename)
             gearman_worker.send_job_status(gearman_job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)
             fileIndex += 1
-        elif line.startswith( '>f.' ):
+        elif line.startswith( '<f.' ):
             filename = line.split(' ',1)[1]
             files['updated'].append(filename)
             gearman_worker.send_job_status(gearman_job, int(20 + 70*float(fileIndex)/float(fileCount)), 100)

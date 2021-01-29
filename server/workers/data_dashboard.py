@@ -595,7 +595,8 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
 
     gearman_worker.send_job_status(gearman_job, 99, 100)
 
-    job_results['files']['updated'] = [os.path.join(gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'], filepath) for filepath in build_filelist(dataDashboardDir)]# might need to remove cruiseDir from begining of filepaths
+    dataDashboardDestDir = gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir']
+    job_results['files']['updated'] = [os.path.join(dataDashboardDestDir, filepath) for filepath in build_filelist(dataDashboardDir)]# might need to remove cruiseDir from begining of filepaths
 
     gearman_worker.send_job_status(gearman_job, 10, 10)
 
