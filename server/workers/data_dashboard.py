@@ -484,7 +484,7 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
             if gearman_worker.stop:
                 break
 
-            logging.debug("Processing file: {}".format(filename))
+            logging.info("Processing file: {}".format(filename))
             jsonFileName = os.path.splitext(filename)[0] + '.json'
             logging.debug("jsonFileName: {}".format(jsonFileName))
             rawFilePath = os.path.join(cruiseDir, filename)

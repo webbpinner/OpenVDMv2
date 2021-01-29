@@ -176,7 +176,8 @@ def test_smbDestDir(gearman_worker):
             
 
     # Unmount SMB Share
-    subprocess.call(['sudo', 'umount', mntPoint])
+    if os.path.ismount(mntPoint):
+        subprocess.call(['sudo', 'umount', mntPoint])
 
     # Cleanup
     shutil.rmtree(tmpdir)
@@ -238,7 +239,7 @@ def test_rsyncDestDir(gearman_worker):
     
     logging.debug('Destination test command: {}'.format(' '.join(dest_test_command)))
 
-    proc = subprocess.Popen(dest_test_command, capture_output=True)
+    proc = subprocess.run(dest_test_command, capture_output=True)
 
     if proc.returncode != 0:
         returnVal.extend([
@@ -255,24 +256,27 @@ def test_rsyncDestDir(gearman_worker):
 
     writeTestFile = os.path.join(tmpdir, 'writeTest.txt')
     with open(writeTestFile, 'a') as writeTestFileHandle:
-        os.utime(writeTestFileHandle, None)
+        writeTestFileHandle.write("This file proves this directory can be written to by OpenVDM")
 
     write_test_command = ['rsync', '-vi', '--no-motd', '--password-file=' + rsyncPasswordFilePath, writeTestFile, 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir]
 
     logging.debug('Server Test Command: {}'.format(' '.join(write_test_command)))
 
-    proc = subprocess.run(command, capture_output=True)
+    proc = subprocess.run(write_test_command, capture_output=True)
 
     if proc.returncode != 0:
         returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: {} on the Rsync Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['rsyncServer'])})
         
     else:
 
-        write_cleanup_command = ['rsync', '-vir', '--no-motd', '--password-file=' + rsyncPasswordFilePath, '--delete', 'writeTest.txt', 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir]
+        os.remove(writeTestFile)
+        write_cleanup_command = ['rsync', '-vir', '--no-motd', '--password-file=' + rsyncPasswordFilePath, '--delete', '--include=writeTest.txt', '--exclude=*', tmpdir + '/', 'rsync://' + gearman_worker.cruiseDataTransfer['rsyncUser'] + '@' + gearman_worker.cruiseDataTransfer['rsyncServer'] + destDir]
     
         logging.debug('Write test cleanup command: {}'.format(' '.join(write_cleanup_command)))
 
-        proc = subprocess.run(write_cleanup_command, capture_output=True)
+        proc = subprocess.run(write_cleanup_command, capture_output=True, text=True)
+
+        logging.debug(proc.stderr)
         
         if proc.returncode != 0:
             returnVal.append({"testName": "Write Test", "result": "Fail", "reason": "Unable to write to destination directory: {} on the Rsync Server: {}".format(destDir, gearman_worker.cruiseDataTransfer['rsyncServer'])})
@@ -375,16 +379,18 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         payloadObj = json.loads(current_job.data)
 
-        try:
+        if 'cruiseDataTransferID' in payloadObj['cruiseDataTransfer']:
             self.cruiseDataTransfer = self.OVDM.getCruiseDataTransfer(payloadObj['cruiseDataTransfer']['cruiseDataTransferID'])
 
             if not self.cruiseDataTransfer:
+                logging.error("could not find configuration data")
                 return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Cruise Data Tranfer Data", "result": "Fail", "reason": "Could not find configuration data for cruise data transfer"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
         
-        except:
-            return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Cruise Data Tranfer Data", "result": "Fail", "reason": "Could not find retrieve data for cruise data transfer from OpenVDM API"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+            self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
 
-        self.cruiseDataTransfer.update(payloadObj['cruiseDataTransfer'])
+        else:
+            self.cruiseDataTransfer = payloadObj['cruiseDataTransfer']
+
         self.cruiseID = self.OVDM.getCruiseID()
 
         logging.info("Job: {}, {} transfer test started at: {}".format(current_job.handle, self.cruiseDataTransfer['name'], time.strftime("%D %T", time.gmtime())))
@@ -398,7 +404,9 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.error("Job: {}, {} transfer test failed at: {}".format(current_job.handle, self.cruiseDataTransfer['name'], time.strftime("%D %T", time.gmtime())))
         
         self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown"}]))
-        self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], 'Worker crashed')
+        
+        if 'cruiseDataTransferID' in self.cruiseDataTransfer:
+            self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], 'Worker crashed')
 
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -410,13 +418,14 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
     def on_job_complete(self, current_job, job_results):
         resultsObj = json.loads(job_results)
 
-        if len(resultsObj['parts']) > 0:
-            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], resultsObj['parts'][-1]['reason'])
+        if 'cruiseDataTransferID' in self.cruiseDataTransfer:
+            if len(resultsObj['parts']) > 0:
+                if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                    self.OVDM.setError_cruiseDataTransferTest(self.cruiseDataTransfer['cruiseDataTransferID'], resultsObj['parts'][-1]['reason'])
+                else:
+                    self.OVDM.clearError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], self.cruiseDataTransfer['status'])
             else:
                 self.OVDM.clearError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], self.cruiseDataTransfer['status'])
-        else:
-            self.OVDM.clearError_cruiseDataTransfer(self.cruiseDataTransfer['cruiseDataTransferID'], self.cruiseDataTransfer['status'])
 
         logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
         logging.info("Job: {}, {} transfer test completed at: {}".format(current_job.handle, self.cruiseDataTransfer['name'], time.strftime("%D %T", time.gmtime())))
@@ -439,7 +448,8 @@ def task_testCruiseDataTransfer(gearman_worker, current_job):
 
     job_results = {'parts':[]}
 
-    gearman_worker.OVDM.setRunning_cruiseDataTransferTest(gearman_worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
+    if 'cruiseDataTransferID' in gearman_worker.cruiseDataTransfer:
+        gearman_worker.OVDM.setRunning_cruiseDataTransferTest(gearman_worker.cruiseDataTransfer['cruiseDataTransferID'], os.getpid(), current_job.handle)
 
     gearman_worker.send_job_status(current_job, 1, 4)
     

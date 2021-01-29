@@ -64,24 +64,24 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLS = ['date_time','data'] # OpenRVDAS style
-# RAW_COLS = ['date','time','data'] # SCS style
-PROC_COLUMNS = ['date_time','water_temp_int','conductivity','salinity','sound_velocity','water_temp_ext']
+# RAW_COLS = ['date_time','data'] # OpenRVDAS style
+RAW_COLS = ['date','time','water_temp_int','conductivity','salinity','sound_velocity','water_temp_ext'] # SCS style
+PROC_COLS = ['date_time','water_temp_int','conductivity','salinity','sound_velocity','water_temp_ext']
 
 ROUNDING = {
     'water_temp_int': 4,
     'conductivity': 5,
     'salinity': 4,
-    'sound_velocity': 5
-    'water_temp_ext': 4,
+    'sound_velocity': 5,
+    'water_temp_ext': 4
 }
 
 MIN_DEPTH = 0
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
-# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class TSGParser(OpenVDMCSVParser):
@@ -107,16 +107,14 @@ class TSGParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        date_time = line['date_time'] # OpenRVDAS style
-                        #date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = line['date_time'] # OpenRVDAS style
+                        date_time = ' '.join([line['date'], line['time']]) # SCS style
 
-                        data_temp_1,data_cont,data_sal,data_sv,data_temp_2 =  line['data'].split()
-
-                        water_temp_int = float(data_temp_1)
-                        conductivity = float(data_cont)
-                        salinity = float(data_sal)
-                        sound_velocity = float(data_sv)                        
-                        water_temp_ext = float(data_temp_2)
+                        water_temp_int = float(line['water_temp_int'].split('=')[1])
+                        conductivity = float(line['conductivity'].split('=')[1])
+                        salinity = float(line['salinity'].split('=')[1])
+                        sound_velocity = float(line['sound_velocity'].split('=')[1])
+                        water_temp_ext = float(line['water_temp_ext'].split('=')[1])
 
                     except Exception as err:
                         errors.append(lineno)
@@ -214,31 +212,31 @@ class TSGParser(OpenVDMCSVParser):
         logging.debug("Building visualization data...")
 
         visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','water_temp_int']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','water_temp_int']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'C'
         visualizerDataObj['label'] = 'Internal Water Temp'
         # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
         self.add_visualization_data(visualizerDataObj)
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','conductivity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','conductivity']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'S/m'
         visualizerDataObj['label'] = 'Conductivity'
         # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
         self.add_visualization_data(visualizerDataObj)
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','salinity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','salinity']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'PSU'
         visualizerDataObj['label'] = 'Salinity'
         # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
         self.add_visualization_data(visualizerDataObj)
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','sound_velocity']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','sound_velocity']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'm/s'
         visualizerDataObj['label'] = 'Sound Velocity'
         # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))
         self.add_visualization_data(visualizerDataObj)
 
-        visualizerDataObj['data'] = json.loads(df_crop[['date_time','water_temp_ext']].to_json(orient='values'))
+        visualizerDataObj['data'] = json.loads(df_proc[['date_time','water_temp_ext']].to_json(orient='values'))
         visualizerDataObj['unit'] = 'C'
         visualizerDataObj['label'] = 'External Water Temp'
         # output['visualizerData'].append(copy.deepcopy(visualizerDataObj))

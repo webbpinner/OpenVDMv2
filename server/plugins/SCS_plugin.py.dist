@@ -53,16 +53,24 @@ from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm_plugin import OpenVDMPlugin
-from server.plugins.parsers.gga_parser import GGAParser
-from server.plugins.parsers.vtg_parser import VTGParser
+from server.plugins.parsers.gga_parser   import GGAParser
+from server.plugins.parsers.vtg_parser   import VTGParser
+from server.plugins.parsers.tsg_parser   import TSGParser
+from server.plugins.parsers.twind_parser import TWindParser
+from server.plugins.parsers.svp_parser   import SVPParser
+from server.plugins.parsers.met_parser   import MetParser
 
 # -------------------------------------------------------------------------------------
 # This array defines the various dataTypes collected by SCS and the cooresponding file
 # regex expression.
 # -------------------------------------------------------------------------------------
 fileTypeFilters = [
-    {"data_type":"gga",       "regex": "*/NAV/POSMV-GGA_*.Raw",   "parser": "GGA",    'parser_options':{}},
-    {"data_type":"vtg",       "regex": "*/NAV/POSMV-VTG_*.Raw",   "parser": "VTG",    'parser_options':{}},
+    {"data_type":"gga",       "regex": "*/NAV/POSMV-GGA_*.Raw",                "parser": "GGA",    'parser_options':{}},
+    {"data_type":"vtg",       "regex": "*/NAV/POSMV-VTG_*.Raw",                "parser": "VTG",    'parser_options':{}},
+    {"data_type":"tsg",       "regex": "*/METOC/TSG-RAW_*.Raw",                "parser": "TSG",    'parser_options':{}},
+    {"data_type":"twind",     "regex": "*/METOC/TrueWind-RAW_*.Raw",           "parser": "TWind",  'parser_options':{}},
+    {"data_type":"svp",       "regex": "*/METOC/Sound-Velocity-Probe_*.Raw",   "parser": "SVP",    'parser_options':{}},
+    {"data_type":"met",       "regex": "*/METOC/MET-M01_*.Raw",                "parser": "Met",    'parser_options':{}},
 ]
 
 # -------------------------------------------------------------------------------------
@@ -93,6 +101,14 @@ class SCS_OpenVDMPlugin(OpenVDMPlugin):
             return GGAParser(**file_type_filter['parser_options'])
         elif file_type_filter['parser'] == "VTG":
             return VTGParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "TSG":
+            return TSGParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "TWind":
+            return TWindParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "SVP":
+            return SVPParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "Met":
+            return MetParser(**file_type_filter['parser_options'])
         else:
             return None
 

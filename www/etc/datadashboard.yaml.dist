@@ -175,10 +175,16 @@
     id: map
     heading: Position
     dataArray:
-    - dataType: gga-posmv
+    - dataType: gga
       visType: geoJSON
     - dataType: geotiff
       visType: tms
+  - plotType: chart
+    id: vtg
+    heading: SOG/COG
+    dataArray:
+    - dataType: vtg
+      visType: json
 
 #- title: Interactive
 #  page: lowering

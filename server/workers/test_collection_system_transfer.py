@@ -138,7 +138,8 @@ def test_smbSourceDir(gearman_worker):
         ])
     
         # Unmount SMB Share
-        subprocess.call(['sudo', 'umount', mntPoint])
+        if os.path.ismount(mntPoint):
+            subprocess.call(['sudo', 'umount', mntPoint])
 
         # Cleanup
         shutil.rmtree(tmpdir)
@@ -157,7 +158,8 @@ def test_smbSourceDir(gearman_worker):
         returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} within the SMB Share: {}".format(sourceDir, gearman_worker.collectionSystemTransfer['smbServer'])})
 
     # Unmount SMB Share
-    subprocess.call(['sudo', 'umount', mntPoint])
+    if os.path.ismount(mntPoint):
+        subprocess.call(['sudo', 'umount', mntPoint])
 
     # Cleanup
     shutil.rmtree(tmpdir)
