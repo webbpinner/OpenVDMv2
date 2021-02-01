@@ -60,7 +60,7 @@ import logging
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring
 
 from os.path import dirname, realpath
-sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
+sys.path.append(dirname(dirname(realpath(__file__))))
 
 from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
 from server.utils.output_JSONDataToFile import output_JSONDataToFile
@@ -71,15 +71,19 @@ DASHBOARD_EXTRA_DIR_NAME = 'Dashboard_Data'
 
 AllGPSSources = [
     {
-        "CollectionSystem":"OpenRVDAS",
+        "CollectionSystem":"ROV_SCS",
         "GPSSources": [
             {
-                "device":"CNAV",
-                "regex":"NAV/CNAV-GGA_*.json"
+                "device":"USBL-PRI",
+                "regex":"*SBNAV/UDP-SB-USBL-PRI-GGA-RAW_*.json"
             },
             {
-                "device":"POSMV",
-                "regex":"NAV/POSMV-GGA_*.json"
+                "device":"USBL-SEC",
+                "regex":"*SBNAV/UDP-SB-USBL-SEC-GGA-RAW_*.json"
+            },
+            {
+                "device":"SPRINT",
+                "regex":"*SUBASTIAN/UDP-SB-SPRINT-RAW_*.json"
             }
         ]
     }
@@ -94,7 +98,7 @@ AllGPSSources = [
 # files to process the fuction returns Null.  Otherwise the fuction returns the
 # combined geoJSON object
 # -------------------------------------------------------------------------------------
-def combineGeoJsonFiles(files, cruiseID, deviceName):
+def combineGeoJsonFiles(files, loweringID, deviceName):
     
     # Blank geoJson object
     combinedGeoJsonObj = {
@@ -107,7 +111,7 @@ def combineGeoJsonFiles(files, cruiseID, deviceName):
                     "coordinates":[]
                 },
                 "properties": {
-                    "name": cruiseID + '_' + deviceName,
+                    "name": loweringID + '_' + deviceName,
                     "coordTimes":[]
                 }
             }
@@ -167,7 +171,7 @@ def convToKML(geoJSONObj):
     coordinatesText = coordinatesText.rstrip(' ')
     coordinates.text = coordinatesText
 
-    return '<?xml version=\"1.0\" encoding=\"utf-8\"?>' + tostring(kml)
+    return '<?xml version="1.0" encoding="utf-8"?>' + tostring(kml).decode('utf8')
 
 # -------------------------------------------------------------------------------------
 # Creates geoJSON and kml representations of the shiptrack  for the specified cruise 
@@ -202,7 +206,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
                         help='Increase output verbosity')
-    parser.add_argument('-c', dest='cruiseID', metavar='cruiseID', help='the cruiseID to process')
+    parser.add_argument('-l', dest='loweringID', metavar='loweringID', help='the loweringID to process')
     parser.add_argument('collectionSystem', help='the collection system to search for geoJSON files')
 
     parsed_args = parser.parse_args()
@@ -224,44 +228,62 @@ if __name__ == "__main__":
     # Define the cruiseID to use for identifying the position data
     cruiseID = openVDM.getCruiseID()
 
-    # if a cruiseID was declared in the command-line aruments, redefine the cruiseID variable
-    if not parsed_args.cruiseID is None:
-        logging.info("Setting CruiseID to: {}".format(parsed_args.cruiseID))
-        cruiseID = parsed_args.cruiseID
+    # Define the loweringID to use for identifying the position data
+    loweringID = openVDM.getLoweringID()
+
+    # if a loweringID was declared in the command-line aruments, redefine the loweringID variable
+    if parsed_args.loweringID is not None:
+
+        if parsed_args.loweringID in openVDM.getLowerings():
+            logging.info("Setting LoweringID to: {}".format(parsed_args.loweringID))
+            loweringID = parsed_args.loweringID
+    
+        else:
+            logging.error("Unable to find LoweringID {} for CruiseID {}".format(parsed_args.loweringID, cruiseID))
+            sys.exit(1)
 
     # Retrieve the information for the collection system defined in the command-line argument
     collectionSystem = openVDM.getCollectionSystemTransferByName(parsed_args.collectionSystem)
     if not collectionSystem:
-        logging.error("Collection System: {} not found.".format(parsed_args.collectionSystem))
+        logging.error("Collection System: {} not found in OpenVDM configuration.".format(parsed_args.collectionSystem))
         sys.exit(1)
-    
+    elif collectionSystem['cruiseOrLowering'] != '1':
+        logging.error("Collection System: {} is not related to a lowering.".format(parsed_args.collectionSystem))
+
+    tracklineDirectory = openVDM.getExtraDirectoryByName(TRACKLINE_EXTRA_DIR_NAME)
+    if not tracklineDirectory:
+        logging.error("Extra Directory: {} not found in OpenVDM configuration".format(TRACKLINE_EXTRA_DIR_NAME))
+        sys.exit(1)
+
     # Retrieve the shipboard data warehouse configuration
     shipboardDataWarehouseConfig = openVDM.getShipboardDataWarehouseConfig()
 
     # Construct the full path to the cruise data directory 
     baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
     cruiseDir = os.path.join(baseDir, cruiseID)
+    loweringDir = os.path.join(cruiseDir, shipboardDataWarehouseConfig['loweringDataBaseDir'], loweringID)
 
     # Verify the cruise data directory exists
-    if not os.path.isdir(cruiseDir):
-        logging.error("Cruise data directory: {} not found!".format(cruiseDir))
+    if not os.path.isdir(loweringDir):
+        logging.error("Lowering data directory: {} not found!".format(cruiseDir))
         sys.exit(1)
 
-    tracklineDir = os.path.join(cruiseDir, openVDM.getExtraDirectoryByName(TRACKLINE_EXTRA_DIR_NAME)['dest'])
+    tracklineDir = os.path.join(cruiseDir, tracklineDirectory['destDir'])
 
     # Verify the trackline directory exists
     if not os.path.isdir(tracklineDir):
         logging.error("Trackline Directory: {} not found".format(tracklineDir))
         sys.exit(1)
 
-    dashboardDataDir = os.path.join(cruiseDir, openVDM.getExtraDirectoryByName(DASHBOARD_EXTRA_DIR_NAME)['dest'])
+    dashboardDataDirectory = openVDM.getRequiredExtraDirectoryByName(DASHBOARD_EXTRA_DIR_NAME)['destDir']
+    dashboardDataDir = os.path.join(cruiseDir, dashboardDataDirectory)
 
     # Verify the trackline directory exists
     if not os.path.isdir(dashboardDataDir):
         logging.error("Dashboard Data Directory: {} not found".format(dashboardDataDir))
         sys.exit(1)
 
-    collectionSystemDashboardDataDir = os.path.join(dashboardDataDir, collectionSystem['destDir'])
+    collectionSystemDashboardDataDir = os.path.join(dashboardDataDir, shipboardDataWarehouseConfig['loweringDataBaseDir'], loweringID, collectionSystem['destDir'])
 
     # Verify the dashboard data directory for the specified collecion system exists
     if not os.path.isdir(collectionSystemDashboardDataDir):
@@ -280,25 +302,27 @@ if __name__ == "__main__":
                 
                 # Build the list of files coorsponding to the current device based on the regex provided
                 files = glob.glob(collectionSystemDashboardDataDir.rstrip('/') + '/' + GPSSource['regex'])
+                
+                if len(files) == 0:
+                    logging.warning('No files found for GPS Source: {}'.format(GPSSource['device']))
+                    continue
+
                 files.sort()
 
                 logging.debug("Files: {}".format(json.dumps(files, indent=2)))
                 
                 # Combind the geoJSON objects
-                combineGeoJsonObj = combineGeoJsonFiles(files, cruiseID, GPSSource['device'])
+                combineGeoJsonObj = combineGeoJsonFiles(files, loweringID, GPSSource['device'])
                 
                 # If there was a problem, exit
                 if not combineGeoJsonObj:
-                    logging.error("Problem combining data files")
-                    sys.exit(1)
-                elif combineGeoJsonObj is None:
-                    logging.error("No data returned after combining data files")
-                    sys.exit(1)
+                    logging.error("Problem combining data files from GPS Source: {}".format(GPSSource['device']))
+                    continue
 
                 warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
 
                 # Save the combined geoJSON object to file 
-                output_filepath = os.path.join(tracklineDir, cruiseID + '_' + GPSSource['device'] + "_Trackline.json")
+                output_filepath = os.path.join(tracklineDir, loweringID + '_' + GPSSource['device'] + "_Trackline.json")
                 logging.info("Saving file: {}".format(output_filepath))
                 output_results = output_JSONDataToFile(output_filepath, combineGeoJsonObj)
 
@@ -310,16 +334,17 @@ if __name__ == "__main__":
                         logging.error("Problem setting permissions for output file: {}, reason: {}".format(output_filepath, output_results['reason']))
             
                 # Convert the combined geoJSON object to kml and save to file 
-                output_filepath_kml = os.path.join(tracklineDir, cruiseID + '_' + GPSSource['device'] + "_Trackline.kml")
+                output_filepath_kml = os.path.join(tracklineDir, loweringID + '_' + GPSSource['device'] + "_Trackline.kml")
                 logging.info("Saving file: {}".format(output_filepath_kml))
-                output_results = output_JSONDataToFile(output_filepath_kml, convToKML(combineGeoJsonObj))
-
+                try:
+                    with open(output_filepath_kml, 'w') as kml_file:
+                        kml_file.write(convToKML(combineGeoJsonObj))
+                except:
+                    logging.error("Problem writing output file: {}".format(output_filepath_kml))
+                
+                output_results = set_ownerGroupPermissions(warehouseUser, output_filepath_kml)
                 if not output_results['verdict']:
-                    logging.error("Problem writing output file: {}, reason: {}".format(output_filepath_kml, output_results['reason']))
-                else:
-                    output_results = set_ownerGroupPermissions(warehouseUser, output_filepath_kml)
-                    if not output_results['verdict']:
-                        logging.error("Problem setting permissions for output file: {}, reason: {}".format(output_filepath_kml, output_results['reason']))
+                    logging.error("Problem setting permissions for output file: {}, reason: {}".format(output_filepath_kml, output_results['reason']))
             
             # No need to proceed to another collectionSystem
             break

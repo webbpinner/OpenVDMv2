@@ -415,10 +415,10 @@ class System extends Controller {
         $usernameTest = (object) array();
         $finalVerdict = (object) array();
         
-        $finalVerdict->testName = 'FinalVerdict';
+        $finalVerdict->partName = 'FinalVerdict';
         $finalVerdict->result = 'Pass';
                 
-        $baseDirectoryTest->testName = 'Base Directory';
+        $baseDirectoryTest->partName = 'Base Directory';
         if(is_dir( $shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir'] )) {
             $baseDirectoryTest->result = 'Pass';
         } else {
@@ -428,7 +428,7 @@ class System extends Controller {
         
         array_push($data['testResults'], $baseDirectoryTest);
 
-        $publicDataDirectoryTest->testName = 'Public Data Directory';
+        $publicDataDirectoryTest->parttName = 'Public Data Directory';
         if(is_dir( $shipboardDataWarehouseConfig['shipboardDataWarehousePublicDataDir'] )) {
             $publicDataDirectoryTest->result = 'Pass';
         } else {
@@ -441,7 +441,7 @@ class System extends Controller {
         $command = 'getent passwd ' . $shipboardDataWarehouseConfig['shipboardDataWarehouseUsername'];
         exec($command,$op);
         
-        $usernameTest->testName = 'Username';
+        $usernameTest->partName = 'Username';
         if(isset($op[0])) {
             $usernameTest->result = 'Pass';
         } else {

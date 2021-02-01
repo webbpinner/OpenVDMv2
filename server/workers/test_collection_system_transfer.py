@@ -50,13 +50,17 @@ from server.lib.openvdm import OpenVDM_API
 
 def build_destDir(gearman_worker):
     
-    return gearman_worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
+    if gearman_worker.loweringID != None:
+        return gearman_worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
 
+    return gearman_worker.collectionSystemTransfer['destDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', "").replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
 
 def build_sourceDir(gearman_worker):
     
-    return gearman_worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
+    if gearman_worker.loweringID != None:
+        return gearman_worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', gearman_worker.loweringID).replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
 
+    return gearman_worker.collectionSystemTransfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruiseID).replace('{loweringID}', "").replace('{loweringDataBaseDir}', gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']).rstrip('/')
 
 def test_localSourceDir(gearman_worker):
     returnVal = []
@@ -65,17 +69,17 @@ def test_localSourceDir(gearman_worker):
     logging.debug("Source Dir: {}".format(sourceDir))
 
     if not os.path.isdir(sourceDir):
-        returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
+        returnVal.append({"partName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
         if gearman_worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
-            returnVal.append({"testName": "Source Directory is a Mountpoint", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
+            returnVal.append({"partName": "Source Directory is a Mountpoint", "result": "Fail", "reason": "Unable to find source directory: {} on the Data Warehouse".format(sourceDir)})
     else:
-        returnVal.append({"testName": "Source Directory", "result": "Pass"})
+        returnVal.append({"partName": "Source Directory", "result": "Pass"})
 
         if gearman_worker.collectionSystemTransfer['localDirIsMountPoint'] == '1':
             if not os.path.ismount(sourceDir):
-                returnVal.append({"testName": "Source Directory is a Mountpoint", "result": "Fail", "reason": "Source directory: {} is not a mountpoint on the Data Warehouse".format(sourceDir)})
+                returnVal.append({"partName": "Source Directory is a Mountpoint", "result": "Fail", "reason": "Source directory: {} is not a mountpoint on the Data Warehouse".format(sourceDir)})
             else:
-                returnVal.append({"testName": "Source Directory is a Mountpoint", "result": "Pass"})
+                returnVal.append({"partName": "Source Directory is a Mountpoint", "result": "Pass"})
 
     return returnVal
 
@@ -109,14 +113,14 @@ def test_smbSourceDir(gearman_worker):
     if not foundServer:
         logging.warning("Server Test Failed")
         returnVal.extend([
-            {"testName": "SMB Server", "result": "Fail", "reason": "Could not connect to SMB Server: {} as {}".format(gearman_worker.collectionSystemTransfer['smbServer'], gearman_worker.collectionSystemTransfer['smbUser'])},
-            {"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Server: {} as {}".format(gearman_worker.collectionSystemTransfer['smbServer'], gearman_worker.collectionSystemTransfer['smbUser'])},
-            {"testName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Server: {} as {}".format(gearman_worker.collectionSystemTransfer['smbServer'], gearman_worker.collectionSystemTransfer['smbUser'])}
+            {"partName": "SMB Server", "result": "Fail", "reason": "Could not connect to SMB Server: {} as {}".format(gearman_worker.collectionSystemTransfer['smbServer'], gearman_worker.collectionSystemTransfer['smbUser'])},
+            {"partName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Server: {} as {}".format(gearman_worker.collectionSystemTransfer['smbServer'], gearman_worker.collectionSystemTransfer['smbUser'])},
+            {"partName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Server: {} as {}".format(gearman_worker.collectionSystemTransfer['smbServer'], gearman_worker.collectionSystemTransfer['smbUser'])}
         ])
 
         return returnVal
 
-    returnVal.append({"testName": "SMB Server", "result": "Pass"})
+    returnVal.append({"partName": "SMB Server", "result": "Pass"})
 
     # Create mountpoint
     mntPoint = os.path.join(tmpdir, 'mntpoint')
@@ -133,8 +137,8 @@ def test_smbSourceDir(gearman_worker):
     if proc.returncode != 0:
         logging.warning("Connection test failed")
         returnVal.extend([
-            {"testName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Share: {} as {}".format( gearman_worker.collectionSystemTransfer['smbServer'],  gearman_worker.collectionSystemTransfer['smbUser'])},
-            {"testName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Share: {} as {}".format( gearman_worker.collectionSystemTransfer['smbServer'],  gearman_worker.collectionSystemTransfer['smbUser'])}
+            {"partName": "SMB Share", "result": "Fail", "reason": "Could not connect to SMB Share: {} as {}".format( gearman_worker.collectionSystemTransfer['smbServer'],  gearman_worker.collectionSystemTransfer['smbUser'])},
+            {"partName": "Source Directory", "result": "Fail", "reason": "Could not connect to SMB Share: {} as {}".format( gearman_worker.collectionSystemTransfer['smbServer'],  gearman_worker.collectionSystemTransfer['smbUser'])}
         ])
     
         # Unmount SMB Share
@@ -146,16 +150,16 @@ def test_smbSourceDir(gearman_worker):
 
         return returnVal
 
-    returnVal.append({"testName": "SMB Share", "result": "Pass"})
+    returnVal.append({"partName": "SMB Share", "result": "Pass"})
 
     sourceDir = os.path.join(mntPoint, build_sourceDir(gearman_worker))
 
     logging.debug('Source Dir: {}'.format(sourceDir))
     if os.path.isdir(sourceDir):
-        returnVal.append({"testName": "Source Directory", "result": "Pass"})
+        returnVal.append({"partName": "Source Directory", "result": "Pass"})
     else:
         logging.warning("Source Directory Test Failed")
-        returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} within the SMB Share: {}".format(sourceDir, gearman_worker.collectionSystemTransfer['smbServer'])})
+        returnVal.append({"partName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} within the SMB Share: {}".format(sourceDir, gearman_worker.collectionSystemTransfer['smbServer'])})
 
     # Unmount SMB Share
     if os.path.ismount(mntPoint):
@@ -188,7 +192,7 @@ def test_rsyncSourceDir(gearman_worker):
 
     except IOError:
         logging.error("Error Saving temporary rsync password file {}".format(rsyncPasswordFilePath))
-        returnVal.append({"testName": "Writing temporary rsync password file", "result": "Fail", "reason": "Unable to create temporary rsync password file: {}".format(rsyncPasswordFilePath)})
+        returnVal.append({"partName": "Writing temporary rsync password file", "result": "Fail", "reason": "Unable to create temporary rsync password file: {}".format(rsyncPasswordFilePath)})
 
         # Cleanup
         shutil.rmtree(tmpdir)
@@ -206,12 +210,12 @@ def test_rsyncSourceDir(gearman_worker):
     if proc.returncode != 0:
         logging.warning("Connection test failed")
         returnVal.extend([
-            {"testName": "Rsync Connection", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.collectionSystemTransfer['rsyncServer'], gearman_worker.collectionSystemTransfer['rsyncUser'])},
-            {"testName": "Source Directory", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.collectionSystemTransfer['rsyncServer'], gearman_worker.collectionSystemTransfer['rsyncUser'])}
+            {"partName": "Rsync Connection", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.collectionSystemTransfer['rsyncServer'], gearman_worker.collectionSystemTransfer['rsyncUser'])},
+            {"partName": "Source Directory", "result": "Fail", "reason": "Unable to connect to rsync server: {} as {}".format(gearman_worker.collectionSystemTransfer['rsyncServer'], gearman_worker.collectionSystemTransfer['rsyncUser'])}
         ])
 
     else:
-        returnVal.append({"testName": "Rsync Connection", "result": "Pass"})
+        returnVal.append({"partName": "Rsync Connection", "result": "Pass"})
 
         sourceDir = build_sourceDir(gearman_worker)
         logging.debug('Source Dir: {}'.format(sourceDir))
@@ -224,9 +228,9 @@ def test_rsyncSourceDir(gearman_worker):
 
         if proc.returncode != 0:
             logging.warning("Source Directory Test Failed")
-            returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " on the Rsync Server: " + gearman_worker.collectionSystemTransfer['rsyncServer']})
+            returnVal.append({"partName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: " + sourceDir + " on the Rsync Server: " + gearman_worker.collectionSystemTransfer['rsyncServer']})
         else:
-            returnVal.append({"testName": "Source Directory", "result": "Pass"})
+            returnVal.append({"partName": "Source Directory", "result": "Pass"})
 
     # Cleanup
     shutil.rmtree(tmpdir)
@@ -247,13 +251,13 @@ def test_sshSourceDir(gearman_worker):
     if proc.returncode != 0:
         logging.warning("Connection test failed")
         returnVal.extend([
-            {"testName": "SSH Connection", "result": "Fail", "reason": "Unable to connect to ssh server: {} as {}".format(gearman_worker.collectionSystemTransfer['sshServer'], gearman_worker.collectionSystemTransfer['sshUser'])},
-            {"testName": "Source Directory", "result": "Fail", "reason":"Unable to connect to ssh server: {} as {}".format(gearman_worker.collectionSystemTransfer['sshServer'], gearman_worker.collectionSystemTransfer['sshUser'])}
+            {"partName": "SSH Connection", "result": "Fail", "reason": "Unable to connect to ssh server: {} as {}".format(gearman_worker.collectionSystemTransfer['sshServer'], gearman_worker.collectionSystemTransfer['sshUser'])},
+            {"partName": "Source Directory", "result": "Fail", "reason":"Unable to connect to ssh server: {} as {}".format(gearman_worker.collectionSystemTransfer['sshServer'], gearman_worker.collectionSystemTransfer['sshUser'])}
         ])
 
         return returnVal
     else:
-        returnVal.append({"testName": "SSH Connection", "result": "Pass"})
+        returnVal.append({"partName": "SSH Connection", "result": "Pass"})
 
         sourceDir = build_sourceDir(gearman_worker)
         logging.debug('Source Dir: {}'.format(sourceDir))
@@ -266,9 +270,9 @@ def test_sshSourceDir(gearman_worker):
 
         if proc.returncode != 0:
             logging.warning("Source directory test failed")
-            returnVal.append({"testName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} on the SSH Server: {}".format(sourceDir, gearman_worker.collectionSystemTransfer['sshServer'])})
+            returnVal.append({"partName": "Source Directory", "result": "Fail", "reason": "Unable to find source directory: {} on the SSH Server: {}".format(sourceDir, gearman_worker.collectionSystemTransfer['sshServer'])})
         else:
-            returnVal.append({"testName": "Source Directory", "result": "Pass"})
+            returnVal.append({"partName": "Source Directory", "result": "Pass"})
         
     return returnVal
 
@@ -282,13 +286,13 @@ def test_destDir(gearman_worker):
 
     if gearman_worker.collectionSystemTransfer['cruiseOrLowering'] == '1':
         if gearman_worker.loweringID == '':
-            return [{"testName": "Destination Directory", "result": "Fail", "reason": "Lowering ID is undefined" }]
+            return [{"partName": "Destination Directory", "result": "Fail", "reason": "Lowering ID is undefined" }]
 
         destDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID, build_destDir(gearman_worker))
 
     logging.debug('Destination Directory: {}'.format(destDir))
 
-    return [{"testName": "Destination Directory", "result": "Pass"}] if os.path.isdir(destDir) else [{"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: {} on Data Warehouse".format(destDir)}]
+    return [{"partName": "Destination Directory", "result": "Pass"}] if os.path.isdir(destDir) else [{"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: {} on Data Warehouse".format(destDir)}]
 
     
 class OVDMGearmanWorker(python3_gearman.GearmanWorker):
@@ -308,18 +312,25 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         payloadObj = json.loads(current_job.data)
 
-        try:
+        if 'collectionSystemTransferID' in payloadObj['collectionSystemTransfer']:
             self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransfer']['collectionSystemTransferID'])
 
             if not self.collectionSystemTransfer:
-                return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find configuration data for collection system transfer"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+                return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find configuration data for collection system transfer"},{"partName": "Final Verdict", "result": "Fail", "reason": "Could not find configuration data for collection system transfer"}]}))
 
-        except:
-            return super(OVDMGearmanWorker, self).on_job_complete(current_job, json.dumps({'parts':[{"partName": "Located Collection System Tranfer Data", "result": "Fail", "reason": "Could not find retrieve data for collection system transfer from OpenVDM API"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+            self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
 
-        self.collectionSystemTransfer.update(payloadObj['collectionSystemTransfer'])
+        else:
+            self.collectionSystemTransfer = payloadObj['collectionSystemTransfer']
+
         self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
         self.loweringID = payloadObj['loweringID'] if 'loweringID' in payloadObj else self.OVDM.getLoweringID()
+
+        if self.collectionSystemTransfer['cruiseOrLowering'] == '1' and self.loweringID == None:
+            try:
+                return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Retrieve LoweringID", "result": "Fail", "reason": "Invalid LoweringID set in OpenVDM"},{"partName": "Final Verdict", "result": "Fail", "reason": "Invalid LoweringID set in OpenVDM"}]}))
+            except Exception as e:
+                raise e
 
         logging.info("Job: {}, {} transfer test started at: {}".format(current_job.handle, self.collectionSystemTransfer['name'], time.strftime("%D %T", time.gmtime())))
 
@@ -332,7 +343,9 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.error("Job: {}, {} transfer test failed at: {}".format(current_job.handle, self.collectionSystemTransfer['name'], time.strftime("%D %T", time.gmtime())))
         
         self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown"}]))
-        self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], 'Worker crashed')
+        
+        if 'collectionSystemTransferID' in self.collectionSystemTransfer:
+            self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], 'Worker crashed')
 
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -341,15 +354,17 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
     
     def on_job_complete(self, current_job, job_results):
+
         resultsObj = json.loads(job_results)
 
-        if len(resultsObj['parts']) > 0:
-            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
-                self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], resultsObj['parts'][-1]['reason'])
+        if 'collectionSystemTransferID' in self.collectionSystemTransfer:
+            if len(resultsObj['parts']) > 0:
+                if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
+                    self.OVDM.setError_collectionSystemTransferTest(self.collectionSystemTransfer['collectionSystemTransferID'], resultsObj['parts'][-1]['reason'])
+                else:
+                    self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
             else:
                 self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
-        else:
-            self.OVDM.clearError_collectionSystemTransfer(self.collectionSystemTransfer['collectionSystemTransferID'], self.collectionSystemTransfer['status'])
 
         logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
         logging.info("Job: {}, {} transfer test completed at: {}".format(current_job.handle, self.collectionSystemTransfer['name'], time.strftime("%D %T", time.gmtime())))
@@ -372,7 +387,8 @@ def task_testCollectionSystemTransfer(gearman_worker, current_job):
 
     job_results = {'parts':[]}
 
-    gearman_worker.OVDM.setRunning_collectionSystemTransferTest(gearman_worker.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
+    if 'collectionSystemTransferID' in gearman_worker.collectionSystemTransfer:
+        gearman_worker.OVDM.setRunning_collectionSystemTransferTest(gearman_worker.collectionSystemTransfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
 
     gearman_worker.send_job_status(current_job, 1, 4)
     
@@ -397,11 +413,11 @@ def task_testCollectionSystemTransfer(gearman_worker, current_job):
     for test in job_results['parts']:
         if test['result'] == "Fail":
             verdict = False
-            job_results['parts'].append({"testName": "Final Verdict", "result": "Fail", "reason": test['reason']})
+            job_results['parts'].append({"parttName": "Final Verdict", "result": "Fail", "reason": test['reason']})
             break
 
     if verdict:
-        job_results['parts'].append({"testName": "Final Verdict", "result": "Pass"})
+        job_results['parts'].append({"partName": "Final Verdict", "result": "Pass"})
 
     gearman_worker.send_job_status(current_job, 4, 4)
 

@@ -49,6 +49,8 @@ from server.utils.check_filenames import bad_filename
 from server.utils.output_JSONDataToFile import output_JSONDataToFile
 from server.lib.openvdm import OpenVDM_API, DEFAULT_DATA_DASHBOARD_MANIFEST_FN
 
+python_binary = os.path.join(dirname(dirname(dirname(realpath(__file__)))), 'venv/bin/python')
+
 customTasks = [
     {
         "taskID": "0",
@@ -264,23 +266,21 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
             logging.warning("File is empty {}, skipping".format(filename))
             continue
 
-        command = ['python', processingScriptFilename, '--dataType', rawFilePath]
+        command = [python_binary, processingScriptFilename, '--dataType', rawFilePath]
 
-        s = ' '
-        logging.debug("DataType Retrieval Command: {}".format(s.join(command)))
+        logging.debug("DataType Retrieval Command: {}".format(' '.join(command)))
 
-        datatype_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        datatype_proc = subprocess.run(command, capture_output=True, text=True)
 
         if datatype_proc.stdout:
             dd_type = datatype_proc.stdout.rstrip('\n')
             logging.debug("DataType found to be: {}".format(dd_type))
 
-            command = ['python', processingScriptFilename, rawFilePath]
+            command = [python_binary, processingScriptFilename, rawFilePath]
 
-            s = ' '
-            logging.debug("Data Processing Command: {}".format(s.join(command)))
+            logging.debug("Data Processing Command: {}".format(' '.join(command)))
 
-            data_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+            data_proc = subprocess.run(command, capture_output=True, text=True)
 
             if data_proc.stdout:
                 try:
@@ -291,7 +291,12 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
                     job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": "Error parsing JSON output from file: " + filename})
                     continue
                 else:
-                    if 'error' in outObj:
+                    if not outObj:
+                        errorTitle = 'Datafile Parsing error'
+                        errorBody = "Parser returned no output. Parsing command: {}".format(' '.join(command))
+                        logging.error("{}: {}".format(errorTitle, errorBody))
+                        gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
+                    elif 'error' in outObj:
                         errorTitle = 'Datafile Parsing error'
                         errorBody = outObj['error']
                         logging.error("{}: {}".format(errorTitle, errorBody))
@@ -469,7 +474,6 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
 
             for lowering in lowerings:
                 collectionSystemTransferInputDir = os.path.join(cruiseDir, loweringBaseDir, lowering, collectionSystemTransfer['destDir'])
-                debugPrint(os.path.join(cruiseDir, loweringBaseDir, lowering, collectionSystemTransfer['destDir']))
                 loweringFileList = build_filelist(collectionSystemTransferInputDir)
                 fileList.extend([os.path.join(loweringBaseDir, lowering, collectionSystemTransfer['destDir'], filename) for filename in loweringFileList])
  
@@ -496,23 +500,23 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
                 logging.warning("File {} is empty".format(filename))
                 continue
 
-            command = ['python', processingScriptFilename, '--dataType', rawFilePath]
+            command = [python_binary, processingScriptFilename, '--dataType', rawFilePath]
 
             s = ' '
             logging.debug("Get Datatype Command: {}".format(s.join(command)))
 
-            datatype_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+            datatype_proc = subprocess.run(command, capture_output=True, text=True)
 
             if datatype_proc.stdout:
                 dd_type = datatype_proc.stdout.rstrip('\n')
                 logging.debug("Found to be type: {}".format(dd_type))
 
-                command = ['python', processingScriptFilename, rawFilePath]
+                command = [python_binary, processingScriptFilename, rawFilePath]
 
                 s = ' '
                 logging.debug("Processing Command: {}".format(s.join(command)))
 
-                data_proc = subprocess.run(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+                data_proc = subprocess.run(command, capture_output=True, text=True)
 
                 if data_proc.stdout:
                     try:

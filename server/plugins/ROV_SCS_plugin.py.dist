@@ -1,8 +1,8 @@
 # =================================================================================== #
 #
-#         FILE:  ROV_SCS_dashboardData.py
+#         FILE:  SCS_plugin.py
 #
-#        USAGE:  ROV_SCS_dashboardData.py [-h] [--dataType] <dataFile>
+#        USAGE:  SCS_plugin.py [-h] [--dataType] <dataFile>
 #
 #  DESCRIPTION:  This python script interprets raw files created by the SCS Data
 #                Acquision System.  Depending on the command-line arguments, the script
@@ -46,6 +46,7 @@ import sys
 import os
 import json
 import fnmatch
+import requests
 import argparse
 import logging
 
@@ -54,28 +55,27 @@ sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM_API
 from server.lib.openvdm_plugin import OpenVDMPlugin
-from server.plugins.parsers.ctd_parser import CTDParser
-from server.plugins.parsers.gga_parser import GGAParser
-from server.plugins.parsers.o2_parser import O2Parser
-from server.plugins.parsers.paro_parser import ParoParser
-from server.plugins.parsers.sprint_parser import SprintParser
+from server.plugins.parsers.gga_parser   import GGAParser
+from server.plugins.parsers.sprint_parser   import SprintParser
+from server.plugins.parsers.paro_parser   import ParoParser
+from server.plugins.parsers.comp_pres_rov_parser import CompPresParser
+from server.plugins.parsers.rov_ctd_parser   import ROV_CTDParser
+
+SEALOG_SERVER_URL = 'http://localhost:8000/sealog-server'
+SEALOG_JWT = ''
 
 # -------------------------------------------------------------------------------------
 # This array defines the various dataTypes collected by SCS and the cooresponding file
 # regex expression.
 # -------------------------------------------------------------------------------------
 FILE_TYPE_FILTERS = [
-    {"dataType":"rov-ctd",      "regex": "*SUBASTIAN/UDP-SB-CTD-RAW_*.Raw",         "parser": "CTD",    "parser_options":{} },
-    {"dataType":"rov-usbl-pri", "regex": "*SBNAV/UDP-SB-USBL-PRI-GGA-RAW_*.Raw",    "parser": "GGA",    "parser_options":{} },
-    {"dataType":"rov-usbl-sec", "regex": "*SBNAV/UDP-SB-USBL-SEC-GGA-RAW_*.Raw",    "parser": "GGA",    "parser_options":{} },
-    {"dataType":"rov-o2",       "regex": "*SUBASTIAN/UDP-SB-O2-PROC-O2_*.Raw",      "parser": "O2",     "parser_options":{} },
-    {"dataType":"rov-paro",     "regex": "*SUBASTIAN/UDP-SB-Paro-Depth-RAW_*.Raw",  "parser": "Paro",   "parser_options":{} },
-    {"dataType":"rov-sprint",   "regex": "*SUBASTIAN/UDP-SB-SPRINT-RAW_*.Raw",      "parser": "Sprint", "parser_options":{} }
+    {"data_type":"rov-sprint",    "regex": "*/SUBASTIAN/UDP-SB-SPRINT-RAW_*.Raw",     "parser": "Sprint",   'parser_options':{}},
+    {"data_type":"rov-paro",      "regex": "*/SUBASTIAN/UDP-SB-Paro-Depth-RAW_*.Raw", "parser": "Paro",     'parser_options':{}},
+    {"data_type":"rov-ctd",       "regex": "*/SUBASTIAN/UDP-SB-CTD-RAW_*.Raw",        "parser": "CTD",      'parser_options':{}},
+    {"data_type":"rov-comp-pres", "regex": "*/SUBASTIAN/UDP-SB-Mech-Comps-RAW_*.Raw", "parser": "CompPres", 'parser_options':{}},
+    {"data_type":"rov-usbl-pri",  "regex": "*/SBNAV/UDP-SB-USBL-PRI-GGA-RAW_*.Raw",   "parser": "GGA",      'parser_options':{}},
+    {"data_type":"rov-usbl-sec",  "regex": "*/SBNAV/UDP-SB-USBL-SEC-GGA-RAW_*.Raw",   "parser": "GGA",      'parser_options':{}},
 ]
-
-
-SEALOG_SERVER_URL = 'http://localhost:8000/sealog-server'
-SEALOG_JWT = ''
 
 # -------------------------------------------------------------------------------------
 # Function to determine the datatype of the raw datafile.  If the datatype can not be
@@ -87,15 +87,17 @@ class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
 
     def __init__(self, lowering=None, use_sealog_api=True):
 
+        self.sealog_server_url = SEALOG_SERVER_URL
+        self.sealog_jwt = SEALOG_JWT
         self.openvdm = OpenVDM_API()
-        self.lowering = lowering if lowering not None else self.openvdm.getLoweringID()
+        self.lowering = lowering if lowering != None else self.openvdm.getLoweringID()
         self.use_sealog_api = use_sealog_api
 
         if self.use_sealog_api:
-            lowering = _get_sealog_lowering_by_id(self.lowering)
-            try
-                self.start_dt = datetime.strptime(lowering['lowering_additional_meta']['milestones']['lowering_descending'] "%Y-%m-%dT%H:%M:%S.%fZ")  if lowering['lowering_additional_meta']['milestones']['lowering_descending'] else datetime.strptime(lowering.start_ts, "%Y-%m-%dT%H:%M:%S.%fZ")
-                self.stop_dt = datetime.strptime(lowering['lowering_additional_meta']['milestones']['lowering_floats_on_surface'] "%Y-%m-%dT%H:%M:%S.%fZ")  if lowering['lowering_additional_meta']['milestones']['lowering_floats_on_surface'] else datetime.strptime(lowering.stop_ts, "%Y-%m-%dT%H:%M:%S.%fZ")
+            lowering = self._get_sealog_lowering_by_id(self.lowering)
+            try:
+                self.start_dt = datetime.strptime(lowering['lowering_additional_meta']['milestones']['lowering_descending'], "%Y-%m-%dT%H:%M:%S.%fZ")  if lowering['lowering_additional_meta']['milestones']['lowering_descending'] else datetime.strptime(lowering.start_ts, "%Y-%m-%dT%H:%M:%S.%fZ")
+                self.stop_dt = datetime.strptime(lowering['lowering_additional_meta']['milestones']['lowering_floats_on_surface'], "%Y-%m-%dT%H:%M:%S.%fZ")  if lowering['lowering_additional_meta']['milestones']['lowering_floats_on_surface'] else datetime.strptime(lowering.stop_ts, "%Y-%m-%dT%H:%M:%S.%fZ")
             except:
                 logging.warning("Could not determine lowering start/stop datetime")
                 self.start_dt = None
@@ -112,8 +114,8 @@ class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
             except:
                 self.stop_dt = None
 
-
         super().__init__(FILE_TYPE_FILTERS)
+
 
     # -------------------------------------------------------------------------------------
     # Function to determine the parser to use with the raw datafile.  If the datatype can
@@ -123,39 +125,33 @@ class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
 
         file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filePath, file_type_filter['regex']), self.file_type_filters))
 
-        if self.start_dt is not None:
-            file_type_filter['parser_options']['start_dt'] = self.start_dt
-
-        if self.stop is not None:
-            file_type_filter['parser_options']['stop_dt'] = self.stop_dt
-
         if len(file_type_filter) == 0:
             return None
         else:
             file_type_filter = file_type_filter[0]
 
-        if file_type_filter['parser'] == "CTD":
-            return CTDParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "GGA":
-            return GGAParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "O2":
-            return O2Parser(**file_type_filter['parser_options'])
+        if file_type_filter['parser'] == "Sprint":
+            return SprintParser(**file_type_filter['parser_options'])
         elif file_type_filter['parser'] == "Paro":
             return ParoParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "Sprint":
-            return SprintParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "CTD":
+            return ROV_CTDParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "CompPres":
+            return CompPresParser(**file_type_filter['parser_options'])
+        elif file_type_filter['parser'] == "GGA":
+            return GGAParser(**file_type_filter['parser_options'])
         else:
             return None
 
 
     # -------------------------------------------------------------------------------------
-    # 
+    #
     # -------------------------------------------------------------------------------------
-    def _get_sealog_lowering_by_id(lowering_id):
+    def _get_sealog_lowering_by_id(self, lowering_id):
 
         try:
-            url = SEALOG_SERVER_URL + '/api/v1/lowerings?lowering_id=' + lowering_id
-            r = requests.get(url, headers={"authorization": SEALOG_JWT})
+            url = self.sealog_server_url + '/api/v1/lowerings?lowering_id=' + lowering_id
+            r = requests.get(url, headers={"authorization": self.sealog_jwt})
             lowering = json.loads(r.text)[0]
             return lowering
         except Exception as error:
@@ -163,7 +159,6 @@ class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
             logging.debug(str(error))
 
         return None
-
 
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility

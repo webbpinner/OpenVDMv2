@@ -249,7 +249,7 @@ class OpenVDM_API():
         try:
             r = requests.get(url)
             returnVal = json.loads(r.text)
-            return returnVal['loweringID']
+            return returnVal['loweringID'] if returnVal['loweringID'] != '' else None
         except Exception as e:
             logging.error("Unable to retrieve LoweringID from OpenVDM API")
             raise e

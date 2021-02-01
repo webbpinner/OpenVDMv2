@@ -35,7 +35,7 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                     <h5><?php echo $row->collectionSystemName; ?></h5>
                     <ul>
 <?php
-               if( is_array($row->errorFiles) && sizeof($row->errorFiles) < 20) {
+               if( is_array($row->errorFiles) && sizeof($row->errorFiles) <= 20) {
                    foreach($row->errorFiles as $file) {
 ?>
                         <li><small><?php echo $file; ?></small></li>
@@ -79,12 +79,24 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
                     <h5><?php echo $data['shipboardTransfers'][$i]->collectionSystemName; ?> - <?php $timestamp = DateTime::createFromFormat('Ymd\THis\Z', $data['shipboardTransfers'][$i]->date, new DateTimeZone('UTC')); echo $timestamp->format('Y-m-d H:i:s T'); ?></h5>
                     <ul>
 <?php
-            foreach($data['shipboardTransfers'][$i]->newFiles as $file) {
+            if( is_array($data['shipboardTransfers'][$i]->newFiles) && sizeof($data['shipboardTransfers'][$i]->newFiles) <= 20) {
+                foreach($data['shipboardTransfers'][$i]->newFiles as $file) {
 ?>
                         <li><small><?php echo $file; ?></small></li>
 <?php
+                }
+            } else {
+                for($j = 0; $j < 20; $j++) {
+?>
+                        <li><small><?php echo $data['shipboardTransfers'][$i]->newFiles[$j]; ?></small></li>
+<?php
+                }
+?>
+                        <li><small>...and <strong><?php echo sizeof($data['shipboardTransfers'][$i]->newFiles)-20; ?></strong> other files</small></li>
+<?php
             }
-            if(count($data['shipboardTransfers'][$i]->updatedFiles) > 0) {
+
+	    if(count($data['shipboardTransfers'][$i]->updatedFiles) > 0) {
 ?>
                         <li><small><?php echo count($data['shipboardTransfers'][$i]->updatedFiles); ?> File(s) Updated.</small></li>
 <?php
@@ -109,17 +121,29 @@ foreach($data['requiredCruiseDataTransfers'] as $row){
     if($data['shipToShoreTransfers']) {
         $itemNum = 0;
         
-        for($i = count($data['shipToShoreTransfers'])-1; $i >= 0; $i-- ) {
+        for($i = 0; $i < count($data['shipToShoreTransfers']); $i++ ) {
 ?>
                     <h5><?php echo $data['shipToShoreTransfers'][$i]->shipToShoreTransferName; ?> - <?php $timestamp = DateTime::createFromFormat('Ymd\THis\Z', $data['shipToShoreTransfers'][$i]->date, new DateTimeZone('UTC')); echo $timestamp->format('Y-m-d H:i:s T'); ?></h5>
                     <ul>
 <?php
-            foreach($data['shipToShoreTransfers'][$i]->newFiles as $file) {
+	    if( is_array($data['shipToShoreTransfers'][$i]->newFiles) && sizeof($data['shipToShoreTransfers'][$i]->newFiles) <= 20) {
+                foreach($data['shipToShoreTransfers'][$i]->newFiles as $file) {
 ?>
                         <li><small><?php echo $file; ?></small></li>
 <?php
-            }
-            if(count($data['shipToShoreTransfers'][$i]->updatedFiles) > 0) {
+                }
+            } else {
+                for($j = 0; $j < 20; $j++) {
+?>
+                        <li><small><?php echo $data['shipToShoreTransfers'][$i]->newFiles[$j]; ?></small></li>
+<?php
+                }
+?>
+                        <li><small>...and <strong><?php echo sizeof($data['shipToShoreTransfers'][$i]->newFiles)-20; ?></strong> other files</small></li>
+<?php
+            }	
+		
+	    if(count($data['shipToShoreTransfers'][$i]->updatedFiles) > 0) {
 ?>
                         <li><small><?php echo count($data['shipToShoreTransfers'][$i]->updatedFiles); ?> File(s) Updated.</small></li>
 <?php

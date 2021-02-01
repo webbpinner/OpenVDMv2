@@ -37,9 +37,6 @@ class Welcome extends Controller {
         $data['filenameErrors'] = $this->_transferLogsModel->getExcludeLogsSummary();
         $data['shipboardTransfers'] = $this->_transferLogsModel->getShipboardLogsSummary(5);
         $data['shipToShoreTransfers'] = $this->_transferLogsModel->getShipToShoreLogsSummary(5);
-        
-        #var_dump($data['shipboardTransfers']);
-               
         $data['javascript'] = array('welcome');
         
         View::rendertemplate('header',$data);

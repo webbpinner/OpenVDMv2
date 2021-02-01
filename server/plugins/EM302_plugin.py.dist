@@ -60,7 +60,7 @@ from server.plugins.parsers.geotiff_parser import GeoTIFFParser
 # regex expression.
 # -------------------------------------------------------------------------------------
 FILE_TYPE_FILTERS = [
-    {"dataType":"geotiff",   "regex": "*.tif",   "parser": "GeoTIFF",   "parser_options":{}}
+    {"data_type":"geotiff",   "regex": "*.tif",   "parser": "GeoTIFF",   "parser_options":{}}
 ]
 
 # -------------------------------------------------------------------------------------

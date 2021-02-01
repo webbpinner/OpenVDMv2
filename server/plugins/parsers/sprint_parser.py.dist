@@ -65,8 +65,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLS = ['date_time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # OpenRVDAS style
-# RAW_COLS = ['date','time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # SCS style
+# RAW_COLS = ['date_time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # OpenRVDAS style
+RAW_COLS = ['date','time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # SCS style
 PROC_COLS = ['date_time','latitude','longitude']
 
 ROUNDING = {
@@ -77,8 +77,8 @@ ROUNDING = {
 MAX_VELOCITY = 10 #Max speed of vehicle (mph)
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
-# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class SprintParser(OpenVDMCSVParser):
@@ -104,11 +104,11 @@ class SprintParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        date_time = line['date_time'] # OpenRVDAS style
-                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = line['date_time'] # OpenRVDAS style
+                        date_time = ' '.join([line['date'], line['time']]) # SCS style
 
-                        longitude = float(line['longitude'])
-                        latitude = float(line['latitude'])
+                        longitude = float(line['longitude']) if line['longitude'] != '' else None
+                        latitude = float(line['latitude']) if line['latitude'] != '' else None
 
                     except Exception as err:
                         errors.append(lineno)
@@ -117,6 +117,11 @@ class SprintParser(OpenVDMCSVParser):
                         logging.debug(str(err))
 
                     else:
+                    
+                        # if lat and lng are both 0 it's a bad fix
+                        if longitude == 0 and latitude == 0:
+                            continue
+
                         raw_into_df['date_time'].append(date_time)
                         raw_into_df['longitude'].append(longitude)
                         raw_into_df['latitude'].append(latitude)
@@ -136,6 +141,9 @@ class SprintParser(OpenVDMCSVParser):
         # Build DataFrame
         logging.debug("Building dataframe from parsed data...")
         df_proc = pd.DataFrame(raw_into_df)
+
+        # Remove row where data is completely missing
+        df_proc.dropna(inplace=True, thresh=2)
 
         # Convert Date/time column to datetime objects
         logging.debug("Converting data_time to datetime datatype...")
@@ -177,8 +185,8 @@ class SprintParser(OpenVDMCSVParser):
         self.add_bounds_stat([round(df_proc['velocity'].min(),3), 999999.999 if np.isinf(df_proc['velocity'].max()) else round(df_proc['velocity'].max(),3)], 'Velocity Bounds', 'kts')
         self.add_value_validity_stat([len(df_proc[(df_proc['velocity'] <= MAX_VELOCITY)]),len(df_proc[(df_proc['velocity'] > MAX_VELOCITY)])], 'Velocity Validity')
         self.add_total_value_stat([round(df_proc['distance'].sum(axis=0),3)], 'Distance Traveled', 'nm')
-        self.add_time_bounds_stat([df_proc.['date_time'].min(), df_proc.['date_time'].max()])
-        self.add_bounds_stat([round(df_proc.['deltaT'].min().total_seconds(),3), round(df_proc.['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
+        self.add_time_bounds_stat([df_proc['date_time'].min(), df_proc['date_time'].max()])
+        self.add_bounds_stat([round(df_proc['deltaT'].min().total_seconds(),3), round(df_proc['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
         self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
 
         logging.debug("Running quality tests...")
@@ -255,7 +263,7 @@ class SprintParser(OpenVDMCSVParser):
         self.add_visualization_data(visualizerDataObj)
 
         # send message about errors encountered to OpenVDM
-        if self.openvdm is not None:
+        if self.openvdm is not None and len(errors) > 0:
             self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
 
 

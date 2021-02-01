@@ -63,8 +63,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLS = ['date_time','hdr','comp1','comp2','comp3','comp4','comp5','comp6'] # OpenRVDAS style
-# RAW_COLS = ['date','time','hdr','comp1','comp2','comp3','comp4','comp5','comp6'] # SCS style
+# RAW_COLS = ['date_time','hdr','comp1','comp2','comp3','comp4','comp5','comp6'] # OpenRVDAS style
+RAW_COLS = ['date','time','hdr','comp1','comp2','comp3','comp4','comp5','comp6'] # SCS style
 PROC_COLS = ['date_time','comp1','comp2','comp3','comp4','comp5','comp6']
 
 ROUNDING = {
@@ -80,8 +80,8 @@ MIN_DEPTH = 0
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
-# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class CompPresParser(OpenVDMCSVParser):
@@ -107,15 +107,15 @@ class CompPresParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        date_time = line['date_time'] # OpenRVDAS style
-                        #date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = line['date_time'] # OpenRVDAS style
+                        date_time = ' '.join([line['date'], line['time']]) # SCS style
                         
-                        comp1 = float(line['comp1'])
-                        comp2 = float(line['comp2'])
-                        comp3 = float(line['comp3'])
-                        comp4 = float(line['comp4'])
-                        comp5 = float(line['comp5'])
-                        comp6 = float(line['comp6'])
+                        comp1 = float(line['comp1']) if line['comp1'] != '' else None
+                        comp2 = float(line['comp2']) if line['comp2'] != '' else None
+                        comp3 = float(line['comp3']) if line['comp3'] != '' else None
+                        comp4 = float(line['comp4']) if line['comp4'] != '' else None
+                        comp5 = float(line['comp5']) if line['comp5'] != '' else None
+                        comp6 = float(line['comp6']) if line['comp6'] != '' else None
 
                     except Exception as err:
                         errors.append(lineno)
@@ -147,6 +147,9 @@ class CompPresParser(OpenVDMCSVParser):
         # Build DataFrame
         logging.debug("Building dataframe from parsed data...")
         df_proc = pd.DataFrame(raw_into_df)
+
+        # Remove row where data is completely missing
+        df_proc.dropna(inplace=True, thresh=6)
 
         # Convert Date/time column to datetime objects
         logging.debug("Converting data_time to datetime datatype...")
@@ -240,7 +243,7 @@ class CompPresParser(OpenVDMCSVParser):
         self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
-        if self.openvdm is not None:
+        if self.openvdm is not None and len(errors) > 0:
             self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
 
 

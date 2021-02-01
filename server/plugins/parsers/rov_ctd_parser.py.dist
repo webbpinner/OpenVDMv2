@@ -63,8 +63,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM_API
 
-RAW_COLS = ['date_time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # OpenRVDAS style
-# RAW_COLS = ['date','time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # SCS style
+# RAW_COLS = ['date_time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # OpenRVDAS style
+RAW_COLS = ['date','time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # SCS style
 PROC_COLS = ['date_time','conductivity','temperature','pressure','depth','salinity','sound_velocity']
 
 ROUNDING = {
@@ -80,8 +80,8 @@ MIN_DEPTH = 0
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
-# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class ROV_CTDParser(OpenVDMCSVParser):
@@ -107,15 +107,15 @@ class ROV_CTDParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        date_time = line['date_time'] # OpenRVDAS style
-                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        # date_time = line['date_time'] # OpenRVDAS style
+                        date_time = ' '.join([line['date'], line['time']]) # SCS style
 
-                        conductivity = line['conductivity']
-                        temperature = line['temperature']
-                        pressure = line['pressure']
-                        depth = line['depth']
-                        salinity = line['salinity']
-                        sound_velocity = line['sound_velocity']
+                        conductivity = float(line['conductivity']) if line['conductivity'] != '' else None
+                        temperature = float(line['temperature']) if line['temperature'] != '' else None
+                        pressure = float(line['pressure']) if line['pressure'] != '' else None
+                        depth = float(line['depth']) if line['depth'] != '' else None
+                        salinity = float(line['salinity']) if line['salinity'] != '' else None
+                        sound_velocity = float(line['sound_velocity']) if line['sound_velocity'] != '' else None
 
                     except Exception as err:
                         errors.append(lineno)
@@ -147,6 +147,9 @@ class ROV_CTDParser(OpenVDMCSVParser):
         # Build DataFrame
         logging.debug("Building dataframe from parsed data...")
         df_proc = pd.DataFrame(raw_into_df)
+
+        # Remove row where data is completely missing
+        df_proc.dropna(inplace=True, thresh=6)
 
         # Convert Date/time column to datetime objects
         logging.debug("Converting data_time to datetime datatype...")
@@ -247,7 +250,7 @@ class ROV_CTDParser(OpenVDMCSVParser):
         self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
-        if self.openvdm is not None:
+        if self.openvdm is not None and len(errors) > 0:
             self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
 
 

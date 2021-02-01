@@ -1,7 +1,7 @@
 __pycache__
 **/.DS_Store
 database/OpenVDMv2_db_custom.sql
-server/bin/*.py
+bin/*.py
 server/plugins/*.py
 server/plugins/parsers/*.py
 server/etc/openvdm.yaml

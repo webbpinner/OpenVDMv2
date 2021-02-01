@@ -114,9 +114,9 @@
 #      visType: tms
 #
 
-- title: Vehicle
+- title: Lowerings
   page: vehicle
-  view: default
+  view: lowering
   cssArray:
   - leaflet
   jsArray:
@@ -129,35 +129,31 @@
     id: map
     heading: Position
     dataArray:
-    - dataType: rov-gga
+    - dataType: rov-usbl-pri
       visType: geoJSON
-    - dataType: rov-pauv
+    - dataType: rov-usbl-sec
+      visType: geoJSON
+    - dataType: rov-sprint
       visType: geoJSON
     - dataType: geotiff
       visType: tms
   - plotType: chart
-    id: hdt
-    heading: Heading
+    id: rov-comp-pres
+    heading: Comp Pressures
     dataArray:
-    - dataType: rov-hdt
+    - dataType: rov-comp-pres
       visType: json
   - plotType: chart
-    id: dpt
+    id: rov-paro
     heading: Depth
     dataArray:
-    - dataType: rov-dpt
+    - dataType: rov-paro
       visType: json
   - plotType: chart
-    id: vtg
-    heading: SOG/COG
+    id: rov-ctd
+    heading: ROV CTD
     dataArray:
-    - dataType: rov-vtg
-      visType: json
-  - plotType: chart
-    id: hpr
-    heading: Heading/Pitch/Roll
-    dataArray:
-    - dataType: rov-hpr
+    - dataType: rov-ctd
       visType: json
 
 - title: Position
