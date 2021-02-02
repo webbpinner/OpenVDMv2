@@ -254,71 +254,71 @@ class DashboardData extends Model {
                         switch ($dataFileStatsObj[$j]->statType){
                             case "timeBounds":
                                 #Start Time
-                                if($dataFileStatsObj[$j]->statData[0] < $dataTypeStatsObj[$j]->statData[0]){
-                                    $dataTypeStatsObj[$j]->statData[0] = $dataFileStatsObj[$j]->statData[0];
+                                if($dataFileStatsObj[$j]->statValue[0] < $dataTypeStatsObj[$j]->statValue[0]){
+                                    $dataTypeStatsObj[$j]->statValue[0] = $dataFileStatsObj[$j]->statValue[0];
                                 }
                                 
                                 #End Time
-                                if($dataFileStatsObj[$j]->statData[1] > $dataTypeStatsObj[$j]->statData[1]){
-                                    $dataTypeStatsObj[$j]->statData[1] = $dataFileStatsObj[$j]->statData[1];
+                                if($dataFileStatsObj[$j]->statValue[1] > $dataTypeStatsObj[$j]->statValue[1]){
+                                    $dataTypeStatsObj[$j]->statValue[1] = $dataFileStatsObj[$j]->statValue[1];
                                 }
                                 
                                 break;
                                 
                             case "geoBounds":
                                 #North
-                                if($dataFileStatsObj[$j]->statData[0] > $dataTypeStatsObj[$j]->statData[0]){
-                                    $dataTypeStatsObj[$j]->statData[0] = $dataFileStatsObj[$j]->statData[0];
+                                if($dataFileStatsObj[$j]->statValue[0] > $dataTypeStatsObj[$j]->statValue[0]){
+                                    $dataTypeStatsObj[$j]->statValue[0] = $dataFileStatsObj[$j]->statValue[0];
                                 }
                                 
                                 #East
-                                if($dataFileStatsObj[$j]->statData[1] < $dataTypeStatsObj[$j]->statData[1]){
-                                    $dataTypeStatsObj[$j]->statData[1] = $dataFileStatsObj[$j]->statData[1];
+                                if($dataFileStatsObj[$j]->statValue[1] < $dataTypeStatsObj[$j]->statValue[1]){
+                                    $dataTypeStatsObj[$j]->statValue[1] = $dataFileStatsObj[$j]->statValue[1];
                                 }
 
                                 #South
-                                if($dataFileStatsObj[$j]->statData[2] < $dataTypeStatsObj[$j]->statData[2]){
-                                    $dataTypeStatsObj[$j]->statData[2] = $dataFileStatsObj[$j]->statData[2];
+                                if($dataFileStatsObj[$j]->statValue[2] < $dataTypeStatsObj[$j]->statValue[2]){
+                                    $dataTypeStatsObj[$j]->staValue[2] = $dataFileStatsObj[$j]->statValue[2];
                                 }
 
                                 #West
-                                if($dataFileStatsObj[$j]->statData[3] < $dataTypeStatsObj[$j]->statData[3]){
-                                    $dataTypeStatsObj[$j]->statData[3] = $dataFileStatsObj[$j]->statData[3];
+                                if($dataFileStatsObj[$j]->statValue[3] < $dataTypeStatsObj[$j]->statValue[3]){
+                                    $dataTypeStatsObj[$j]->statValue[3] = $dataFileStatsObj[$j]->statValue[3];
                                 }
 
                                 break;
                                 
                             case "bounds":
                                 #Min
-                                if($dataFileStatsObj[$j]->statData[0] < $dataTypeStatsObj[$j]->statData[0]){
-                                    $dataTypeStatsObj[$j]->statData[0] = $dataFileStatsObj[$j]->statData[0];
+                                if($dataFileStatsObj[$j]->statValue[0] < $dataTypeStatsObj[$j]->statValue[0]){
+                                    $dataTypeStatsObj[$j]->statValue[0] = $dataFileStatsObj[$j]->statValue[0];
                                 }
                                 
                                 #Max
-                                if($dataFileStatsObj[$j]->statData[1] > $dataTypeStatsObj[$j]->statData[1]){
-                                    $dataTypeStatsObj[$j]->statData[1] = $dataFileStatsObj[$j]->statData[1];
+                                if($dataFileStatsObj[$j]->statValue[1] > $dataTypeStatsObj[$j]->statValue[1]){
+                                    $dataTypeStatsObj[$j]->statValue[1] = $dataFileStatsObj[$j]->statValue[1];
                                 }
                                 
                                 break;
                             
                             case "totalValue":
                                 #Sum values
-                                $dataTypeStatsObj[$j]->statData[0] += $dataFileStatsObj[$j]->statData[0];
+                                $dataTypeStatsObj[$j]->statValue[0] += $dataFileStatsObj[$j]->statValue[0];
                             
                                 break;
                             
                             case "valueValidity":
                                 #Sum values
-                                $dataTypeStatsObj[$j]->statData[0] += $dataFileStatsObj[$j]->statData[0];
+                                $dataTypeStatsObj[$j]->statValue[0] += $dataFileStatsObj[$j]->statValue[0];
 
-                                $dataTypeStatsObj[$j]->statData[1] += $dataFileStatsObj[$j]->statData[1];
+                                $dataTypeStatsObj[$j]->statValue[1] += $dataFileStatsObj[$j]->statValue[1];
                                 
                                 break;
                             case "rowValidity":
                                 #Sum values
-                                $dataTypeStatsObj[$j]->statData[0] += $dataFileStatsObj[$j]->statData[0];
+                                $dataTypeStatsObj[$j]->statValue[0] += $dataFileStatsObj[$j]->statValue[0];
 
-                                $dataTypeStatsObj[$j]->statData[1] += $dataFileStatsObj[$j]->statData[1];
+                                $dataTypeStatsObj[$j]->statValue[1] += $dataFileStatsObj[$j]->statValue[1];
                                 
                                 break;
                                 
@@ -331,8 +331,8 @@ class DashboardData extends Model {
         $fileCountStat = new \stdClass();
         $fileCountStat->statType = "totalValue";
         $fileCountStat->statName = "File Count";
-        $fileCountStat->statData = array();
-        $fileCountStat->statData[0] = sizeof($dataObjects);
+        $fileCountStat->statValue = array();
+        $fileCountStat->statValue[0] = sizeof($dataObjects);
         
         array_unshift($dataTypeStatsObj, $fileCountStat);
         

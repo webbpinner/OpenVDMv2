@@ -124,19 +124,19 @@
                             <td>
 <?php
         if(strcmp($data['stats'][$i]->statType, 'bounds') === 0){
-            echo 'Min: ' . round(floatval($data['stats'][$i]->statData[0]),2) . ' ' . $data['stats'][$i]->statUnit . ', Max: ' . round(floatval($data['stats'][$i]->statData[1]),2) . ' ' . $data['stats'][$i]->statUnit;
+            echo 'Min: ' . round(floatval($data['stats'][$i]->statValue[0]),2) . ' ' . $data['stats'][$i]->statUnit . ', Max: ' . round(floatval($data['stats'][$i]->statValue[1]),2) . ' ' . $data['stats'][$i]->statUnit;
         } elseif(strcmp($data['stats'][$i]->statType, 'timeBounds') === 0){
-            echo 'Start: ' . gmdate('r', floatval($data['stats'][$i]->statData[0])) . '</br>';
-            echo 'End: ' . gmdate('r', floatval($data['stats'][$i]->statData[1]));
+            echo 'Start: ' . $data['stats'][$i]->statValue[0] . '</br>';
+            echo 'End: ' . $data['stats'][$i]->statValue[1];
         } elseif (strcmp($data['stats'][$i]->statType, 'geoBounds') === 0){
-            echo 'North: ' . round(floatval($data['stats'][$i]->statData[0]),6) . ' ' . $data['stats'][$i]->statUnit . ', East: ' . round(floatval($data['stats'][$i]->statData[1]),6) . ' ' . $data['stats'][$i]->statUnit . '</br>';
-            echo 'South: ' . round(floatval($data['stats'][$i]->statData[2]),6) . ' ' . $data['stats'][$i]->statUnit . ', West: ' . round(floatval($data['stats'][$i]->statData[3]),6) . ' ' . $data['stats'][$i]->statUnit;
+            echo 'North: ' . round(floatval($data['stats'][$i]->statValue[0]),6) . ' ' . $data['stats'][$i]->statUnit . ', East: ' . round(floatval($data['stats'][$i]->statValue[1]),6) . ' ' . $data['stats'][$i]->statUnit . '</br>';
+            echo 'South: ' . round(floatval($data['stats'][$i]->statValue[2]),6) . ' ' . $data['stats'][$i]->statUnit . ', West: ' . round(floatval($data['stats'][$i]->statValue[3]),6) . ' ' . $data['stats'][$i]->statUnit;
         } elseif (strcmp($data['stats'][$i]->statType, 'totalValue') === 0){
-            echo round(floatval($data['stats'][$i]->statData[0]),2) . ' ' . $data['stats'][$i]->statUnit;
+            echo round(floatval($data['stats'][$i]->statValue[0]),2) . ' ' . $data['stats'][$i]->statUnit;
         } elseif (strcmp($data['stats'][$i]->statType, 'valueValidity') === 0){
-            echo 'Valid data values: ' . round(floatval($data['stats'][$i]->statData[0])/(floatval($data['stats'][$i]->statData[0]) + floatval($data['stats'][$i]->statData[1])) * 100,4) . '%';
+            echo 'Valid data values: ' . round(floatval($data['stats'][$i]->statValue[0])/(floatval($data['stats'][$i]->statValue[0]) + floatval($data['stats'][$i]->statValue[1])) * 100,4) . '%';
         } elseif (strcmp($data['stats'][$i]->statType, 'rowValidity') === 0){
-            echo 'Valid rows: ' . round(floatval($data['stats'][$i]->statData[0])/(floatval($data['stats'][$i]->statData[0]) + floatval($data['stats'][$i]->statData[1])) * 100,4) . '%';
+            echo 'Valid rows: ' . round(floatval($data['stats'][$i]->statValue[0])/(floatval($data['stats'][$i]->statValue[0]) + floatval($data['stats'][$i]->statValue[1])) * 100,4) . '%';
         }
             
 ?>
