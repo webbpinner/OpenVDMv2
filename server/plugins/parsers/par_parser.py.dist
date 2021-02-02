@@ -199,7 +199,7 @@ class ParParser(OpenVDMCSVParser):
         self.add_visualization_data(deepcopy(visualizerDataObj))
 
         # send message about errors encountered to OpenVDM
-        if self.openvdm is not None:
+        if self.openvdm is not None and len(errors) > 0:
             self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
 
 
