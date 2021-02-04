@@ -73,6 +73,7 @@ class GeoTIFFParser(OpenVDMParser):
             raise FileNotFoundError("Output directory does not exist")
 
         self.output_dir = output_dir
+        self.tile_dir = None
 
     def process_file(self, filepath): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """
@@ -84,18 +85,23 @@ class GeoTIFFParser(OpenVDMParser):
         directoryname, filename = os.path.split(filepath)
         label = os.path.splitext(filename)[0]
 
-        if self.output_dir is None:
-            if self.openvdm:
-                # parse the filepath to get the name of the file without the file extension
-                data_warehouse_config = self.openvdm.get_shipboard_data_warehouse_config()
-                logging.debug(self.openvdm.get_required_extra_directory_by_name("Dashboard_Data"))
-                dashboard_data_dir = self.openvdm.get_required_extra_directory_by_name("Dashboard_Data")['destDir']
-                cruise_id = self.openvdm.get_cruise_id()
+        if self.output_dir is None and self.openvdm:
+            # parse the filepath to get the name of the file without the file extension
+            data_warehouse_config = self.openvdm.get_shipboard_data_warehouse_config()
+            logging.debug(self.openvdm.get_required_extra_directory_by_name("Dashboard_Data"))
+            dashboard_data_dir = self.openvdm.get_required_extra_directory_by_name("Dashboard_Data")['destDir']
+            cruise_id = self.openvdm.get_cruise_id()
 
-                collection_system_dir = directoryname.replace(os.path.join(data_warehouse_config['shipboardDataWarehouseBaseDir'], cruise_id), '').lstrip('/')
-                self.output_dir = os.path.join(data_warehouse_config['shipboardDataWarehouseBaseDir'], cruise_id, dashboard_data_dir, collection_system_dir)
-        else:
+            collection_system_dir = directoryname.replace(os.path.join(data_warehouse_config['shipboardDataWarehouseBaseDir'], cruise_id), '').lstrip('/')
+            self.output_dir = os.path.join(data_warehouse_config['shipboardDataWarehouseBaseDir'], cruise_id, dashboard_data_dir, collection_system_dir)
+            self.tile_dir = cruise_id + '/' + dashboard_data_dir + '/' + collection_system_dir + '/' + label
+    
+        elif self.output_dir is None:
             self.output_dir = directoryname
+            self.tile_dir = os.path.join(directoryname, label)
+
+        else:
+            self.tile_dir = os.path.join(self.output_dir, label)
 
         # Directory where the tiles will go.
         tilepath = os.path.join(self.output_dir, label)
@@ -110,7 +116,7 @@ class GeoTIFFParser(OpenVDMParser):
 
         command = ['gdalwarp', '-t_srs', t_srs_options, filepath, ll_filepath]
         logging.debug("Command: %s", ' '.join(command))
-        subprocess.call(command)
+        subprocess.run(command, capture_output=True, check=False)
 
         # open the ll geoTiff
         ll_tiff = gdal.Open(ll_filepath)
@@ -128,11 +134,11 @@ class GeoTIFFParser(OpenVDMParser):
 
         command = ['gdal_translate', '-of', 'vrt', ll_filepath, vrt_filepath]
         logging.debug("Command: %s", ' '.join(command))
-        subprocess.call(command)
+        subprocess.run(command, capture_output=True, check=False)
 
-        command = ['gdal2tiles.py', '-v', '--profile=mercator', '--zoom=5-13', '--webviewer=none', vrt_filepath, tilepath]
+        command = ['gdal2tiles.py', '-v', '--profile=mercator', '--zoom=5-12', '--webviewer=none', vrt_filepath, tilepath]
         logging.debug("Command: %s", ' '.join(command))
-        subprocess.call(command)
+        subprocess.run(command, capture_output=True, check=False)
 
         shutil.rmtree(tmpdir)
 
@@ -145,7 +151,7 @@ class GeoTIFFParser(OpenVDMParser):
 
         visualizer_data_obj = {
             "label": label,
-            "tileDirectory":cruise_id + '/' + dashboard_data_dir + '/' + collection_system_dir + '/' + label,
+            "tileDirectory": self.tile_dir,
             "mapBounds":str(minx) + "," + str(miny) + "," + str(maxx) + "," + str(maxy)
         }
         self.add_visualization_data(visualizer_data_obj)
