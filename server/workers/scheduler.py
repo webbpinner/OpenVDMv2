@@ -46,9 +46,9 @@ import time
 import argparse
 import json
 import logging
+from os.path import dirname, realpath
 from python3_gearman import GearmanClient
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM

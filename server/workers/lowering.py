@@ -40,9 +40,9 @@ import json
 import time
 import signal
 import logging
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils.set_owner_group_permissions import set_owner_group_permissions
@@ -108,7 +108,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-ma
         self.lowering_id = self.ovdm.get_lowering_id()
         self.lowering_start_date = self.ovdm.get_lowering_start_date()
         self.shipboard_data_warehouse_config = self.ovdm.get_shipboard_data_warehouse_config()
-        self.lowering_dir = os.path.join(self.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], self.cruise_id, self.shipboardDataWarehouseConfig['loweringDataBaseDir'], self.lowering_id)
+        self.lowering_dir = os.path.join(self.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], self.cruise_id, self.shipboard_data_warehouse_config['loweringDataBaseDir'], self.lowering_id)
 
         super().__init__(host_list=[self.ovdm.get_gearman_server()])
 
@@ -136,7 +136,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-ma
         self.lowering_id = payload_obj['loweringID'] if 'loweringID' in payload_obj else self.ovdm.get_lowering_id()
         self.lowering_start_date = payload_obj['loweringStartDate'] if 'loweringStartDate' in payload_obj else self.ovdm.get_lowering_start_date()
         self.shipboard_data_warehouse_config = self.ovdm.get_shipboard_data_warehouse_config()
-        self.lowering_dir = os.path.join(self.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], self.cruise_id, self.shipboardDataWarehouseConfig['loweringDataBaseDir'], self.lowering_id)
+        self.lowering_dir = os.path.join(self.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], self.cruise_id, self.shipboard_data_warehouse_config['loweringDataBaseDir'], self.lowering_id)
 
         return super().on_job_execute(current_job)
 
@@ -160,17 +160,17 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-ma
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         job_data = {
-            'cruiseID': self.cruiseID,
-            'loweringID': self.loweringID,
-            'loweringStartDate': self.loweringStartDate
+            'cruiseID': self.cruise_id,
+            'loweringID': self.lowering_id,
+            'loweringStartDate': self.lowering_start_date
         }
 
         if current_job.task == 'setupNewLowering':
@@ -203,7 +203,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-ma
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s (%s) completed at: %s", self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):

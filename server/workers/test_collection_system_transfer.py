@@ -42,9 +42,9 @@ import time
 import subprocess
 import signal
 import logging
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM
@@ -299,13 +299,13 @@ def test_dest_dir(gearman_worker):
     Verify the destination directory exists
     """
 
-    dest_dir = os.path.join(gearman_worker.cruise_dir, build_dest_dir(gearman_worker))
+    dest_dir = os.path.join(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], gearman_worker.cruise_id, build_dest_dir(gearman_worker))
 
     if gearman_worker.collection_system_transfer['cruiseOrLowering'] == '1':
         if gearman_worker.lowering_id == '':
             return [{"partName": "Destination Directory", "result": "Fail", "reason": "Lowering ID is undefined" }]
 
-        dest_dir = os.path.join(gearman_worker.cruise_dir, gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir'], gearman_worker.lowering_id, build_dest_dir(gearman_worker))
+        dest_dir = os.path.join(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], gearman_worker.cruise_id, gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir'], gearman_worker.lowering_id, build_dest_dir(gearman_worker))
 
     logging.debug('Destination Directory: %s', dest_dir)
 
@@ -352,7 +352,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         if self.collection_system_transfer['cruiseOrLowering'] == '1' and self.lowering_id is None:
             try:
-                return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Retrieve LoweringID", "result": "Fail", "reason": "Invalid LoweringID set in OpenVDM"},{"partName": "Final Verdict", "result": "Fail", "reason": "Invalid LoweringID set in OpenVDM"}]}))
+                return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Retrieve Lowering ID", "result": "Fail", "reason": "Lowering ID is not defined"},{"partName": "Final Verdict", "result": "Fail", "reason": "Lowering ID is not defined"}]}))
             except Exception as err:
                 raise err
 
@@ -381,12 +381,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         if 'collectionSystemTransferID' in self.collection_system_transfer:
             if len(results_obj['parts']) > 0:
@@ -400,7 +400,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s, %s transfer test completed at: %s", current_job.handle, self.collection_system_transfer['name'], time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):
@@ -429,7 +429,7 @@ def task_test_collection_system_transfer(gearman_worker, current_job):
     job_results = {'parts':[]}
 
     if 'collectionSystemTransferID' in gearman_worker.collection_system_transfer:
-        gearman_worker.OVDM.set_running_collection_system_transfer_test(gearman_worker.collection_system_transfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
+        gearman_worker.ovdm.set_running_collection_system_transfer_test(gearman_worker.collection_system_transfer['collectionSystemTransferID'], os.getpid(), current_job.handle)
 
     gearman_worker.send_job_status(current_job, 1, 4)
 

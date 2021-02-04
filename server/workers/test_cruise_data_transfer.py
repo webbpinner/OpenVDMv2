@@ -40,9 +40,9 @@ import time
 import subprocess
 import signal
 import logging
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM
@@ -445,12 +445,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         if 'cruiseDataTransferID' in self.cruise_data_transfer:
             if len(results_obj['parts']) > 0:
@@ -464,7 +464,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s, %s transfer test completed at: %s", current_job.handle, self.cruise_data_transfer['name'], time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):

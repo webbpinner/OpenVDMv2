@@ -40,9 +40,9 @@ import hashlib
 import signal
 import time
 import logging
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils.set_owner_group_permissions import set_owner_group_permissions
@@ -98,8 +98,8 @@ def build_md5_hashes(gearman_worker, gearman_job, filelist):
     Build the md5 hashes for the files in the filelist
     """
 
-    filesize_limit = gearman_worker.OVDM.getMD5FilesizeLimit()
-    filesize_limit_status = gearman_worker.OVDM.getMD5FilesizeLimitStatus()
+    filesize_limit = gearman_worker.ovdm.get_md5_filesize_limit()
+    filesize_limit_status = gearman_worker.ovdm.get_md5_filesize_limit_status()
 
     hashes = []
 
@@ -226,12 +226,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-ma
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         if len(results_obj['parts']) > 0:
             if results_obj['parts'][-1]['result'] == "Fail": # Final Verdict
@@ -249,7 +249,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-ma
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s (%s) completed at: %s", self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):

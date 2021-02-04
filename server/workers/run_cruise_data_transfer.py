@@ -43,9 +43,9 @@ import subprocess
 import signal
 import logging
 from random import randint
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils.check_filenames import is_ascii
@@ -654,7 +654,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         if self.system_status == "Off" or self.cruise_data_transfer['enable'] == '0':
             logging.info("Transfer job for %s skipped because that cruise data transfer is currently disabled", self.cruise_data_transfer['name'])
-            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Ignore", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         self.cruise_id = self.ovdm.get_cruise_id()
 
@@ -681,12 +681,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         if len(results_obj['parts']) > 0:
             if results_obj['parts'][-1]['result'] == "Fail": # Final Verdict
@@ -699,7 +699,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s, %s transfer completed at: %s", current_job.handle, self.cruise_data_transfer['name'], time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):

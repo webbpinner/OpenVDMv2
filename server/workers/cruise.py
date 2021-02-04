@@ -41,9 +41,9 @@ import time
 import signal
 import shutil
 import logging
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils.set_owner_group_permissions import set_owner_group_permissions
@@ -264,12 +264,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         job_data = {
             'cruiseID': self.cruise_id,
@@ -306,7 +306,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s (%s) completed at: %s", self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):

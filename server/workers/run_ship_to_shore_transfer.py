@@ -42,9 +42,9 @@ import subprocess
 import signal
 import logging
 from random import randint
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils.output_json_data_to_file import output_json_data_to_file
@@ -58,7 +58,7 @@ def build_filelist(gearman_worker):
 
     logging.debug("Building filters")
     raw_filters = {'includeFilter':[]}
-    ship_to_shore_transfers = gearman_worker.ovdm.getship_to_shore_transfers() + gearman_worker.ovdm.get_required_ship_to_shore_transfers()
+    ship_to_shore_transfers = gearman_worker.ovdm.get_ship_to_shore_transfers() + gearman_worker.ovdm.get_required_ship_to_shore_transfers()
 
     logging.debug('shipToShoreTransfers: %s', json.dumps(ship_to_shore_transfers, indent=2))
 
@@ -66,10 +66,10 @@ def build_filelist(gearman_worker):
         for ship_to_shore_transfer in ship_to_shore_transfers:
             if ship_to_shore_transfer['priority'] == str(priority) and ship_to_shore_transfer['enable'] == '1':
                 if not ship_to_shore_transfer['collectionSystem'] == "0":
-                    collection_system = gearman_worker.ovdm.getCollectionSystemTransfer(ship_to_shore_transfer['collectionSystem'])
+                    collection_system = gearman_worker.ovdm.get_collection_system_transfer(ship_to_shore_transfer['collectionSystem'])
                     raw_filters['includeFilter'] += ['*/' + gearman_worker.cruise_id + '/' + collection_system['destDir'] + '/' + ship_to_shore_filter for ship_to_shore_filter in ship_to_shore_transfer['includeFilter'].split(',')]
                 elif not ship_to_shore_transfer['extraDirectory'] == "0":
-                    extra_directory = gearman_worker.ovdm.getExtraDirectory(ship_to_shore_transfer['extraDirectory'])
+                    extra_directory = gearman_worker.ovdm.get_extra_directory(ship_to_shore_transfer['extraDirectory'])
                     raw_filters['includeFilter'] += ['*/' + gearman_worker.cruise_id + '/' + extra_directory['destDir'] + '/' + ship_to_shore_filter for ship_to_shore_filter in ship_to_shore_transfer['includeFilter'].split(',')]
                 else:
                     raw_filters['includeFilter'] += ['*/' + gearman_worker.cruise_id + '/' + ship_to_shore_filter for ship_to_shore_filter in ship_to_shore_transfer['includeFilter'].split(',')]
@@ -101,7 +101,7 @@ def build_logfile_dirpath(gearman_worker):
     """
     cruise_dir = os.path.join(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], gearman_worker.cruise_id)
 
-    return os.path.join(cruise_dir, gearman_worker.ovdm.getRequiredExtraDirectoryByName('Transfer_Logs')['destDir'])
+    return os.path.join(cruise_dir, gearman_worker.ovdm.get_required_extra_directory_by_name('Transfer_Logs')['destDir'])
 
 
 def build_filters(gearman_worker, raw_filters):
@@ -245,7 +245,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
 
         if self.system_status == "Off" or self.cruise_data_transfer['enable'] == '0':
             logging.info("Ship-to-shore Transfer job skipped because ship-to-shore transfers are currently disabled")
-            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Ignore", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         bw_limit_status = payload_obj['bandwidthLimitStatus'] if 'bandwidthLimitStatus' in payload_obj else self.ovdm.get_ship_to_shore_bw_limit_status()
         if not bw_limit_status:
@@ -277,12 +277,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         if len(results_obj['parts']) > 0:
             if results_obj['parts'][-1]['result'] == "Fail": # Final Verdict
@@ -295,7 +295,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s, %s transfer completed at: %s", current_job.handle, self.cruise_data_transfer['name'], time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):

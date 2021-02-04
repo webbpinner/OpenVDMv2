@@ -46,9 +46,9 @@ import subprocess
 import signal
 import logging
 from random import randint
+from os.path import dirname, realpath
 import python3_gearman
 
-from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.utils.check_filenames import is_ascii
@@ -73,7 +73,7 @@ def build_filelist(gearman_worker, source_dir): # pylint: disable=too-many-local
     data_start_time = calendar.timegm(time.strptime(gearman_worker.data_start_date, "%Y/%m/%d %H:%M"))
     logging.debug("Start: %s", data_start_time)
 
-    data_end_time = calendar.timegm(time.strptime(gearman_worker.dataEndDate, "%Y/%m/%d %H:%M"))
+    data_end_time = calendar.timegm(time.strptime(gearman_worker.data_end_date, "%Y/%m/%d %H:%M"))
     logging.debug("End: %s", data_end_time)
 
     filters = build_filters(gearman_worker)
@@ -166,7 +166,7 @@ def build_rsync_filelist(gearman_worker, source_dir): # pylint: disable=too-many
     threshold_time = time.time() - staleness # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     data_start_time = calendar.timegm(time.strptime(gearman_worker.data_start_date, "%Y/%m/%d %H:%M"))
-    data_end_time = calendar.timegm(time.strptime(gearman_worker.dataEndDate, "%Y/%m/%d %H:%M"))
+    data_end_time = calendar.timegm(time.strptime(gearman_worker.data_end_date, "%Y/%m/%d %H:%M"))
 
     logging.debug("Threshold: %s", threshold_time)
     logging.debug("    Start: %s", data_start_time)
@@ -295,7 +295,7 @@ def build_ssh_filelist(gearman_worker, source_dir): # pylint: disable=too-many-b
     threshold_time = time.time() - staleness # 5 minutes
     epoch = datetime.datetime.strptime('1970/01/01 00:00:00', "%Y/%m/%d %H:%M:%S")
     data_start_time = calendar.timegm(time.strptime(gearman_worker.data_start_date, "%Y/%m/%d %H:%M"))
-    data_end_time = calendar.timegm(time.strptime(gearman_worker.dataEndDate, "%Y/%m/%d %H:%M"))
+    data_end_time = calendar.timegm(time.strptime(gearman_worker.data_end_date, "%Y/%m/%d %H:%M"))
 
     logging.debug("Threshold: %s", threshold_time)
     logging.debug("    Start: %s", data_start_time)
@@ -880,10 +880,13 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):  # pylint: disable=too-m
 
         if self.system_status == "Off" or self.collection_system_transfer['enable'] == '0':
             logging.info("Transfer job for %s skipped because that collection system transfer is currently disabled", self.collection_system_transfer['name'])
-            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Fail", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
+            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Transfer Enabled", "result": "Ignore", "reason": "Transfer is disabled"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         self.cruise_id = payload_obj['cruiseID'] if 'cruiseID' in payload_obj else self.ovdm.get_cruise_id()
         self.lowering_id = payload_obj['loweringID'] if 'loweringID' in payload_obj else self.ovdm.get_lowering_id()
+
+        if self.collection_system_transfer['cruiseOrLowering'] == "1" and not self.lowering_id:
+            return self.on_job_complete(current_job, json.dumps({'parts':[{"partName": "Validate Lowering ID", "result": "Fail", "reason": "Lowering ID is not defined"}], 'files':{'new':[],'updated':[], 'exclude':[]}}))
 
         logging.info("Job: %s, %s transfer started at: %s", current_job.handle, self.collection_system_transfer['name'], time.strftime("%D %T", time.gmtime()))
 
@@ -900,12 +903,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):  # pylint: disable=too-m
         else:
             if self.collection_system_transfer['cruiseOrLowering'] == "0":
                 logging.debug("Using cruise Time bounds")
-                self.data_start_date = self.cruiseStartDate if 'cruiseStartDate' in payload_obj and payload_obj['cruiseStartDate'] != '' else "1970/01/01 00:00"
-                self.data_end_date = self.cruiseEndDate if 'cruiseEndDate' in payload_obj and payload_obj['cruiseEndDate'] != '' else "9999/12/31 23:59"
+                self.data_start_date = payload_obj['cruiseStartDate'] if 'cruiseStartDate' in payload_obj and payload_obj['cruiseStartDate'] != '' else "1970/01/01 00:00"
+                self.data_end_date = payload_obj['cruiseEndDate'] if 'cruiseEndDate' in payload_obj and payload_obj['cruiseEndDate'] != '' else "9999/12/31 23:59"
             else:
                 logging.debug("Using lowering Time bounds")
-                self.data_start_date = self.loweringStartDate if 'loweringStartDate' in payload_obj and payload_obj['loweringStartDate'] != '' else "1970/01/01 00:00"
-                self.data_end_date = self.loweringEndDate if 'loweringEndDate' in payload_obj and payload_obj['loweringEndDate'] != '' else "9999/12/31 23:59"
+                self.data_start_date = payload_obj['loweringStartDate'] if 'loweringStartDate' in payload_obj and payload_obj['loweringStartDate'] != '' else "1970/01/01 00:00"
+                self.data_end_date = payload_obj['loweringEndDate'] if 'loweringEndDate' in payload_obj and payload_obj['loweringEndDate'] != '' else "9999/12/31 23:59"
 
         logging.debug("Start date/time filter: %s", self.data_start_date)
         logging.debug("End date/time filter: %s", self.data_end_date)
@@ -932,12 +935,12 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):  # pylint: disable=too-m
         return super().on_job_exception(current_job, exc_info)
 
 
-    def on_job_complete(self, current_job, job_results):
+    def on_job_complete(self, current_job, job_result):
         """
         Function run whenever the current job completes
         """
 
-        results_obj = json.loads(job_results)
+        results_obj = json.loads(job_result)
 
         if results_obj['files']['new'] or results_obj['files']['updated']:
 
@@ -965,7 +968,7 @@ class OVDMGearmanWorker(python3_gearman.GearmanWorker):  # pylint: disable=too-m
         logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
         logging.info("Job: %s, %s transfer completed at: %s", current_job.handle, self.collection_system_transfer['name'], time.strftime("%D %T", time.gmtime()))
 
-        return super().send_job_complete(current_job, job_results)
+        return super().send_job_complete(current_job, job_result)
 
 
     def stop_task(self):
