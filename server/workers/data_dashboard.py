@@ -1,55 +1,55 @@
-# ----------------------------------------------------------------------------------- #
-#
-#         FILE:  OVDM_dataDashboard.py
-#
-#  DESCRIPTION:  Gearman worker tha handles the creation and update of OVDM data
-#                dashboard objects.
-#
-#         BUGS:
-#        NOTES:
-#       AUTHOR:  Webb Pinner
-#      COMPANY:  Capable Solutions
-#      VERSION:  2.4
-#      CREATED:  2015-01-01
-#     REVISION:  2020-12-27
-#
-# LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
-#               Copyright (C) OceanDataRat.org 2021
-#
-#    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
-#
-# ----------------------------------------------------------------------------------- #
+
+#!/usr/bin/env python3
+"""
+FILE:  OVDM_dataDashboard.py
+
+DESCRIPTION:  Gearman worker tha handles the creation and update of OVDM data
+    dashboard objects.
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  2.4
+  CREATED:  2015-01-01
+ REVISION:  2020-12-27
+
+LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+Copyright (C) OceanDataRat.org 2021
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
+
+"""
+
 import argparse
 import os
 import sys
-import python3_gearman
 import json
-import argparse
 import signal
 import time
 import subprocess
 import logging
+import python3_gearman
 
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from server.utils.set_ownerGroupPermissions import set_ownerGroupPermissions
-from server.utils.check_filenames import bad_filename
-from server.utils.output_JSONDataToFile import output_JSONDataToFile
-from server.lib.openvdm import OpenVDM_API, DEFAULT_DATA_DASHBOARD_MANIFEST_FN
+from server.utils.set_owner_group_permissions import set_owner_group_permissions
+from server.utils.output_json_data_to_file import output_json_data_to_file
+from server.lib.openvdm import OpenVDM, DEFAULT_DATA_DASHBOARD_MANIFEST_FN
 
-python_binary = os.path.join(dirname(dirname(dirname(realpath(__file__)))), 'venv/bin/python')
+PYTHON_BINARY = os.path.join(dirname(dirname(dirname(realpath(__file__)))), 'venv/bin/python')
 
 customTasks = [
     {
@@ -59,139 +59,175 @@ customTasks = [
     }
 ]
 
-def build_filelist(sourceDir):
+def build_filelist(source_dir):
+    """
+    return the list of files in the source directory
+    """
 
-    logging.debug("sourceDir: {}".format(sourceDir))
+    logging.debug("sourceDir: %s", source_dir)
 
-    returnFiles = []
-    for root, dirnames, filenames in os.walk(sourceDir):
+    return_files = []
+    for root, _, filenames in os.walk(source_dir):
         for filename in filenames:
-            returnFiles.append(os.path.join(root, filename))
+            return_files.append(os.path.join(root, filename))
 
-    returnFiles = [filename.replace(sourceDir + '/', '', 1) for filename in returnFiles]
-    return returnFiles
+    return_files = [filename.replace(source_dir + '/', '', 1) for filename in return_files]
+    return return_files
 
 
-class OVDMGearmanWorker(python3_gearman.GearmanWorker):
+class OVDMGearmanWorker(python3_gearman.GearmanWorker): # pylint: disable=too-many-instance-attributes
+    """
+    Class for the current Gearman worker
+    """
 
-    def __init__(self, host_list=None):
+    def __init__(self):
         self.stop = False
-        self.OVDM = OpenVDM_API()
+        self.ovdm = OpenVDM()
         self.task = None
-        self.cruiseID = ''
-        self.loweringID = ''
-        self.collectionSystemTransfer = {}
-        self.shipboardDataWarehouseConfig = {}
-        super(OVDMGearmanWorker, self).__init__(host_list=[self.OVDM.getGearmanServer()])
+        self.shipboard_data_warehouse_config = self.ovdm.get_shipboard_data_warehouse_config()
+        self.cruise_id = self.ovdm.get_cruise_id()
+        self.cruise_dir = os.path.join(self.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], self.cruise_id)
+        self.lowering_id = self.ovdm.get_cruise_id()
+        self.lowering_dir = os.path.join(self.cruise_dir, self.shipboard_data_warehouse_config['loweringDataBaseDir'], self.lowering_id) if self.lowering_id else None
+        self.data_dashboard_dir = os.path.join(self.cruise_dir, self.ovdm.get_required_extra_directory_by_name('Dashboard_Data')['destDir'])
+        self.data_dashboard_manifest_file_path = os.path.join(self.data_dashboard_dir, DEFAULT_DATA_DASHBOARD_MANIFEST_FN)
 
+        self.collection_system_transfer = {}
 
-    def get_custom_task(self, current_job):
+        super().__init__(host_list=[self.ovdm.get_gearman_server()])
+
+    @staticmethod
+    def get_custom_task(current_job):
+        """
+        Retrieve task metadata
+        """
         task = list(filter(lambda task: task['name'] == current_job.task, customTasks))
         return task[0] if len(task) > 0 else None
 
-
     def on_job_execute(self, current_job):
+        """
+        Function run whenever a new job arrives
+        """
 
-        logging.debug("current_job: {}".format(current_job))
+        logging.debug("current_job: %s", current_job)
 
-        payloadObj = json.loads(current_job.data)
+        payload_obj = json.loads(current_job.data)
 
-        self.task = self.get_custom_task(current_job) if self.get_custom_task(current_job) != None else self.OVDM.getTaskByName(current_job.task)
-        logging.debug("task: {}".format(self.task))
+        self.task = self.get_custom_task(current_job) if self.get_custom_task(current_job) is not None else self.ovdm.get_task_by_name(current_job.task)
+        logging.debug("task: %s", self.task)
 
         if int(self.task['taskID']) > 0:
-            self.OVDM.setRunning_task(self.task['taskID'], os.getpid(), current_job.handle)
+            self.ovdm.set_running_task(self.task['taskID'], os.getpid(), current_job.handle)
         else:
-            self.OVDM.trackGearmanJob(self.task['longName'], os.getpid(), current_job.handle)
+            self.ovdm.track_gearman_job(self.task['longName'], os.getpid(), current_job.handle)
 
-        logging.info("Job: {} ({}) started at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
+        logging.info("Job: %s (%s) started at: %s", self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime()))
 
-        self.cruiseID = payloadObj['cruiseID'] if 'cruiseID' in payloadObj else self.OVDM.getCruiseID()
-        self.loweringID = payloadObj['loweringID'] if 'loweringID' in payloadObj else self.OVDM.getLoweringID()
-        self.collectionSystemTransfer = self.OVDM.getCollectionSystemTransfer(payloadObj['collectionSystemTransferID']) if 'collectionSystemTransferID' in payloadObj else { 'name': "Unknown" }
+        self.shipboard_data_warehouse_config = self.ovdm.get_shipboard_data_warehouse_config()
+        self.cruise_id = payload_obj['cruiseID'] if 'cruiseID' in payload_obj else self.ovdm.get_cruise_id()
+        self.cruise_dir = os.path.join(self.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'], self.cruise_id)
+        self.lowering_id = payload_obj['loweringID'] if 'loweringID' in payload_obj else self.ovdm.get_lowering_id()
+        self.lowering_dir = os.path.join(self.cruise_dir, self.shipboard_data_warehouse_config['loweringDataBaseDir'], self.lowering_id) if self.lowering_id else None
+        self.collection_system_transfer = self.ovdm.get_collection_system_transfer(payload_obj['collectionSystemTransferID']) if 'collectionSystemTransferID' in payload_obj else { 'name': "Unknown" }
+        self.data_dashboard_dir = os.path.join(self.cruise_dir, self.ovdm.get_required_extra_directory_by_name('Dashboard_Data')['destDir'])
+        self.data_dashboard_manifest_file_path = os.path.join(self.data_dashboard_dir, DEFAULT_DATA_DASHBOARD_MANIFEST_FN)
 
-        self.shipboardDataWarehouseConfig = self.OVDM.getShipboardDataWarehouseConfig()
-        
-        return super(OVDMGearmanWorker, self).on_job_execute(current_job)
+        return super().on_job_execute(current_job)
 
 
     def on_job_exception(self, current_job, exc_info):
-        logging.error("Job: {} ({}) failed at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
-        
+        """
+        Function run whenever the current job has an exception
+        """
+
+        logging.error("Job: %s (%s) failed at: %s", self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime()))
+
         self.send_job_data(current_job, json.dumps([{"partName": "Worker crashed", "result": "Fail", "reason": "Unknown, contact Webb :-)"}]))
         if int(self.task['taskID']) > 0:
-            self.OVDM.setError_task(self.task['taskID'], "Worker crashed")
+            self.ovdm.set_error_task(self.task['taskID'], "Worker crashed")
         else:
-            self.OVDM.sendMsg(self.task['longName'] + ' failed', 'Worker crashed')
-        
-        exc_type, exc_obj, exc_tb = sys.exc_info()
+            self.ovdm.send_msg(self.task['longName'] + ' failed', 'Worker crashed')
+
+        exc_type, _, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         logging.error(exc_type, fname, exc_tb.tb_lineno)
-        return super(OVDMGearmanWorker, self).on_job_exception(current_job, exc_info)
+        return super().on_job_exception(current_job, exc_info)
 
 
     def on_job_complete(self, current_job, job_results):
-        resultsObj = json.loads(job_results)
+        """
+        Function run whenever the current job completes
+        """
+
+        results_obj = json.loads(job_results)
 
         logging.debug("Preparing subsequent Gearman jobs")
 
-        jobData = {
-            'cruiseID': self.cruiseID,
-            'loweringID': self.loweringID,
-            'files': resultsObj['files']
+        job_data = {
+            'cruiseID': self.cruise_id,
+            'loweringID': self.lowering_id,
+            'files': results_obj['files']
         }
-    
+
         if current_job.task == 'updateDataDashboard':
 
-            gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
+            gm_client = python3_gearman.GearmanClient([self.ovdm.get_gearman_server()])
 
-            payloadObj = json.loads(current_job.data)
-            jobData['collectionSystemTransferID'] = payloadObj['collectionSystemTransferID']
+            payload_obj = json.loads(current_job.data)
+            job_data['collectionSystemTransferID'] = payload_obj['collectionSystemTransferID']
 
-            for task in self.OVDM.getTasksForHook(current_job.task):
-                logging.info("Adding post task: {}".format(task));
-                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+            for task in self.ovdm.get_tasks_for_hook(current_job.task):
+                logging.info("Adding post task: %s", task)
+                gm_client.submit_job(task, json.dumps(job_data), background=True)
 
         elif current_job.task == 'rebuildDataDashboard':
 
-            gm_client = python3_gearman.GearmanClient([self.OVDM.getGearmanServer()])
+            gm_client = python3_gearman.GearmanClient([self.ovdm.get_gearman_server()])
 
-            for task in self.OVDM.getTasksForHook(current_job.task):
-                logging.info("Adding post task: {}".format(task));
-                submitted_job_request = gm_client.submit_job(task, json.dumps(jobData), background=True)
+            for task in self.ovdm.get_tasks_for_hook(current_job.task):
+                logging.info("Adding post task: %s", task)
+                gm_client.submit_job(task, json.dumps(job_data), background=True)
 
-        if len(resultsObj['parts']) > 0:
-            if resultsObj['parts'][-1]['result'] == "Fail": # Final Verdict
+        if len(results_obj['parts']) > 0:
+            if results_obj['parts'][-1]['result'] == "Fail": # Final Verdict
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setError_task(self.task['taskID'], resultsObj['parts'][-1]['reason'])
+                    self.ovdm.set_error_task(self.task['taskID'], results_obj['parts'][-1]['reason'])
                 else:
-                    self.OVDM.sendMsg(self.task['longName'] + ' failed', resultsObj['parts'][-1]['reason'])
+                    self.ovdm.send_msg(self.task['longName'] + ' failed', results_obj['parts'][-1]['reason'])
             else:
                 if int(self.task['taskID']) > 0:
-                    self.OVDM.setIdle_task(self.task['taskID'])
+                    self.ovdm.set_idle_task(self.task['taskID'])
         else:
             if int(self.task['taskID']) > 0:
-                self.OVDM.setIdle_task(self.task['taskID'])
-        
-        logging.debug("Job Results: {}".format(json.dumps(resultsObj, indent=2)))
-        logging.info("Job: {} ({}) completed at: {}".format(self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime())))
-            
-        return super(OVDMGearmanWorker, self).send_job_complete(current_job, job_results)
+                self.ovdm.set_idle_task(self.task['taskID'])
+
+        logging.debug("Job Results: %s", json.dumps(results_obj, indent=2))
+        logging.info("Job: %s (%s) completed at: %s", self.task['longName'], current_job.handle, time.strftime("%D %T", time.gmtime()))
+
+        return super().send_job_complete(current_job, job_results)
 
 
-    def stopTask(self):
+    def stop_task(self):
+        """
+        Function to stop the current job
+        """
         self.stop = True
         logging.warning("Stopping current task...")
 
-    
-    def quitWorker(self):
+
+    def quit_worker(self):
+        """
+        Function to quit the worker
+        """
         self.stop = True
         logging.warning("Quitting worker...")
         self.shutdown()
 
 
-def task_updateDataDashboard(gearman_worker, gearman_job):
-
+def task_update_data_dashboard(gearman_worker, gearman_job): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    """
+    Update the existing dashboard files with new/updated raw data
+    """
     job_results = {
         'parts':[],
         'files':{
@@ -200,44 +236,35 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
         }
     }
 
-    payloadObj = json.loads(gearman_job.data)
-    logging.debug('Payload: {}'.format(json.dumps(payloadObj, indent=2)))
-
-    warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
-    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
-    loweringDir = os.path.join(cruiseDir, gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir'], gearman_worker.loweringID)
-    
-    dataDashboardDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'])
-    dataDashboardManifestFilePath = os.path.join(dataDashboardDir, DEFAULT_DATA_DASHBOARD_MANIFEST_FN)
-    collectionSystemTransfer = gearman_worker.collectionSystemTransfer
+    payload_obj = json.loads(gearman_job.data)
+    logging.debug('Payload: %s', json.dumps(payload_obj, indent=2))
 
     gearman_worker.send_job_status(gearman_job, 5, 100)
 
-    logging.info('Collection System Transfer: {}'.format(collectionSystemTransfer['name']))
+    logging.info('Collection System Transfer: %s', gearman_worker.collection_system_transfer['name'])
 
-    newManifestEntries = []
-    removeManifestEntries = []
+    new_manifest_entries = []
+    remove_manifest_entries = []
 
     #check for processing file
-    processingScriptFilename = os.path.join(gearman_worker.OVDM.getDashboardDataProcessingScriptDir(), collectionSystemTransfer['name'].replace(' ','') + gearman_worker.OVDM.getDashboardDataProcessingScriptSuffix())
-    logging.debug("Processing Script Filename: {}".format(processingScriptFilename))
+    processing_script_filename = os.path.join(gearman_worker.ovdm.get_dashboard_data_processing_script_dir(), gearman_worker.collection_system_transfer['name'].replace(' ','') + gearman_worker.ovdm.get_dashboard_data_processing_script_suffix())
+    logging.debug("Processing Script Filename: %s", processing_script_filename)
 
-    if os.path.isfile(processingScriptFilename):
+    if os.path.isfile(processing_script_filename):
         job_results['parts'].append({"partName": "Dashboard Processing File Located", "result": "Pass"})
     else:
-        logging.warning("Processing script not found: {}".format(processingScriptFilename))
+        logging.warning("Processing script not found: %s", processing_script_filename)
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(gearman_job, 10, 100)
 
     #build filelist
-    fileList = []
+    filelist = []
 
-    if payloadObj['files']['new'] or payloadObj['files']['updated']:
-        fileList = payloadObj['files']['new']
-        fileList += payloadObj['files']['updated']
-        logging.debug('File List: {}'.format(json.dumps(fileList, indent=2)))
+    if payload_obj['files']['new'] or payload_obj['files']['updated']:
+        filelist = payload_obj['files']['new']
+        filelist += payload_obj['files']['updated']
+        logging.debug('File List: %s', json.dumps(filelist, indent=2))
         job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
 
     else:
@@ -245,161 +272,162 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
         job_results['parts'].append({"partName": "Retrieve Filelist", "result": "Pass"})
         return json.dumps(job_results)
 
-    fileCount = len(fileList)
-    fileIndex = 0
-    for filename in fileList:
-        
+    file_count = len(filelist)
+    file_index = 0
+    for filename in filelist:  # pylint: disable=too-many-nested-blocks
+
         if gearman_worker.stop:
             break
 
-        logging.info("Processing file: {}".format(filename))
-        jsonFileName = os.path.splitext(filename)[0] + '.json'
-        rawFilePath = os.path.join(cruiseDir, filename)
-        jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
+        logging.info("Processing file: %s", filename)
+        json_filename = os.path.splitext(filename)[0] + '.json'
+        raw_filepath = os.path.join(gearman_worker.cruise_dir, filename)
+        json_filepath = os.path.join(gearman_worker.data_dashboard_dir, json_filename)
 
-        if not os.path.isfile(rawFilePath):
+        if not os.path.isfile(raw_filepath):
             job_results['parts'].append({"partName": "Verify data file exists", "result": "Fail", "reason": "Unable to find data file: " + filename})
-            logging.warning("File not found {}, skipping".format(filename))
+            logging.warning("File not found %s, skipping", filename)
             continue
 
-        if os.stat(rawFilePath).st_size == 0:
-            logging.warning("File is empty {}, skipping".format(filename))
+        if os.stat(raw_filepath).st_size == 0:
+            logging.warning("File is empty %s, skipping", filename)
             continue
 
-        command = [python_binary, processingScriptFilename, '--dataType', rawFilePath]
+        command = [PYTHON_BINARY, processing_script_filename, '--dataType', raw_filepath]
 
-        logging.debug("DataType Retrieval Command: {}".format(' '.join(command)))
+        logging.debug("DataType Retrieval Command: %s", ' '.join(command))
 
-        datatype_proc = subprocess.run(command, capture_output=True, text=True)
+        datatype_proc = subprocess.run(command, capture_output=True, text=True, check=False)
 
         if datatype_proc.stdout:
             dd_type = datatype_proc.stdout.rstrip('\n')
-            logging.debug("DataType found to be: {}".format(dd_type))
+            logging.debug("DataType found to be: %s", dd_type)
 
-            command = [python_binary, processingScriptFilename, rawFilePath]
+            command = [PYTHON_BINARY, processing_script_filename, raw_filepath]
 
-            logging.debug("Data Processing Command: {}".format(' '.join(command)))
+            logging.debug("Data Processing Command: %s", ' '.join(command))
 
-            data_proc = subprocess.run(command, capture_output=True, text=True)
+            data_proc = subprocess.run(command, capture_output=True, text=True, check=False)
 
             if data_proc.stdout:
                 try:
                     logging.debug("Verifying output")
-                    outObj = json.loads(data_proc.stdout)
-                except:
-                    logging.error("Error parsing JSON output from file: {}".format(filename))
+                    out_obj = json.loads(data_proc.stdout)
+                except Exception as err:
+                    logging.error("Error parsing JSON output from file: %s", filename)
+                    logging.debug(str(err))
                     job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": "Error parsing JSON output from file: " + filename})
                     continue
                 else:
-                    if not outObj:
-                        errorTitle = 'Datafile Parsing error'
-                        errorBody = "Parser returned no output. Parsing command: {}".format(' '.join(command))
-                        logging.error("{}: {}".format(errorTitle, errorBody))
-                        gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
-                    elif 'error' in outObj:
-                        errorTitle = 'Datafile Parsing error'
-                        errorBody = outObj['error']
-                        logging.error("{}: {}".format(errorTitle, errorBody))
-                        gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
+                    if not out_obj:
+                        error_title = 'Datafile Parsing error'
+                        error_body = "Parser returned no output. Parsing command: {}", ' '.join(command)
+                        logging.error("%s: %s", error_title, error_body)
+                        gearman_worker.ovdm.send_msg(error_title,error_body)
+                    elif 'error' in out_obj:
+                        error_title = 'Datafile Parsing error'
+                        error_body = out_obj['error']
+                        logging.error("%s: %s", error_title, error_body)
+                        gearman_worker.ovdm.send_msg(error_title,error_body)
                     else:
-                        output_results = output_JSONDataToFile(jsonFilePath, outObj)
+                        output_results = output_json_data_to_file(json_filepath, out_obj)
 
                         if output_results['verdict']:
                             job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
                         else:
-                            errorTitle = 'Data Dashboard Processing failed'
-                            errorBody = "Error Writing DashboardData file: " + filename + ". Reason: " + output_results['reason']
-                            logging.error("{}: {}".format(errorTitle, errorBody))
-                            gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
+                            error_title = 'Data Dashboard Processing failed'
+                            error_body = "Error Writing DashboardData file: " + filename + ". Reason: " + output_results['reason']
+                            logging.error("%s: %s", error_title, error_body)
+                            gearman_worker.ovdm.send_msg(error_title,error_body)
                             job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail", "reason": output_results['reason']})
 
-                        newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
+                        new_manifest_entries.append({"type":dd_type, "dd_json": json_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/',''), "raw_data": raw_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/','')})
             else:
-                errorTitle = 'Data Dashboard Processing failed'
-                errorBody = 'No JSON output recieved from file.  Parsing Command: ' + s.join(command)
-                logging.error("{}: {}".format(errorTitle, errorBody))
-                gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
-                removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
+                error_title = 'Data Dashboard Processing failed'
+                error_body = 'No JSON output recieved from file.  Parsing Command: ' + ' '.join(command)
+                logging.error("%s: %s", error_title, error_body)
+                gearman_worker.ovdm.send_msg(error_title,error_body)
+                remove_manifest_entries.append({"dd_json": json_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/',''), "raw_data": raw_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/','')})
 
                 #job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail"})
                 if data_proc.stderr:
-                    logging.error("Err: {}".format(data_proc.stderr))
+                    logging.error("Err: %s", data_proc.stderr)
         else:
-            logging.warning("File is of unknown datatype: {}".format(rawFilePath))
-            removeManifestEntries.append({"dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data":rawFilePath.replace(baseDir + '/','')})
+            logging.warning("File is of unknown datatype: %s", raw_filepath)
+            remove_manifest_entries.append({"dd_json": json_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/',''), "raw_data":raw_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/','')})
 
             if datatype_proc.stderr:
-                logging.error("Err: {}".format(datatype_proc.stderr))
+                logging.error("Err: %s", datatype_proc.stderr)
 
-        gearman_worker.send_job_status(gearman_job, int(10 + 70*float(fileIndex)/float(fileCount)), 100)
-        fileIndex += 1
+        gearman_worker.send_job_status(gearman_job, int(10 + 70*float(file_index)/float(file_count)), 100)
+        file_index += 1
 
     gearman_worker.send_job_status(gearman_job, 8, 10)
 
-    if len(newManifestEntries) > 0:
-        logging.info("Updating Manifest file: {}".format(dataDashboardManifestFilePath))
+    if len(new_manifest_entries) > 0:
+        logging.info("Updating Manifest file: %s", gearman_worker.data_dashboard_manifest_file_path)
 
         rows_removed = 0
 
-        existingManifestEntries = []
+        existing_manifest_entries = []
 
         try:
-            with open(dataDashboardManifestFilePath, 'r') as DashboardManifestFile:
-                existingManifestEntries = json.load(DashboardManifestFile)
+            with open(gearman_worker.data_dashboard_manifest_file_path, 'r') as dashboard_manifest_file:
+                existing_manifest_entries = json.load(dashboard_manifest_file)
 
             job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Pass"})
 
         except IOError:
-            logging.error("Error Reading Dashboard Manifest file {}".format(dataDashboardManifestFilePath))
-            job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Fail", "reason": "Error reading dashboard manifest file: " + dataDashboardManifestFilePath})
+            logging.error("Error Reading Dashboard Manifest file %s", gearman_worker.data_dashboard_manifest_file_path)
+            job_results['parts'].append({"partName": "Reading pre-existing Dashboard manifest file", "result": "Fail", "reason": "Error reading dashboard manifest file: " + gearman_worker.data_dashboard_manifest_file_path})
             return json.dumps(job_results)
 
-        logging.debug("Entries to remove: {}".format(json.dumps(removeManifestEntries, indent=2)))
-        for removeEntry in removeManifestEntries:
-            for idx, existingEntry in enumerate(existingManifestEntries):
-                if removeEntry['raw_data'] == existingEntry['raw_data']:
-                    del existingManifestEntries[idx]
+        logging.debug("Entries to remove: %s", json.dumps(remove_manifest_entries, indent=2))
+        for remove_entry in remove_manifest_entries:
+            for idx, existing_entry in enumerate(existing_manifest_entries):
+                if remove_entry['raw_data'] == existing_entry['raw_data']:
+                    del existing_manifest_entries[idx]
                     rows_removed += 1
 
-                    if os.path.isfile(os.path.join(baseDir,removeEntry['dd_json'])):
-                        logging.info("Deleting orphaned dd_json file {}".format(os.path.join(baseDir,removeEntry['dd_json'])))
-                        os.remove(os.path.join(baseDir,removeEntry['dd_json']))
+                    if os.path.isfile(os.path.join(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'],remove_entry['dd_json'])):
+                        logging.info("Deleting orphaned dd_json file %s", os.path.join(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'],remove_entry['dd_json']))
+                        os.remove(os.path.join(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'],remove_entry['dd_json']))
                     break
 
-        logging.debug("Entries to add/update: {}".format(json.dumps(newManifestEntries, indent=2)))
-        for newEntry in newManifestEntries:
+        logging.debug("Entries to add/update: %s", json.dumps(new_manifest_entries, indent=2))
+        for new_entry in new_manifest_entries:
             updated = False
-            for existingEntry in existingManifestEntries:
-                if newEntry['raw_data'] == existingEntry['raw_data']:
+            for existing_entry in existing_manifest_entries:
+                if new_entry['raw_data'] == existing_entry['raw_data']:
                     updated = True
-                    job_results['files']['updated'].append(newEntry['dd_json'].replace(gearman_worker.cruiseID + '/',''))
+                    job_results['files']['updated'].append(new_entry['dd_json'].replace(gearman_worker.cruise_id + '/',''))
                     break
 
             if not updated: #added
-                job_results['files']['new'].append(newEntry['dd_json'].replace(gearman_worker.cruiseID + '/',''))
-                existingManifestEntries.append(newEntry)
+                job_results['files']['new'].append(new_entry['dd_json'].replace(gearman_worker.cruise_id + '/',''))
+                existing_manifest_entries.append(new_entry)
 
-        if len(job_results['files']['new']):
-            logging.info("{} row(s) added".format(len(job_results['files']['new'])))
-        if len(job_results['files']['updated']):
-            logging.info("{} row(s) updated".format(len(job_results['files']['updated'])))
+        if len(job_results['files']['new']) > 0:
+            logging.info("%s row(s) added", len(job_results['files']['new']))
+        if len(job_results['files']['updated']) > 0:
+            logging.info("%s row(s) updated", len(job_results['files']['updated']))
         if rows_removed:
-            logging.info("{} row(s) removed".format(rows_removed))
+            logging.info("%s row(s) removed", rows_removed)
 
-        output_results = output_JSONDataToFile(dataDashboardManifestFilePath, existingManifestEntries)
+        output_results = output_json_data_to_file(gearman_worker.data_dashboard_manifest_file_path, existing_manifest_entries)
 
         if not output_results['verdict']:
-            logging.error("Error Writing Dashboard manifest file: {}".format(dataDashboardManifestFilePath))
+            logging.error("Error Writing Dashboard manifest file: %s", gearman_worker.data_dashboard_manifest_file_path)
             job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Fail", "reason": output_results['reason']})
             return json.dumps(job_results)
-    
+
         job_results['parts'].append({"partName": "Writing Dashboard manifest file", "result": "Pass"})
-        job_results['files']['updated'].append(os.path.join(gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'], DEFAULT_DATA_DASHBOARD_MANIFEST_FN))
+        job_results['files']['updated'].append(os.path.join(gearman_worker.ovdm.get_required_extra_directory_by_name('Dashboard_Data')['destDir'], DEFAULT_DATA_DASHBOARD_MANIFEST_FN))
 
         gearman_worker.send_job_status(gearman_job, 9, 10)
 
         logging.info("Setting file ownership/permissions")
-        output_results = set_ownerGroupPermissions(warehouseUser, dataDashboardDir)
+        output_results = set_owner_group_permissions(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseUsername'], gearman_worker.data_dashboard_dir)
 
         if output_results['verdict']:
             job_results['parts'].append({"partName": "Set file/directory ownership", "result": "Pass"})
@@ -412,7 +440,10 @@ def task_updateDataDashboard(gearman_worker, gearman_job):
     return json.dumps(job_results)
 
 
-def task_rebuildDataDashboard(gearman_worker, gearman_job):
+def task_rebuild_data_dashboard(gearman_worker, gearman_job): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    """
+    Rebuild the existing dashboard files
+    """
 
     job_results = {
         'parts':[],
@@ -422,173 +453,166 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
         }
     }
 
-    payloadObj = json.loads(gearman_job.data)
-    logging.debug('Payload: {}'.format(json.dumps(payloadObj, indent=2)))
+    payload_obj = json.loads(gearman_job.data)
+    logging.debug('Payload: %s', json.dumps(payload_obj, indent=2))
 
-    warehouseUser = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
-    baseDir = gearman_worker.shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
-    cruiseDir = os.path.join(baseDir, gearman_worker.cruiseID)
-    dataDashboardDir = os.path.join(cruiseDir, gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir'])
-    dataDashboardManifestFilePath = os.path.join(dataDashboardDir, DEFAULT_DATA_DASHBOARD_MANIFEST_FN)
 
-    if os.path.exists(dataDashboardDir):
+    if os.path.exists(gearman_worker.data_dashboard_dir):
         job_results['parts'].append({"partName": "Verify Data Dashboard Directory exists", "result": "Pass"})
     else:
-        logging.error("Data dashboard directory not found: {}".format(dataDashboardDir))
-        job_results['parts'].append({"partName": "Verify Data Dashboard Directory exists", "result": "Fail", "reason": "Unable to locate the data dashboard directory: " + dataDashboardDir})
+        logging.error("Data dashboard directory not found: %s", gearman_worker.data_dashboard_dir)
+        job_results['parts'].append({"partName": "Verify Data Dashboard Directory exists", "result": "Fail", "reason": "Unable to locate the data dashboard directory: " + gearman_worker.data_dashboard_dir})
         return json.dumps(job_results)
 
-    collectionSystemTransfers = gearman_worker.OVDM.getActiveCollectionSystemTransfers()
-    
+    collection_system_transfers = gearman_worker.ovdm.get_active_collection_system_transfers()
+
     gearman_worker.send_job_status(gearman_job, 1, 100)
 
-    newManifestEntries = []
+    new_manifest_entries = []
 
-    collectionSystemTransferCount = len(collectionSystemTransfers)
-    collectionSystemTransferIndex = 0
-    for collectionSystemTransfer in collectionSystemTransfers:
+    collection_system_transfer_count = len(collection_system_transfers)
+    collection_system_transfer_index = 0
+    for collection_system_transfer in collection_system_transfers:  # pylint: disable=too-many-nested-blocks
 
-        logging.info('Processing data from: {}'.format(collectionSystemTransfer['name']))
+        logging.info('Processing data from: %s', collection_system_transfer['name'])
 
-        processingScriptFilename = os.path.join(gearman_worker.OVDM.getDashboardDataProcessingScriptDir(), collectionSystemTransfer['name'].replace(' ','-') + gearman_worker.OVDM.getDashboardDataProcessingScriptSuffix())
-        logging.debug("Processing Script Filename: {}".format(processingScriptFilename))
+        processing_script_filename = os.path.join(gearman_worker.ovdm.get_dashboard_data_processing_script_dir(), collection_system_transfer['name'].replace(' ','-') + gearman_worker.ovdm.get_dashboard_data_processing_script_suffix())
+        logging.debug("Processing Script Filename: %s", processing_script_filename)
 
-        if not os.path.isfile(processingScriptFilename):
-            logging.warning("Processing script for collection system {} not found, moving on.".format(collectionSystemTransfer['name']))
-            gearman_worker.send_job_status(gearman_job, int(10 + (80*float(collectionSystemTransferIndex)/float(collectionSystemTransferCount))), 100)
-            collectionSystemTransferIndex += 1
+        if not os.path.isfile(processing_script_filename):
+            logging.warning("Processing script for collection system %s not found, moving on.", collection_system_transfer['name'])
+            gearman_worker.send_job_status(gearman_job, int(10 + (80*float(collection_system_transfer_index)/float(collection_system_transfer_count))), 100)
+            collection_system_transfer_index += 1
             continue
 
-        # collectionSystemTransferOutputDir = os.path.join(dataDashboardDir, collectionSystemTransfer['destDir'])
-        
+        # collection_system_transferOutputDir = os.path.join(gearman_worker.data_dashboard_dir, collection_system_transfer['destDir'])
+
         #build filelist
-        fileList = []
-        if collectionSystemTransfer['cruiseOrLowering'] == "0":
-            collectionSystemTransferInputDir = os.path.join(cruiseDir, collectionSystemTransfer['destDir'])
-            fileList.extend(build_filelist(collectionSystemTransferInputDir))
-            fileList = [os.path.join(collectionSystemTransfer['destDir'], filename) for filename in fileList]
+        filelist = []
+        if collection_system_transfer['cruiseOrLowering'] == "0":
+            collection_system_transfer_input_dir = os.path.join(gearman_worker.cruise_dir, collection_system_transfer['destDir'])
+            filelist.extend(build_filelist(collection_system_transfer_input_dir))
+            filelist = [os.path.join(collection_system_transfer['destDir'], filename) for filename in filelist]
 
         else:
-            lowerings = gearman_worker.OVDM.getLowerings()
-            loweringBaseDir = gearman_worker.shipboardDataWarehouseConfig['loweringDataBaseDir']
+            lowerings = gearman_worker.ovdm.get_lowerings()
+            lowering_base_dir = gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir']
 
             for lowering in lowerings:
-                collectionSystemTransferInputDir = os.path.join(cruiseDir, loweringBaseDir, lowering, collectionSystemTransfer['destDir'])
-                loweringFileList = build_filelist(collectionSystemTransferInputDir)
-                fileList.extend([os.path.join(loweringBaseDir, lowering, collectionSystemTransfer['destDir'], filename) for filename in loweringFileList])
- 
-        logging.debug("FileList: {}".format(json.dumps(fileList, indent=2)))
+                collection_system_transfer_input_dir = os.path.join(gearman_worker.cruise_dir, lowering_base_dir, lowering, collection_system_transfer['destDir'])
+                lowering_filelist = build_filelist(collection_system_transfer_input_dir)
+                filelist.extend([os.path.join(lowering_base_dir, lowering, collection_system_transfer['destDir'], filename) for filename in lowering_filelist])
 
-        fileCount = len(fileList)
-        fileIndex = 0
-        logging.info("{} file(s) to process".format(fileCount))
+        logging.debug("FileList: %s", json.dumps(filelist, indent=2))
 
-        for filename in fileList:
-        
+        file_count = len(filelist)
+        file_index = 0
+        logging.info("%s file(s) to process", file_count)
+
+        for filename in filelist:
+
             if gearman_worker.stop:
                 break
 
-            logging.info("Processing file: {}".format(filename))
-            jsonFileName = os.path.splitext(filename)[0] + '.json'
-            logging.debug("jsonFileName: {}".format(jsonFileName))
-            rawFilePath = os.path.join(cruiseDir, filename)
-            logging.debug("rawFilePath: {}".format(rawFilePath))
-            jsonFilePath = os.path.join(dataDashboardDir, jsonFileName)
-            logging.debug("jsonFilePath: {}".format(jsonFilePath))
+            logging.info("Processing file: %s", filename)
+            json_filename = os.path.splitext(filename)[0] + '.json'
+            logging.debug("jsonFileName: %s", json_filename)
+            raw_filepath = os.path.join(gearman_worker.cruise_dir, filename)
+            logging.debug("rawFilePath: %s", raw_filepath)
+            json_filepath = os.path.join(gearman_worker.data_dashboard_dir, json_filename)
+            logging.debug("jsonFilePath: %s", json_filepath)
 
-            if os.stat(rawFilePath).st_size == 0:
-                logging.warning("File {} is empty".format(filename))
+            if os.stat(raw_filepath).st_size == 0:
+                logging.warning("File %s is empty", filename)
                 continue
 
-            command = [python_binary, processingScriptFilename, '--dataType', rawFilePath]
+            command = [PYTHON_BINARY, processing_script_filename, '--dataType', raw_filepath]
 
-            s = ' '
-            logging.debug("Get Datatype Command: {}".format(s.join(command)))
+            logging.debug("Get Datatype Command: %s", ' '.join(command))
 
-            datatype_proc = subprocess.run(command, capture_output=True, text=True)
+            datatype_proc = subprocess.run(command, capture_output=True, text=True, check=False)
 
             if datatype_proc.stdout:
                 dd_type = datatype_proc.stdout.rstrip('\n')
-                logging.debug("Found to be type: {}".format(dd_type))
+                logging.debug("Found to be type: %s", dd_type)
 
-                command = [python_binary, processingScriptFilename, rawFilePath]
+                command = [PYTHON_BINARY, processing_script_filename, raw_filepath]
 
-                s = ' '
-                logging.debug("Processing Command: {}".format(s.join(command)))
+                logging.debug("Processing Command: %s", ' '.join(command))
 
-                data_proc = subprocess.run(command, capture_output=True, text=True)
+                data_proc = subprocess.run(command, capture_output=True, text=True, check=False)
 
                 if data_proc.stdout:
                     try:
                         logging.debug("Parsing output")
-                        outObj = json.loads(data_proc.stdout)
-                    except Exception as e:
-                        logging.error(str(e))
-                        errorTitle = 'Error parsing output'
-                        errorBody = 'Invalid JSON output recieved from processing. Command: ' + s.join(command)
-                        logging.error("{}: {}".format(errorTitle, errorBody))
-                        gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
-                        job_results['parts'].append({"partName": "Parsing JSON output " + filename, "result": "Fail", "reason": errorTitle + ':' + errorBody})
+                        out_obj = json.loads(data_proc.stdout)
+                    except Exception as err:
+                        logging.error(str(err))
+                        error_title = 'Error parsing output'
+                        error_body = 'Invalid JSON output recieved from processing. Command: ' + ' '.join(command)
+                        logging.error("%s: %s", error_title, error_body)
+                        gearman_worker.ovdm.send_msg(error_title, error_body)
+                        job_results['parts'].append({"partName": "Parsing JSON output " + filename, "result": "Fail", "reason": error_title + ':' + error_body})
                     else:
-                        if 'error' in outObj:
-                            errorTitle = 'Error processing file'
-                            errorBody = outObj['error']
-                            logging.error("{}: {}".format(errorTitle, errorBody))
-                            gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
-                            job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Fail", "reason": errorTitle + ':' + errorBody})
+                        if 'error' in out_obj:
+                            error_title = 'Error processing file'
+                            error_body = out_obj['error']
+                            logging.error("%s: %s", error_title, error_body)
+                            gearman_worker.ovdm.send_msg(error_title, error_body)
+                            job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Fail", "reason": error_title + ':' + error_body})
 
                         else:
                             #job_results['parts'].append({"partName": "Processing Datafile " + filename, "result": "Pass"})
-                            output_results = output_JSONDataToFile(jsonFilePath, outObj)
+                            output_results = output_json_data_to_file(json_filepath, out_obj)
 
                             if output_results['verdict']:
                                 job_results['parts'].append({"partName": "Writing DashboardData file: " + filename, "result": "Pass"})
                             else:
-                                errorTitle = 'Error writing file'
-                                errorBody = "Error Writing DashboardData file: " + filename
-                                logging.error("{}: {}".format(errorTitle, errorBody))
-                                gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
+                                error_title = 'Error writing file'
+                                error_body = "Error Writing DashboardData file: " + filename
+                                logging.error("%s: %s", error_title, error_body)
+                                gearman_worker.ovdm.send_msg(error_title, error_body)
 
                                 job_results['parts'].append({"partName": "Writing Dashboard file: " + filename, "result": "Fail", "reason": output_results['verdict']})
 
-                            newManifestEntries.append({"type":dd_type, "dd_json": jsonFilePath.replace(baseDir + '/',''), "raw_data": rawFilePath.replace(baseDir + '/','')})
+                            new_manifest_entries.append({"type":dd_type, "dd_json": json_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/',''), "raw_data": raw_filepath.replace(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseBaseDir'] + '/','')})
                 else:
-                    errorTitle = 'Error processing file'
-                    errorBody = 'No JSON output recieved from file. Processing Command: ' + s.join(command)
-                    logging.error("{}: {}".format(errorTitle, errorBody))
-                    gearman_worker.OVDM.sendMsg(errorTitle,errorBody)
-                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": errorTitle + ': ' + errorBody})
-                    
+                    error_title = 'Error processing file'
+                    error_body = 'No JSON output recieved from file. Processing Command: ' + ' '.join(command)
+                    logging.error("%s: %s", error_title, error_body)
+                    gearman_worker.ovdm.send_msg(error_title, error_body)
+                    job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": error_title + ': ' + error_body})
+
                     if data_proc.stderr:
-                        logging.error('err: {}'.format(data_proc.stderr))
+                        logging.error('err: %s', data_proc.stderr)
 
             else:
                 logging.warning("File is of unknown datatype, moving on")
 
                 if datatype_proc.stderr:
-                    logging.error('err: {}'.format(datatype_proc.stderr))
+                    logging.error('err: %s', datatype_proc.stderr)
 
-            gearman_worker.send_job_status(gearman_job, int(10 + 70*float(fileIndex)/float(fileCount)), 100)
-            fileIndex += 1
+            gearman_worker.send_job_status(gearman_job, int(10 + 70*float(file_index)/float(file_count)), 100)
+            file_index += 1
 
-        collectionSystemTransferIndex += 1
+        collection_system_transfer_index += 1
 
     gearman_worker.send_job_status(gearman_job, 90, 100)
 
     logging.info("Update Dashboard Manifest file")
-    output_results = output_JSONDataToFile(dataDashboardManifestFilePath, newManifestEntries)
+    output_results = output_json_data_to_file(gearman_worker.data_dashboard_manifest_file_path, new_manifest_entries)
 
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Updating manifest file", "result": "Pass"})
     else:
-        logging.error("Error updating manifest file {}".format(dataDashboardManifestFilePath))
+        logging.error("Error updating manifest file %s", gearman_worker.data_dashboard_manifest_file_path)
         job_results['parts'].append({"partName": "Updating manifest file", "result": "Fail", "reason": output_results['reason']})
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(gearman_job, 95, 100)
 
     logging.info("Setting file ownership/permissions")
-    output_results = set_ownerGroupPermissions(warehouseUser, dataDashboardDir)
+    output_results = set_owner_group_permissions(gearman_worker.shipboard_data_warehouse_config['shipboardDataWarehouseUsername'], gearman_worker.data_dashboard_dir)
 
     if output_results['verdict']:
         job_results['parts'].append({"partName": "Setting file/directory ownership", "result": "Pass"})
@@ -599,8 +623,8 @@ def task_rebuildDataDashboard(gearman_worker, gearman_job):
 
     gearman_worker.send_job_status(gearman_job, 99, 100)
 
-    dataDashboardDestDir = gearman_worker.OVDM.getRequiredExtraDirectoryByName('Dashboard_Data')['destDir']
-    job_results['files']['updated'] = [os.path.join(dataDashboardDestDir, filepath) for filepath in build_filelist(dataDashboardDir)]# might need to remove cruiseDir from begining of filepaths
+    data_dashboard_dest_dir = gearman_worker.ovdm.get_required_extra_directory_by_name('Dashboard_Data')['destDir']
+    job_results['files']['updated'] = [os.path.join(data_dashboard_dest_dir, filepath) for filepath in build_filelist(gearman_worker.data_dashboard_dir)]# might need to remove cruise_dir from begining of filepaths
 
     gearman_worker.send_job_status(gearman_job, 10, 10)
 
@@ -621,7 +645,7 @@ if __name__ == "__main__":
     ############################
     # Set up logging before we do any other argument parsing (so that we
     # can log problems with argument parsing).
-    
+
     LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
     logging.basicConfig(format=LOGGING_FORMAT)
 
@@ -637,12 +661,18 @@ if __name__ == "__main__":
 
     logging.debug("Defining Signal Handlers...")
     def sigquit_handler(_signo, _stack_frame):
+        """
+        Signal Handler for QUIT
+        """
         logging.warning("QUIT Signal Received")
-        new_worker.stopTask()
+        new_worker.stop_task()
 
     def sigint_handler(_signo, _stack_frame):
+        """
+        Signal Handler for INT
+        """
         logging.warning("INT Signal Received")
-        new_worker.quitWorker()
+        new_worker.quit_worker()
 
     signal.signal(signal.SIGQUIT, sigquit_handler)
     signal.signal(signal.SIGINT, sigint_handler)
@@ -650,9 +680,9 @@ if __name__ == "__main__":
     logging.info("Registering worker tasks...")
 
     logging.info("\tTask: updateDataDashboard")
-    new_worker.register_task("updateDataDashboard", task_updateDataDashboard)
+    new_worker.register_task("updateDataDashboard", task_update_data_dashboard)
     logging.info("\tTask: rebuildDataDashboard")
-    new_worker.register_task("rebuildDataDashboard", task_rebuildDataDashboard)
+    new_worker.register_task("rebuildDataDashboard", task_rebuild_data_dashboard)
 
     logging.info("Waiting for jobs...")
     new_worker.work()

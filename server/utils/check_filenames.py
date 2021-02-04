@@ -3,23 +3,29 @@
 """
 import logging
 
-def is_ascii(s):
+def is_ascii(test_str):
     """Check if the characters in string s are in ASCII, U+0-U+7F."""
-    return len(s) == len(s.encode())
+    return len(test_str) == len(test_str.encode())
 
 def bad_filename(filename):
-	try:
-	    str(file)
-	except:
-	    return True
-	return False
+    """Verify the filename contains only valid ASCii characters"""
+    try:
+        str(filename)
+    except Exception as err:
+        logging.debug(str(err))
+        return True
+    return False
 
 def bad_filenames(files):
+    """
+    Return a list of files that contain non-ASCii chanacters from the
+    list of provided filenames
+    """
 
-    problemFiles = list(filter(bad_filename, files))
+    problem_files = list(filter(bad_filename, files))
 
-    if len(problemFiles) > 0:
+    if len(problem_files) > 0:
         logging.debug("Problem Files:")
-        logging.debug("\t" + "\n\t".join(problemFiles))
+        logging.debug("\t %s", "\n\t".join(problem_files))
 
-    return problemFiles
+    return problem_files

@@ -15,24 +15,26 @@ def parse_yaml(source):
     """
     try:
         return load(source, Loader=FullLoader)
-    except NameError:
+    except NameError as name_error:
         raise ImportError('No YAML module available. Please ensure that '
                           'PyYAML or equivalent is installed (e.g. via '
-                          '"pip3 install PyYAML"')
-    except YAMLError as e:
-        logging.error("Unable to parse configuration file: {}".format(source))
-        raise e
-    except Exception as e: #handle other exceptions such as attribute errors
-        raise e
+                          '"pip3 install PyYAML"') from name_error
+    except YAMLError as err:
+        logging.error("Unable to parse configuration file: %s", source)
+        raise err
+    except Exception as err: # handle other exceptions such as attribute errors
+        raise err
 
 
 def read_config(filename):
-
+    """Read the passed text/stream assuming it's a valid OpenVDM configuration
+    file
+    """
     try:
         with open(filename, 'r') as file:
             return parse_yaml(file)
-    except IOError as e:
-        logging.error("Unable to open configuration file: {}".format(filename))
-        raise e
-    except Exception as e: #handle other exceptions such as attribute errors
-        raise e
+    except IOError as err:
+        logging.error("Unable to open configuration file: %s", filename)
+        raise err
+    except Exception as err: # handle other exceptions such as attribute errors
+        raise err
