@@ -154,14 +154,6 @@ class OpenVDM():
             raise err
 
 
-    def get_plugin_suffix(self):
-        """
-        Return expecting suffix for OpenVDM plugins
-        """
-
-        return self.config['dashboardData']['pluginSuffix']
-
-
     def get_gearman_server(self):
         """
         Return the ip/port for the Gearman server

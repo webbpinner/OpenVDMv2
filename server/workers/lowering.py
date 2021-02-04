@@ -292,7 +292,7 @@ def task_finalize_current_lowering(gearman_worker, gearman_job):
 
     lowering_config_filepath = os.path.join(gearman_worker.lowering_dir, DEFAULT_LOWERING_CONFIG_FN)
 
-    if os.path.exists(gearman_worker.lowering_dir) and (gearman_worker.loweringID != ''):
+    if os.path.exists(gearman_worker.lowering_dir) and (gearman_worker.lowering_id != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail", "reason": "Lowering directory: " + gearman_worker.lowering_dir + " could not be found"})
@@ -304,8 +304,8 @@ def task_finalize_current_lowering(gearman_worker, gearman_job):
     gm_client = python3_gearman.GearmanClient([gearman_worker.ovdm.get_gearman_server()])
 
     gm_data = {
-        'loweringID': gearman_worker.loweringID,
-        'loweringStartDate': gearman_worker.loweringStartDate,
+        'loweringID': gearman_worker.lowering_id,
+        'loweringStartDate': gearman_worker.lowering_start_date,
         'systemStatus': "On",
         'collectionSystemTransfer': {}
     }
@@ -370,7 +370,7 @@ def task_export_lowering_config(gearman_worker, gearman_job):
     gearman_worker.send_job_status(gearman_job, 1, 10)
 
     logging.info("Verifying lowering directory exists")
-    if os.path.exists(gearman_worker.lowering_dir) and (gearman_worker.loweringID != ''):
+    if os.path.exists(gearman_worker.lowering_dir) and (gearman_worker.lowering_id != ''):
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Verify Lowering Directory exists", "result": "Fail", "reason": "Unable to locate the lowering directory: " + gearman_worker.lowering_dir})

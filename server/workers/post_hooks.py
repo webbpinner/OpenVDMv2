@@ -231,14 +231,17 @@ def task_post_hook(gearman_worker, gearman_job):
     gearman_worker.send_job_status(gearman_job, 3, 10)
 
     logging.info("Running Commands")
-    output_results = run_commands(output_results['commandList'])
+    if len(output_results['commandList']) > 0:
+        output_results = run_commands(output_results['commandList'])
 
-    if not output_results['verdict']:
+        if not output_results['verdict']:
 
-        for reason in output_results['reason'].split("\n"):
-            gearman_worker.OVDM.send_msg("Error executing postHook process", reason)
+            for reason in output_results['reason'].split("\n"):
+                gearman_worker.ovdm.send_msg("Error executing postHook process", reason)
 
-        job_results['parts'].append({"partName": "Running commands", "result": "Fail", "reason": output_results['reason']})
+            job_results['parts'].append({"partName": "Running commands", "result": "Fail", "reason": "One or more of the post-hook processes failed"})
+        else:
+            job_results['parts'].append({"partName": "Running commands", "result": "Pass"})
     else:
         job_results['parts'].append({"partName": "Running commands", "result": "Pass"})
 
