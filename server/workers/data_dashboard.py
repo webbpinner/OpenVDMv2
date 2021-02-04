@@ -545,6 +545,7 @@ def task_rebuild_data_dashboard(gearman_worker, gearman_job): # pylint: disable=
                 if data_proc.stdout:
                     try:
                         logging.debug("Parsing output")
+                        # logging.debug(data_proc.stdout)
                         out_obj = json.loads(data_proc.stdout)
                     except Exception as err:
                         logging.error(str(err))
