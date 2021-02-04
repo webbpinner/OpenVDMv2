@@ -43,16 +43,16 @@ gearmanServer: "localhost:4730"
 
 # Whether or not to hide all directories in the CruiseData directory other than the
 # current cruise. (Yes|No))
-showOnlyCurrentCruiseDir: No
+showOnlyCurrentCruiseDir: False
 
-# The dashboardData section defines where the dashboardData processing scripts reside
+# The plugins section defines where the plugins processing scripts reside
 # and the expected suffix for each processing file.  It should include 2 directives:
-# processingScriptDir --> the full path containing the dashboardData processing scripts
-# processingScriptSuffix --> the suffix appended to dashboardData processing scripts
+# processingScriptDir --> the full path containing the plugins processing scripts
+# processingScriptSuffix --> the suffix appended to plugins processing scripts
 #     i.e. with SCS_dataDashboard.py the suffix is _dataDashboard.py
-dashboardData:
-    processingScriptDir: "./server/plugins"
-    processingScriptSuffix: "_plugin.py"
+plugins:
+    pluginDir: "./server/plugins"
+    pluginSuffix: "_plugin.py"
 
 # The hooks section contains any additional Gearman tasks that should be performed
 # after the successful completion of the primary OpenVDM Gearman task.  Any subsequent

@@ -85,7 +85,15 @@ class OpenVDM():
         Return the directory containing the OpenVDM plugins.
         """
 
-        return self.config['dashboardData']['pluginDir']
+        return self.config['plugins']['pluginDir']
+
+
+    def get_plugin_suffix(self):
+        """
+        Return the plugin suffix.
+        """
+
+        return self.config['plugins']['pluginSuffix']
 
 
     def show_only_current_cruise_dir(self):
