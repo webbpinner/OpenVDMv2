@@ -59,8 +59,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM
 
-# RAW_COLS = ['date_time','hdr','wind_speed','wind_dir','unknown_01','unknown_02','unknown_03','unknown_04','unknown_05',] # OpenRVDAS style
-RAW_COLS = ['date','time','hdr','wind_speed','wind_dir','unknown_01','unknown_02','unknown_03','unknown_04','unknown_05',] # SCS style
+RAW_COLS = ['date_time','hdr','wind_speed','wind_dir','unknown_01','unknown_02','unknown_03','unknown_04','unknown_05',] # OpenRVDAS style
+# RAW_COLS = ['date','time','hdr','wind_speed','wind_dir','unknown_01','unknown_02','unknown_03','unknown_04','unknown_05',] # SCS style
 PROC_COLS = ['date_time','wind_speed','wind_dir']
 
 ROUNDING = {
@@ -70,8 +70,8 @@ ROUNDING = {
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
-DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class TWindParser(OpenVDMCSVParser):
@@ -103,8 +103,8 @@ class TWindParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        # date_time = line['date_time'] # OpenRVDAS style
-                        date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        date_time = line['date_time'] # OpenRVDAS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
 
                         wind_speed = float(line['wind_speed'])
                         wind_dir = float(line['wind_dir'])

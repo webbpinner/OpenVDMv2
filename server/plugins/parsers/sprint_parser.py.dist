@@ -62,8 +62,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM
 
-# RAW_COLS = ['date_time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # OpenRVDAS style
-RAW_COLS = ['date','time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # SCS style
+RAW_COLS = ['date_time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # OpenRVDAS style
+# RAW_COLS = ['date','time','hdr','roll','pitch','heading','orientation_status','latitude','longitude','position_status','velocity_fwd','velocity_Stbd','velocity_down','altitude','altitude_status','depth','depth_used'] # SCS style
 PROC_COLS = ['date_time','latitude','longitude']
 
 ROUNDING = {
@@ -74,8 +74,8 @@ ROUNDING = {
 MAX_VELOCITY = 10 #Max speed of vehicle (mph)
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
-DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class SprintParser(OpenVDMCSVParser):
@@ -107,8 +107,8 @@ class SprintParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        # date_time = line['date_time'] # OpenRVDAS style
-                        date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        date_time = line['date_time'] # OpenRVDAS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
 
                         longitude = float(line['longitude']) if line['longitude'] != '' else None
                         latitude = float(line['latitude']) if line['latitude'] != '' else None

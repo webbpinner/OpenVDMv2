@@ -59,8 +59,8 @@ sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 from server.lib.openvdm_plugin import OpenVDMCSVParser
 from server.lib.openvdm import OpenVDM
 
-# RAW_COLS = ['date_time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # OpenRVDAS style
-RAW_COLS = ['date','time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # SCS style
+RAW_COLS = ['date_time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # OpenRVDAS style
+# RAW_COLS = ['date','time','hdr','conductivity','temperature','pressure','depth','salinity','sound_velocity'] # SCS style
 PROC_COLS = ['date_time','conductivity','temperature','pressure','depth','salinity','sound_velocity']
 
 ROUNDING = {
@@ -76,8 +76,8 @@ MIN_DEPTH = 0
 
 MAX_DELTA_T = pd.Timedelta('10 seconds')
 
-# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
-DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+# DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class CTDParser(OpenVDMCSVParser):
@@ -109,8 +109,8 @@ class CTDParser(OpenVDMCSVParser):
                 for lineno, line in enumerate(reader):
 
                     try:
-                        # date_time = line['date_time'] # OpenRVDAS style
-                        date_time = ' '.join([line['date'], line['time']]) # SCS style
+                        date_time = line['date_time'] # OpenRVDAS style
+                        # date_time = ' '.join([line['date'], line['time']]) # SCS style
 
                         conductivity = float(line['conductivity']) if line['conductivity'] != '' else None
                         temperature = float(line['temperature']) if line['temperature'] != '' else None
