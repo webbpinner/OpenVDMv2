@@ -1,67 +1,63 @@
-# =================================================================================== #
-#
-#         FILE:  twind_parser.py
-#
-#        USAGE:  twind_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
-#
-#  DESCRIPTION:  Parse the supplied true wind data and return the json-formatted
-#                string used by OpenVDM as part of it's Data dashboard.
-#
-#      OPTIONS:  [-h] Return the help message.
-#                [-v] Increase verbosity (default: warning)
-#                [--timeFormat] date/time format to use when parsing datafile, default
-#                               yyyy-mm-ddTHH:MM:SS.sssZ
-#                [--startTS] optional start crop time (strptime format)
-#                [--stopTS] optional stop crop time (strptime format)
-#                <dataFile> Full or relative path of the data file to process.
-#
-# REQUIREMENTS:  Python3.8
-#                Python Modules:
-#                    numpy==1.19.5
-#                    pandas==1.2.0
-#                    PyYAML==5.3.1
-#                    requests==2.25.1
-#
-#         BUGS:
-#        NOTES:
-#       AUTHOR:  Webb Pinner
-#      COMPANY:  Capable Solutions
-#      VERSION:  2.5
-#      CREATED:  2016-08-29
-#     REVISION:  2021-01-17
-#
-# LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
-#                Copyright (C) 2021 OceanDataRat.org
-#
-#    This program is free software: you can redistribute it and/or modify it under the
-#    terms of the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful, but WITHOUT ANY
-#    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-#    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License #    along with
-#    this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# =================================================================================== #
+#!/usr/bin/env python3
+"""
+FILE:  twind_parser.py
 
-import os
+USAGE:  twind_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
+
+DESCRIPTION:  Parse the supplied true wind data and return the json-formatted
+    string used by OpenVDM as part of it's Data dashboard.
+
+  OPTIONS:  [-h] Return the help message.
+            [-v] Increase verbosity (default: warning)
+            [--timeFormat] date/time format to use when parsing datafile, default
+                           yyyy-mm-ddTHH:MM:SS.sssZ
+            [--startTS] optional start crop time (strptime format)
+            [--stopTS] optional stop crop time (strptime format)
+            <dataFile> Full or relative path of the data file to process.
+
+REQUIREMENTS:  Python3.8
+            Python Modules:
+                numpy==1.19.5
+                pandas==1.2.0
+                PyYAML==5.3.1
+                requests==2.25.1
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  2.5
+  CREATED:  2016-08-29
+ REVISION:  2021-01-17
+
+LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
+Copyright (C) 2021 OceanDataRat.org
+
+This program is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import sys
 import csv
 import json
-import pandas as pd
-import numpy as np
-import argparse
 import logging
 from copy import deepcopy
 from datetime import datetime
-
 from os.path import dirname, realpath
+import pandas as pd
+
 sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 
 from server.lib.openvdm_plugin import OpenVDMCSVParser
-from server.lib.openvdm import OpenVDM_API
+from server.lib.openvdm import OpenVDM
 
 # RAW_COLS = ['date_time','hdr','wind_speed','wind_dir','unknown_01','unknown_02','unknown_03','unknown_04','unknown_05',] # OpenRVDAS style
 RAW_COLS = ['date','time','hdr','wind_speed','wind_dir','unknown_01','unknown_02','unknown_03','unknown_04','unknown_05',] # SCS style
@@ -79,23 +75,29 @@ DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class TWindParser(OpenVDMCSVParser):
+    """
+    Custom OpenVDM CSV file parser
+    """
 
     def __init__(self, start_dt=None, stop_dt=None, time_format=DEFAULT_TIME_FORMAT, use_openvdm_api=True):
         super().__init__(start_dt=start_dt, stop_dt=stop_dt)
         self.raw_cols = RAW_COLS
         self.proc_cols = PROC_COLS
         self.time_format = time_format
-        self.openvdm = OpenVDM_API() if use_openvdm_api else None
+        self.openvdm = OpenVDM() if use_openvdm_api else None
 
 
-    def process_file(self, filePath):
+    def process_file(self, filepath): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+        """
+        Process the provided file
+        """
 
         raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
 
         logging.debug("Parsing data file...")
         errors = []
         try:
-            with open(filePath, 'r') as csvfile:
+            with open(filepath, 'r') as csvfile:
                 reader = csv.DictReader(csvfile, self.raw_cols)
 
                 for lineno, line in enumerate(reader):
@@ -106,10 +108,10 @@ class TWindParser(OpenVDMCSVParser):
 
                         wind_speed = float(line['wind_speed'])
                         wind_dir = float(line['wind_dir'])
-                    
+
                     except Exception as err:
                         errors.append(lineno)
-                        logging.warning("Parsing error encountered on line {}".format(lineno))
+                        logging.warning("Parsing error encountered on line %s", lineno)
                         logging.debug(line)
                         logging.debug(str(err))
 
@@ -119,16 +121,16 @@ class TWindParser(OpenVDMCSVParser):
                         raw_into_df['wind_dir'].append(wind_dir)
 
         except Exception as err:
-            logging.error("Problem accessing input file: {}".format(filePath))
+            logging.error("Problem accessing input file: %s", filepath)
             logging.error(str(err))
-            return None
+            return
 
         logging.debug("Finished parsing data file")
-        
+
         # If no data ingested from file, quit
         if len(raw_into_df['date_time']) == 0:
             logging.warning("Dataframe is empty... quitting")
-            return None
+            return
 
         # Build DataFrame
         logging.debug("Building dataframe from parsed data...")
@@ -136,7 +138,7 @@ class TWindParser(OpenVDMCSVParser):
 
         # Convert Date/time column to datetime objects
         logging.debug("Converting data_time to datetime datatype...")
-        
+
         df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], format=self.time_format)
 
         # Optionally crop data by start/stop times
@@ -148,7 +150,7 @@ class TWindParser(OpenVDMCSVParser):
         # If the crop operation emptied the dataframe, quit
         if df_proc.shape[0] == 0:
             logging.warning("Cropped dataframe is empty... quitting")
-            return None
+            return
 
         # Calculate deltaT column
         logging.debug('Building deltaT column...')
@@ -160,7 +162,7 @@ class TWindParser(OpenVDMCSVParser):
         self.add_bounds_stat([round(df_proc['deltaT'].min().total_seconds(),3), round(df_proc['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
         self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
         self.add_bounds_stat([round(df_proc['wind_speed'].min(),2), round(df_proc['wind_speed'].max(),2)], 'Wind Speed Bounds', 'm/s')
-        
+
         logging.debug("Running quality tests...")
         # % of bad rows in datafile
         error_rate = len(errors) / (len(df_proc) + len(errors))
@@ -189,32 +191,34 @@ class TWindParser(OpenVDMCSVParser):
         df_proc = self.resample_data(df_proc)
 
         # round data
-        logging.debug("Rounding data: {}".format(ROUNDING))
+        logging.debug("Rounding data: %s", ROUNDING)
         df_proc = self.round_data(df_proc, ROUNDING)
 
         # split data where there are gaps
         logging.debug("Building visualization data...")
 
-        visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-        visualizerDataObj['data'] = json.loads(df_proc[['date_time','wind_speed']].to_json(orient='values'))
-        visualizerDataObj['unit'] = 'm/s'
-        visualizerDataObj['label'] = 'Wind Speed'
-        self.add_visualization_data(deepcopy(visualizerDataObj))
+        visualizer_data_obj = {'data':[], 'unit':'', 'label':''}
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','wind_speed']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = 'm/s'
+        visualizer_data_obj['label'] = 'Wind Speed'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
 
-        visualizerDataObj['data'] = json.loads(df_proc[['date_time','wind_dir']].to_json(orient='values'))
-        visualizerDataObj['unit'] = 'deg'
-        visualizerDataObj['label'] = 'Wind Direction'
-        self.add_visualization_data(deepcopy(visualizerDataObj))
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','wind_dir']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = 'deg'
+        visualizer_data_obj['label'] = 'Wind Direction'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None and len(errors) > 0:
-            self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
+            self.openvdm.send_msg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filepath, ', '.join([str(error) for error in errors])))
 
 
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
+    import argparse
+
     parser = argparse.ArgumentParser(description='Parse true wind sensor data')
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
@@ -235,7 +239,7 @@ if __name__ == "__main__":
     ############################
     # Set up logging before we do any other argument parsing (so that we
     # can log problems with argument parsing).
-    
+
     LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
     logging.basicConfig(format=LOGGING_FORMAT)
 
@@ -246,11 +250,10 @@ if __name__ == "__main__":
     ovdm_parser = TWindParser(start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat)
 
     try:
-        logging.info("Processing file: {}".format(parsed_args.dataFile))
+        logging.info("Processing file: %s", parsed_args.dataFile)
         ovdm_parser.process_file(parsed_args.dataFile)
-        print(ovdm_parser.toJSON())
+        print(ovdm_parser.to_json())
         logging.info("Done!")
     except Exception as err:
         logging.error(str(err))
         raise err
-        sys.exit(1)

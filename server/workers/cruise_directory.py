@@ -44,7 +44,7 @@ import python3_gearman
 
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from server.utils.set_owner_group_permissions import set_owner_group_permissions
+from server.lib.set_owner_group_permissions import set_owner_group_permissions
 from server.lib.openvdm import OpenVDM
 
 CUSTOM_TASKS = [
@@ -68,7 +68,7 @@ def build_dest_dir(gearman_worker, dest_dir):
     """
     return_dest_dir = dest_dir.replace('{cruiseID}', gearman_worker.cruise_id)
     return_dest_dir = return_dest_dir.replace('{loweringDataBaseDir}', gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir'],)
-    
+
     if gearman_worker.lowering_id:
         return_dest_dir = return_dest_dir.replace('{loweringID}', gearman_worker.lowering_id)
 

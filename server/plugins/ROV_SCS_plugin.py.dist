@@ -1,65 +1,66 @@
-# =================================================================================== #
-#
-#         FILE:  SCS_plugin.py
-#
-#        USAGE:  SCS_plugin.py [-h] [--dataType] <dataFile>
-#
-#  DESCRIPTION:  This python script interprets raw files created by the SCS Data
-#                Acquision System.  Depending on the command-line arguments, the script
-#                returns the data type of the file or a sub-sampled and json-formatted
-#                version of the original file to stdout.  The json-formatted file is
-#                used by OpenVDM as part of it's Data dashboard. 
-#
-#      OPTIONS:  [-h] Return the help message.
-#                [--dataType] Return the datatype of the file as defined in the
-#                    fileTypeFilter array.
-#                <dataFile> Full or relative path of the data file to process.
-#
-# REQUIREMENTS:  Python3.8
-#                Python Modules:
-#
-#         BUGS:
-#        NOTES:
-#       AUTHOR:  Webb Pinner
-#      COMPANY:  Capable Solutions
-#      VERSION:  1.0
-#      CREATED:  2016-10-23
-#     REVISION:  2021-01-23
-#
-# LICENSE INFO:  Open Vessel Data Management 2.5 (OpenVDMv2)
-#                Copyright (C) 2021 OceanDataRat.org
-#
-#    This program is free software: you can redistribute it and/or modify it under the
-#    terms of the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful, but WITHOUT ANY
-#    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-#    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License along with this
-#    program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# =================================================================================== #
+#!/usr/bin/env python3
+"""
+
+FILE:  SCS_plugin.py
+
+USAGE:  SCS_plugin.py [-h] [--dataType] <dataFile>
+
+DESCRIPTION:  This python script interprets raw files created by the SCS Data
+    Acquision System.  Depending on the command-line arguments, the script
+    returns the data type of the file or a sub-sampled and json-formatted
+    version of the original file to stdout.  The json-formatted file is
+    used by OpenVDM as part of it's Data dashboard.
+
+  OPTIONS:  [-h] Return the help message.
+            [--dataType] Return the datatype of the file as defined in the
+                fileTypeFilter array.
+            <dataFile> Full or relative path of the data file to process.
+
+REQUIREMENTS:  Python3.8
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  1.0
+  CREATED:  2016-10-23
+ REVISION:  2021-01-23
+
+LICENSE INFO:  Open Vessel Data Management 2.5 (OpenVDMv2)
+Copyright (C) 2021 OceanDataRat.org
+
+This program is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this
+program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
 
 import sys
 import os
 import json
 import fnmatch
-import requests
 import argparse
 import logging
-
+from datetime import datetime
 from os.path import dirname, realpath
+import requests
+
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from server.lib.openvdm import OpenVDM_API
+from server.lib.openvdm import OpenVDM
 from server.lib.openvdm_plugin import OpenVDMPlugin
-from server.plugins.parsers.gga_parser   import GGAParser
-from server.plugins.parsers.sprint_parser   import SprintParser
-from server.plugins.parsers.paro_parser   import ParoParser
-from server.plugins.parsers.comp_pres_rov_parser import CompPresParser
-from server.plugins.parsers.rov_ctd_parser   import ROV_CTDParser
+from server.plugins.parsers.gga_parser import GGAParser
+from server.plugins.parsers.sprint_parser import SprintParser
+from server.plugins.parsers.paro_parser import ParoParser
+from server.plugins.parsers.comp_pres_parser import CompPresParser
+from server.plugins.parsers.ctd_parser import CTDParser
 
 SEALOG_SERVER_URL = 'http://localhost:8000/sealog-server'
 SEALOG_JWT = ''
@@ -84,13 +85,16 @@ FILE_TYPE_FILTERS = [
 
 
 class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
+    """
+    OpenVDM plugin for the SCS Underway data acquisition system
+    """
 
     def __init__(self, lowering=None, use_sealog_api=True):
 
         self.sealog_server_url = SEALOG_SERVER_URL
         self.sealog_jwt = SEALOG_JWT
-        self.openvdm = OpenVDM_API()
-        self.lowering = lowering if lowering != None else self.openvdm.getLoweringID()
+        self.ovdm = OpenVDM()
+        self.lowering = lowering if lowering is not None else self.ovdm.get_lowering_id()
         self.use_sealog_api = use_sealog_api
 
         if self.use_sealog_api:
@@ -98,65 +102,72 @@ class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
             try:
                 self.start_dt = datetime.strptime(lowering['lowering_additional_meta']['milestones']['lowering_descending'], "%Y-%m-%dT%H:%M:%S.%fZ")  if lowering['lowering_additional_meta']['milestones']['lowering_descending'] else datetime.strptime(lowering.start_ts, "%Y-%m-%dT%H:%M:%S.%fZ")
                 self.stop_dt = datetime.strptime(lowering['lowering_additional_meta']['milestones']['lowering_floats_on_surface'], "%Y-%m-%dT%H:%M:%S.%fZ")  if lowering['lowering_additional_meta']['milestones']['lowering_floats_on_surface'] else datetime.strptime(lowering.stop_ts, "%Y-%m-%dT%H:%M:%S.%fZ")
-            except:
+            except Exception as err:
                 logging.warning("Could not determine lowering start/stop datetime")
+                logging.debug(str(err))
                 self.start_dt = None
                 self.stop_dt = None
 
         else:
             try:
-                self.start_dt = datetime.strptime(self.openvdm.getLoweringStartDate(), "%Y-%m-%dT%H:%M:%S.%fZ")
-            except:
+                self.start_dt = datetime.strptime(self.ovdm.get_lowering_start_date(), "%Y-%m-%dT%H:%M:%S.%fZ")
+            except Exception as err:
                 self.start_dt = None
+                logging.debug(str(err))
 
             try:
-                self.stop_dt = datetime.strptime(self.openvdm.getLoweringStopDate(), "%Y-%m-%dT%H:%M:%S.%fZ")
-            except:
+                self.stop_dt = datetime.strptime(self.ovdm.get_lowering_end_date(), "%Y-%m-%dT%H:%M:%S.%fZ")
+            except Exception as err:
                 self.stop_dt = None
+                logging.debug(str(err))
 
         super().__init__(FILE_TYPE_FILTERS)
 
 
-    # -------------------------------------------------------------------------------------
-    # Function to determine the parser to use with the raw datafile.  If the datatype can
-    # not be determined, the function returns false
-    # -------------------------------------------------------------------------------------
-    def get_parser(self, filePath):
+    def get_parser(self, filepath): # pylint: disable=too-many-return-statements
+        """
+        Function to determine the parser to use with the raw datafile.  If the
+        datatype can not be determined, the function returns false
+        """
 
-        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filePath, file_type_filter['regex']), self.file_type_filters))
+        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filepath, file_type_filter['regex']), self.file_type_filters))
 
         if len(file_type_filter) == 0:
             return None
-        else:
-            file_type_filter = file_type_filter[0]
+
+        file_type_filter = file_type_filter[0]
 
         if file_type_filter['parser'] == "Sprint":
             return SprintParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "Paro":
+
+        if file_type_filter['parser'] == "Paro":
             return ParoParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "CTD":
-            return ROV_CTDParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "CompPres":
+
+        if file_type_filter['parser'] == "CTD":
+            return CTDParser(**file_type_filter['parser_options'])
+
+        if file_type_filter['parser'] == "CompPres":
             return CompPresParser(**file_type_filter['parser_options'])
-        elif file_type_filter['parser'] == "GGA":
+
+        if file_type_filter['parser'] == "GGA":
             return GGAParser(**file_type_filter['parser_options'])
-        else:
-            return None
+
+        return None
 
 
-    # -------------------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------------------
     def _get_sealog_lowering_by_id(self, lowering_id):
+        """
+        Retrieve the OpenVDM lowering configuration based in the lowering id
+        """
 
         try:
             url = self.sealog_server_url + '/api/v1/lowerings?lowering_id=' + lowering_id
-            r = requests.get(url, headers={"authorization": self.sealog_jwt})
-            lowering = json.loads(r.text)[0]
+            req = requests.get(url, headers={"authorization": self.sealog_jwt})
+            lowering = json.loads(req.text)[0]
             return lowering
-        except Exception as error:
-            logging.warning("Lowering {} not found in Sealog".format(lowering_id))
-            logging.debug(str(error))
+        except Exception as err:
+            logging.warning("Lowering %s not found in Sealog", lowering_id)
+            logging.debug(str(err))
 
         return None
 
@@ -180,7 +191,7 @@ if __name__ == "__main__":
     ############################
     # Set up logging before we do any other argument parsing (so that we
     # can log problems with argument parsing).
-    
+
     LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
     logging.basicConfig(format=LOGGING_FORMAT)
 

@@ -272,7 +272,7 @@ class OpenVDMParser():
 
         return None
 
-    def process_file(self, file_path):
+    def process_file(self, filepath):
         """
         Process the given file
         """
@@ -376,7 +376,7 @@ class OpenVDMCSVParser(OpenVDMParser):
         super().__init__()
 
 
-    def process_file(self, file_path):
+    def process_file(self, filepath):
         """
         Process the given file
         """
@@ -451,12 +451,12 @@ class OpenVDMPlugin():
         self.file_type_filters = file_type_filters
 
 
-    def get_data_type(self, file_path):
+    def get_data_type(self, filepath):
         """
         Return the data type for the given file
         """
 
-        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(file_path, file_type_filter['regex']), self.file_type_filters))
+        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filepath, file_type_filter['regex']), self.file_type_filters))
 
         if len(file_type_filter) == 0:
             return None
@@ -464,7 +464,7 @@ class OpenVDMPlugin():
         return file_type_filter[0]['data_type']
 
 
-    def get_parser(self, file_path):
+    def get_parser(self, filepath):
         """
         Return the OpenVDM parser object appropriate for the given file
         """
@@ -472,16 +472,16 @@ class OpenVDMPlugin():
         raise NotImplementedError('process_file must be implemented by subclass')
 
 
-    def get_json_str(self, file_path):
+    def get_json_str(self, filepath):
 
         """
         Return the plugin output corresponding to the given file.
         """
-        parser = self.get_parser(file_path)
+        parser = self.get_parser(filepath)
 
         if parser is None:
             return None
 
-        parser.process_file(file_path)
+        parser.process_file(filepath)
 
         return parser.to_json()

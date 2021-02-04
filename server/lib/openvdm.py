@@ -39,7 +39,7 @@ sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 import requests
 
-from server.utils import read_config
+from server.lib import read_config
 
 
 DEFAULT_CONFIG_FILE = './server/etc/openvdm.yaml'

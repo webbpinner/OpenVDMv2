@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FILE:  OVDM_lowering_directory.py
+FILE:  lowering_directory.py
 
 DESCRIPTION:  Gearman worker the handles the tasks of creating a new lowering
 data directory and updating the lowering directory structure when additional
@@ -45,7 +45,7 @@ import python3_gearman
 
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from server.utils.set_owner_group_permissions import set_owner_group_permissions
+from server.lib.set_owner_group_permissions import set_owner_group_permissions
 from server.lib.openvdm import OpenVDM
 
 

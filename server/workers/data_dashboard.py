@@ -1,7 +1,7 @@
 
 #!/usr/bin/env python3
 """
-FILE:  OVDM_dataDashboard.py
+FILE:  data_dashboard.py
 
 DESCRIPTION:  Gearman worker tha handles the creation and update of OVDM data
     dashboard objects.
@@ -45,8 +45,8 @@ import python3_gearman
 
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from server.utils.set_owner_group_permissions import set_owner_group_permissions
-from server.utils.output_json_data_to_file import output_json_data_to_file
+from server.lib.set_owner_group_permissions import set_owner_group_permissions
+from server.lib.output_json_data_to_file import output_json_data_to_file
 from server.lib.openvdm import OpenVDM, DEFAULT_DATA_DASHBOARD_MANIFEST_FN
 
 PYTHON_BINARY = os.path.join(dirname(dirname(dirname(realpath(__file__)))), 'venv/bin/python')

@@ -47,8 +47,8 @@ import python3_gearman
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from server.lib.openvdm import OpenVDM
-from server.utils.hooks import get_post_hook_commands, run_commands
-from server.utils.hooks import POST_COLLECTION_SYSTEM_TRANSFER_HOOK_NAME, POST_DATA_DASHBOARD_HOOK_NAME, POST_SETUP_NEW_CRUISE_HOOK_NAME, POST_SETUP_NEW_LOWERING_HOOK_NAME, POST_FINALIZE_CURRENT_CRUISE_HOOK_NAME, POST_FINALIZE_CURRENT_LOWERING_HOOK_NAME
+from server.lib.hooks import get_post_hook_commands, run_commands
+from server.lib.hooks import POST_COLLECTION_SYSTEM_TRANSFER_HOOK_NAME, POST_DATA_DASHBOARD_HOOK_NAME, POST_SETUP_NEW_CRUISE_HOOK_NAME, POST_SETUP_NEW_LOWERING_HOOK_NAME, POST_FINALIZE_CURRENT_CRUISE_HOOK_NAME, POST_FINALIZE_CURRENT_LOWERING_HOOK_NAME
 
 CUSTOM_TASKS = [
     {

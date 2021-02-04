@@ -9,7 +9,7 @@ import subprocess
 
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
-from server.utils.read_config import read_config
+from server.lib.read_config import read_config
 from server.lib.openvdm import DEFAULT_CONFIG_FILE
 
 POST_COLLECTION_SYSTEM_TRANSFER_HOOK_NAME = "postCollectionSystemTransfer"

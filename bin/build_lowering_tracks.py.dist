@@ -80,9 +80,9 @@ import logging
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(realpath(__file__))))
 
-from server.utils.set_owner_group_permissions import set_owner_group_permissions
-from server.utils.output_json_data_to_file import output_json_data_to_file
-from server.utils.geojson_utils import convert_to_kml, combine_geojson_files
+from server.lib.set_owner_group_permissions import set_owner_group_permissions
+from server.lib.output_json_data_to_file import output_json_data_to_file
+from server.lib.geojson_utils import convert_to_kml, combine_geojson_files
 from server.lib.openvdm import OpenVDM
 
 TRACKLINE_EXTRA_DIR_NAME = 'Tracklines'

@@ -1,50 +1,48 @@
-# =================================================================================== #
-#
-#         FILE:  EM302_plugin.py
-#
-#        USAGE:  EM302_plugin.py [-h] [--dataType] <dataFile>
-#
-#  DESCRIPTION:  This python script interprets raw files created by the SCS Data
-#                Acquision System.  Depending on the command-line arguments, the script
-#                returns the data type of the file or a sub-sampled and json-formatted
-#                version of the original file to stdout.  The json-formatted file is
-#                used by OpenVDM as part of it's Data dashboard. 
-#
-#      OPTIONS:  [-h] Return the help message.
-#                [--dataType] Return the datatype of the file as defined in the
-#                    fileTypeFilter array.
-#                <dataFile> Full or relative path of the data file to process.
-#
-# REQUIREMENTS:  Python3.8
-#                Python Modules:
-#
-#         BUGS:
-#        NOTES:
-#       AUTHOR:  Webb Pinner
-#      COMPANY:  Capable Solutions
-#      VERSION:  1.0
-#      CREATED:  2016-10-23
-#     REVISION:  2021-01-23
-#
-# LICENSE INFO:  Open Vessel Data Management 2.5 (OpenVDMv2)
-#                Copyright (C) 2021 OceanDataRat.org
-#
-#    This program is free software: you can redistribute it and/or modify it under the
-#    terms of the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful, but WITHOUT ANY
-#    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-#    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License along with this
-#    program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# =================================================================================== #
+#!/usr/bin/env python3
+"""
+FILE:  EM302_plugin.py
+
+USAGE:  EM302_plugin.py [-h] [--dataType] <dataFile>
+
+DESCRIPTION:  This python script interprets raw files created by the SCS Data
+    Acquision System.  Depending on the command-line arguments, the script
+    returns the data type of the file or a sub-sampled and json-formatted
+    version of the original file to stdout.  The json-formatted file is used
+    by OpenVDM as part of it's Data dashboard.
+
+  OPTIONS:  [-h] Return the help message.
+            [--dataType] Return the datatype of the file as defined in the
+                fileTypeFilter array.
+            <dataFile> Full or relative path of the data file to process.
+
+REQUIREMENTS:  Python3.8
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  1.0
+  CREATED:  2016-10-23
+ REVISION:  2021-01-23
+
+LICENSE INFO:  Open Vessel Data Management 2.5 (OpenVDMv2)
+Copyright (C) 2021 OceanDataRat.org
+
+This program is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this
+program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
 
 import sys
 import os
-import json
 import fnmatch
 import argparse
 import logging
@@ -63,34 +61,33 @@ FILE_TYPE_FILTERS = [
     {"data_type":"geotiff",   "regex": "*.tif",   "parser": "GeoTIFF",   "parser_options":{}}
 ]
 
-# -------------------------------------------------------------------------------------
-# Function to determine the datatype of the raw datafile.  If the datatype can not be
-# determined, the function returns false
-# -------------------------------------------------------------------------------------
-
 
 class EM302_OpenVDMPlugin(OpenVDMPlugin):
+    """
+    OpenVDM plugin for the EM302 MBES
+    """
 
     def __init__(self):
         super().__init__(FILE_TYPE_FILTERS)
 
-    # -------------------------------------------------------------------------------------
-    # Function to determine the parser to use with the raw datafile.  If the datatype can
-    # not be determined, the function returns false
-    # -------------------------------------------------------------------------------------
-    def get_parser(self, filePath):
 
-        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filePath, file_type_filter['regex']), self.file_type_filters))
+    def get_parser(self, filepath):
+        """
+        Function to determine the parser to use with the raw datafile.  If the
+        datatype cannot be determined, the function returns false
+        """
+
+        file_type_filter = list(filter(lambda file_type_filter: fnmatch.fnmatch(filepath, file_type_filter['regex']), self.file_type_filters))
 
         if len(file_type_filter) == 0:
             return None
-        else:
-            file_type_filter = file_type_filter[0]
+
+        file_type_filter = file_type_filter[0]
 
         if file_type_filter['parser'] == "GeoTIFF":
             return GeoTIFFParser(**file_type_filter['parser_options'])
-        else:
-            return None
+
+        return None
 
 
 # -------------------------------------------------------------------------------------
@@ -111,7 +108,6 @@ if __name__ == "__main__":
     ############################
     # Set up logging before we do any other argument parsing (so that we
     # can log problems with argument parsing).
-    
     LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
     logging.basicConfig(format=LOGGING_FORMAT)
 

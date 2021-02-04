@@ -1,67 +1,63 @@
-# =================================================================================== #
-#
-#         FILE:  vtg_parser.py
-#
-#        USAGE:  vtg_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
-#
-#  DESCRIPTION:  Parse the supplied NMEA-formtted VTG file and return the json-
-#                formatted string used by OpenVDM as part of it's Data dashboard.
-#
-#      OPTIONS:  [-h] Return the help message.
-#                [-v] Increase verbosity (default: warning)
-#                [--timeFormat] date/time format to use when parsing datafile, default
-#                               yyyy-mm-ddTHH:MM:SS.sssZ
-#                [--startTS] optional start crop time (strptime format)
-#                [--stopTS] optional stop crop time (strptime format)
-#                <dataFile> Full or relative path of the data file to process.
-#
-# REQUIREMENTS:  Python3.8
-#                Python Modules:
-#                    numpy==1.19.5
-#                    pandas==1.2.0
-#                    PyYAML==5.3.1
-#                    requests==2.25.1
-#
-#         BUGS:
-#        NOTES:
-#       AUTHOR:  Webb Pinner
-#      COMPANY:  Capable Solutions
-#      VERSION:  2.5
-#      CREATED:  2016-08-29
-#     REVISION:  2021-01-16
-#
-# LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
-#                Copyright (C) 2021 OceanDataRat.org
-#
-#    This program is free software: you can redistribute it and/or modify it under the
-#    terms of the GNU General Public License as published by the Free Software
-#    Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful, but WITHOUT ANY
-#    WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-#    PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License #    along with
-#    this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# =================================================================================== #
+#!/usr/bin/env python3
+"""
+FILE:  vtg_parser.py
 
-import os
+USAGE:  vtg_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
+
+DESCRIPTION:  Parse the supplied NMEA-formtted VTG file and return the json-
+    formatted string used by OpenVDM as part of it's Data dashboard.
+
+  OPTIONS:  [-h] Return the help message.
+            [-v] Increase verbosity (default: warning)
+            [--timeFormat] date/time format to use when parsing datafile, default
+                           yyyy-mm-ddTHH:MM:SS.sssZ
+            [--startTS] optional start crop time (strptime format)
+            [--stopTS] optional stop crop time (strptime format)
+            <dataFile> Full or relative path of the data file to process.
+
+REQUIREMENTS:  Python3.8
+            Python Modules:
+                numpy==1.19.5
+                pandas==1.2.0
+                PyYAML==5.3.1
+                requests==2.25.1
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  2.5
+  CREATED:  2016-08-29
+ REVISION:  2021-01-16
+
+LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
+Copyright (C) 2021 OceanDataRat.org
+
+This program is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import sys
 import csv
 import json
-import pandas as pd
-import numpy as np
-import argparse
 import logging
 from copy import deepcopy
 from datetime import datetime
-
 from os.path import dirname, realpath
+import pandas as pd
+
 sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
 
 from server.lib.openvdm_plugin import OpenVDMCSVParser
-from server.lib.openvdm import OpenVDM_API
+from server.lib.openvdm import OpenVDM
 
 # RAW_COLS = ['date_time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # OpenRVDAS style
 RAW_COLS = ['date', 'time','hdr','cog_t','T','cog_m','M','sog_kts','N','sog_kph','K','checksum'] # SCS style
@@ -87,23 +83,29 @@ DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
 
 
 class VTGParser(OpenVDMCSVParser):
+    """
+    Custom OpenVDM CSV file parser
+    """
 
     def __init__(self, start_dt=None, stop_dt=None, time_format=DEFAULT_TIME_FORMAT, use_openvdm_api=True):
         super().__init__(start_dt=start_dt, stop_dt=stop_dt)
         self.raw_cols = RAW_COLS
         self.proc_cols = PROC_COLS
         self.time_format = time_format
-        self.openvdm = OpenVDM_API() if use_openvdm_api else None
+        self.openvdm = OpenVDM() if use_openvdm_api else None
 
 
-    def process_file(self, filePath):
+    def process_file(self, filepath): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+        """
+        Process the provided file
+        """
 
         raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
 
         logging.debug("Parsing data file...")
         errors = []
         try:
-            with open(filePath, 'r') as csvfile:
+            with open(filepath, 'r') as csvfile:
                 reader = csv.DictReader(csvfile, self.raw_cols)
 
                 for lineno, line in enumerate(reader):
@@ -111,15 +113,15 @@ class VTGParser(OpenVDMCSVParser):
                     try:
                         # date_time = line['date_time'] # OpenRVDAS style
                         date_time = ' '.join([line['date'], line['time']]) # SCS style
-                        
-                        cog_t = np.nan if line['cog_t'] == '' else float(line['cog_t'])
-                        cog_m = np.nan if line['cog_m'] == '' else float(line['cog_m'])
-                        sog_kts = np.nan if line['sog_kts'] == '' else float(line['sog_kts'])
-                        sog_kph = np.nan if line['sog_kph'] == '' else float(line['sog_kph'])
+
+                        cog_t = float(line['cog_t']) if line['cog_t'] != '' else None
+                        cog_m = float(line['cog_m']) if line['cog_m'] != '' else None
+                        sog_kts = float(line['sog_kts']) if line['sog_kts'] != '' else None
+                        sog_kph = float(line['sog_kph']) if line['sog_kph'] != '' else None
 
                     except Exception as err:
                         errors.append(lineno)
-                        logging.warning("Parsing error encountered on line {}".format(lineno))
+                        logging.warning("Parsing error encountered on line %s", lineno)
                         logging.debug(line)
                         logging.debug(str(err))
 
@@ -131,24 +133,26 @@ class VTGParser(OpenVDMCSVParser):
                         raw_into_df['sog_kph'].append(sog_kph)
 
         except Exception as err:
-            logging.error("Problem accessing input file: {}".format(filePath))
+            logging.error("Problem accessing input file: %s", filepath)
             logging.error(str(err))
-            return None
+            return
 
         logging.debug("Finished parsing data file")
-        
+
         # If no data ingested from file, quit
         if len(raw_into_df['date_time']) == 0:
             logging.warning("Dataframe is empty... quitting")
-            return None
+            return
 
         # Build DataFrame
         logging.debug("Building dataframe from parsed data...")
         df_proc = pd.DataFrame(raw_into_df)
 
+        # Remove row where data is completely missing
+        df_proc.dropna(inplace=True, thresh=4)
+
         # Convert Date/time column to datetime objects
         logging.debug("Converting data_time to datetime datatype...")
-        
         df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], format=self.time_format)
 
         # Optionally crop data by start/stop times
@@ -160,7 +164,7 @@ class VTGParser(OpenVDMCSVParser):
         # If the crop operation emptied the dataframe, quit
         if df_proc.shape[0] == 0:
             logging.warning("Cropped dataframe is empty... quitting")
-            return None
+            return
 
         # Calculate deltaT column
         logging.debug('Building deltaT column...')
@@ -180,7 +184,7 @@ class VTGParser(OpenVDMCSVParser):
         self.add_bounds_stat([round(df_proc['sog_kph'].min(),3), round(df_proc['sog_kph'].max(),3)], 'SOG KPH Bounds', 'deg')
         self.add_value_validity_stat([len(df_proc[(df_proc['sog_kph'] <= MAX_SOG_KPH)]),len(df_proc[(df_proc['sog_kph'] > MAX_SOG_KPH)])], "SOG KPH Validity")
 
-    
+
         logging.debug("Running quality tests...")
         # % of bad rows in datafile
         error_rate = len(errors) / (len(df_proc) + len(errors))
@@ -241,42 +245,44 @@ class VTGParser(OpenVDMCSVParser):
         df_proc = self.resample_data(df_proc)
 
         # round data
-        logging.debug("Rounding data: {}".format(ROUNDING))
+        logging.debug("Rounding data: %s", ROUNDING)
         df_proc = self.round_data(df_proc, ROUNDING)
 
         # split data where there are gaps
         logging.debug("Building visualization data...")
 
-        visualizerDataObj = {'data':[], 'unit':'', 'label':''}
-        visualizerDataObj['data'] = json.loads(df_proc[['date_time','cog_t']].to_json(orient='values'))
-        visualizerDataObj['unit'] = 'deg'
-        visualizerDataObj['label'] = 'COG, True'
-        self.add_visualization_data(deepcopy(visualizerDataObj))
+        visualizer_data_obj = {'data':[], 'unit':'', 'label':''}
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','cog_t']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = 'deg'
+        visualizer_data_obj['label'] = 'COG, True'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
 
-        visualizerDataObj['data'] = json.loads(df_proc[['date_time','cog_m']].to_json(orient='values'))
-        visualizerDataObj['unit'] = 'deg'
-        visualizerDataObj['label'] = 'COG, Magnetic'
-        self.add_visualization_data(deepcopy(visualizerDataObj))
-        
-        visualizerDataObj['data'] = json.loads(df_proc[['date_time','sog_kts']].to_json(orient='values'))
-        visualizerDataObj['unit'] = 'kts'
-        visualizerDataObj['label'] = 'SOG, kts'
-        self.add_visualization_data(deepcopy(visualizerDataObj))
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','cog_m']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = 'deg'
+        visualizer_data_obj['label'] = 'COG, Magnetic'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
 
-        visualizerDataObj['data'] = json.loads(df_proc[['date_time','sog_kph']].to_json(orient='values'))
-        visualizerDataObj['unit'] = 'kph'
-        visualizerDataObj['label'] = 'SOG, kph'
-        self.add_visualization_data(deepcopy(visualizerDataObj))
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','sog_kts']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = 'kts'
+        visualizer_data_obj['label'] = 'SOG, kts'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','sog_kph']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = 'kph'
+        visualizer_data_obj['label'] = 'SOG, kph'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
 
         # send message about errors encountered to OpenVDM
         if self.openvdm is not None and len(errors) > 0:
-            self.openvdm.sendMsg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filePath, ', '.join([str(error) for error in errors])))
+            self.openvdm.send_msg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filepath, ', '.join([str(error) for error in errors])))
 
 
 # -------------------------------------------------------------------------------------
 # Required python code for running the script as a stand-alone utility
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
+    import argparse
+
     parser = argparse.ArgumentParser(description='Parse NMEA VTG data')
     parser.add_argument('-v', '--verbosity', dest='verbosity',
                         default=0, action='count',
@@ -297,7 +303,7 @@ if __name__ == "__main__":
     ############################
     # Set up logging before we do any other argument parsing (so that we
     # can log problems with argument parsing).
-    
+
     LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
     logging.basicConfig(format=LOGGING_FORMAT)
 
@@ -308,11 +314,10 @@ if __name__ == "__main__":
     ovdm_parser = VTGParser(start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat)
 
     try:
-        logging.info("Processing file: {}".format(parsed_args.dataFile))
+        logging.info("Processing file: %s", parsed_args.dataFile)
         ovdm_parser.process_file(parsed_args.dataFile)
-        print(ovdm_parser.toJSON())
+        print(ovdm_parser.to_json())
         logging.info("Done!")
     except Exception as err:
         logging.error(str(err))
         raise err
-        sys.exit(1)
