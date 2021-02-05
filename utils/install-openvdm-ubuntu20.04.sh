@@ -146,7 +146,8 @@ function create_user {
     fi
 
     echo "Creating $OPENVDM_USER"
-    adduser --gecos "" $OPENVDM_USER
+    # adduser --gecos "" $OPENVDM_USER
+    adduser $OPENVDM_USER
     usermod -a -G sudo $OPENVDM_USER
 }
 
@@ -168,10 +169,10 @@ function install_packages {
     apt install -y openssh-server sshpass rsync curl git samba smbclient \
         cifs-utils gearman-job-server libgearman-dev nodejs libnode-dev \
         node-gyp npm python3 python3-dev python3-pip python3-venv libgdal-dev \
-        gdal-bin libgeos-dev supervisor mysql-server mysql-client \
+        gdal-bin libgeos-dev supervisor mysql-server mysql-client ntp \
         apache2 libapache2-mod-wsgi-py3 libapache2-mod-php7.3 php7.3 php7.3-cli \
         php7.3-mysql php7.3-zip php7.3-curl php7.3-gearman php7.3-yaml proj-bin \
-	python3-pyproj
+	    python3-pyproj
 
     pip3 install MapProxy
     
@@ -213,7 +214,7 @@ function install_python_packages {
       --upgrade pip
     pip install wheel  # To help with the rest of the installations
 
-    pip install -r $INSTALL_ROOT/openvdm/server/utils/requirements.txt
+    pip install -r $INSTALL_ROOT/openvdm/requirements.txt
 
     pip install --global-option=build_ext --global-option="-I/usr/include/gdal" GDAL==`gdal-config --version`
 }
@@ -792,6 +793,14 @@ function configure_directories {
 
 ###########################################################################
 ###########################################################################
+# Set system timezone
+function setup_timezone {
+    echo "Etc/UTC" | tee /etc/timezone
+    sudo dpkg-reconfigure --frontend noninteractive tzdata
+
+
+###########################################################################
+###########################################################################
 # Install OpenVDM
 function install_openvdm {
     # Expect the following shell variables to be appropriately set:
@@ -997,10 +1006,14 @@ save_default_variables
 
 #########################################################################
 #########################################################################
-# Install packages
+
 echo "#####################################################################"
 echo "Installing required software packages and libraries"
 install_packages
+
+echo "#####################################################################"
+echo "Setting system timezone to UTC"
+setup_timezone
 
 echo "#####################################################################"
 echo "Creating required directories"
@@ -1008,10 +1021,10 @@ configure_directories
 
 echo "#####################################################################"
 echo "Configuring Samba"
-configure_samba $OPENVDM_USER
+configure_samba
 
 echo "#####################################################################"
-echo "Configuring gearman-job-server"
+echo "Configuring Gearman Job Server"
 configure_gearman
 
 echo "#####################################################################"
