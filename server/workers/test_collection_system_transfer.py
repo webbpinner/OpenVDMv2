@@ -454,7 +454,7 @@ def task_test_collection_system_transfer(gearman_worker, current_job):
     for test in job_results['parts']:
         if test['result'] == "Fail":
             verdict = False
-            job_results['parts'].append({"parttName": "Final Verdict", "result": "Fail", "reason": test['reason']})
+            job_results['parts'].append({"partName": "Final Verdict", "result": "Fail", "reason": test['reason']})
             break
 
     if verdict:
