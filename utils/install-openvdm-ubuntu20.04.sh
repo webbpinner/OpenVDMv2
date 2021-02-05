@@ -775,7 +775,7 @@ function configure_directories {
     if [ ! -d $DATA_ROOT/FTPROOT ]; then
         echo "Creating data directory structure starting at: $DATA_ROOT"
 
-        mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData/Test_Cruise
+        mkdir -p ${DATA_ROOT}/FTPRoot/CruiseData/Test_Cruise/Vehicle/Test_Lowering
         mkdir -p ${DATA_ROOT}/FTPRoot/PublicData
         mkdir -p ${DATA_ROOT}/FTPRoot/VisitorInformation
 
@@ -796,8 +796,26 @@ function configure_directories {
 # Set system timezone
 function setup_timezone {
     echo "Etc/UTC" | tee /etc/timezone
-    sudo dpkg-reconfigure --frontend noninteractive tzdata
+    dpkg-reconfigure --frontend noninteractive tzdata
 }
+
+
+###########################################################################
+###########################################################################
+# Set system ssh
+function setup_ssh {
+    ssh-keygen
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+    mkdir -p /home/${OPENVDM_USER}/.ssh
+    cat ~/.ssh/id_rsa.pub >> /home/${OPENVDM_USER}/.ssh/authorized_keys
+    
+    chown -R ${OPENVDM_USER}:${OPENVDM_USER} /home/${OPENVDM_USER}/.ssh
+    chmod 600 /home/${OPENVDM_USER}/.ssh/authorized_keys
+
+    ssh ${OPENVDM_USER}@${HOSTNAME) ls > /dev/null
+}
+
 
 ###########################################################################
 ###########################################################################
