@@ -1034,6 +1034,10 @@ echo "Setting system timezone to UTC"
 setup_timezone
 
 echo "#####################################################################"
+echo "Setting ssh pubic/private keys"
+setup_ssh
+
+echo "#####################################################################"
 echo "Creating required directories"
 configure_directories
 
