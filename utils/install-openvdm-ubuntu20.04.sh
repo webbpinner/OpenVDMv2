@@ -813,7 +813,7 @@ function setup_ssh {
     chown -R ${OPENVDM_USER}:${OPENVDM_USER} /home/${OPENVDM_USER}/.ssh
     chmod 600 /home/${OPENVDM_USER}/.ssh/authorized_keys
 
-    ssh ${OPENVDM_USER}@${HOSTNAME) ls > /dev/null
+    ssh ${OPENVDM_USER}@${HOSTNAME} ls > /dev/null
 }
 
 
