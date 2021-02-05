@@ -146,8 +146,7 @@ function create_user {
     fi
 
     echo "Creating $OPENVDM_USER"
-    # adduser --gecos "" $OPENVDM_USER
-    adduser $OPENVDM_USER
+    adduser --gecos "" $OPENVDM_USER
     usermod -a -G sudo $OPENVDM_USER
 }
 
@@ -804,14 +803,17 @@ function setup_timezone {
 ###########################################################################
 # Set system ssh
 function setup_ssh {
-    ssh-keygen
-    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 
-    mkdir -p /home/${OPENVDM_USER}/.ssh
-    cat ~/.ssh/id_rsa.pub >> /home/${OPENVDM_USER}/.ssh/authorized_keys
+    if[ ! -e ~/.ssh/id_rsa ]; then
+        cat /dev/zero | ssh-keygen -q -N "" > /dev/null
+        cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+        mkdir -p /home/${OPENVDM_USER}/.ssh
+        cat ~/.ssh/id_rsa.pub >> /home/${OPENVDM_USER}/.ssh/authorized_keys
     
-    chown -R ${OPENVDM_USER}:${OPENVDM_USER} /home/${OPENVDM_USER}/.ssh
-    chmod 600 /home/${OPENVDM_USER}/.ssh/authorized_keys
+        chown -R ${OPENVDM_USER}:${OPENVDM_USER} /home/${OPENVDM_USER}/.ssh
+        chmod 600 /home/${OPENVDM_USER}/.ssh/authorized_keys
+    fi
 
     ssh ${OPENVDM_USER}@${HOSTNAME} ls > /dev/null
 }
