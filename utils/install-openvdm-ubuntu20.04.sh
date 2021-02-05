@@ -804,7 +804,7 @@ function setup_timezone {
 # Set system ssh
 function setup_ssh {
 
-    if[ ! -e ~/.ssh/id_rsa ]; then
+    if [ ! -e ~/.ssh/id_rsa ]; then
         cat /dev/zero | ssh-keygen -q -N "" > /dev/null
         cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 
