@@ -797,7 +797,7 @@ function configure_directories {
 function setup_timezone {
     echo "Etc/UTC" | tee /etc/timezone
     sudo dpkg-reconfigure --frontend noninteractive tzdata
-
+}
 
 ###########################################################################
 ###########################################################################
