@@ -247,7 +247,7 @@ def task_update_data_dashboard(gearman_worker, gearman_job): # pylint: disable=t
     remove_manifest_entries = []
 
     #check for processing file
-    processing_script_filename = os.path.join(gearman_worker.ovdm.get_plugin_dir(), gearman_worker.collection_system_transfer['name'].replace(' ','') + gearman_worker.ovdm.get_plugin_suffix())
+    processing_script_filename = os.path.join(gearman_worker.ovdm.get_plugin_dir(), gearman_worker.collection_system_transfer['name'].lower() + gearman_worker.ovdm.get_plugin_suffix())
     logging.debug("Processing Script Filename: %s", processing_script_filename)
 
     if os.path.isfile(processing_script_filename):
@@ -476,7 +476,7 @@ def task_rebuild_data_dashboard(gearman_worker, gearman_job): # pylint: disable=
 
         logging.info('Processing data from: %s', collection_system_transfer['name'])
 
-        processing_script_filename = os.path.join(gearman_worker.ovdm.get_plugin_dir(), collection_system_transfer['name'].replace(' ','-') + gearman_worker.ovdm.get_plugin_suffix())
+        processing_script_filename = os.path.join(gearman_worker.ovdm.get_plugin_dir(), collection_system_transfer['name'].lower() + gearman_worker.ovdm.get_plugin_suffix())
         logging.debug("Processing Script Filename: %s", processing_script_filename)
 
         if not os.path.isfile(processing_script_filename):

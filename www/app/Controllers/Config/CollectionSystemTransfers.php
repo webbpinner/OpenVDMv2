@@ -150,7 +150,10 @@ class CollectionSystemTransfers extends Controller {
 
             if($name == ''){
                 $error[] = 'Name is required';
-            } 
+	    }
+	    elseif( preg_match('/\s/',$name) ){
+		$error[] = 'Name cannot contain whitespace, underscores are acceptable';
+	    }
 
             if($longName == ''){
                 $error[] = 'Long name is required';
@@ -355,7 +358,10 @@ class CollectionSystemTransfers extends Controller {
 
             if($name == ''){
                 $error[] = 'Name is required';
-            } 
+	    }
+	    elseif( preg_match('/\s/',$name) ){
+		$error[] = 'Name cannot contain whitespace, underscores are acceptable';
+	    }	
 
             if($longName == ''){
                 $error[] = 'Long name is required';
@@ -578,6 +584,9 @@ class CollectionSystemTransfers extends Controller {
             if($name == ''){
                 $error[] = 'Name is required';
             } 
+	    elseif( preg_match('/\s/',$name) ){
+	        $error[] = 'Name cannot contain whitespace, underscores are acceptable';
+	    }
 
             if($longName == ''){
                 $error[] = 'Long name is required';
@@ -813,7 +822,10 @@ class CollectionSystemTransfers extends Controller {
             
             if($name == ''){
                 $error[] = 'Name is required';
-            } 
+            }
+            elseif( preg_match('/\s/',$name) ){
+                $error[] = 'Name cannot contain whitespace, underscores are acceptable';
+            }
 
             if($longName == ''){
                 $error[] = 'Long name is required';

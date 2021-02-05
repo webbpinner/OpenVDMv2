@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 
-FILE:  SCS_plugin.py
+FILE:  rov_scs_plugin.py
 
-USAGE:  SCS_plugin.py [-h] [--dataType] <dataFile>
+USAGE:  rov_scs_plugin.py [-h] [--dataType] <dataFile>
 
 DESCRIPTION:  This python script interprets raw files created by the SCS Data
     Acquision System.  Depending on the command-line arguments, the script
@@ -84,7 +84,7 @@ FILE_TYPE_FILTERS = [
 # -------------------------------------------------------------------------------------
 
 
-class ROV_SCS_OpenVDMPlugin(OpenVDMPlugin):
+class ROVSCSPlugin(OpenVDMPlugin):
     """
     OpenVDM plugin for the SCS Underway data acquisition system
     """
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         logging.warning("File is empty")
         sys.exit(0)
 
-    plugin = ROV_SCS_OpenVDMPlugin(lowering=parsed_args.lowering)
+    plugin = ROVSCSPlugin(lowering=parsed_args.lowering)
 
     if parsed_args.dataType:
         dataType = plugin.get_data_type(parsed_args.dataFile)

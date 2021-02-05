@@ -107,11 +107,13 @@ class CruiseDataTransfers extends Controller {
             $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
             $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
 
-
             if($name == ''){
                 $error[] = 'Name is required';
             } 
-
+            elseif( preg_match('/\s/',$name) ){
+                $error[] = 'Name cannot contain whitespace, underscores are acceptable';
+	    }
+	    
             if($longName == ''){
                 $error[] = 'Long name is required';
             } 
@@ -293,7 +295,10 @@ class CruiseDataTransfers extends Controller {
 
             if($name == ''){
                 $error[] = 'Name is required';
-            } 
+	    }
+	    elseif( preg_match('/\s/',$name) ){
+                $error[] = 'Name cannot contain whitespace, underscores are acceptable';
+            }
 
             if($longName == ''){
                 $error[] = 'Long name is required';
@@ -497,13 +502,14 @@ class CruiseDataTransfers extends Controller {
             $sshUseKey = $_POST['sshUseKey'];
             $sshPass = $_POST['sshPass'];
             $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
-            var_dump($_POST['excludedExtraDirectories']);
             $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
-
 
             if($name == ''){
                 $error[] = 'Name is required';
-            } 
+	    }
+	    elseif( preg_match('/\s/',$name) ){
+                $error[] = 'Name cannot contain whitespace, underscores are acceptable';
+            }
 
             if($longName == ''){
                 $error[] = 'Long name is required';
@@ -703,9 +709,11 @@ class CruiseDataTransfers extends Controller {
             $excludedCollectionSystems = join(",", $_POST['excludedCollectionSystems']);
             $excludedExtraDirectories = join(",", $_POST['excludedExtraDirectories']);
 
-
             if($name == ''){
                 $error[] = 'Name is required';
+	    }
+	    elseif( preg_match('/\s/',$name) ){
+                $error[] = 'Name cannot contain whitespace, underscores are acceptable';
             } 
 
             if($longName == ''){

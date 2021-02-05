@@ -95,7 +95,7 @@ class GeoTIFFParser(OpenVDMParser):
             collection_system_dir = directoryname.replace(os.path.join(data_warehouse_config['shipboardDataWarehouseBaseDir'], cruise_id), '').lstrip('/')
             self.output_dir = os.path.join(data_warehouse_config['shipboardDataWarehouseBaseDir'], cruise_id, dashboard_data_dir, collection_system_dir)
             self.tile_dir = cruise_id + '/' + dashboard_data_dir + '/' + collection_system_dir + '/' + label
-    
+
         elif self.output_dir is None:
             self.output_dir = directoryname
             self.tile_dir = os.path.join(directoryname, label)
