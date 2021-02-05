@@ -309,7 +309,7 @@ def test_dest_dir(gearman_worker):
 
     logging.debug('Destination Directory: %s', dest_dir)
 
-    return [{"partName": "Destination Directory", "result": "Pass"}] if os.path.isdir(dest_dir) else [{"testName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: {} on Data Warehouse".format(dest_dir)}]
+    return [{"partName": "Destination Directory", "result": "Pass"}] if os.path.isdir(dest_dir) else [{"partName": "Destination Directory", "result": "Fail", "reason": "Unable to find destination directory: {} on Data Warehouse".format(dest_dir)}]
 
 
 class OVDMGearmanWorker(python3_gearman.GearmanWorker):
