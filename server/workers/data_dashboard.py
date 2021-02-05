@@ -555,7 +555,17 @@ def task_rebuild_data_dashboard(gearman_worker, gearman_job): # pylint: disable=
                         gearman_worker.ovdm.send_msg(error_title, error_body)
                         job_results['parts'].append({"partName": "Parsing JSON output " + filename, "result": "Fail", "reason": error_title + ':' + error_body})
                     else:
-                        if 'error' in out_obj:
+                        if out_obj is None:
+                            error_title = 'Error processing file'
+                            error_body = 'No JSON output recieved from file. Processing Command: ' + ' '.join(command)
+                            logging.error("%s: %s", error_title, error_body)
+                            gearman_worker.ovdm.send_msg(error_title, error_body)
+                            job_results['parts'].append({"partName": "Parsing JSON output from file " + filename, "result": "Fail", "reason": error_title + ': ' + error_body})
+
+                            if data_proc.stderr:
+                                logging.error('err: %s', data_proc.stderr)
+
+                        elif 'error' in out_obj:
                             error_title = 'Error processing file'
                             error_body = out_obj['error']
                             logging.error("%s: %s", error_title, error_body)
