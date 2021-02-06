@@ -1,6 +1,5 @@
 certifi==2020.12.5
 chardet==4.0.0
-GDAL==3.0.4
 geographiclib==1.50
 geopy==2.1.0
 idna==2.10
