@@ -34,7 +34,6 @@ class DataDashboard extends Controller {
         $data['css'] = array('leaflet');
         $data['javascript'] = array('dataDashboardMain', 'dataDashboardMainCustom', 'leaflet', 'highcharts');
         $data['dataTypes'] = $this->_dashboardDataModel->getDashboardDataTypes();
-        
         $data['geoJSONTypes'] = $this->_dataDashboardModel->getGeoJSONTypes();
         $data['tmsTypes'] = $this->_dataDashboardModel->getTMSTypes();
         $data['jsonTypes'] = $this->_dataDashboardModel->getJSONTypes();
