@@ -1,6 +1,6 @@
 # Open Vessel Data Management v2.5
 
-##Installation Guide
+## Installation Guide
 At the time of this writing OpenVDMv2 was built and tested against the Ubuntu 20.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Ubuntu 20.04 LTS is used.
 
 ### Operating System
