@@ -1,7 +1,7 @@
 # Open Vessel Data Management v2.5
 
 ## Installation Guide
-At the time of this writing OpenVDMv2 was built and tested against the Ubuntu 20.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Ubuntu 20.04 LTS is used.
+At the time of this writing OpenVDMv2 was built and tested against the Ubuntu 18.04 LTS operating system. It may be possible to build against other linux-based operating systems however for the purposes of this guide the instructions will assume Ubuntu 18.04 LTS is used.
 
 ### Operating System
 Goto <https://releases.ubuntu.com/20.04/>
@@ -19,13 +19,13 @@ Log into the Server as root
 Download the install script
 ```
 cd ~
-curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.x/utils/install-openvdm-ubuntu20.04.sh > ~/install-openvdm-ubuntu20.04.sh
+curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.x/install-openvdm-ubuntu18.04.sh > ~/install-openvdm-ubuntu18.04.sh
 ```
 
 Run the install script
 ```
-chmod +x ~/install-openvdm-ubuntu20.04.sh
-~/install-openvdm-ubuntu20.04.sh
+chmod +x ~/install-openvdm-ubuntu18.04.sh
+~/install-openvdm-ubuntu18.04.sh
 ```
 
 You will need to answer some questions about your configuration.
