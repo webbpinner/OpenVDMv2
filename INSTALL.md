@@ -19,13 +19,13 @@ Log into the Server as root
 Download the install script
 ```
 cd ~
-curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.x/install-openvdm-ubuntu18.04.sh > ~/install-openvdm-ubuntu18.04.sh
+curl https://raw.githubusercontent.com/webbpinner/OpenVDMv2/v2.x/install-openvdm-ubuntu20.04.sh > ~/install-openvdm-ubuntu20.04.sh
 ```
 
 Run the install script
 ```
-chmod +x ~/install-openvdm-ubuntu18.04.sh
-~/install-openvdm-ubuntu18.04.sh
+chmod +x ~/install-openvdm-ubuntu20.04.sh
+~/install-openvdm-ubuntu20.04.sh
 ```
 
 You will need to answer some questions about your configuration.
