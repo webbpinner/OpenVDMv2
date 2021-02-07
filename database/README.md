@@ -1,0 +1,1 @@
+Directory contains the SQL templates used to initialize the OpenVDM database

@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""
+FILE:  build_lowering_tracks.py
+
+USAGE:  build_lowering_tracks.py [-h] [-l loweringID] collectionSystem
+
+REQUIRED ARGUMENTS:
+    collectionSystem  name of OpenVDM-defined collection system to process
+
+OPTIONAL ARGUMENTS:
+    -h, --help        show this help message and exit
+    -v[+]             increase verbosity of script (DEFAULT: Warning)
+    -l loweringID     the loweringID to process
+
+DESCRIPTION:
+    Creates geoJSON and kml representations of the track for the specified
+    lowering based on the geoJSON data created as part on the OpenVDM plugins.
+
+    In this example there is a dashboardData plugin for the OpenRVDAS
+    collection system.  That plugin created json-formatted dashboardData files
+    for three sensors: USBL-PRI, USBL-SEC and SPRINT.  These datasets are
+    defined within the "GPSSources" array.
+
+    Each element within the "GPSSources" array includes the name of the device
+    (used in the final filename) and a regex string specifying where the
+    dashboardData are located within the top-level directory for OpenRVDAS data
+    within the dashboardData directory specified within OpenVDM.  In most cases
+    the dashboardData files reside in the exact same directory structure as the
+    raw data files.
+
+    i.e.
+        Raw Files:
+            /<cruiseID>/Vehicle/<loweringID>/OpenRVDAS/SBNAV/UDP-SB-USBL-PRI-GGA-RAW_*.Raw
+            /<cruiseID>/Vehicle/<loweringID>/OpenRVDAS/SBNAV/UDP-SB-USBL-SEC-GGA-RAW_*.Raw
+            /<cruiseID>/Vehicle/<loweringID>/OpenRVDAS/SUBASTIAN/UDP-SB-SPRINT-RAW_*.Raw
+        DataDashboard Files:
+            /<cruiseID>/OpenVDM/DashboardData/Vehicle/<loweringID>/OpenRVDAS/SBNAV/UDP-SB-USBL-PRI-GGA-RAW_*.json
+            /<cruiseID>/OpenVDM/DashboardData/Vehicle/<loweringID>/OpenRVDAS/SBNAV/UDP-SB-USBL-SEC-GGA-RAW_*.json
+            /<cruiseID>/OpenVDM/DashboardData/Vehicle/<loweringID>/OpenRVDAS/SUBASTIAN/UDP-SB-SPRINT-RAW_*.json
+        Trackline Files:
+            /<cruiseID>/OpenVDM/Tracklines/<loweringID>_USBL-PRI_Trackline.json
+            /<cruiseID>/OpenVDM/Tracklines/<loweringID>_USBL-PRI_Trackline.kml
+            /<cruiseID>/OpenVDM/Tracklines/<loweringID>_USBL-SEC_Trackline.json
+            /<cruiseID>/OpenVDM/Tracklines/<loweringID>_USBL-SEC_Trackline.kml
+            /<cruiseID>/OpenVDM/Tracklines/<loweringID>_SB-SPRINT_Trackline.json
+            /<cruiseID>/OpenVDM/Tracklines/<loweringID>_SB-SPRINT_Trackline.kml
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  2.0
+  CREATED:  2016-03-06
+ REVISION:  2021-01-10
+
+LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
+Copyright (C) OceanDataRat.org 2021
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>.
+"""
+
+import os
+import sys
+import glob
+import json
+import argparse
+import logging
+
+from os.path import dirname, realpath
+sys.path.append(dirname(dirname(realpath(__file__))))
+
+from server.lib.set_owner_group_permissions import set_owner_group_permissions
+from server.lib.output_json_data_to_file import output_json_data_to_file
+from server.lib.geojson_utils import convert_to_kml, combine_geojson_files
+from server.lib.openvdm import OpenVDM
+
+TRACKLINE_EXTRA_DIR_NAME = 'Tracklines'
+DASHBOARD_EXTRA_DIR_NAME = 'Dashboard_Data'
+
+AllGPSSources = [
+    {
+        "CollectionSystem":"ROV_SCS",
+        "GPSSources": [
+            {
+                "device":"USBL-PRI",
+                "regex":"*SBNAV/UDP-SB-USBL-PRI-GGA-RAW_*.json"
+            },
+            {
+                "device":"USBL-SEC",
+                "regex":"*SBNAV/UDP-SB-USBL-SEC-GGA-RAW_*.json"
+            },
+            {
+                "device":"SPRINT",
+                "regex":"*SUBASTIAN/UDP-SB-SPRINT-RAW_*.json"
+            }
+        ]
+    }
+]
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='build lowering tracklines post-dashboard processing')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+    parser.add_argument('-l', dest='loweringID', metavar='loweringID', help='the loweringID to process')
+    parser.add_argument('collectionSystem', help='the collection system to search for geoJSON files')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    # build an OpenVDM object
+    openVDM = OpenVDM()
+
+    # Define the cruiseID to use for identifying the position data
+    cruiseID = openVDM.get_cruise_id()
+
+    # Define the loweringID to use for identifying the position data
+    loweringID = openVDM.get_lowering_id()
+
+    # if a loweringID was declared in the command-line aruments, redefine the loweringID variable
+    if parsed_args.loweringID is not None:
+
+        if parsed_args.loweringID in openVDM.get_lowerings():
+            logging.info("Setting LoweringID to: %s", parsed_args.loweringID)
+            loweringID = parsed_args.loweringID
+
+        else:
+            logging.error("Unable to find LoweringID %s for CruiseID %s", parsed_args.loweringID, cruiseID)
+            sys.exit(1)
+
+    # Retrieve the information for the collection system defined in the command-line argument
+    collectionSystem = openVDM.get_collection_system_transfer_by_name(parsed_args.collectionSystem)
+    if not collectionSystem:
+        logging.error("Collection System: %s not found in OpenVDM configuration.", parsed_args.collectionSystem)
+        sys.exit(1)
+    elif collectionSystem['cruiseOrLowering'] != '1':
+        logging.error("Collection System: %s is not related to a lowering.", parsed_args.collectionSystem)
+
+    tracklineDirectory = openVDM.get_extra_directory_by_name(TRACKLINE_EXTRA_DIR_NAME)
+    if not tracklineDirectory:
+        logging.error("Extra Directory: %s not found in OpenVDM configuration", TRACKLINE_EXTRA_DIR_NAME)
+        sys.exit(1)
+
+    # Retrieve the shipboard data warehouse configuration
+    shipboardDataWarehouseConfig = openVDM.get_shipboard_data_warehouse_config()
+
+    # Construct the full path to the cruise data directory
+    baseDir = shipboardDataWarehouseConfig['shipboardDataWarehouseBaseDir']
+    cruiseDir = os.path.join(baseDir, cruiseID)
+    loweringDir = os.path.join(cruiseDir, shipboardDataWarehouseConfig['loweringDataBaseDir'], loweringID)
+
+    # Verify the cruise data directory exists
+    if not os.path.isdir(loweringDir):
+        logging.error("Lowering data directory: %s not found!", cruiseDir)
+        sys.exit(1)
+
+    tracklineDir = os.path.join(cruiseDir, tracklineDirectory['destDir'])
+
+    # Verify the trackline directory exists
+    if not os.path.isdir(tracklineDir):
+        logging.error("Trackline Directory: %s not found", tracklineDir)
+        sys.exit(1)
+
+    dashboardDataDirectory = openVDM.get_required_extra_directory_by_name(DASHBOARD_EXTRA_DIR_NAME)['destDir']
+    dashboardDataDir = os.path.join(cruiseDir, dashboardDataDirectory)
+
+    # Verify the trackline directory exists
+    if not os.path.isdir(dashboardDataDir):
+        logging.error("Dashboard Data Directory: %s not found", dashboardDataDir)
+        sys.exit(1)
+
+    collectionSystemDashboardDataDir = os.path.join(dashboardDataDir, shipboardDataWarehouseConfig['loweringDataBaseDir'], loweringID, collectionSystem['destDir'])
+
+    # Verify the dashboard data directory for the specified collecion system exists
+    if not os.path.isdir(collectionSystemDashboardDataDir):
+        logging.error('Dashboard Data Directory for %s: %s not found', collectionSystem['name'], collectionSystemDashboardDataDir)
+        sys.exit(1)
+
+    # Loop through the AllGPSSources object
+    for GPSSources in AllGPSSources:
+
+        # If the collection system name matches the one in the command-line argrument
+        if GPSSources['CollectionSystem'] == parsed_args.collectionSystem:
+
+            #Build a geoJSON and kml cruisetrack for each GGA Device
+            for GPSSource in GPSSources['GPSSources']:
+                logging.info("Processing %s", GPSSource['device'])
+
+                # Build the list of files coorsponding to the current device based on the regex provided
+                files = glob.glob(collectionSystemDashboardDataDir.rstrip('/') + '/' + GPSSource['regex'])
+
+                if len(files) == 0:
+                    logging.warning('No files found for GPS Source: %s', GPSSource['device'])
+                    continue
+
+                files.sort()
+
+                logging.debug("Files: %s", json.dumps(files, indent=2))
+
+                # Combind the geoJSON objects
+                combineGeoJsonObj = combine_geojson_files(files, loweringID, GPSSource['device'])
+
+                # If there was a problem, exit
+                if not combineGeoJsonObj:
+                    logging.error("Problem combining data files from GPS Source: %s", GPSSource['device'])
+                    continue
+
+                warehouseUser = shipboardDataWarehouseConfig['shipboardDataWarehouseUsername']
+
+                # Save the combined geoJSON object to file
+                output_filepath = os.path.join(tracklineDir, loweringID + '_' + GPSSource['device'] + "_Trackline.json")
+                logging.info("Saving file: %s", output_filepath)
+                output_results = output_json_data_to_file(output_filepath, combineGeoJsonObj)
+
+                if not output_results['verdict']:
+                    logging.error("Problem writing output file: %s, reason: %s", output_filepath, output_results['reason'])
+                else:
+                    output_results = set_owner_group_permissions(warehouseUser, output_filepath)
+                    if not output_results['verdict']:
+                        logging.error("Problem setting permissions for output file: %s, reason: %s", output_filepath, output_results['reason'])
+
+                # Convert the combined geoJSON object to kml and save to file
+                output_filepath_kml = os.path.join(tracklineDir, loweringID + '_' + GPSSource['device'] + "_Trackline.kml")
+                logging.info("Saving file: %s", output_filepath_kml)
+                try:
+                    with open(output_filepath_kml, 'w') as kml_file:
+                        kml_file.write(convert_to_kml(combineGeoJsonObj))
+                except Exception as err:
+                    logging.error("Problem writing output file: %s", output_filepath_kml)
+                    logging.debug(str(err))
+
+                output_results = set_owner_group_permissions(warehouseUser, output_filepath_kml)
+                if not output_results['verdict']:
+                    logging.error("Problem setting permissions for output file: %s, reason: %s", output_filepath_kml, output_results['reason'])
+
+            # No need to proceed to another collectionSystem
+            break

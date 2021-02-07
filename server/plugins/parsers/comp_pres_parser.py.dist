@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+"""
+FILE:  comp_pres_parser.py
+
+USAGE:  comp_pres_parser.py [-h] [-v+] [--timeFormat] [--startDT] [--stopDT] <dataFile>
+
+DESCRIPTION:  Parse the supplied compensator pressures file and return the json-
+    formatted string used by OpenVDM as part of it's Data dashboard.
+
+  OPTIONS:  [-h] Return the help message.
+            [-v] Increase verbosity (default: warning)
+            [--timeFormat] date/time format to use when parsing datafile, default
+                           yyyy-mm-ddTHH:MM:SS.sssZ
+            [--startTS] optional start crop time (strptime format)
+            [--stopTS] optional stop crop time (strptime format)
+            <dataFile> Full or relative path of the data file to process.
+
+REQUIREMENTS:  Python3.8
+            Python Modules:
+                numpy==1.19.5
+                pandas==1.2.0
+                PyYAML==5.3.1
+                requests==2.25.1
+
+     BUGS:
+    NOTES:
+   AUTHOR:  Webb Pinner
+  COMPANY:  Capable Solutions
+  VERSION:  2.5
+  CREATED:  2016-08-29
+ REVISION:  2021-01-17
+
+LICENSE INFO:  Open Vessel Data Management v2.5 (OpenVDMv2)
+Copyright (C) 2021 OceanDataRat.org
+
+This program is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License     along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+import sys
+import csv
+import json
+import logging
+from copy import deepcopy
+from datetime import datetime
+from os.path import dirname, realpath
+import pandas as pd
+
+sys.path.append(dirname(dirname(dirname(dirname(realpath(__file__))))))
+
+from server.lib.openvdm_plugin import OpenVDMCSVParser
+from server.lib.openvdm import OpenVDM
+
+# RAW_COLS = ['date_time','hdr','comp1','comp2','comp3','comp4','comp5','comp6'] # OpenRVDAS style
+RAW_COLS = ['date','time','hdr','comp1','comp2','comp3','comp4','comp5','comp6'] # SCS style
+PROC_COLS = ['date_time','comp1','comp2','comp3','comp4','comp5','comp6']
+
+ROUNDING = {
+    'comp1': 3,
+    'comp2': 3,
+    'comp3': 3,
+    'comp4': 3,
+    'comp5': 3,
+    'comp6': 3
+}
+
+MIN_DEPTH = 0
+
+MAX_DELTA_T = pd.Timedelta('10 seconds')
+
+# DEFAULT_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ" # ISO8601 Format, OpenRVDAS style
+DEFAULT_TIME_FORMAT = "%m/%d/%Y %H:%M:%S.%f" # SCS style
+
+
+class CompPresParser(OpenVDMCSVParser):
+    """
+    Custom OpenVDM CSV file parser
+    """
+
+    def __init__(self, start_dt=None, stop_dt=None, time_format=DEFAULT_TIME_FORMAT, use_openvdm_api=True):
+        super().__init__(start_dt=start_dt, stop_dt=stop_dt)
+        self.raw_cols = RAW_COLS
+        self.proc_cols = PROC_COLS
+        self.time_format = time_format
+        self.ovdm = OpenVDM() if use_openvdm_api else None
+
+
+    def process_file(self, filepath): # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+        """
+        Process the provided file
+        """
+
+        raw_into_df = { value: [] for key, value in enumerate(self.proc_cols) }
+
+        logging.debug("Parsing data file...")
+        errors = []
+        try:
+            with open(filepath, 'r') as csvfile:
+                reader = csv.DictReader(csvfile, self.raw_cols)
+
+                for lineno, line in enumerate(reader):
+
+                    try:
+                        # date_time = line['date_time'] # OpenRVDAS style
+                        date_time = ' '.join([line['date'], line['time']]) # SCS style
+
+                        comp1 = float(line['comp1']) if line['comp1'] != '' else None
+                        comp2 = float(line['comp2']) if line['comp2'] != '' else None
+                        comp3 = float(line['comp3']) if line['comp3'] != '' else None
+                        comp4 = float(line['comp4']) if line['comp4'] != '' else None
+                        comp5 = float(line['comp5']) if line['comp5'] != '' else None
+                        comp6 = float(line['comp6']) if line['comp6'] != '' else None
+
+                    except Exception as err:
+                        errors.append(lineno)
+                        logging.warning("Parsing error encountered on line %s", lineno)
+                        logging.debug(line)
+                        logging.debug(str(err))
+
+                    else:
+                        raw_into_df['date_time'].append(date_time)
+                        raw_into_df['comp1'].append(comp1)
+                        raw_into_df['comp2'].append(comp2)
+                        raw_into_df['comp3'].append(comp3)
+                        raw_into_df['comp4'].append(comp4)
+                        raw_into_df['comp5'].append(comp5)
+                        raw_into_df['comp6'].append(comp6)
+
+        except Exception as err:
+            logging.error("Problem accessing input file: %s", filepath)
+            logging.error(str(err))
+            return
+
+        logging.debug("Finished parsing data file")
+
+        # If no data ingested from file, quit
+        if len(raw_into_df['date_time']) == 0:
+            logging.warning("Dataframe is empty... quitting")
+            return
+
+        # Build DataFrame
+        logging.debug("Building dataframe from parsed data...")
+        df_proc = pd.DataFrame(raw_into_df)
+
+        # Remove row where data is completely missing
+        df_proc.dropna(inplace=True, thresh=6)
+
+        # Convert Date/time column to datetime objects
+        logging.debug("Converting data_time to datetime datatype...")
+
+        df_proc['date_time'] = pd.to_datetime(df_proc['date_time'], format=self.time_format)
+
+        # Optionally crop data by start/stop times
+        if self.start_dt or self.stop_dt:
+            logging.debug("Cropping data...")
+
+            df_proc = self.crop_data(df_proc)
+
+        # If the crop operation emptied the dataframe, quit
+        if df_proc.shape[0] == 0:
+            logging.warning("Cropped dataframe is empty... quitting")
+            return
+
+        # Calculate deltaT column
+        logging.debug('Building deltaT column...')
+        df_proc = df_proc.join(df_proc['date_time'].diff().to_frame(name='deltaT'))
+
+        logging.debug("Tabulating statistics...")
+        self.add_row_validity_stat([len(df_proc), len(errors)])
+        self.add_time_bounds_stat([df_proc['date_time'].min(), df_proc['date_time'].max()])
+        self.add_bounds_stat([round(df_proc['deltaT'].min().total_seconds(),3), round(df_proc['deltaT'].max().total_seconds(),3)], 'DeltaT Bounds', 'seconds')
+        self.add_value_validity_stat([len(df_proc[(df_proc['deltaT'] <= MAX_DELTA_T)]),len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)])], 'DeltaT Validity')
+
+        logging.debug("Running quality tests...")
+        # % of bad rows in datafile
+        error_rate = len(errors) / (len(df_proc) + len(errors))
+        if error_rate > .25:
+            self.add_quality_test_failed("Rows")
+        elif error_rate > .10:
+            self.add_quality_test_warning("Rows")
+        else:
+            self.add_quality_test_passed("Rows")
+
+        # % of time gaps in data
+        error_rate = len(df_proc[(df_proc['deltaT'] > MAX_DELTA_T)]) / len(df_proc)
+        if error_rate > .25:
+            self.add_quality_test_failed("DeltaT")
+        elif error_rate > .10:
+            self.add_quality_test_warning("DeltaT")
+        else:
+            self.add_quality_test_passed("DeltaT")
+
+        # set index
+        logging.debug('Setting index...')
+        df_proc = df_proc.set_index('date_time')
+
+        # resample data
+        logging.debug("Resampling data...")
+        df_proc = self.resample_data(df_proc)
+
+        # round data
+        logging.debug("Rounding data: %s", ROUNDING)
+        df_proc = self.round_data(df_proc, ROUNDING)
+
+        # split data where there are gaps
+        logging.debug("Building visualization data...")
+
+        visualizer_data_obj = {'data':[], 'unit':'', 'label':''}
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','comp1']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = '%'
+        visualizer_data_obj['label'] = 'Compensator 1'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','comp2']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = '%'
+        visualizer_data_obj['label'] = 'Compensator 2'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','comp3']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = '%'
+        visualizer_data_obj['label'] = 'Compensator 3'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','comp4']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = '%'
+        visualizer_data_obj['label'] = 'Compensator 4'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','comp5']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = '%'
+        visualizer_data_obj['label'] = 'Compensator 5'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        visualizer_data_obj['data'] = json.loads(df_proc[['date_time','comp6']].to_json(orient='values'))
+        visualizer_data_obj['unit'] = '%'
+        visualizer_data_obj['label'] = 'Compensator 6'
+        self.add_visualization_data(deepcopy(visualizer_data_obj))
+
+        # send message about errors encountered to OpenVDM
+        if self.ovdm is not None and len(errors) > 0:
+            self.ovdm.send_msg('Parsing Error', 'Error(s) parsing datafile {} on row(s): {}'.format(filepath, ', '.join([str(error) for error in errors])))
+
+
+# -------------------------------------------------------------------------------------
+# Required python code for running the script as a stand-alone utility
+# -------------------------------------------------------------------------------------
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Parse ROV Compensator data')
+    parser.add_argument('-v', '--verbosity', dest='verbosity',
+                        default=0, action='count',
+                        help='Increase output verbosity')
+    parser.add_argument('--timeFormat', default=DEFAULT_TIME_FORMAT,
+                        help='timestamp format, default: %(default)')
+    parser.add_argument('--startDT', default=None,
+                        type=lambda s: datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ'),
+                        help=' crop start timestamp (iso8601)')
+    parser.add_argument('--stopDT', default=None,
+                        type=lambda s: datetime.strptime(s, '%Y-%m-%dT%H:%M:%S.%fZ'),
+                        help=' crop stop timestamp (iso8601)')
+    parser.add_argument('dataFile', metavar='dataFile',
+                        help='the raw data file to process')
+
+    parsed_args = parser.parse_args()
+
+    ############################
+    # Set up logging before we do any other argument parsing (so that we
+    # can log problems with argument parsing).
+
+    LOGGING_FORMAT = '%(asctime)-15s %(levelname)s - %(message)s'
+    logging.basicConfig(format=LOGGING_FORMAT)
+
+    LOG_LEVELS = {0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG}
+    parsed_args.verbosity = min(parsed_args.verbosity, max(LOG_LEVELS))
+    logging.getLogger().setLevel(LOG_LEVELS[parsed_args.verbosity])
+
+    ovdm_parser = CompPresParser(start_dt=parsed_args.startDT, stop_dt=parsed_args.stopDT, time_format=parsed_args.timeFormat, use_openvdm_api=False)
+
+    try:
+        logging.info("Processing file: %s", parsed_args.dataFile)
+        ovdm_parser.process_file(parsed_args.dataFile)
+        print(ovdm_parser.to_json())
+        logging.info("Done!")
+    except Exception as err:
+        logging.error(str(err))
+        raise err
