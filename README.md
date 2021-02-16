@@ -1,7 +1,7 @@
-# Open Vessel Data Management v2.5
-
 ## THIS PROJECT HAS MOVED
 Please goto to https://github.com/OceanDataTools/openvdm for current releases of OpenVDM.
+
+# Open Vessel Data Management v2.5
 
 OpenVDMv2 is a ship-wide data management platform.  It is comprised of a suite of programs and an accompanying web-application that provides vessel operators with a unified at-sea solution for retrieving and organizing files from multiple data acquisition systems into a unified cruise data package.  Once the files are within the cruise data package they are immediately and safely accessible by crew and scientists.  In addition OpenVDM can perform regularly backups of the cruise data package to one or more backup storage location/devices such as NAS arrays, external hard drives and even to shore-based servers.
 
