@@ -99,7 +99,7 @@ def build_filelist(gearman_worker, source_dir): # pylint: disable=too-many-local
             if ignore:
                 continue
 
-            if not is_ascii(filename):
+            if not is_ascii(filepath):
                 logging.debug("%s is not an ascii-encoded unicode string", filepath)
                 return_files['exclude'].append(filepath)
                 exclude = True
