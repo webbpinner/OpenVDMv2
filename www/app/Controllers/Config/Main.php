@@ -142,6 +142,17 @@ class Main extends Controller {
             
             if(isset($_POST['showLoweringComponents'])) {
                 $this->_warehouseModel->showLoweringComponents();
+
+                # create the gearman client
+                $gmc= new \GearmanClient();
+
+                # add the default server (localhost)
+                $gmc->addServer();
+
+                $gmData['cruiseID'] = $this->_warehouseModel->getCruiseID();
+
+                #submit job to Gearman
+                $data['jobResults'] = json_decode($gmc->doBackground("rebuildCruiseDirectory", json_encode($gmData)));
             }
 
             $data['showLoweringComponents'] = $this->_warehouseModel->getShowLoweringComponents();

@@ -85,12 +85,12 @@ def build_filelist(gearman_worker, source_dir): # pylint: disable=too-many-branc
                         for exclude_filter in filters['excludeFilter'].split(','):
                             if fnmatch.fnmatch(filepath, exclude_filter):
                                 logging.debug("%s excluded by exclude filter", filename)
-                                return_files['exclude'].append(os.path.join(root, filename))
+                                return_files['exclude'].append(filepath)
                                 exclude = True
                                 break
-                        if not exclude and not is_ascii(filename):
+                        if not exclude and not is_ascii(filepath):
                             logging.debug("%s is not an ascii-encoded unicode string", filename)
-                            return_files['exclude'].append(os.path.join(root, filename))
+                            return_files['exclude'].append(filepath)
                             exclude = True
                             break
 

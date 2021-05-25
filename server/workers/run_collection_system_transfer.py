@@ -12,7 +12,7 @@ DESCRIPTION:  Gearman worker that handles the transfer of data from the Collecti
   COMPANY:  Capable Solutions
   VERSION:  2.5
   CREATED:  2015-01-01
- REVISION:  2021-01-02
+ REVISION:  2021-05-25
 
 LICENSE INFO: Open Vessel Data Management v2.5 (OpenVDMv2)
 Copyright (C) OceanDataRat.org 2021
@@ -33,20 +33,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/gpl-3.0.html>
 """
 
 import argparse
-import os
-import sys
-import tempfile
-import shutil
-import json
-import time
 import calendar
 import datetime
 import fnmatch
-import subprocess
-import signal
+import json
 import logging
-from random import randint
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
 from os.path import dirname, realpath
+from random import randint
 import python3_gearman
 
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
@@ -99,7 +99,7 @@ def build_filelist(gearman_worker, source_dir): # pylint: disable=too-many-local
             if ignore:
                 continue
 
-            if not is_ascii(filename):
+            if not is_ascii(filepath):
                 logging.debug("%s is not an ascii-encoded unicode string", filepath)
                 return_files['exclude'].append(filepath)
                 exclude = True
@@ -393,10 +393,13 @@ def build_filters(gearman_worker):
     """
     Replace wildcard string in filters
     """
+
+    lowering_id = gearman_worker.lowering_id if gearman_worker.lowering_id is not None else ""
+
     return {
-        'includeFilter': gearman_worker.collection_system_transfer['includeFilter'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', gearman_worker.lowering_id),
-        'excludeFilter': gearman_worker.collection_system_transfer['excludeFilter'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', gearman_worker.lowering_id),
-        'ignoreFilter': gearman_worker.collection_system_transfer['ignoreFilter'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', gearman_worker.lowering_id)
+        'includeFilter': gearman_worker.collection_system_transfer['includeFilter'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', lowering_id),
+        'excludeFilter': gearman_worker.collection_system_transfer['excludeFilter'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', lowering_id),
+        'ignoreFilter': gearman_worker.collection_system_transfer['ignoreFilter'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', lowering_id)
     }
 
 
@@ -405,7 +408,8 @@ def build_dest_dir(gearman_worker):
     Replace wildcard string in destDir
     """
 
-    return gearman_worker.collection_system_transfer['destDir'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', gearman_worker.lowering_id).replace('{loweringDataBaseDir}', gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir']).rstrip('/')
+    lowering_id = gearman_worker.lowering_id if gearman_worker.lowering_id is not None else ""
+    return gearman_worker.collection_system_transfer['destDir'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', lowering_id).replace('{loweringDataBaseDir}', gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir']).rstrip('/')
 
 
 def build_source_dir(gearman_worker):
@@ -413,7 +417,8 @@ def build_source_dir(gearman_worker):
     Replace wildcard string in sourceDir
     """
 
-    return gearman_worker.collection_system_transfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', gearman_worker.lowering_id).replace('{loweringDataBaseDir}', gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir']).rstrip('/')
+    lowering_id = gearman_worker.lowering_id if gearman_worker.lowering_id is not None else ""
+    return gearman_worker.collection_system_transfer['sourceDir'].replace('{cruiseID}', gearman_worker.cruise_id).replace('{loweringID}', lowering_id).replace('{loweringDataBaseDir}', gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir']).rstrip('/')
 
 
 def build_logfile_dirpath(gearman_worker):
@@ -545,7 +550,7 @@ def transfer_smb_source_dir(gearman_worker, gearman_job): # pylint: disable=too-
     dest_dir = os.path.join(cruise_dir, gearman_worker.shipboard_data_warehouse_config['loweringDataBaseDir'], gearman_worker.lowering_id, build_dest_dir(gearman_worker)) if gearman_worker.collection_system_transfer['cruiseOrLowering'] == "1" else  os.path.join(cruise_dir, build_dest_dir(gearman_worker))
     source_dir = os.path.join(mntpoint, build_source_dir(gearman_worker)).rstrip('/')
     logging.debug("Source Dir: %s", source_dir)
-    logging.debug("Destinstation Dir: %s", dest_dir)
+    logging.debug("Destination Dir: %s", dest_dir)
 
     # Mount SMB Share
     logging.debug("Mounting SMB Share")
@@ -656,7 +661,7 @@ def transfer_rsync_source_dir(gearman_worker, gearman_job): # pylint: disable=to
     source_dir = build_source_dir(gearman_worker)
 
     logging.debug("Source Dir: %s", source_dir)
-    logging.debug("Destinstation Dir: %s", dest_dir)
+    logging.debug("Destination Dir: %s", dest_dir)
 
     logging.debug("Build file list")
     output_results = build_rsync_filelist(gearman_worker, source_dir)
@@ -761,7 +766,7 @@ def transfer_ssh_source_dir(gearman_worker, gearman_job): # pylint: disable=too-
     source_dir = build_source_dir(gearman_worker)
 
     logging.debug("Source Dir: %s", source_dir)
-    logging.debug("Destinstation Dir: %s", dest_dir)
+    logging.debug("Destination Dir: %s", dest_dir)
 
     logging.debug("Build file list")
     output_results = build_ssh_filelist(gearman_worker, source_dir)
@@ -1038,6 +1043,11 @@ def task_run_collection_system_transfer(gearman_worker, current_job): # pylint: 
         return json.dumps(job_results)
 
     gearman_worker.send_job_status(current_job, 2, 10)
+
+    if gearman_worker.collection_system_transfer['cruiseOrLowering'] == "1" and gearman_worker.lowering_id is None:
+        logging.info("Verifying lowering_id is set")
+        job_results['parts'].append({'partName': 'Destination Directory Test', "result": "Fail", 'reason': 'Lowering ID is not defined'})
+        return json.dumps(job_results)
 
     logging.info("Transferring files")
     output_results = None
