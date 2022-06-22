@@ -3,7 +3,7 @@ chardet==4.0.0
 geographiclib==1.50
 geopy==2.1.0
 idna==2.10
-numpy==1.19.5
+numpy==1.22.0
 pandas==1.2.1
 pkg-resources==0.0.0
 python-dateutil==2.8.1
